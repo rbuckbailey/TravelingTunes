@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.h"
-            timestampString = "412882531.087489"
+            timestampString = "416166456.017221"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "12"
-            endingLineNumber = "12"
+            startingLineNumber = "13"
+            endingLineNumber = "13"
             landmarkName = "@interface ttunesViewController"
             landmarkType = "2">
             <Locations>
@@ -24,12 +24,12 @@
                   continueAfterRunningActions = "No"
                   symbolName = "-[ttunesViewController songTitle]"
                   moduleName = "Traveling Tunes"
-                  urlString = "file:///Users/buck/code/Traveling%20Tunes/Traveling%20Tunes/ttunesViewController.h"
-                  timestampString = "412882460.788438"
+                  urlString = "file:///Users/buck/code/TravelingTunes/Traveling%20Tunes/ttunesViewController.h"
+                  timestampString = "416159686.269946"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "12"
-                  endingLineNumber = "12"
+                  startingLineNumber = "13"
+                  endingLineNumber = "13"
                   offsetFromSymbolStart = "24">
                </Location>
                <Location
@@ -38,15 +38,47 @@
                   continueAfterRunningActions = "No"
                   symbolName = "-[ttunesViewController setSongTitle:]"
                   moduleName = "Traveling Tunes"
-                  urlString = "file:///Users/buck/code/Traveling%20Tunes/Traveling%20Tunes/ttunesViewController.h"
-                  timestampString = "412882460.788837"
+                  urlString = "file:///Users/buck/code/TravelingTunes/Traveling%20Tunes/ttunesViewController.h"
+                  timestampString = "416159686.270341"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "12"
-                  endingLineNumber = "12"
+                  startingLineNumber = "13"
+                  endingLineNumber = "13"
                   offsetFromSymbolStart = "31">
                </Location>
             </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Traveling Tunes/ttunesViewController.m"
+            timestampString = "416169682.619805"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "55"
+            endingLineNumber = "55"
+            landmarkName = "-singleTapDetected:"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Traveling Tunes/gestureAssignmentController.m"
+            timestampString = "416169805.363985"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "32"
+            endingLineNumber = "32"
+            landmarkName = "-init"
+            landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

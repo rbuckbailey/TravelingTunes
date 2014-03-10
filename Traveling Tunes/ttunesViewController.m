@@ -8,37 +8,50 @@
 
 #import "ttunesViewController.h"
 
-@interface ttunesViewController ()
+MPMusicPlayerController*        mediaPlayer;
+gestureAssignmentController *assignments;
 
+
+
+@interface ttunesViewController ()
 @end
+
+
 
 @implementation ttunesViewController
 
+- (id)init {
+//    assignments = [gestureAssignmentController init];
+    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+    return 0;
+}
+
 - (IBAction)tripleTapDetected:(id)sender {
-//    _songTitle.text=@"Triple Tap Detected";
-    //Create an instance of MPMusicPlayerController
-    MPMusicPlayerController* myPlayer = [MPMusicPlayerController iPodMusicPlayer];
     
+    //init music player object
+
     //Create a query that will return all songs by The Beatles grouped by album
     MPMediaQuery* query = [MPMediaQuery songsQuery];
     [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
     [query setGroupingType:MPMediaGroupingAlbum];
     
     //Pass the query to the player
-    [myPlayer setQueueWithQuery:query];
+    [mediaPlayer setQueueWithQuery:query];
     
     //Start playing and set a label text to the name and image to the cover art of the song that is playing
-    [myPlayer play];
-    _songTitle.text = [myPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+    [mediaPlayer play];
+    _songTitle.text = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
 }
 
 
 - (IBAction)doubleTapDetected:(id)sender {
-    _songTitle.text=@"Double Tap Detected";
+    _songTitle.text=@"narf!";
 }
 
 - (IBAction)singleTapDetected:(id)sender {
-    _songTitle.text=@"Single Tap Detected";
+    //assignments.singleTap = @"foo";
+    [assignments setSingleTap:@"foo"];
+    _songTitle.text = [assignments singleTap];
 }
 
 - (IBAction)longPressDetected:(id)sender {
@@ -68,11 +81,13 @@
 }
 
 - (IBAction)swipeLeftDetected:(id)sender {
-    _songTitle.text=@"Swipe Left";
+    _songTitle.text=@"Previous Song";
+    [mediaPlayer skipToPreviousItem];
 }
 
 - (IBAction)swipeRight:(id)sender {
-    _songTitle.text=@"Swipe Right";
+    _songTitle.text=@"Next Song";
+   [mediaPlayer skipToNextItem];
 }
 
 - (IBAction)swipeUpDetected:(id)sender {
