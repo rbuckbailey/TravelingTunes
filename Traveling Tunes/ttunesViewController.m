@@ -7,28 +7,23 @@
 //
 
 #import "ttunesViewController.h"
+#import "gestureAssignmentController.h"
 
 MPMusicPlayerController*        mediaPlayer;
-gestureAssignmentController *assignments;
-
-
 
 @interface ttunesViewController ()
 @end
 
 
-
 @implementation ttunesViewController
 
-- (id)init {
-//    assignments = [gestureAssignmentController init];
-    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+- (id)init{
     return 0;
 }
 
 - (IBAction)tripleTapDetected:(id)sender {
-    
-    //init music player object
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    _songTitle.text = assignments.tripleTap;
 
     //Create a query that will return all songs by The Beatles grouped by album
     MPMediaQuery* query = [MPMediaQuery songsQuery];
@@ -45,17 +40,18 @@ gestureAssignmentController *assignments;
 
 
 - (IBAction)doubleTapDetected:(id)sender {
-    _songTitle.text=@"narf!";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    _songTitle.text = assignments.doubleTap;
 }
 
 - (IBAction)singleTapDetected:(id)sender {
-    //assignments.singleTap = @"foo";
-    [assignments setSingleTap:@"foo"];
-    _songTitle.text = [assignments singleTap];
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    _songTitle.text = assignments.singleTap;
 }
 
 - (IBAction)longPressDetected:(id)sender {
-    _songTitle.text=@"Long Press";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    _songTitle.text = assignments.longPress;
 }
 
 - (IBAction)pinchDetected:(id)sender {
@@ -77,25 +73,30 @@ gestureAssignmentController *assignments;
 }
 
 - (IBAction)panDetected:(id)sender {
-//    _songTitle.text=@"Panning";
+//    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+//    _songTitle.text = assignments.panning;
 }
 
 - (IBAction)swipeLeftDetected:(id)sender {
-    _songTitle.text=@"Previous Song";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    _songTitle.text = assignments.swipeLeft;
     [mediaPlayer skipToPreviousItem];
 }
 
 - (IBAction)swipeRight:(id)sender {
-    _songTitle.text=@"Next Song";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    _songTitle.text = assignments.swipeRight;
    [mediaPlayer skipToNextItem];
 }
 
 - (IBAction)swipeUpDetected:(id)sender {
-    _songTitle.text=@"Swipe Up";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    _songTitle.text = assignments.swipeUp;
 }
 
 - (IBAction)swipeDownDetected:(id)sender {
-    _songTitle.text=@"Swipe Down";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    _songTitle.text = assignments.swipeDown;
 }
 
 @end

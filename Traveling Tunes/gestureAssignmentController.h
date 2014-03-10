@@ -11,13 +11,14 @@
 
 @interface gestureAssignmentController : NSObject
 
-@property (nonatomic, strong) NSString *singleTap;
-/*
-@property (nonatomic, strong) NSString *doubleTap;
-@property (nonatomic, strong) NSString *tripleTap;
-@property (nonatomic, strong) NSString *swipeLeft;
-@property (nonatomic, strong) NSString *swipeRight;
-*/
+@property (atomic, strong) NSString *singleTap;
+@property (atomic, strong) NSString *doubleTap;
+@property (atomic, strong) NSString *longPress;
+@property (atomic, strong) NSString *tripleTap;
+@property (atomic, strong) NSString *swipeLeft;
+@property (atomic, strong) NSString *swipeRight;
+@property (atomic, strong) NSString *swipeUp;
+@property (atomic, strong) NSString *swipeDown;
 
 @end
 

@@ -8,28 +8,19 @@
 
 #include <stdio.h>
 #import "ttunesViewController.h"
+#import "gestureAssignmentController.h"
 
 @implementation gestureAssignmentController
 
-/*
- @synthesize singleTap;
-
-@synthesize doubleTap;
-@synthesize tripleTap;
-@synthesize swipeLeft;
-@synthesize swipeRight;
-*/
-
 - (id)init {
-    if (self = [super init])
-    {
-        _singleTap  = @"playPause";
-/*    self.doubleTap  = @"doubleTap";
-    self.tripleTap  = @"tripleTap";
-    self.swipeLeft  = @"previousSong";
-    self.swipeRight = @"nextSong";*/
-    }
+    _singleTap  = @"playPause";
+    _longPress  = @"Long Press";
+    _doubleTap  = @"doubleTap";
+    _tripleTap  = @"tripleTap";
+    _swipeLeft  = @"previousSong";
+    _swipeRight = @"nextSong";
+    _swipeUp    = @"Volume up";
+    _swipeDown  = @"Volume Down";
     return self;
 }
-
 @end

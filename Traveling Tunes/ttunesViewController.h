@@ -8,7 +8,6 @@
 
 #import <UIKit/UIKit.h>
 #import <MediaPlayer/MediaPlayer.h>
-#import "gestureAssignmentController.h"
 
 @interface ttunesViewController : UIViewController
 @property (strong, nonatomic) IBOutlet UILabel *songTitle;
