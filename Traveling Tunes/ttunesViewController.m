@@ -45,9 +45,11 @@ MPMusicPlayerController*        mediaPlayer;
     _songTitle.text = assignments.doubleTap;
 }
 
+
 - (IBAction)singleTapDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    selectActionFromString:[assignments singleTap];
+    NSString *temp = [assignments singleTap];
+    [self selectActionFromString:temp];
 }
 
 - (IBAction)longPressDetected:(id)sender {
@@ -101,13 +103,16 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 
+- (void)test {
+    _songTitle.text = @"test";
+}
 
-- (void) selectActionFromString:(NSString*)action {
+- (void)selectActionFromString:(NSString*)action {
     NSLog(action);
     if ([action isEqual:@"playPause"]) {
         _songTitle.text = @"playPause";
     }
-    _songTitle.text = @"default";
+    _songTitle.text = action;
 }
 
 

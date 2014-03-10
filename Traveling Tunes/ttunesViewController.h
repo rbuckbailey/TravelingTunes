@@ -10,8 +10,9 @@
 #import <MediaPlayer/MediaPlayer.h>
 
 @interface ttunesViewController : UIViewController
-@property (strong, nonatomic) IBOutlet UILabel *songTitle;
 - (void)selectActionFromString:(NSString*)action;
+- (void)test;
+@property (strong, nonatomic) IBOutlet UILabel *songTitle;
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)doubleTapDetected:(id)sender;
 - (IBAction)tripleTapDetected:(id)sender;
