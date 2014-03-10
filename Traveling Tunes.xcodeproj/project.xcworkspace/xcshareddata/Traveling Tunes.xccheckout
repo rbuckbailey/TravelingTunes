@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>801D9EB1-5027-4B66-9448-3997963B6FEE</string>
+	<key>IDESourceControlProjectName</key>
+	<string>Traveling Tunes</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>85D92A95-FD59-4FDA-9EA3-AA17F5BD0C6A</key>
+		<string>ssh://server.local/git/TravelingTunes.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>Traveling Tunes.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>85D92A95-FD59-4FDA-9EA3-AA17F5BD0C6A</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>ssh://server.local/git/TravelingTunes.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>85D92A95-FD59-4FDA-9EA3-AA17F5BD0C6A</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>85D92A95-FD59-4FDA-9EA3-AA17F5BD0C6A</string>
+			<key>IDESourceControlWCCName</key>
+			<string>TravelingTunes</string>
+		</dict>
+	</array>
+</dict>
+</plist>
