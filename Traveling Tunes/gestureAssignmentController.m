@@ -14,13 +14,13 @@
 
 - (id)init {
     _singleTap  = @"playPause";
-    _longPress  = @"Long Press";
+    _longPress  = @"menu";
     _doubleTap  = @"doubleTap";
     _tripleTap  = @"tripleTap";
     _swipeLeft  = @"previousSong";
     _swipeRight = @"nextSong";
-    _swipeUp    = @"Volume up";
-    _swipeDown  = @"Volume Down";
+    _swipeUp    = @"volumeUp";
+    _swipeDown  = @"volumeDown";
     return self;
 }
 @end
