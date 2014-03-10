@@ -7,7 +7,20 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 @interface ttunesViewController : UIViewController
+@property (strong, nonatomic) IBOutlet UILabel *songTitle;
+- (IBAction)singleTapDetected:(id)sender;
+- (IBAction)doubleTapDetected:(id)sender;
+- (IBAction)tripleTapDetected:(id)sender;
+- (IBAction)longPressDetected:(id)sender;
+- (IBAction)pinchDetected:(id)sender;
+- (IBAction)rotationDetected:(id)sender;
+- (IBAction)panDetected:(id)sender;
+- (IBAction)swipeLeftDetected:(id)sender;
+- (IBAction)swipeRight:(id)sender;
+- (IBAction)swipeUpDetected:(id)sender;
+- (IBAction)swipeDownDetected:(id)sender;
 
 @end

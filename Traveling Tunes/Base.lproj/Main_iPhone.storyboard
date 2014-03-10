@@ -1,20 +1,110 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="4451" systemVersion="13A461" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="vXZ-lx-hvc">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="4514" systemVersion="13B42" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="vXZ-lx-hvc">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3676"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3747"/>
     </dependencies>
     <scenes>
-        <!--class Prefix:identifier View Controller-->
+        <!--Ttunes View Controller-->
         <scene sceneID="ufC-wZ-h7g">
             <objects>
                 <viewController id="vXZ-lx-hvc" customClass="ttunesViewController" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="yaM-Y0-XlU"/>
+                        <viewControllerLayoutGuide type="bottom" id="4pX-ZS-bwc"/>
+                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="kh9-bI-dsS">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                        <subviews>
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Touch to do things" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vDx-3z-0ZX">
+                                <rect key="frame" x="0.0" y="273" width="320" height="21"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="320" id="LUo-BU-bNs"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                        <gestureRecognizers/>
+                        <constraints>
+                            <constraint firstAttribute="centerX" secondItem="vDx-3z-0ZX" secondAttribute="centerX" id="MPK-b6-VdG"/>
+                            <constraint firstAttribute="centerY" secondItem="vDx-3z-0ZX" secondAttribute="centerY" constant="0.5" id="b0f-LV-LvY"/>
+                        </constraints>
+                        <connections>
+                            <outletCollection property="gestureRecognizers" destination="pqR-GO-tXG" appends="YES" id="IcC-RG-BRu"/>
+                            <outletCollection property="gestureRecognizers" destination="bBm-Uo-aRl" appends="YES" id="5ob-UM-0iA"/>
+                            <outletCollection property="gestureRecognizers" destination="ggY-ix-P1S" appends="YES" id="TiP-RC-Hbg"/>
+                            <outletCollection property="gestureRecognizers" destination="Xfa-qB-Yyw" appends="YES" id="k5c-Ch-tAs"/>
+                            <outletCollection property="gestureRecognizers" destination="Oue-4R-Yfm" appends="YES" id="udm-c2-Ko2"/>
+                            <outletCollection property="gestureRecognizers" destination="Zcv-Wk-9xm" appends="YES" id="yAo-VF-y9q"/>
+                            <outletCollection property="gestureRecognizers" destination="THH-u7-cyr" appends="YES" id="0cO-1i-553"/>
+                            <outletCollection property="gestureRecognizers" destination="uuK-AF-k7P" appends="YES" id="Skx-VN-abg"/>
+                            <outletCollection property="gestureRecognizers" destination="KHx-3X-2Ke" appends="YES" id="2yD-eD-szW"/>
+                        </connections>
                     </view>
+                    <connections>
+                        <outlet property="songTitle" destination="vDx-3z-0ZX" id="hhV-xf-OTp"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="x5A-6p-PRh" sceneMemberID="firstResponder"/>
+                <pinchGestureRecognizer id="pqR-GO-tXG">
+                    <connections>
+                        <action selector="pinchDetected:" destination="vXZ-lx-hvc" id="djh-bW-pMV"/>
+                    </connections>
+                </pinchGestureRecognizer>
+                <rotationGestureRecognizer id="bBm-Uo-aRl">
+                    <connections>
+                        <action selector="rotationDetected:" destination="vXZ-lx-hvc" id="k8F-vP-Ox9"/>
+                    </connections>
+                </rotationGestureRecognizer>
+                <tapGestureRecognizer id="Zcv-Wk-9xm" userLabel="Tap Single-1 Gesture Recognizer">
+                    <connections>
+                        <action selector="singleTapDetected:" destination="vXZ-lx-hvc" id="uvW-Si-Z6T"/>
+                    </connections>
+                </tapGestureRecognizer>
+                <tapGestureRecognizer numberOfTapsRequired="2" id="Oue-4R-Yfm" userLabel="Tap Double-1 Gesture Recognizer">
+                    <connections>
+                        <action selector="doubleTapDetected:" destination="vXZ-lx-hvc" id="1nB-Uw-s9f"/>
+                    </connections>
+                </tapGestureRecognizer>
+                <tapGestureRecognizer numberOfTapsRequired="3" id="KHx-3X-2Ke" userLabel="Tap Triple-1 Gesture Recognizer">
+                    <connections>
+                        <action selector="tripleTapDetected:" destination="vXZ-lx-hvc" id="gAZ-He-K1J"/>
+                    </connections>
+                </tapGestureRecognizer>
+                <panGestureRecognizer minimumNumberOfTouches="1" id="ggY-ix-P1S">
+                    <connections>
+                        <action selector="panDetected:" destination="vXZ-lx-hvc" id="7j0-JF-upb"/>
+                    </connections>
+                </panGestureRecognizer>
+                <pongPressGestureRecognizer allowableMovement="10" minimumPressDuration="0.99999999999999989" id="Xfa-qB-Yyw">
+                    <connections>
+                        <action selector="longPressDetected:" destination="vXZ-lx-hvc" id="lN4-w0-kjc"/>
+                    </connections>
+                </pongPressGestureRecognizer>
+                <swipeGestureRecognizer direction="left" id="THH-u7-cyr" userLabel="Swipe Left Gesture Recognizer">
+                    <connections>
+                        <action selector="swipeLeftDetected:" destination="vXZ-lx-hvc" id="4Uz-bc-oZE"/>
+                    </connections>
+                </swipeGestureRecognizer>
+                <swipeGestureRecognizer direction="right" id="CyG-oC-Pft" userLabel="Swipe Right Gesture Recognizer">
+                    <connections>
+                        <action selector="swipeRight:" destination="vXZ-lx-hvc" id="WSD-yL-XJF"/>
+                    </connections>
+                </swipeGestureRecognizer>
+                <swipeGestureRecognizer direction="up" id="uuK-AF-k7P" userLabel="Swipe Up Gesture Recognizer">
+                    <connections>
+                        <action selector="swipeUpDetected:" destination="vXZ-lx-hvc" id="laF-TY-Pg6"/>
+                    </connections>
+                </swipeGestureRecognizer>
+                <swipeGestureRecognizer direction="down" id="ba7-fH-iNl" userLabel="Swipe Down Gesture Recognizer">
+                    <connections>
+                        <action selector="sipwDownDetected:" destination="vXZ-lx-hvc" id="Deh-jZ-wGX"/>
+                    </connections>
+                </swipeGestureRecognizer>
             </objects>
         </scene>
     </scenes>
