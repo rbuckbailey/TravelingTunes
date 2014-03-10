@@ -17,6 +17,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 @implementation ttunesViewController
 
+
 - (id)init{
     return 0;
 }
@@ -46,7 +47,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (IBAction)singleTapDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    _songTitle.text = assignments.singleTap;
+    selectActionFromString:[assignments singleTap];
 }
 
 - (IBAction)longPressDetected:(id)sender {
@@ -98,5 +99,16 @@ MPMusicPlayerController*        mediaPlayer;
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
     _songTitle.text = assignments.swipeDown;
 }
+
+
+
+- (void) selectActionFromString:(NSString*)action {
+    NSLog(action);
+    if ([action isEqual:@"playPause"]) {
+        _songTitle.text = @"playPause";
+    }
+    _songTitle.text = @"default";
+}
+
 
 @end
