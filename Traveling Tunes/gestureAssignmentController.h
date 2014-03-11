@@ -9,16 +9,30 @@
 #ifndef Traveling_Tunes_gestureAssignmentController_h
 #define Traveling_Tunes_gestureAssignmentController_h
 
+#define UNASSIGNED      0
+#define MENU            1
+#define PLAY            2
+#define PAUSE           3
+#define PLAYPAUSE       4
+#define NEXTSONG        5
+#define PREVIOUSSONG    6
+#define PREVIOUSRESTART 7
+#define REWIND          8
+#define FASTFORWARD     9
+#define VOLUMEUP        10
+#define VOLUMEDOWN      11
+#define PLAYALLBEATLES  12
+
 @interface gestureAssignmentController : NSObject
 
-@property (atomic, strong) NSString *singleTap;
-@property (atomic, strong) NSString *doubleTap;
-@property (atomic, strong) NSString *longPress;
-@property (atomic, strong) NSString *tripleTap;
-@property (atomic, strong) NSString *swipeLeft;
-@property (atomic, strong) NSString *swipeRight;
-@property (atomic, strong) NSString *swipeUp;
-@property (atomic, strong) NSString *swipeDown;
+@property (atomic) int singleTap;
+@property (atomic) int doubleTap;
+@property (atomic) int longPress;
+@property (atomic) int tripleTap;
+@property (atomic) int swipeLeft;
+@property (atomic) int swipeRight;
+@property (atomic) int swipeUp;
+@property (atomic) int swipeDown;
 
 @end
 
