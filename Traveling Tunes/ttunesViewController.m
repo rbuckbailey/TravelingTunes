@@ -99,7 +99,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 
-- (void)selectActionFromString:(int)action: (NSString*)sender {
+- (void)selectActionFromString:(int)action :(NSString*)sender {
     switch (action) {
         case UNASSIGNED: _songTitle.text = [NSString stringWithFormat:@"%@ sent unassigned command",sender]; break;
         case PLAY: _songTitle.text = @"play"; break;

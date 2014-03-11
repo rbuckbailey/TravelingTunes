@@ -22,6 +22,16 @@
 #define VOLUMEUP        10
 #define VOLUMEDOWN      11
 #define PLAYALLBEATLES  12
+/*
+ consider:  PLAYALLSHUFFLE
+            PLAYSHUFFLEDALBUMS
+            PLAYARTISTSHUFFLED ... ARTISTSHUFFLEDBYALBUM
+            RESTARTSONG (no skip back)
+            GENIUSPLAYLIST
+            RATESONG ?
+            SHARE/TWEET/FB SONG ?
+            SKIP FORWARD/BACK 5, 10, 20 SECONDS
+ */
 
 @interface gestureAssignmentController : NSObject
 

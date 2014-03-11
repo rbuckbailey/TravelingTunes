@@ -13,7 +13,7 @@
 
 @interface ttunesViewController : UIViewController
 @property (strong, nonatomic) IBOutlet UILabel *songTitle;
-- (void)selectActionFromString:(int)action: (NSString*)sender;
+- (void)selectActionFromString:(int)action :(NSString*)sender;
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)doubleTapDetected:(id)sender;
 - (IBAction)tripleTapDetected:(id)sender;
