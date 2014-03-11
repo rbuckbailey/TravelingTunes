@@ -10,6 +10,8 @@
 #import "gestureAssignmentController.h"
 
 MPMusicPlayerController*        mediaPlayer;
+//may want to switch this to mediaplayer protocol which has built-in "current time" property
+//MPMediaPlayback*        mediaPlayer;
 
 @interface ttunesViewController ()
 @end
@@ -24,32 +26,22 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (IBAction)tripleTapDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    _songTitle.text = assignments.tripleTap;
-
-    //Create a query that will return all songs by The Beatles grouped by album
-    MPMediaQuery* query = [MPMediaQuery songsQuery];
-    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
-    [query setGroupingType:MPMediaGroupingAlbum];
-    
-    //Pass the query to the player
-    [mediaPlayer setQueueWithQuery:query];
-    
-    //Start playing and set a label text to the name and image to the cover art of the song that is playing
-    [mediaPlayer play];
-    _songTitle.text = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+    NSString *temp = [assignments tripleTap];
+    [self selectActionFromString:temp:@"tripleTap"];
 }
 
 
 - (IBAction)doubleTapDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    _songTitle.text = assignments.doubleTap;
+    NSString *temp = [assignments doubleTap];
+    [self selectActionFromString:temp:@"doubleTap"];
 }
 
 
 - (IBAction)singleTapDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
     NSString *temp = [assignments singleTap];
-    [self selectActionFromString:temp];
+    [self selectActionFromString:temp:@"singleTap"];
 }
 
 - (IBAction)longPressDetected:(id)sender {
@@ -82,37 +74,70 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (IBAction)swipeLeftDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    _songTitle.text = assignments.swipeLeft;
-    [mediaPlayer skipToPreviousItem];
+    NSString *temp = [assignments swipeLeft];
+    [self selectActionFromString:temp:@"swipeLeft"];
 }
 
 - (IBAction)swipeRight:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    _songTitle.text = assignments.swipeRight;
-   [mediaPlayer skipToNextItem];
+    NSString *temp = [assignments swipeRight];
+    [self selectActionFromString:temp:@"swipeRight"];
 }
 
 - (IBAction)swipeUpDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    _songTitle.text = assignments.swipeUp;
+    NSString *temp = [assignments swipeUp];
+    [self selectActionFromString:temp:@"swipeUp"];
 }
 
 - (IBAction)swipeDownDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    _songTitle.text = assignments.swipeDown;
+    NSString *temp = [assignments swipeDown];
+    [self selectActionFromString:temp:@"swipeDown"];
 }
 
 
-- (void)test {
-    _songTitle.text = @"test";
-}
-
-- (void)selectActionFromString:(NSString*)action {
+- (void)selectActionFromString:(NSString*)action: (NSString*)sender {
     NSLog(action);
+    
+    if ([action isEqual:@"play"]) {
+        _songTitle.text = @"playPause";
+    }
+    if ([action isEqual:@"Pause"]) {
+        _songTitle.text = @"playPause";
+    }
     if ([action isEqual:@"playPause"]) {
         _songTitle.text = @"playPause";
     }
-    _songTitle.text = action;
+    if ([action isEqual:@"nextSong"]) {
+        [mediaPlayer skipToNextItem];
+    }
+    if ([action isEqual:@"previousSongOrRestart"]) {
+        MPMediaItem *currentSong = [mediaPlayer nowPlayingItem];
+//        if (currentSong.currentPlaybackTime >= 5) { /* restart the song */ } else { }
+        [mediaPlayer skipToPreviousItem];
+    if ([action isEqual:@"previousSong"]) {
+        [mediaPlayer skipToPreviousItem];
+    }
+    if ([action isEqual:@"rewind"]) {
+        _songTitle.text = @"rewind";
+    }
+    if ([action isEqual:@"fastForward"]) {
+        _songTitle.text = @"fastFoward";
+    }
+    if ([action isEqual:@"playAllBeatles"]) {
+        //Create a query that will return all songs by The Beatles grouped by album
+        MPMediaQuery* query = [MPMediaQuery songsQuery];
+        [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
+        [query setGroupingType:MPMediaGroupingAlbum];
+    
+        //Pass the query to the player
+        [mediaPlayer setQueueWithQuery:query];
+    
+        //Start playing and set a label text to the name and image to the cover art of the song that is playing
+        [mediaPlayer play];
+        _songTitle.text = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+    }
 }
 
 

@@ -15,9 +15,9 @@
 - (id)init {
     _singleTap  = @"playPause";
     _longPress  = @"menu";
-    _doubleTap  = @"doubleTap";
-    _tripleTap  = @"tripleTap";
-    _swipeLeft  = @"previousSong";
+    _doubleTap  = @"unassigned";
+    _tripleTap  = @"testSender";
+    _swipeLeft  = @"previousSongOrRestart";
     _swipeRight = @"nextSong";
     _swipeUp    = @"volumeUp";
     _swipeDown  = @"volumeDown";
