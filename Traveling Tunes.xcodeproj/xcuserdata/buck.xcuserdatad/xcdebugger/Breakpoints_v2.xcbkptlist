@@ -75,7 +75,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "108"
             endingLineNumber = "108"
-            landmarkName = "-selectActionFromString:"
+            landmarkName = "-selectActionFromString::"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
@@ -91,7 +91,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "110"
             endingLineNumber = "110"
-            landmarkName = "-selectActionFromString:"
+            landmarkName = "-selectActionFromString::"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
@@ -107,7 +107,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "51"
             endingLineNumber = "51"
-            landmarkName = "-singleTapDetected:"
+            landmarkName = "-longPressDetected:"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
