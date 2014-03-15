@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="4514" systemVersion="13B42" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="vXZ-lx-hvc">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="5053" systemVersion="13C64" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="vXZ-lx-hvc">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3747"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3733"/>
     </dependencies>
     <scenes>
         <!--Ttunes View Controller-->
@@ -38,11 +38,10 @@
                             <outletCollection property="gestureRecognizers" destination="bBm-Uo-aRl" appends="YES" id="5ob-UM-0iA"/>
                             <outletCollection property="gestureRecognizers" destination="ggY-ix-P1S" appends="YES" id="TiP-RC-Hbg"/>
                             <outletCollection property="gestureRecognizers" destination="Xfa-qB-Yyw" appends="YES" id="k5c-Ch-tAs"/>
-                            <outletCollection property="gestureRecognizers" destination="Oue-4R-Yfm" appends="YES" id="udm-c2-Ko2"/>
                             <outletCollection property="gestureRecognizers" destination="Zcv-Wk-9xm" appends="YES" id="yAo-VF-y9q"/>
                             <outletCollection property="gestureRecognizers" destination="THH-u7-cyr" appends="YES" id="0cO-1i-553"/>
                             <outletCollection property="gestureRecognizers" destination="uuK-AF-k7P" appends="YES" id="Skx-VN-abg"/>
-                            <outletCollection property="gestureRecognizers" destination="KHx-3X-2Ke" appends="YES" id="2yD-eD-szW"/>
+                            <outletCollection property="gestureRecognizers" destination="KpV-sg-Yej" appends="YES" id="m8j-ho-vUZ"/>
                         </connections>
                     </view>
                     <connections>
@@ -63,16 +62,6 @@
                 <tapGestureRecognizer id="Zcv-Wk-9xm" userLabel="Tap Single-1 Gesture Recognizer">
                     <connections>
                         <action selector="singleTapDetected:" destination="vXZ-lx-hvc" id="uvW-Si-Z6T"/>
-                    </connections>
-                </tapGestureRecognizer>
-                <tapGestureRecognizer numberOfTapsRequired="2" id="Oue-4R-Yfm" userLabel="Tap Double-1 Gesture Recognizer">
-                    <connections>
-                        <action selector="doubleTapDetected:" destination="vXZ-lx-hvc" id="1nB-Uw-s9f"/>
-                    </connections>
-                </tapGestureRecognizer>
-                <tapGestureRecognizer numberOfTapsRequired="3" id="KHx-3X-2Ke" userLabel="Tap Triple-1 Gesture Recognizer">
-                    <connections>
-                        <action selector="tripleTapDetected:" destination="vXZ-lx-hvc" id="gAZ-He-K1J"/>
                     </connections>
                 </tapGestureRecognizer>
                 <panGestureRecognizer minimumNumberOfTouches="1" id="ggY-ix-P1S">
@@ -105,6 +94,11 @@
                         <action selector="sipwDownDetected:" destination="vXZ-lx-hvc" id="Deh-jZ-wGX"/>
                     </connections>
                 </swipeGestureRecognizer>
+                <tapGestureRecognizer numberOfTouchesRequired="2" id="KpV-sg-Yej" userLabel="2 Finger Tap Gesture Recognizer">
+                    <connections>
+                        <action selector="twoFingerTap:" destination="vXZ-lx-hvc" id="zNt-wY-gfB"/>
+                    </connections>
+                </tapGestureRecognizer>
             </objects>
         </scene>
     </scenes>

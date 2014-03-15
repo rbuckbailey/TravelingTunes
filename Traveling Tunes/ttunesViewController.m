@@ -20,35 +20,54 @@ MPMusicPlayerController*        mediaPlayer;
 
 @implementation ttunesViewController
 
+- (IBAction)singleTapDetected:(id)sender { }
 
 - (id)init{
     return 0;
-}
-
-- (IBAction)tripleTapDetected:(id)sender {
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments tripleTap];
-    [self selectActionFromString:temp:@"tripleTap"];
-}
-
-
-- (IBAction)doubleTapDetected:(id)sender {
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments doubleTap];
-    [self selectActionFromString:temp:@"doubleTap"];
-}
-
-
-- (IBAction)singleTapDetected:(id)sender {
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments singleTap];
-    [self selectActionFromString:temp:@"singleTap"];
 }
 
 - (IBAction)longPressDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
     int temp = [assignments longPress];
     [self selectActionFromString:temp:@"longPress"];
+}
+
+-(void)singleTap{
+    _songTitle.text = @"Single Tap Detected";
+}
+-(void)doubleTap{
+    _songTitle.text=@"Double Tap Detected";
+}
+-(void)tripleTap{
+    _songTitle.text=@"Triple Tap Detected";
+}
+-(void)quadrupTap{
+    _songTitle.text=@"Quadrup Tap Detected";
+}
+
+- (IBAction)twoFingerTap:(id)sender {
+    _songTitle.text=@"Two Fingers Detected";
+}
+
+-(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+    UITouch *touch = [touches anyObject];
+    NSUInteger tapCount = [touch tapCount];
+    switch (tapCount) {
+        case 1:
+            [self singleTap];
+            break;
+        case 2:
+            [self doubleTap];
+            break;
+        case 3:
+            [self tripleTap];
+            break;
+        case 4:
+            [self quadrupTap];
+            break;
+        default :
+            break;
+    }
 }
 
 - (IBAction)pinchDetected:(id)sender {
