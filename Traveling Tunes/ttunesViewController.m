@@ -32,9 +32,9 @@ MPMusicPlayerController*        mediaPlayer;
     [self.navigationController setNavigationBarHidden:YES];
 }
 
+// long press currently also triggering single tap, meh.
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
-        //     label1.text = @"Select Iran to observe its historical data projections ";
         gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
         int temp = [assignments longPress];
         [self selectActionFromString:temp:@"longPress"];
