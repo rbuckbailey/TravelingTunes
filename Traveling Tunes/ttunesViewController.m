@@ -51,32 +51,37 @@ MPMusicPlayerController*        mediaPlayer;
 -(void)tripleTap{
     _songTitle.text=@"Triple Tap Detected";
 }
--(void)quadrupTap{
-    _songTitle.text=@"Quadrup Tap Detected";
+-(void)quadrupleTap{
+    _songTitle.text=@"Quadruple Tap Detected";
 }
 
 - (IBAction)twoFingerTap:(id)sender {
     _songTitle.text=@"Two Fingers Detected";
 }
 
+
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
-    UITouch *touch = [touches anyObject];
-    NSUInteger tapCount = [touch tapCount];
-    switch (tapCount) {
-        case 1:
-            [self singleTap];
-            break;
-        case 2:
-            [self doubleTap];
-            break;
-        case 3:
-            [self tripleTap];
-            break;
-        case 4:
-            [self quadrupTap];
-            break;
-        default :
-            break;
+    NSUInteger numTaps = [[touches anyObject] tapCount];
+    float delay = 0.2;
+    if (numTaps < 2)
+    {
+        [self performSelector:@selector(singleTap) withObject:nil afterDelay:delay ];
+        [self.nextResponder touchesEnded:touches withEvent:event];
+    }
+    else if(numTaps == 2)
+    {
+        [NSObject cancelPreviousPerformRequestsWithTarget:self];
+        [self performSelector:@selector(doubleTap) withObject:nil afterDelay:delay ];
+    }
+    else if(numTaps == 3)
+    {
+        [NSObject cancelPreviousPerformRequestsWithTarget:self];
+        [self performSelector:@selector(tripleTap) withObject:nil afterDelay:delay ];
+    }
+    else if(numTaps == 4)
+    {
+        [NSObject cancelPreviousPerformRequestsWithTarget:self];
+        [self performSelector:@selector(quadrupleTap) withObject:nil afterDelay:delay ];
     }
 }
 
