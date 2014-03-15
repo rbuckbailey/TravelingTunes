@@ -124,7 +124,7 @@ MPMusicPlayerController*        mediaPlayer;
         case PLAY: _songTitle.text = @"play"; break;
         case PAUSE: _songTitle.text = @"Pause"; break;
         case PLAYPAUSE: _songTitle.text = @"playPause"; break;
-        case MENU: _songTitle.text = @"menu"; break;
+        case MENU: [self performSegueWithIdentifier: @"goToSettings" sender: self]; break;
         case NEXTSONG:  _songTitle.text = @"skipToNext"; [mediaPlayer skipToNextItem]; break;
         case PREVIOUSSONG:  _songTitle.text = @"skipToPrevious"; [mediaPlayer skipToPreviousItem]; break;
             //if (currentSong.currentPlaybackTime >= 5) { /* restart the song  } else { }
