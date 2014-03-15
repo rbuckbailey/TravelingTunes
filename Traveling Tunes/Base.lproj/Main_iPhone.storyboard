@@ -127,6 +127,9 @@
                                                 <color key="titleColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                                                 <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                             </state>
+                                            <connections>
+                                                <segue destination="y2u-JY-5vJ" kind="push" id="64v-Pb-k4K"/>
+                                            </connections>
                                         </button>
                                     </subviews>
                                 </tableViewCellContentView>
@@ -196,10 +199,11 @@
                             <outlet property="delegate" destination="y2u-JY-5vJ" id="uo7-1l-rzU"/>
                         </connections>
                     </tableView>
+                    <navigationItem key="navigationItem" id="pYv-gi-koA"/>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="PA0-YC-wAN" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="918" y="445"/>
+            <point key="canvasLocation" x="952" y="437"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="Qfv-tJ-1in">
@@ -225,4 +229,7 @@
         <simulatedOrientationMetrics key="orientation"/>
         <simulatedScreenMetrics key="destination" type="retina4"/>
     </simulatedMetricsContainer>
+    <inferredMetricsTieBreakers>
+        <segue reference="yy2-Cs-wXz"/>
+    </inferredMetricsTieBreakers>
 </document>
