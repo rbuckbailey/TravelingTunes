@@ -8,6 +8,7 @@
 
 #import "ttunesViewController.h"
 #import "gestureAssignmentController.h"
+#import "settingsTableViewController.h"
 
 
 MPMusicPlayerController*        mediaPlayer;
@@ -26,14 +27,23 @@ MPMusicPlayerController*        mediaPlayer;
     return 0;
 }
 
-- (IBAction)longPressDetected:(id)sender {
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments longPress];
-    [self selectActionFromString:temp:@"longPress"];
+- (void)viewWillAppear:(BOOL)animated
+{
+    [self.navigationController setNavigationBarHidden:YES];
+}
+
+- (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
+    if (sender.state == UIGestureRecognizerStateBegan) {
+        //     label1.text = @"Select Iran to observe its historical data projections ";
+        gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+        int temp = [assignments longPress];
+        [self selectActionFromString:temp:@"longPress"];
+    } // else, UIGestureRecognizerState[Changed / Ended]
 }
 
 -(void)singleTap{
     _songTitle.text = @"Single Tap Detected";
+        [self.navigationController setNavigationBarHidden:YES];
 }
 -(void)doubleTap{
     _songTitle.text=@"Double Tap Detected";
@@ -119,12 +129,16 @@ MPMusicPlayerController*        mediaPlayer;
 
 
 - (void)selectActionFromString:(int)action :(NSString*)sender {
+//    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"mainStoryboard" bundle:nil];
+//    settingsTableViewController *viewController = (settingsTableViewController *) [storyboard instantiateViewControllerWithIdentifier:@"settingsTable"];
     switch (action) {
         case UNASSIGNED: _songTitle.text = [NSString stringWithFormat:@"%@ sent unassigned command",sender]; break;
         case PLAY: _songTitle.text = @"play"; break;
         case PAUSE: _songTitle.text = @"Pause"; break;
         case PLAYPAUSE: _songTitle.text = @"playPause"; break;
-        case MENU: [self performSegueWithIdentifier: @"goToSettings" sender: self]; break;
+        case MENU:
+            [self performSegueWithIdentifier: @"goToSettings" sender: self];
+            break;
         case NEXTSONG:  _songTitle.text = @"skipToNext"; [mediaPlayer skipToNextItem]; break;
         case PREVIOUSSONG:  _songTitle.text = @"skipToPrevious"; [mediaPlayer skipToPreviousItem]; break;
             //if (currentSong.currentPlaybackTime >= 5) { /* restart the song  } else { }

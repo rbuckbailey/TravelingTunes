@@ -15,7 +15,7 @@
 @property (strong, nonatomic) IBOutlet UILabel *songTitle;
 //- (void)selectActionFromString:(int)action :(NSString*)sender;
 - (IBAction)singleTapDetected:(id)sender;
-- (IBAction)longPressDetected:(id)sender;
+//- (IBAction)longPressDetected:(id)sender;
 - (IBAction)pinchDetected:(id)sender;
 - (IBAction)rotationDetected:(id)sender;
 - (IBAction)panDetected:(id)sender;
