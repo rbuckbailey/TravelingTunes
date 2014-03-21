@@ -32,7 +32,12 @@ MPMusicPlayerController*        mediaPlayer;
     [self.navigationController setNavigationBarHidden:YES];
 }
 
-// long press currently also triggering single tap, meh.
+
+- (IBAction)twoFingerTap:(id)sender {
+    _songTitle.text=@"Two Fingers Detected";
+}
+
+
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
         gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
@@ -40,6 +45,8 @@ MPMusicPlayerController*        mediaPlayer;
         [self selectActionFromString:temp:@"longPress"];
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
+
+/*
 
 -(void)singleTap{
     _songTitle.text = @"Single Tap Detected";
@@ -53,10 +60,6 @@ MPMusicPlayerController*        mediaPlayer;
 }
 -(void)quadrupleTap{
     _songTitle.text=@"Quadruple Tap Detected";
-}
-
-- (IBAction)twoFingerTap:(id)sender {
-    _songTitle.text=@"Two Fingers Detected";
 }
 
 
@@ -84,7 +87,7 @@ MPMusicPlayerController*        mediaPlayer;
         [self performSelector:@selector(quadrupleTap) withObject:nil afterDelay:delay ];
     }
 }
-
+*/
 - (IBAction)pinchDetected:(id)sender {
     CGFloat scale = [(UIPinchGestureRecognizer *)sender scale];
     CGFloat velocity = [(UIPinchGestureRecognizer *)sender velocity];

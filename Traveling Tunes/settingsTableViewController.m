@@ -52,69 +52,11 @@
     return self;
 }
 
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-    // Return the number of sections.
-    switch (_menuLevel) {
-        case MENU_TOPLEVEL: return 1; break;
-        case MENU_CONTROLS: return 1; break;
-        case MENU_DISPLAY: return 1; break;
-        default: return 1; break;
-    }
-    return 1;
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-    switch (_menuLevel) {
-        case MENU_TOPLEVEL: return _topLevel.count; break;
-        case MENU_CONTROLS: return _controls.count; break;
-        case MENU_DISPLAY: return _display.count; break;
-        case MENU_LAUNCHQUIT: return _launchquit.count; break;
-        case MENU_PLAYLISTS: return _playlists.count; break;
-    }
-    // Return the number of rows in the section. Default to top level.
-    return _topLevel.count;
-}
-
-
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
-
-#pragma mark - Table view data source
-
-
-
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    static NSString *CellIdentifier = @"submenu";
-    settingsTableViewCell *cell = [tableView
-                              dequeueReusableCellWithIdentifier:CellIdentifier
-                              forIndexPath:indexPath];
-    
-    // Configure the cell...
-    
-    long row = [indexPath row];
-    switch (_menuLevel) {
-        case MENU_TOPLEVEL:
-            [cell.submenuButton setTitle:_topLevel[row] forState: UIControlStateNormal];
-            break;
-        case MENU_CONTROLS:
-            [cell.submenuButton setTitle:_controls[row] forState: UIControlStateNormal];
-            break;
-        case MENU_DISPLAY:
-            [cell.submenuButton setTitle:_display[row] forState: UIControlStateNormal];
-            break;
-        default: [cell.submenuButton setTitle:_topLevel[row] forState: UIControlStateNormal];
-            break;
-    }
-    return cell;
-}
-
 
 - (IBAction)controlButtonTap:(id)sender {
     switch (_menuLevel) {
