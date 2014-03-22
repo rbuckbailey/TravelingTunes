@@ -125,8 +125,6 @@
 			children = (
 				8E3C8CE5189BF785004A90AE /* Main_iPhone.storyboard */,
 				8E3C8CE8189BF785004A90AE /* Main_iPad.storyboard */,
-				8E4312D918CE312E0037688F /* gestureAssignmentController.h */,
-				8E4312DA18CE316B0037688F /* gestureAssignmentController.m */,
 				8E3C8CE2189BF785004A90AE /* ttunesAppDelegate.h */,
 				8E3C8CE3189BF785004A90AE /* ttunesAppDelegate.m */,
 				8E3C8CEB189BF785004A90AE /* ttunesViewController.h */,
@@ -170,10 +168,12 @@
 		F41DA66A18D489D600D86912 /* Settings Views */ = {
 			isa = PBXGroup;
 			children = (
-				F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */,
-				F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */,
+				8E4312D918CE312E0037688F /* gestureAssignmentController.h */,
+				8E4312DA18CE316B0037688F /* gestureAssignmentController.m */,
 				F4F25E8018D3E54D0083641B /* settingsTableViewController.h */,
 				F4F25E8118D3E54D0083641B /* settingsTableViewController.m */,
+				F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */,
+				F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */,
 			);
 			name = "Settings Views";
 			sourceTree = "<group>";

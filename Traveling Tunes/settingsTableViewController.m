@@ -91,8 +91,6 @@
     NSLog(@"Configuring %@ fingers %@ to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],action);
 }
 
-//(void)selectActionFromString:(int)action :(NSString*)sender {
-     
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];

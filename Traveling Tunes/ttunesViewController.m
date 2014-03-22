@@ -41,7 +41,7 @@ MPMusicPlayerController*        mediaPlayer;
     if (sender.state == UIGestureRecognizerStateBegan) {
         gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
         NSMutableDictionary *assignments = [gestureController assignments];
-        [self selectActionFromString:[assignments objectForKey:@"1LongPress"]:@"1LongPress"];
+        [self performPlayerAction:[assignments objectForKey:@"1LongPress"]:@"1LongPress"];
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
 
@@ -52,24 +52,24 @@ MPMusicPlayerController*        mediaPlayer;
     // works hard-coded as NSString but not from dictionary pull
     // dictionary is initializing nil
     
-    [self selectActionFromString:@"PlayPause":@"11Tap"];
-//    [self selectActionFromString:[assignments objectForKey:@"11Tap"]:@"11Tap"];
+    [self performPlayerAction:@"PlayPause":@"11Tap"];
+//    [self performPlayerAction:[assignments objectForKey:@"11Tap"]:@"11Tap"];
 }
 -(void)doubleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSMutableDictionary *assignments = [gestureController assignments];
     NSLog([assignments objectForKey:@"12Tap"]);
-    [self selectActionFromString:[assignments objectForKey:@"12Tap"]:@"12Tap"];
+    [self performPlayerAction:[assignments objectForKey:@"12Tap"]:@"12Tap"];
 }
 -(void)tripleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSMutableDictionary *assignments = [gestureController assignments];
-    [self selectActionFromString:[assignments objectForKey:@"13Tap"]:@"13Tap"];
+    [self performPlayerAction:[assignments objectForKey:@"13Tap"]:@"13Tap"];
 }
 -(void)quadrupleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSMutableDictionary *assignments = [gestureController assignments];
-    [self selectActionFromString:[assignments objectForKey:@"14Tap"]:@"14Tap"];
+    [self performPlayerAction:[assignments objectForKey:@"14Tap"]:@"14Tap"];
 }
 
 
@@ -124,61 +124,58 @@ MPMusicPlayerController*        mediaPlayer;
 - (IBAction)swipeLeftDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
     int temp = [assignments swipeLeft];
-    [self selectActionFromString:temp:@"swipeLeft"];
+    [self performPlayerAction:temp:@"swipeLeft"];
 }
 
 - (IBAction)swipeRight:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
     int temp = [assignments swipeRight];
-    [self selectActionFromString:temp:@"swipeRight"];
+    [self performPlayerAction:temp:@"swipeRight"];
 }
 
 - (IBAction)swipeUpDetected:(id)sender {
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
     int temp = [assignments swipeUp];
-    [self selectActionFromString:temp:@"swipeUp"];
+    [self performPlayerAction:temp:@"swipeUp"];
 }*/
 
 - (IBAction)swipeDownDetected:(id)sender {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSMutableDictionary *assignments = [gestureController assignments];
-    [self selectActionFromString:[assignments objectForKey:@"1SwipeDown"]:@"swipeDown"];
+    [self performPlayerAction:[assignments objectForKey:@"1SwipeDown"]:@"swipeDown"];
 }
 
 
-- (void)selectActionFromString:(NSString *)action :(NSString*)sender {
+- (void)performPlayerAction:(NSString *)action :(NSString*)sender {
 //    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"mainStoryboard" bundle:nil];
 //    settingsTableViewController *viewController = (settingsTableViewController *) [storyboard instantiateViewControllerWithIdentifier:@"settingsTable"];
     NSLog(action);
-    if ([action isEqual:@"PlayPause"]) _songTitle.text = @"playPause";
-/*    switch (action) {
-        case UNASSIGNED: _songTitle.text = [NSString stringWithFormat:@"%@ sent unassigned command",sender]; break;
-        case PLAY: _songTitle.text = @"play"; break;
-        case PAUSE: _songTitle.text = @"Pause"; break;
-        case PLAYPAUSE: _songTitle.text = @"playPause"; break;
-        case MENU:
-            [self performSegueWithIdentifier: @"goToSettings" sender: self];
-            break;
-        case NEXTSONG:  _songTitle.text = @"skipToNext"; [mediaPlayer skipToNextItem]; break;
-        case PREVIOUSSONG:  _songTitle.text = @"skipToPrevious"; [mediaPlayer skipToPreviousItem]; break;
-            //if (currentSong.currentPlaybackTime >= 5) { /* restart the song  } else { }
-        case PREVIOUSRESTART:  _songTitle.text = @"prevOrRestart"; [mediaPlayer skipToPreviousItem]; break;
-        case REWIND:  _songTitle.text = @"rewind"; break;
-        case FASTFORWARD:  _songTitle.text = @"FF"; break;
-        case VOLUMEUP:  _songTitle.text = @"vol up"; break;
-        case VOLUMEDOWN:  _songTitle.text = @"vol down"; break;
-        case PLAYALLBEATLES:  _songTitle.text = @"BEATLES PARTY";         //Create a query that will return all songs by The Beatles grouped by album
-            MPMediaQuery* query = [MPMediaQuery songsQuery];
-            [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
-            [query setGroupingType:MPMediaGroupingAlbum];
-            
-            //Pass the query to the player
-            [mediaPlayer setQueueWithQuery:query];
-            
-            //Start playing and set a label text to the name and image to the cover art of the song that is playing
-            [mediaPlayer play];
-            _songTitle.text = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]; break;
-    }*/
+    if ([action isEqual:@"Unassigned"]) _songTitle.text = [NSString stringWithFormat:@"%@ sent unassigned command",sender];
+    else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
+    else if ([action isEqual:@"PlayPause"]) _songTitle.text = @"playPause";
+    else if ([action isEqual:@"Play"]) _songTitle.text = @"play";
+    else if ([action isEqual:@"Pause"]) _songTitle.text = @"Pause";
+    else if ([action isEqual:@"NextSong"]) { _songTitle.text = @"skipToNext"; [mediaPlayer skipToNextItem]; }
+    else if ([action isEqual:@"PreviousSong"]) { _songTitle.text = @"prevOrRestart"; [mediaPlayer skipToPreviousItem]; }
+    else if ([action isEqual:@"RestartPrevious"]) { _songTitle.text = @"prevOrRestart"; [mediaPlayer skipToPreviousItem]; }
+    else if ([action isEqual:@"Restart"]) { _songTitle.text = @"Restart"; [mediaPlayer skipToPreviousItem]; }
+    else if ([action isEqual:@"Rewind"]) _songTitle.text = @"rewind";
+    else if ([action isEqual:@"FastForward"]) _songTitle.text = @"FF";
+    else if ([action isEqual:@"VolumeUp"]) _songTitle.text = @"vol up";
+    else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
+    else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
+}
+
+- (void)beatlesParty {
+    _songTitle.text = @"BEATLES PARTY";         //Create a query that will return all songs by The Beatles grouped by album
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
+    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
+    [query setGroupingType:MPMediaGroupingAlbum];
+    //Pass the query to the player
+    [mediaPlayer setQueueWithQuery:query];
+    //Start playing and set a label text to the name and image to the cover art of the song that is playing
+    [mediaPlayer play];
+    _songTitle.text = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
 }
 
 
