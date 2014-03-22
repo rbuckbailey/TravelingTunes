@@ -166,12 +166,20 @@
     destination.passthrough = passthrough;
 }
 
-- (void)resetGestureSettings {
-    //add a confirmation modal dialog
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    if(buttonIndex==0)
+    {
+        gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+        [gestureController resetAssignments];
+        [gestureController saveGestureAssignments];
+    }
+    
+}
 
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    [gestureController resetAssignments];
-    [gestureController saveGestureAssignments];
+- (void)resetGestureSettings {
+    UIAlertView *updateAlert = [[UIAlertView alloc] initWithTitle: @"Confirm Reset" message: @"Are you sure you want to reset to defaults?" delegate: self cancelButtonTitle: @"YES"  otherButtonTitles:@"NO",nil];
+    [updateAlert show];
 }
 
 
