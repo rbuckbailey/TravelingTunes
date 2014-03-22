@@ -13,6 +13,9 @@
 
 @property (retain) NSMutableDictionary* assignments;
 
+- (void)resetAssignments;
+- (void)saveGestureAssignments;
+
 @end
 
 

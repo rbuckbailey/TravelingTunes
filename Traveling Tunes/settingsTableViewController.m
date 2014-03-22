@@ -122,6 +122,7 @@
     else if (selection == _VolumeUp) [self configure:@"VolumeUp"];
     else if (selection == _VolumeDown) [self configure:@"VolumeDown"];
     else if (selection == _Menu) [self configure:@"Menu"];
+    else if (selection == _ResetGestureAssignments) [self resetGestureSettings];
     /*
      consider:  PLAYALLSHUFFLE
      PLAYSHUFFLEDALBUMS
@@ -167,6 +168,14 @@
 
     // Pass the selected object to the new view controller and log.
     destination.passthrough = passthrough;
+}
+
+- (void)resetGestureSettings {
+    //add a confirmation modal dialog
+
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    [gestureController resetAssignments];
+    [gestureController saveGestureAssignments];
 }
 
 

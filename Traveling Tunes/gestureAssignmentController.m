@@ -13,12 +13,7 @@
 @implementation gestureAssignmentController
 
 - (id)init {
-        NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-        NSString *documentDirPath = [path objectAtIndex:0];
-        NSString *fileName = @"settings.plist";
-        NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
-        _assignments = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
-        NSLog(@"assignments are %@",_assignments);
+    [self loadGestures];
    // [self resetAssignments];
      return self;
 }
@@ -55,6 +50,24 @@
      @"Unassigned" ?: [NSNull null], @"34Tap",
      @"Unassigned" ?: [NSNull null], @"3LongPress",
      nil];
+}
+
+-(void)saveGestureAssignments {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"settings.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    [_assignments writeToFile:fileAndPath atomically:YES];
+
+}
+
+-(void)loadGestures {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"settings.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    _assignments = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    NSLog(@"assignments are %@",_assignments);
 }
 
 @end
