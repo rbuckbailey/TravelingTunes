@@ -9,11 +9,5 @@
 #import <UIKit/UIKit.h>
 
 @interface settingsTableViewCell : UITableViewCell
-@property (weak, nonatomic) IBOutlet UIButton *submenuButton;
-@property (weak, nonatomic) IBOutlet UILabel *switchLabel;
-@property (weak, nonatomic) IBOutlet UISwitch *switchToggle;
-@property (weak, nonatomic) IBOutlet UILabel *slideLabelA;
-@property (weak, nonatomic) IBOutlet UILabel *slideLabelB;
-@property (weak, nonatomic) IBOutlet UISlider *slideSlide;
 
 @end

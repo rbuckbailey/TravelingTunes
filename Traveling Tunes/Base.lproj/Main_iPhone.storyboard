@@ -133,7 +133,7 @@
                                         </tableViewCellContentView>
                                         <gestureRecognizers/>
                                         <connections>
-                                            <segue destination="TYz-Hb-1pf" kind="push" id="ZSk-3L-1LP"/>
+                                            <segue destination="TYz-Hb-1pf" kind="push" identifier="ControlsMenu" id="ZSk-3L-1LP"/>
                                         </connections>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="submenu" id="kt5-Be-eQ2" customClass="settingsTableViewCell">
@@ -154,7 +154,7 @@
                                         </tableViewCellContentView>
                                         <gestureRecognizers/>
                                         <connections>
-                                            <segue destination="MyG-5e-5oZ" kind="push" id="Guj-dj-cD7"/>
+                                            <segue destination="MyG-5e-5oZ" kind="push" identifier="PlaylistsMenu" id="Guj-dj-cD7"/>
                                         </connections>
                                     </tableViewCell>
                                 </cells>
@@ -383,7 +383,7 @@
                                             </subviews>
                                         </tableViewCellContentView>
                                         <connections>
-                                            <segue destination="yrz-qX-Lw2" kind="push" id="1tJ-Z0-DKq"/>
+                                            <segue destination="yrz-qX-Lw2" kind="push" identifier="TitleFontMenu" id="1tJ-Z0-DKq"/>
                                         </connections>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="oF3-MK-pag">
@@ -402,7 +402,7 @@
                                             </subviews>
                                         </tableViewCellContentView>
                                         <connections>
-                                            <segue destination="02N-Jq-DSM" kind="push" id="Py7-1a-iJw"/>
+                                            <segue destination="02N-Jq-DSM" kind="push" identifier="RotationMenu" id="Py7-1a-iJw"/>
                                         </connections>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="ItO-hH-yzh">
@@ -884,7 +884,7 @@
                                             </subviews>
                                         </tableViewCellContentView>
                                         <connections>
-                                            <segue destination="vZ5-Y4-J4G" kind="push" id="aKb-k3-DFf"/>
+                                            <segue destination="vZ5-Y4-J4G" kind="push" identifier="LongPress" id="aKb-k3-DFf"/>
                                         </connections>
                                     </tableViewCell>
                                 </cells>
@@ -915,7 +915,7 @@
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="xaY-2z-XKX">
                                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="xaY-2z-XKX" id="IJ9-6c-MzO">
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" tag="1" contentMode="center" tableViewCell="xaY-2z-XKX" id="IJ9-6c-MzO">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
@@ -1097,9 +1097,6 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" id="r0m-Ng-evx"/>
-                    <connections>
-                        <outlet property="Play" destination="xaY-2z-XKX" id="WoI-kO-9Nn"/>
-                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="bnP-ec-qly" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -1262,6 +1259,6 @@
     </simulatedMetricsContainer>
     <inferredMetricsTieBreakers>
         <segue reference="rxE-2j-rGF"/>
-        <segue reference="aKb-k3-DFf"/>
+        <segue reference="wve-v0-1eu"/>
     </inferredMetricsTieBreakers>
 </document>

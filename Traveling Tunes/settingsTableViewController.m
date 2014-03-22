@@ -10,13 +10,6 @@
 #import "settingsTableViewCell.h"
 
 @interface settingsTableViewController ()
-@property (nonatomic, strong) NSArray *topLevel;
-@property (nonatomic, strong) NSArray *controls;
-@property (nonatomic, strong) NSArray *display;
-@property (nonatomic, strong) NSArray *launchquit;
-@property (nonatomic, strong) NSArray *playlists;
-@property (weak, nonatomic) IBOutlet UITableViewCell *Play;
-@property (atomic) int menuLevel;
 @end
 
 @implementation settingsTableViewController
@@ -91,6 +84,14 @@
 }
 */
 
+-(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    NSLog(@"Selected %@",cell.textLabel.text);
+    NSLog(@"tag %i",cell.tag);
+    
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+}
 
 #pragma mark - Navigation
 
@@ -99,13 +100,9 @@
 {
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
-    if ([[segue identifier] isEqualToString:@"SwipeUp"]) {
-        
         //Destination *detailViewController = [segue destinationViewController];
-        
         //detailViewController.infoRequest = @"SwipeUp";
-        NSLog(@"SwipeUp");
-    }
+      NSLog([segue identifier]);
 }
 
 
