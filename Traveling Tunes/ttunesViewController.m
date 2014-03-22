@@ -154,6 +154,19 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeUp"]) _songTitle.text = @"vol up";
     else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
     else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
+    [self setupLabels];
+}
+
+- (void)setupLabels {
+//    _songTitle.text = [UIFont systemFontOfSize:25];
+    _artistTitle.font   = [UIFont systemFontOfSize:50];
+    _songTitle.font     = [UIFont systemFontOfSize:60];
+    _albumTitle.font    = [UIFont systemFontOfSize:50];
+    
+    _artistTitle.text   = @"Artist Test This is a long string where does it cut off";
+    _songTitle.text   = @"Song Test This is a long string where does it cut off";
+    _albumTitle.text    = @"Album Test This is a long string where does it cut off";
+
 }
 
 - (void)beatlesParty {
