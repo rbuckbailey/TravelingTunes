@@ -15,6 +15,7 @@
 @property (nonatomic, strong) NSArray *display;
 @property (nonatomic, strong) NSArray *launchquit;
 @property (nonatomic, strong) NSArray *playlists;
+@property (weak, nonatomic) IBOutlet UITableViewCell *Play;
 @property (atomic) int menuLevel;
 @end
 
@@ -116,7 +117,7 @@
 }
 */
 
-/*
+
 #pragma mark - Navigation
 
 // In a storyboard-based application, you will often want to do a little preparation before navigation
@@ -124,7 +125,21 @@
 {
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
+    if ([[segue identifier] isEqualToString:@"SwipeUp"]) {
+        
+        //Destination *detailViewController = [segue destinationViewController];
+        
+        //detailViewController.infoRequest = @"SwipeUp";
+        NSLog(@"SwipeUp");
+    }
+    if ([[segue identifier] isEqualToString:@"SwipeUp"]) {
+        
+        //Destination *detailViewController = [segue destinationViewController];
+        
+        //detailViewController.infoRequest = @"SwipeUp";
+        NSLog(@"SwipeUp");
+    }
 }
-*/
+
 
 @end
