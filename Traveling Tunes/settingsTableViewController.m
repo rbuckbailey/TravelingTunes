@@ -87,10 +87,21 @@
 
 -(void) configure:(NSString *)action
 {
+    // load gesture controller and set up
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSMutableDictionary *assignments = [gestureController assignments];
     NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
+
+    // change the dictionary
     [assignments setObject:action forKey: fullGesture];
+   
+    // save the dictionary
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"settings.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    [assignments writeToFile:fileAndPath atomically:YES];
+    
     NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
 }
 
@@ -111,7 +122,15 @@
     else if (selection == _VolumeUp) [self configure:@"VolumeUp"];
     else if (selection == _VolumeDown) [self configure:@"VolumeDown"];
     else if (selection == _Menu) [self configure:@"Menu"];
-    
+    /*
+     consider:  PLAYALLSHUFFLE
+     PLAYSHUFFLEDALBUMS
+     PLAYARTISTSHUFFLED ... ARTISTSHUFFLEDBYALBUM
+     GENIUSPLAYLIST
+     RATESONG ?
+     SHARE/TWEET/FB SONG ?
+     SKIP FORWARD/BACK 5, 10, 20 SECONDS
+     */
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
