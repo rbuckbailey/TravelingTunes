@@ -23,7 +23,6 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    NSLog(@"%@",_passthrough);
 }
 
 
@@ -149,7 +148,6 @@
 
     // Pass the selected object to the new view controller and log.
     destination.passthrough = passthrough;
-    //NSLog(@"Sending %@ to destination view.",[segue identifier]);
 }
 
 
