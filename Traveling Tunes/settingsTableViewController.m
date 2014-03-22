@@ -90,8 +90,9 @@
 {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSMutableDictionary *assignments = [gestureController assignments];
-    [assignments setObject:[_passthrough objectForKey:@"Fingers"] forKey:[_passthrough objectForKey:@"Gesture"]];
-    NSLog(@"Configuring %@ fingers %@ to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],action);
+    NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
+    [assignments setObject:action forKey: fullGesture];
+    NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
 }
 
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath

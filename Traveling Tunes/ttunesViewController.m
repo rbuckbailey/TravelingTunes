@@ -47,28 +47,19 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void)singleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSLog(@"is %@ and %i",[gestureController.assignments objectForKey:@"11Tap"],gestureController.singleTap);
-    
-    // works hard-coded as NSString but not from dictionary pull
-    // dictionary is initializing nil
-    
-    [self performPlayerAction:@"PlayPause":@"11Tap"];
+    [self performPlayerAction:[gestureController.assignments objectForKey:@"11Tap"]:@"11Tap"];
 }
 -(void)doubleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *assignments = [gestureController assignments];
-    NSLog([assignments objectForKey:@"12Tap"]);
-    [self performPlayerAction:@"Unassigned":@"12Tap"];
+    [self performPlayerAction:[gestureController.assignments objectForKey:@"12Tap"]:@"12Tap"];
 }
 -(void)tripleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *assignments = [gestureController assignments];
-    [self performPlayerAction:@"Menu":@"13Tap"];
+    [self performPlayerAction:[gestureController.assignments objectForKey:@"13Tap"]:@"13Tap"];
 }
 -(void)quadrupleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *assignments = [gestureController assignments];
-    [self performPlayerAction:[assignments objectForKey:@"14Tap"]:@"14Tap"];
+    [self performPlayerAction:[gestureController.assignments objectForKey:@"14Tap"]:@"14Tap"];
 }
 
 
@@ -148,7 +139,6 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
 //    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"mainStoryboard" bundle:nil];
 //    settingsTableViewController *viewController = (settingsTableViewController *) [storyboard instantiateViewControllerWithIdentifier:@"settingsTable"];
-    NSLog(action);
     if ([action isEqual:@"Unassigned"]) _songTitle.text = [NSString stringWithFormat:@"%@ sent unassigned command",sender];
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
     else if ([action isEqual:@"PlayPause"]) _songTitle.text = @"playPause";
