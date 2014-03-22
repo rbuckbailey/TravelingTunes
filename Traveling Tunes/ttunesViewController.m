@@ -53,18 +53,17 @@ MPMusicPlayerController*        mediaPlayer;
     // dictionary is initializing nil
     
     [self performPlayerAction:@"PlayPause":@"11Tap"];
-//    [self performPlayerAction:[assignments objectForKey:@"11Tap"]:@"11Tap"];
 }
 -(void)doubleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSMutableDictionary *assignments = [gestureController assignments];
     NSLog([assignments objectForKey:@"12Tap"]);
-    [self performPlayerAction:[assignments objectForKey:@"12Tap"]:@"12Tap"];
+    [self performPlayerAction:@"Unassigned":@"12Tap"];
 }
 -(void)tripleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSMutableDictionary *assignments = [gestureController assignments];
-    [self performPlayerAction:[assignments objectForKey:@"13Tap"]:@"13Tap"];
+    [self performPlayerAction:@"Menu":@"13Tap"];
 }
 -(void)quadrupleTap{
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];

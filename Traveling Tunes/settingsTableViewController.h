@@ -22,6 +22,9 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *RestartPrevious;
 @property (weak, nonatomic) IBOutlet UITableViewCell *SongPicker;
 @property (weak, nonatomic) IBOutlet UITableViewCell *Menu;
+@property (weak, nonatomic) IBOutlet UITableViewCell *VolumeUp;
+@property (weak, nonatomic) IBOutlet UITableViewCell *VolumeDown;
+
 
 @property NSMutableDictionary *passthrough;
 @end

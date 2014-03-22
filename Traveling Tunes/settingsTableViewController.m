@@ -88,6 +88,9 @@
 
 -(void) configure:(NSString *)action
 {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *assignments = [gestureController assignments];
+    [assignments setObject:[_passthrough objectForKey:@"Fingers"] forKey:[_passthrough objectForKey:@"Gesture"]];
     NSLog(@"Configuring %@ fingers %@ to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],action);
 }
 
@@ -105,6 +108,8 @@
     else if (selection == _Restart) [self configure:@"Restart"];
     else if (selection == _RestartPrevious) [self configure:@"RestartPrevious"];
     else if (selection == _SongPicker) [self configure:@"SongPicker"];
+    else if (selection == _VolumeUp) [self configure:@"VolumeUp"];
+    else if (selection == _VolumeDown) [self configure:@"VolumeDown"];
     else if (selection == _Menu) [self configure:@"Menu"];
     
     [tableView deselectRowAtIndexPath:indexPath animated:YES];

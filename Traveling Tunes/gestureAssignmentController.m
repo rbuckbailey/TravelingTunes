@@ -13,44 +13,37 @@
 @implementation gestureAssignmentController
 
 - (id)init {
-    _swipeLeft      = PREVIOUSRESTART;
-    _swipeRight     = NEXTSONG;
-    _swipeUp        = VOLUMEUP;
-    _swipeDown      = VOLUMEDOWN;
-    _singleTap      = PLAYPAUSE;
-    _doubleTap      = MENU;
-    _tripleTap      = UNASSIGNED;
-    _quadrupleTap   = UNASSIGNED;
-    _longPress      = MENU;
-
-    
-    [_assignments setObject:@"Unassigned" forKey:@"1SwipeLeft"];
-    [_assignments setObject:@"Unassigned" forKey:@"1SwipeRight"];
-    [_assignments setObject:@"Unassigned" forKey:@"1SwipeUp"];
-    [_assignments setObject:@"Unassigned" forKey:@"1SwipeDown"];
-    [_assignments setObject:@"PlayPause" forKey:@"11Tap"];
-    [_assignments setObject:@"Menu" forKey:@"12Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"13Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"14Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"LongPress"];
-    [_assignments setObject:@"Unassigned" forKey:@"2SwipeLeft"];
-    [_assignments setObject:@"Unassigned" forKey:@"2SwipeRight"];
-    [_assignments setObject:@"Unassigned" forKey:@"2SwipeUp"];
-    [_assignments setObject:@"Unassigned" forKey:@"2SwipeDown"];
-    [_assignments setObject:@"Unassigned" forKey:@"21Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"22Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"23Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"24Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"2LongPress"];
-    [_assignments setObject:@"Unassigned" forKey:@"3SwipeLeft"];
-    [_assignments setObject:@"Unassigned" forKey:@"3SwipeRight"];
-    [_assignments setObject:@"Unassigned" forKey:@"3SwipeUp"];
-    [_assignments setObject:@"Unassigned" forKey:@"3SwipeDown"];
-    [_assignments setObject:@"Unassigned" forKey:@"31Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"32Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"33Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"34Tap"];
-    [_assignments setObject:@"Unassigned" forKey:@"3LongPress"];
+    self.assignments = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+                        @"1SwipeLeft" ?: [NSNull null], @"Previous",
+                        @"1SwipeRight" ?: [NSNull null], @"Next",
+                        @"1SwipeUp" ?: [NSNull null], @"VolumeUp",
+                        @"1SwipeDown" ?: [NSNull null], @"VolumeDown",
+                        @"11Tap" ?: [NSNull null], @"PlayPause",
+                        @"12Tap" ?: [NSNull null], @"Unassigned",
+                        @"13Tap" ?: [NSNull null], @"Unassigned",
+                        @"14Tap" ?: [NSNull null], @"Menu",
+                        @"1LongPress" ?: [NSNull null], @"Menu",
+                        @"2SwipeLeft" ?: [NSNull null], @"Rewind",
+                        @"2SwipeRight" ?: [NSNull null], @"FastForward",
+                        @"2SwipeUp" ?: [NSNull null], @"Unassigned",
+                        @"2SwipeDown" ?: [NSNull null], @"Unassigned",
+                        @"21Tap" ?: [NSNull null], @"PlayPause",
+                        @"22Tap" ?: [NSNull null], @"Unassigned",
+                        @"23Tap" ?: [NSNull null], @"Unassigned",
+                        @"24Tap" ?: [NSNull null], @"Unassigned",
+                        @"2LongPress" ?: [NSNull null], @"Unassigned",
+                        @"3SwipeLeft" ?: [NSNull null], @"Unassigned",
+                        @"3SwipeRight" ?: [NSNull null], @"Unassigned",
+                        @"3SwipeUp" ?: [NSNull null], @"Unassigned",
+                        @"3SwipeDown" ?: [NSNull null], @"Unassigned",
+                        @"31Tap" ?: [NSNull null], @"Unassigned",
+                        @"32Tap" ?: [NSNull null], @"Unassigned",
+                        @"33Tap" ?: [NSNull null], @"Unassigned",
+                        @"34Tap" ?: [NSNull null], @"Unassigned",
+                        @"3LongPress" ?: [NSNull null], @"Unassigned",
+                        nil];
      return self;
 }
+
+
 @end
