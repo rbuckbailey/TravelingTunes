@@ -11,6 +11,7 @@
 #import "settingsTableViewController.h"
 
 
+
 MPMusicPlayerController*        mediaPlayer;
 //may want to switch this to mediaplayer protocol which has built-in "current time" property
 //MPMediaPlayback*        mediaPlayer;
@@ -46,7 +47,7 @@ MPMusicPlayerController*        mediaPlayer;
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
 
-/*
+
 
 -(void)singleTap{
     _songTitle.text = @"Single Tap Detected";
@@ -87,7 +88,7 @@ MPMusicPlayerController*        mediaPlayer;
         [self performSelector:@selector(quadrupleTap) withObject:nil afterDelay:delay ];
     }
 }
-*/
+
 - (IBAction)pinchDetected:(id)sender {
     CGFloat scale = [(UIPinchGestureRecognizer *)sender scale];
     CGFloat velocity = [(UIPinchGestureRecognizer *)sender velocity];

@@ -23,6 +23,7 @@
 		8E3C8D00189BF785004A90AE /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8E3C8CFE189BF785004A90AE /* InfoPlist.strings */; };
 		8E3C8D02189BF785004A90AE /* Traveling_TunesTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E3C8D01189BF785004A90AE /* Traveling_TunesTests.m */; };
 		8E4312DB18CE316B0037688F /* gestureAssignmentController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E4312DA18CE316B0037688F /* gestureAssignmentController.m */; };
+		F4B5605B18DD10F00065DCDD /* playlistTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B5605A18DD10F00065DCDD /* playlistTableViewController.m */; };
 		F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8118D3E54D0083641B /* settingsTableViewController.m */; };
 		F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */; };
 /* End PBXBuildFile section */
@@ -60,6 +61,8 @@
 		8E3C8D01189BF785004A90AE /* Traveling_TunesTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Traveling_TunesTests.m; sourceTree = "<group>"; };
 		8E4312D918CE312E0037688F /* gestureAssignmentController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gestureAssignmentController.h; sourceTree = "<group>"; };
 		8E4312DA18CE316B0037688F /* gestureAssignmentController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = gestureAssignmentController.m; sourceTree = "<group>"; };
+		F4B5605918DD10F00065DCDD /* playlistTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playlistTableViewController.h; sourceTree = "<group>"; };
+		F4B5605A18DD10F00065DCDD /* playlistTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = playlistTableViewController.m; sourceTree = "<group>"; };
 		F4F25E8018D3E54D0083641B /* settingsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewController.h; sourceTree = "<group>"; };
 		F4F25E8118D3E54D0083641B /* settingsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settingsTableViewController.m; sourceTree = "<group>"; };
 		F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewCell.h; sourceTree = "<group>"; };
@@ -174,6 +177,8 @@
 				F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */,
 				F4F25E8018D3E54D0083641B /* settingsTableViewController.h */,
 				F4F25E8118D3E54D0083641B /* settingsTableViewController.m */,
+				F4B5605918DD10F00065DCDD /* playlistTableViewController.h */,
+				F4B5605A18DD10F00065DCDD /* playlistTableViewController.m */,
 			);
 			name = "Settings Views";
 			sourceTree = "<group>";
@@ -282,6 +287,7 @@
 				8E3C8CE0189BF785004A90AE /* main.m in Sources */,
 				F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */,
 				F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */,
+				F4B5605B18DD10F00065DCDD /* playlistTableViewController.m in Sources */,
 				8E3C8CE4189BF785004A90AE /* ttunesAppDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

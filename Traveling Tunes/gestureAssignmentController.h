@@ -21,7 +21,8 @@
 #define FASTFORWARD     9
 #define VOLUMEUP        10
 #define VOLUMEDOWN      11
-#define PLAYALLBEATLES  12
+#define SONGPICKER      12
+#define PLAYALLBEATLES  42
 /*
  consider:  PLAYALLSHUFFLE
             PLAYSHUFFLEDALBUMS
