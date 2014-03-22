@@ -28,7 +28,6 @@
  consider:  PLAYALLSHUFFLE
             PLAYSHUFFLEDALBUMS
             PLAYARTISTSHUFFLED ... ARTISTSHUFFLEDBYALBUM
-            RESTARTSONG (no skip back)
             GENIUSPLAYLIST
             RATESONG ?
             SHARE/TWEET/FB SONG ?
@@ -46,6 +45,8 @@
 @property (atomic) int swipeRight;
 @property (atomic) int swipeUp;
 @property (atomic) int swipeDown;
+
+@property (retain) NSMutableDictionary* assignments;
 
 @end
 

@@ -39,31 +39,37 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
-        gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-        int temp = [assignments longPress];
-        [self selectActionFromString:temp:@"longPress"];
+        gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+        NSMutableDictionary *assignments = [gestureController assignments];
+        [self selectActionFromString:[assignments objectForKey:@"1LongPress"]:@"1LongPress"];
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
 
 -(void)singleTap{
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments singleTap];
-    [self selectActionFromString:temp:@"singleTap"];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSLog(@"is %@ and %i",[gestureController.assignments objectForKey:@"11Tap"],gestureController.singleTap);
+    
+    // works hard-coded as NSString but not from dictionary pull
+    // dictionary is initializing nil
+    
+    [self selectActionFromString:@"PlayPause":@"11Tap"];
+//    [self selectActionFromString:[assignments objectForKey:@"11Tap"]:@"11Tap"];
 }
 -(void)doubleTap{
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments doubleTap];
-    [self selectActionFromString:temp:@"doubleTap"];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *assignments = [gestureController assignments];
+    NSLog([assignments objectForKey:@"12Tap"]);
+    [self selectActionFromString:[assignments objectForKey:@"12Tap"]:@"12Tap"];
 }
 -(void)tripleTap{
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments tripleTap];
-    [self selectActionFromString:temp:@"tripleTap"];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *assignments = [gestureController assignments];
+    [self selectActionFromString:[assignments objectForKey:@"13Tap"]:@"13Tap"];
 }
 -(void)quadrupleTap{
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments quadrupleTap];
-    [self selectActionFromString:temp:@"quadrupleTap"];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *assignments = [gestureController assignments];
+    [self selectActionFromString:[assignments objectForKey:@"14Tap"]:@"14Tap"];
 }
 
 
@@ -91,7 +97,7 @@ MPMusicPlayerController*        mediaPlayer;
         [self performSelector:@selector(quadrupleTap) withObject:nil afterDelay:delay ];
     }
 }
-
+/*
 - (IBAction)pinchDetected:(id)sender {
     CGFloat scale = [(UIPinchGestureRecognizer *)sender scale];
     CGFloat velocity = [(UIPinchGestureRecognizer *)sender velocity];
@@ -131,19 +137,21 @@ MPMusicPlayerController*        mediaPlayer;
     gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
     int temp = [assignments swipeUp];
     [self selectActionFromString:temp:@"swipeUp"];
-}
+}*/
 
 - (IBAction)swipeDownDetected:(id)sender {
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments swipeDown];
-    [self selectActionFromString:temp:@"swipeDown"];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *assignments = [gestureController assignments];
+    [self selectActionFromString:[assignments objectForKey:@"1SwipeDown"]:@"swipeDown"];
 }
 
 
-- (void)selectActionFromString:(int)action :(NSString*)sender {
+- (void)selectActionFromString:(NSString *)action :(NSString*)sender {
 //    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"mainStoryboard" bundle:nil];
 //    settingsTableViewController *viewController = (settingsTableViewController *) [storyboard instantiateViewControllerWithIdentifier:@"settingsTable"];
-    switch (action) {
+    NSLog(action);
+    if ([action isEqual:@"PlayPause"]) _songTitle.text = @"playPause";
+/*    switch (action) {
         case UNASSIGNED: _songTitle.text = [NSString stringWithFormat:@"%@ sent unassigned command",sender]; break;
         case PLAY: _songTitle.text = @"play"; break;
         case PAUSE: _songTitle.text = @"Pause"; break;
@@ -170,7 +178,7 @@ MPMusicPlayerController*        mediaPlayer;
             //Start playing and set a label text to the name and image to the cover art of the song that is playing
             [mediaPlayer play];
             _songTitle.text = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]; break;
-    }
+    }*/
 }
 
 

@@ -86,9 +86,9 @@
 }
 */
 
--(void) configure:(NSString *)fingers :(NSString *)gesture :(int)action
+-(void) configure:(NSString *)action
 {
-    NSLog(@"Configuring %@ fingers %@ to action %i",fingers,gesture,action);
+    NSLog(@"Configuring %@ fingers %@ to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],action);
 }
 
 //(void)selectActionFromString:(int)action :(NSString*)sender {
@@ -96,18 +96,18 @@
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
-    if (selection == _Nothing) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:UNASSIGNED];
-    else if (selection == _Play) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PLAY];
-    else if (selection == _Pause) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PAUSE];
-    else if (selection == _PlayPause) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PLAYPAUSE];
-    else if (selection == _FastForward) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:FASTFORWARD];
-    else if (selection == _Rewind) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:REWIND];
-    else if (selection == _Next) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:NEXTSONG];
-    else if (selection == _Previous) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PREVIOUSSONG];
-    else if (selection == _Restart) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:RESTART];
-    else if (selection == _RestartPrevious) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PREVIOUSRESTART];
-    else if (selection == _SongPicker) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:SONGPICKER];
-    else if (selection == _Menu) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:MENU];
+    if (selection == _Nothing) [self configure:@"Unassigned"];
+    else if (selection == _Play) [self configure:@"Play"];
+    else if (selection == _Pause) [self configure:@"Pause"];
+    else if (selection == _PlayPause) [self configure:@"PlayPause"];
+    else if (selection == _FastForward) [self configure:@"FastForward"];
+    else if (selection == _Rewind) [self configure:@"Rewind"];
+    else if (selection == _Next) [self configure:@"Next"];
+    else if (selection == _Previous) [self configure:@"Previous"];
+    else if (selection == _Restart) [self configure:@"Restart"];
+    else if (selection == _RestartPrevious) [self configure:@"RestartPrevious"];
+    else if (selection == _SongPicker) [self configure:@"SongPicker"];
+    else if (selection == _Menu) [self configure:@"Menu"];
     
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
