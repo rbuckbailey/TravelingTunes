@@ -29,18 +29,6 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-
-    _topLevel = @[@"Controls",@"Display",@"Launch/Quit Options",@"Playlists"];
-    _controls = @[@"1 Finger Gestures",@"2 Finger Gestures", @"3 Finger Gestures",@"Swipe Sensitivity",@"Volume Sensitivity"];
-    _display = @[@"Auto Lock/Dim Settings",@"Song Headers",@"Rotation Styles",@"Layout Styles"];
-    _launchquit = @[@"Play on Launch",@"Pause on Quit"];
-    _playlists = @[@"Default Playlist",@"Shuffle Mode",@"Repeat Mode"];
-    
-    // Uncomment the following line to preserve selection between presentations.
-    // self.clearsSelectionOnViewWillAppear = NO;
-    
-    // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-    // self.navigationItem.rightBarButtonItem = self.editButtonItem;
 }
 
 
@@ -60,23 +48,9 @@
 }
 
 - (IBAction)controlButtonTap:(id)sender {
-    switch (_menuLevel) {
-        case MENU_TOPLEVEL: _menuLevel = MENU_CONTROLS; break;
-        case MENU_CONTROLS: _menuLevel = MENU_DISPLAY; break;
-        case MENU_DISPLAY: _menuLevel = MENU_TOPLEVEL; break;
-    }
+
     [self performSegueWithIdentifier: @"nextSettings" sender: self];
 
-//     [self performSegueWithIdentifier:@"settingsControls" sender:self];
-/*
-     UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:@"settingsTable"
-     bundle: nil];
-     // Imagine it's called MyCustomTableVC
-     settingsTableViewController *newVC = (settingsTableViewController*)[mainStoryboard
-     instantiateViewControllerWithIdentifier: @"settingsTableViewController"];
-     newVC.menuLevel = MENU_CONTROLS; //[self.model objectAtIndex:indexPath.row];
-     [self.navigationController pushViewController:newVC animated:YES];
-*/
 }
 
 /*
@@ -125,13 +99,6 @@
 {
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
-    if ([[segue identifier] isEqualToString:@"SwipeUp"]) {
-        
-        //Destination *detailViewController = [segue destinationViewController];
-        
-        //detailViewController.infoRequest = @"SwipeUp";
-        NSLog(@"SwipeUp");
-    }
     if ([[segue identifier] isEqualToString:@"SwipeUp"]) {
         
         //Destination *detailViewController = [segue destinationViewController];

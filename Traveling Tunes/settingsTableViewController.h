@@ -9,12 +9,6 @@
 #import <UIKit/UIKit.h>
 #import "settingsTableViewCell.h"
 
-#define MENU_TOPLEVEL   0
-#define MENU_CONTROLS   1
-#define MENU_DISPLAY    2
-#define MENU_LAUNCHQUIT 3
-#define MENU_PLAYLISTS  4
-
 @interface settingsTableViewController : UITableViewController
 
 @end
