@@ -17,11 +17,12 @@
 #define NEXTSONG        5
 #define PREVIOUSSONG    6
 #define PREVIOUSRESTART 7
-#define REWIND          8
-#define FASTFORWARD     9
-#define VOLUMEUP        10
-#define VOLUMEDOWN      11
-#define SONGPICKER      12
+#define RESTART         8
+#define REWIND          9
+#define FASTFORWARD     10
+#define VOLUMEUP        11
+#define VOLUMEDOWN      12
+#define SONGPICKER      13
 #define PLAYALLBEATLES  42
 /*
  consider:  PLAYALLSHUFFLE

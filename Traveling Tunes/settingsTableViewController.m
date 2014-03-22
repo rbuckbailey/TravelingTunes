@@ -8,6 +8,7 @@
 
 #import "settingsTableViewController.h"
 #import "settingsTableViewCell.h"
+#import "gestureAssignmentController.h"
 
 @interface settingsTableViewController ()
 @end
@@ -85,11 +86,28 @@
 }
 */
 
+-(void) configure:(NSString *)fingers :(NSString *)gesture :(int)action
+{
+    NSLog(@"Configuring %@ fingers %@ to action %i",fingers,gesture,action);
+}
+
+//(void)selectActionFromString:(int)action :(NSString*)sender {
+     
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
-    NSLog(@"Selected %@",cell.textLabel.text);
-    NSLog(@"tag %i",cell.tag);
+    UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
+    if (selection == _Nothing) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:UNASSIGNED];
+    else if (selection == _Play) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PLAY];
+    else if (selection == _Pause) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PAUSE];
+    else if (selection == _PlayPause) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PLAYPAUSE];
+    else if (selection == _FastForward) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:FASTFORWARD];
+    else if (selection == _Rewind) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:REWIND];
+    else if (selection == _Next) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:NEXTSONG];
+    else if (selection == _Previous) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PREVIOUSSONG];
+    else if (selection == _Restart) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:RESTART];
+    else if (selection == _RestartPrevious) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:PREVIOUSRESTART];
+    else if (selection == _SongPicker) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:SONGPICKER];
+    else if (selection == _Menu) [self configure:[_passthrough objectForKey:@"Fingers"]:[_passthrough objectForKey:@"Gesture"]:MENU];
     
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
@@ -102,9 +120,8 @@
     // Get the new view controller using [segue destinationViewController].
     settingsTableViewController *destination = [segue destinationViewController];
 
-    // set up data to pass through based on segue identifier
+    // set up passthrough for subsequent view controller
     NSMutableDictionary *passthrough = [NSMutableDictionary dictionary];
-    //this is hard coded but should work based on segue identifier
 
     //preserve data from higher menus in passthrough dictionary
     if ([_passthrough objectForKey:@"Fingers"]!=nil) [passthrough setObject: [_passthrough objectForKey:@"Fingers"] forKey: @"Fingers"];
@@ -112,19 +129,19 @@
     
     // if finger menu segue, set Fingers key
     if ([[segue identifier] isEqual:@"1FingerMenu"]) [passthrough setObject: @"1" forKey: @"Fingers"];
-    if ([[segue identifier] isEqual:@"2FingerMenu"]) [passthrough setObject: @"2" forKey: @"Fingers"];
-    if ([[segue identifier] isEqual:@"3FingerMenu"]) [passthrough setObject: @"3" forKey: @"Fingers"];
+    else if ([[segue identifier] isEqual:@"2FingerMenu"]) [passthrough setObject: @"2" forKey: @"Fingers"];
+    else if ([[segue identifier] isEqual:@"3FingerMenu"]) [passthrough setObject: @"3" forKey: @"Fingers"];
 
     // if Gesture menu selection, set Gesture key
     if ([[segue identifier] isEqual:@"SwipeUp"]) [passthrough setObject: @"SwipeUp" forKey: @"Gesture"];
-    if ([[segue identifier] isEqual:@"SwipeDown"]) [passthrough setObject: @"SwipeDown" forKey: @"Gesture"];
-    if ([[segue identifier] isEqual:@"SwipeLeft"]) [passthrough setObject: @"SwipeLeft" forKey: @"Gesture"];
-    if ([[segue identifier] isEqual:@"SwipeRight"]) [passthrough setObject: @"SwipeRight" forKey: @"Gesture"];
-    if ([[segue identifier] isEqual:@"1Tap"]) [passthrough setObject: @"1Tap" forKey: @"Gesture"];
-    if ([[segue identifier] isEqual:@"2Tap"]) [passthrough setObject: @"2Tap" forKey: @"Gesture"];
-    if ([[segue identifier] isEqual:@"3Tap"]) [passthrough setObject: @"3Tap" forKey: @"Gesture"];
-    if ([[segue identifier] isEqual:@"4Tap"]) [passthrough setObject: @"4Tap" forKey: @"Gesture"];
-    if ([[segue identifier] isEqual:@"LongPress"]) [passthrough setObject: @"LongPress" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"SwipeDown"]) [passthrough setObject: @"SwipeDown" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"SwipeLeft"]) [passthrough setObject: @"SwipeLeft" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"SwipeRight"]) [passthrough setObject: @"SwipeRight" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"1Tap"]) [passthrough setObject: @"1Tap" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"2Tap"]) [passthrough setObject: @"2Tap" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"3Tap"]) [passthrough setObject: @"3Tap" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"4Tap"]) [passthrough setObject: @"4Tap" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"LongPress"]) [passthrough setObject: @"LongPress" forKey: @"Gesture"];
 
     // Pass the selected object to the new view controller and log.
     destination.passthrough = passthrough;
