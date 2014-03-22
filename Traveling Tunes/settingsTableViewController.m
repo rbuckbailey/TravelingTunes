@@ -22,6 +22,7 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    NSLog(@"%@",_passthrough);
 }
 
 
@@ -30,6 +31,11 @@
     self = [super initWithStyle:style];
     if (self) {
         // Custom initialization
+/*
+    [_passthrough setObject:@"x" forKey:@"Fingers"];
+    [_passthrough setObject:@"x" forKey:@"Gesture"];
+ */
+        
     }
     return self;
 }
@@ -99,10 +105,35 @@
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-        //Destination *detailViewController = [segue destinationViewController];
-        //detailViewController.infoRequest = @"SwipeUp";
-      NSLog([segue identifier]);
+    settingsTableViewController *destination = [segue destinationViewController];
+
+    // set up data to pass through based on segue identifier
+    NSMutableDictionary *passthrough = [NSMutableDictionary dictionary];
+    //this is hard coded but should work based on segue identifier
+
+    //preserve data from higher menus in passthrough dictionary
+    if ([_passthrough objectForKey:@"Fingers"]!=nil) [passthrough setObject: [_passthrough objectForKey:@"Fingers"] forKey: @"Fingers"];
+    if ([_passthrough objectForKey:@"Gesture"]!=nil) [passthrough setObject: [_passthrough objectForKey:@"Gesture"] forKey: @"Gesture"];
+    
+    // if finger menu segue, set Fingers key
+    if ([[segue identifier] isEqual:@"1FingerMenu"]) [passthrough setObject: @"1" forKey: @"Fingers"];
+    if ([[segue identifier] isEqual:@"2FingerMenu"]) [passthrough setObject: @"2" forKey: @"Fingers"];
+    if ([[segue identifier] isEqual:@"3FingerMenu"]) [passthrough setObject: @"3" forKey: @"Fingers"];
+
+    // if Gesture menu selection, set Gesture key
+    if ([[segue identifier] isEqual:@"SwipeUp"]) [passthrough setObject: @"SwipeUp" forKey: @"Gesture"];
+    if ([[segue identifier] isEqual:@"SwipeDown"]) [passthrough setObject: @"SwipeDown" forKey: @"Gesture"];
+    if ([[segue identifier] isEqual:@"SwipeLeft"]) [passthrough setObject: @"SwipeLeft" forKey: @"Gesture"];
+    if ([[segue identifier] isEqual:@"SwipeRight"]) [passthrough setObject: @"SwipeRight" forKey: @"Gesture"];
+    if ([[segue identifier] isEqual:@"1Tap"]) [passthrough setObject: @"1Tap" forKey: @"Gesture"];
+    if ([[segue identifier] isEqual:@"2Tap"]) [passthrough setObject: @"2Tap" forKey: @"Gesture"];
+    if ([[segue identifier] isEqual:@"3Tap"]) [passthrough setObject: @"3Tap" forKey: @"Gesture"];
+    if ([[segue identifier] isEqual:@"4Tap"]) [passthrough setObject: @"4Tap" forKey: @"Gesture"];
+    if ([[segue identifier] isEqual:@"LongPress"]) [passthrough setObject: @"LongPress" forKey: @"Gesture"];
+
+    // Pass the selected object to the new view controller and log.
+    destination.passthrough = passthrough;
+    //NSLog(@"Sending %@ to destination view.",[segue identifier]);
 }
 
 

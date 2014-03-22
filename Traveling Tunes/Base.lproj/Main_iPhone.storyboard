@@ -1223,7 +1223,7 @@
                             </tableViewSection>
                         </sections>
                         <connections>
-                            <outlet property="dataSource" destination="TYz-Hb-1pf" id="wdI-Vl-uRZ"/>
+                            <outlet property="dataSource" destination="TYz-Hb-1pf" id="8qf-gE-s8z"/>
                             <outlet property="delegate" destination="TYz-Hb-1pf" id="GVl-1G-q6Y"/>
                         </connections>
                     </tableView>

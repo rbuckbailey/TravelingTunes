@@ -10,5 +10,5 @@
 #import "settingsTableViewCell.h"
 
 @interface settingsTableViewController : UITableViewController
-
+@property NSMutableDictionary *passthrough;
 @end

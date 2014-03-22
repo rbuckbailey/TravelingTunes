@@ -51,7 +51,6 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void)singleTap{
     _songTitle.text = @"Single Tap Detected";
-        [self.navigationController setNavigationBarHidden:YES];
 }
 -(void)doubleTap{
     _songTitle.text=@"Double Tap Detected";
