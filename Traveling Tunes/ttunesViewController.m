@@ -105,6 +105,7 @@ MPMusicPlayerController*        mediaPlayer;
                               radians, velocity];
     _songTitle.text = resultString;
 }
+ */
 
 - (IBAction)panDetected:(id)sender {
 //    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
@@ -112,22 +113,22 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (IBAction)swipeLeftDetected:(id)sender {
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments swipeLeft];
-    [self performPlayerAction:temp:@"swipeLeft"];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *assignments = [gestureController assignments];
+    [self performPlayerAction:[assignments objectForKey:@"1SwipeLeft"]:@"swipeLeft"];
 }
 
 - (IBAction)swipeRight:(id)sender {
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments swipeRight];
-    [self performPlayerAction:temp:@"swipeRight"];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *assignments = [gestureController assignments];
+    [self performPlayerAction:[assignments objectForKey:@"1SwipRight"]:@"swipeRight"];
 }
 
 - (IBAction)swipeUpDetected:(id)sender {
-    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    int temp = [assignments swipeUp];
-    [self performPlayerAction:temp:@"swipeUp"];
-}*/
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *assignments = [gestureController assignments];
+    [self performPlayerAction:[assignments objectForKey:@"1SwipeUp"]:@"swipeUp"];
+}
 
 - (IBAction)swipeDownDetected:(id)sender {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];

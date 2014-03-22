@@ -162,6 +162,10 @@
     else if ([[segue identifier] isEqual:@"4Tap"]) [passthrough setObject: @"4Tap" forKey: @"Gesture"];
     else if ([[segue identifier] isEqual:@"LongPress"]) [passthrough setObject: @"LongPress" forKey: @"Gesture"];
 
+    // if a segue is not coded here you get a crash on this passthrough. so if we don't need to pass data, fill in "X"
+    if ([[segue identifier] isEqual:@"quickStartGuide"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
+
+    
     // Pass the selected object to the new view controller and log.
     destination.passthrough = passthrough;
 }
