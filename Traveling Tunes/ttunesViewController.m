@@ -157,16 +157,52 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupLabels];
 }
 
+- (void)fitLongTitle {
+    NSString *text = @"This is a long sentence. Wonder how much space is needed?";
+    CGFloat width = 100;
+    CGFloat height = 100;
+    bool sizeFound = false;
+    while (!sizeFound) {
+        NSLog(@"Begin loop");
+        CGFloat fontSize = 14;
+        CGFloat previousSize = 0.0;
+        CGFloat currSize = 0.0;
+        for (float fSize = fontSize; fSize < fontSize+6; fSize++) {
+            CGRect r = [text boundingRectWithSize:CGSizeMake(width, height)
+                                          options:NSStringDrawingUsesLineFragmentOrigin
+                                       attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:fSize]}
+                                          context:nil];
+            currSize =r.size.width*r.size.height;
+            if (previousSize >= currSize) {
+                width = width*11/10;
+                height = height*11/10;
+                fSize = fontSize+10;
+            }
+            else {
+                previousSize = currSize;
+            }
+            NSLog(@"fontSize = %f\tbounds = (%f x %f) = %f",
+                  fSize,
+                  r.size.width,
+                  r.size.height,r.size.width*r.size.height);
+        }
+        if (previousSize == currSize) {
+            sizeFound = true;
+        }
+        
+    }
+    NSLog(@"Size found with width %f and height %f", width, height);
+}
+
 - (void)setupLabels {
-//    _songTitle.text = [UIFont systemFontOfSize:25];
+    //maybe this should dynamically change height to match font size? vertically centered so far. meh.
     _artistTitle.font   = [UIFont systemFontOfSize:50];
     _songTitle.font     = [UIFont systemFontOfSize:60];
     _albumTitle.font    = [UIFont systemFontOfSize:50];
     
     _artistTitle.text   = @"Artist Test This is a long string where does it cut off";
     _songTitle.text   = @"Song Test This is a long string where does it cut off";
-    _albumTitle.text    = @"Album Test This is a long string where does it cut off";
-
+    _albumTitle.text    = @"Album Test This is a long string where does it cut off";    
 }
 
 - (void)beatlesParty {
