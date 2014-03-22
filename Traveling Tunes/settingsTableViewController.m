@@ -96,11 +96,7 @@
     [assignments setObject:action forKey: fullGesture];
    
     // save the dictionary
-    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentDirPath = [path objectAtIndex:0];
-    NSString *fileName = @"settings.plist";
-    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
-    [assignments writeToFile:fileAndPath atomically:YES];
+    [gestureController saveGestureAssignments];
     
     NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
 }
