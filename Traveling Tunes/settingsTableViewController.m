@@ -31,11 +31,6 @@
     self = [super initWithStyle:style];
     if (self) {
         // Custom initialization
-/*
-    [_passthrough setObject:@"x" forKey:@"Fingers"];
-    [_passthrough setObject:@"x" forKey:@"Gesture"];
- */
-        
     }
     return self;
 }

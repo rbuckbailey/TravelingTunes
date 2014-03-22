@@ -40,6 +40,7 @@
 @property (atomic) int doubleTap;
 @property (atomic) int longPress;
 @property (atomic) int tripleTap;
+@property (atomic) int quadrupleTap;
 @property (atomic) int swipeLeft;
 @property (atomic) int swipeRight;
 @property (atomic) int swipeUp;

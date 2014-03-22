@@ -33,11 +33,9 @@ MPMusicPlayerController*        mediaPlayer;
     [self.navigationController setNavigationBarHidden:YES];
 }
 
-
 - (IBAction)twoFingerTap:(id)sender {
     _songTitle.text=@"Two Fingers Detected";
 }
-
 
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
@@ -47,19 +45,25 @@ MPMusicPlayerController*        mediaPlayer;
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
 
-
-
 -(void)singleTap{
-    _songTitle.text = @"Single Tap Detected";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    int temp = [assignments singleTap];
+    [self selectActionFromString:temp:@"singleTap"];
 }
 -(void)doubleTap{
-    _songTitle.text=@"Double Tap Detected";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    int temp = [assignments doubleTap];
+    [self selectActionFromString:temp:@"doubleTap"];
 }
 -(void)tripleTap{
-    _songTitle.text=@"Triple Tap Detected";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    int temp = [assignments tripleTap];
+    [self selectActionFromString:temp:@"tripleTap"];
 }
 -(void)quadrupleTap{
-    _songTitle.text=@"Quadruple Tap Detected";
+    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    int temp = [assignments quadrupleTap];
+    [self selectActionFromString:temp:@"quadrupleTap"];
 }
 
 

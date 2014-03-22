@@ -13,14 +13,15 @@
 @implementation gestureAssignmentController
 
 - (id)init {
-    _singleTap  = PLAYPAUSE;
-    _longPress  = MENU;
-    _doubleTap  = UNASSIGNED;
-    _tripleTap  = UNASSIGNED;
-    _swipeLeft  = PREVIOUSRESTART;
-    _swipeRight = NEXTSONG;
-    _swipeUp    = VOLUMEUP;
-    _swipeDown  = VOLUMEDOWN;
+    _swipeLeft      = PREVIOUSRESTART;
+    _swipeRight     = NEXTSONG;
+    _swipeUp        = VOLUMEUP;
+    _swipeDown      = VOLUMEDOWN;
+    _singleTap      = PLAYPAUSE;
+    _doubleTap      = MENU;
+    _tripleTap      = UNASSIGNED;
+    _quadrupleTap   = UNASSIGNED;
+    _longPress      = MENU;
     return self;
 }
 @end
