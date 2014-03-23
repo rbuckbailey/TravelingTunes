@@ -168,7 +168,7 @@
 
     
     // Pass the selected object to the new view controller and log.
-    destination.passthrough = passthrough;
+    if ([[segue identifier] isEqual:@"quickStartGuide"]) { } else destination.passthrough = passthrough;
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
