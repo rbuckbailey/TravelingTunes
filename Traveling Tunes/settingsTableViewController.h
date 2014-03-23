@@ -26,6 +26,13 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *VolumeDown;
 @property (weak, nonatomic) IBOutlet settingsTableViewCell *ResetGestureAssignments;
 
+- (IBAction)artistFontSizeSliderChanged:(id)sender;
+
+@property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;
+
+@property (weak, nonatomic) IBOutlet UISlider *artistFontSize;
+@property (weak, nonatomic) IBOutlet UISlider *songFontSize;
+@property (weak, nonatomic) IBOutlet UISlider *albumFontSize;
 
 @property NSMutableDictionary *passthrough;
 @end

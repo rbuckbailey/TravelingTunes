@@ -18,6 +18,13 @@
      return self;
 }
 
+- (void)initDisplaySettings {
+    self.displaySettings = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+                            @"50",@"artistFontSize",
+                            @"60",@"songFontSize",
+                            @"50",@"albumFontSize",
+                            nil];
+}
 
 - (void)resetAssignments {
      // this configures array to defaults.

@@ -10,6 +10,7 @@
 #import "settingsTableViewCell.h"
 #import "gestureAssignmentController.h"
 
+
 @interface settingsTableViewController ()
 @end
 
@@ -188,4 +189,10 @@
 }
 
 
+- (IBAction)artistFontSizeSliderChanged:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSMutableDictionary *gc = [gestureController displaySettings];
+    [gc setObject:@"50" forKey:@"artistFontSize"];
+    //= [UIFont systemFontOfSize:50];
+}
 @end

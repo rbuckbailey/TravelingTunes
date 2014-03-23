@@ -733,13 +733,23 @@
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="dB7-KM-8Au">
+                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="50" minValue="9" maxValue="150" translatesAutoresizingMaskIntoConstraints="NO" id="dB7-KM-8Au">
                                                     <rect key="frame" x="113" y="7" width="189" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="185" id="2wa-2E-y3a"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="artistFontSizeSliderChanged:" destination="yrz-qX-Lw2" eventType="valueChanged" id="zPm-8b-gSA"/>
+                                                    </connections>
                                                 </slider>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="50" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8AF-pk-ZkF">
+                                                    <rect key="frame" x="60" y="11" width="42" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
                                             </subviews>
                                             <constraints>
                                                 <constraint firstItem="dB7-KM-8Au" firstAttribute="top" secondItem="xkr-UR-ehG" secondAttribute="top" constant="7" id="P8e-vQ-VDK"/>
@@ -831,7 +841,7 @@
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="QVS-QE-yPm">
+                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="60" minValue="9" maxValue="150" translatesAutoresizingMaskIntoConstraints="NO" id="QVS-QE-yPm">
                                                     <rect key="frame" x="113" y="7" width="189" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
@@ -929,7 +939,7 @@
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="ass-N3-KOp">
+                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="50" minValue="9" maxValue="150" translatesAutoresizingMaskIntoConstraints="NO" id="ass-N3-KOp">
                                                     <rect key="frame" x="113" y="7" width="189" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
@@ -971,6 +981,12 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" id="mOd-ol-Lmx"/>
+                    <connections>
+                        <outlet property="albumFontSize" destination="ass-N3-KOp" id="Y0W-PI-LDK"/>
+                        <outlet property="artistFontSize" destination="dB7-KM-8Au" id="Yy8-xt-YYj"/>
+                        <outlet property="artistFontSizeLabel" destination="8AF-pk-ZkF" id="g7r-kd-WLn"/>
+                        <outlet property="songFontSize" destination="QVS-QE-yPm" id="DHk-2g-kyg"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="wuA-EJ-HUu" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>

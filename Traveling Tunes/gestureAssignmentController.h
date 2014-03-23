@@ -12,9 +12,11 @@
 @interface gestureAssignmentController : NSObject
 
 @property (retain) NSMutableDictionary* assignments;
+@property (retain) NSMutableDictionary* displaySettings;
 
 - (void)resetAssignments;
 - (void)saveGestureAssignments;
+- (void)initDisplaySettings;
 
 @end
 
