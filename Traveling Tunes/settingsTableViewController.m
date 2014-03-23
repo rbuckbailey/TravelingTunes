@@ -24,6 +24,12 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    //set up sliders and labels and such in here
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"artistFontSize"]];
+//    _artistFontSize.value = [[gestureController displaySettings] objectForKey:@"artistFontSize"];
+    NSNumber *temp=[[gestureController displaySettings] objectForKey:@"artistFontSize"];
+    _artistFontSize.value = [temp floatValue]; //[[gestureController displaySettings] objectForKey:@"artistFontSize"]];
 }
 
 
