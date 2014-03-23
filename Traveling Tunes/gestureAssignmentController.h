@@ -9,30 +9,6 @@
 #ifndef Traveling_Tunes_gestureAssignmentController_h
 #define Traveling_Tunes_gestureAssignmentController_h
 
-#define UNASSIGNED      0
-#define MENU            1
-#define PLAY            2
-#define PAUSE           3
-#define PLAYPAUSE       4
-#define NEXTSONG        5
-#define PREVIOUSSONG    6
-#define PREVIOUSRESTART 7
-#define REWIND          8
-#define FASTFORWARD     9
-#define VOLUMEUP        10
-#define VOLUMEDOWN      11
-#define PLAYALLBEATLES  12
-/*
- consider:  PLAYALLSHUFFLE
-            PLAYSHUFFLEDALBUMS
-            PLAYARTISTSHUFFLED ... ARTISTSHUFFLEDBYALBUM
-            RESTARTSONG (no skip back)
-            GENIUSPLAYLIST
-            RATESONG ?
-            SHARE/TWEET/FB SONG ?
-            SKIP FORWARD/BACK 5, 10, 20 SECONDS
- */
-
 @interface gestureAssignmentController : NSObject
 
 @property (atomic) int singleTap;

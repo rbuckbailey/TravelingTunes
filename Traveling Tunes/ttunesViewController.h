@@ -12,11 +12,13 @@
 
 
 @interface ttunesViewController : UIViewController
-@property (strong, nonatomic) IBOutlet UILabel *songTitle;
-- (void)selectActionFromString:(int)action :(NSString*)sender;
+@property (weak, nonatomic) IBOutlet UILabel *artistTitle;
+@property (weak, nonatomic) IBOutlet UILabel *songTitle;
+@property (weak, nonatomic) IBOutlet UILabel *albumTitle;
+
+
+
 - (IBAction)singleTapDetected:(id)sender;
-- (IBAction)doubleTapDetected:(id)sender;
-- (IBAction)tripleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;
 - (IBAction)pinchDetected:(id)sender;
 - (IBAction)rotationDetected:(id)sender;
