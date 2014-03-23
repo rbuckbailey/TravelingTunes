@@ -26,12 +26,17 @@
     [super viewDidLoad];
 
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"artistFontSize"]];
-    NSNumber *temp=[[gestureController displaySettings] objectForKey:@"artistFontSize"];
-    _artistFontSizeSlider.value = (int)[temp floatValue];
 
-    temp=[[gestureController displaySettings] objectForKey:@"artistAlignment"];
-    _artistAlignmentControl.selectedSegmentIndex = (int)[temp floatValue];
+    // initialize labels and controls for Display Settings view
+    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"artistFontSize"]];
+    _artistFontSizeSlider.value = (int)[[[gestureController displaySettings] objectForKey:@"artistFontSize"] floatValue];
+    _artistAlignmentControl.selectedSegmentIndex = (int)[[[gestureController displaySettings] objectForKey:@"artistAlignment"] floatValue];
+    _songFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"songFontSize"]];
+    _songFontSizeSlider.value = (int)[[[gestureController displaySettings] objectForKey:@"songFontSize"] floatValue];
+    _songAlignmentControl.selectedSegmentIndex = (int)[[[gestureController displaySettings] objectForKey:@"songAlignment"] floatValue];
+    _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"albumFontSize"]];
+    _albumFontSizeSlider.value = (int)[[[gestureController displaySettings] objectForKey:@"albumFontSize"] floatValue];
+    _albumAlignmentControl.selectedSegmentIndex = (int)[[[gestureController displaySettings] objectForKey:@"albumAlignment"] floatValue];
 
 }
 
@@ -186,7 +191,7 @@
     if(buttonIndex==0)
     {
         gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-        [gestureController resetAssignments];
+        [gestureController initGestureAssignments];
         [gestureController saveGestureAssignments];
     }
     
@@ -198,14 +203,6 @@
 }
 
 
-- (IBAction)artistFontSizeSliderChanged:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
-    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_artistFontSizeSlider.value];
-    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_artistFontSizeSlider.value] forKey:@"artistFontSize"];
-    [gestureController saveDisplaySettings];
-    //= [UIFont systemFontOfSize:50];
-}
-
 - (IBAction)artistAlignmentChanged:(id)sender {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
     if (_artistAlignmentControl.selectedSegmentIndex == 0) {
@@ -216,5 +213,62 @@
         [[gestureController displaySettings] setObject:@"2" forKey:@"artistAlignment"];
     }
     [gestureController saveDisplaySettings];
+}
+
+- (IBAction)artistFontSizeSliderChanged:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_artistFontSizeSlider.value];
+    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_artistFontSizeSlider.value] forKey:@"artistFontSize"];
+    [gestureController saveDisplaySettings];
+    //= [UIFont systemFontOfSize:50];
+}
+
+- (IBAction)songAlignmentChanged:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    if (_songAlignmentControl.selectedSegmentIndex == 0) {
+        [[gestureController displaySettings] setObject:@"0" forKey:@"songAlignment"];
+    } else if(_songAlignmentControl.selectedSegmentIndex == 1) {
+        [[gestureController displaySettings] setObject:@"1" forKey:@"songAlignment"];
+    } else if(_songAlignmentControl.selectedSegmentIndex == 2) {
+        [[gestureController displaySettings] setObject:@"2" forKey:@"songAlignment"];
+    }
+    [gestureController saveDisplaySettings];
+}
+
+- (IBAction)songFontSizeSliderChanged:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    _songFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_songFontSizeSlider.value];
+    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_songFontSizeSlider.value] forKey:@"songFontSize"];
+    [gestureController saveDisplaySettings];
+}
+
+- (IBAction)albumAlignmentControl:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    if (_albumAlignmentControl.selectedSegmentIndex == 0) {
+        [[gestureController displaySettings] setObject:@"0" forKey:@"albumAlignment"];
+    } else if(_albumAlignmentControl.selectedSegmentIndex == 1) {
+        [[gestureController displaySettings] setObject:@"1" forKey:@"albumAlignment"];
+    } else if(_albumAlignmentControl.selectedSegmentIndex == 2) {
+        [[gestureController displaySettings] setObject:@"2" forKey:@"albumAlignment"];
+    }
+    [gestureController saveDisplaySettings];
+}
+
+- (IBAction)albumFontSizeSliderChanged:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    _albumFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_albumFontSizeSlider.value];
+    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_albumFontSizeSlider.value] forKey:@"albumFontSize"];
+    [gestureController saveDisplaySettings];
+}
+
+- (IBAction)playlistShuffleChanged:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    [gestureController savePlaylistSettings];
+
+}
+
+- (IBAction)playlistRepeatChanged:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    [gestureController savePlaylistSettings];
 }
 @end

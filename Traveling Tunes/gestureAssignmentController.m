@@ -15,8 +15,7 @@
 - (id)init {
     [self loadGestures];
     [self loadDisplaySettings];
-    if (_assignments==NULL) [self resetAssignments];
-  //  if (_displaySettings==NULL) [self initDisplaySettings];
+    [self loadPlaylistSettings];
      return self;
 }
 
@@ -32,7 +31,16 @@
     [self saveDisplaySettings];
 }
 
-- (void)resetAssignments {
+- (void)initPlaylistSettings {
+    self.playlistSettings = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+                            @"1",@"repeat",
+                            @"1",@"shuffle",
+                            @"play all",@"playlist",
+                            nil];
+    [self savePlaylistSettings];
+}
+
+- (void)initGestureAssignments {
      // this configures array to defaults.
      self.assignments = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
      @"Previous" ?: [NSNull null], @"1SwipeLeft",
@@ -69,10 +77,10 @@
 -(void)saveGestureAssignments {
     NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentDirPath = [path objectAtIndex:0];
-    NSString *fileName = @"settings.plist";
+    NSString *fileName = @"gestures.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     [_assignments writeToFile:fileAndPath atomically:YES];
-    
+//    NSLog(@"assignments are %@",_assignments);
 }
 
 -(void)loadGestures {
@@ -81,7 +89,9 @@
     NSString *fileName = @"settings.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _assignments = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
-//    NSLog(@"assignments are %@",_assignments);
+    NSLog(@"assignments are %@",_assignments);
+    if (_assignments==NULL) [self initGestureAssignments];
+    NSLog(@"assignments are %@",_assignments);
 }
 
 -(void)saveDisplaySettings {
@@ -90,7 +100,7 @@
     NSString *fileName = @"display.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     [_displaySettings writeToFile:fileAndPath atomically:YES];
-    NSLog(@"display settings are %@",_displaySettings);
+//    NSLog(@"display settings are %@",_displaySettings);
     
 }
 
@@ -101,6 +111,29 @@
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _displaySettings = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
     NSLog(@"display settings are %@",_displaySettings);
+    if (_displaySettings==NULL) [self initDisplaySettings];
+    NSLog(@"display settings are %@",_displaySettings);
+}
+
+-(void)savePlaylistSettings {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"playlist.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    [_playlistSettings writeToFile:fileAndPath atomically:YES];
+//    NSLog(@"playlist settings are %@",_playlistSettings);
+    
+}
+
+-(void)loadPlaylistSettings {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"playlist.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    _playlistSettings = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    NSLog(@"playlist settings are %@",_playlistSettings);
+    if (_playlistSettings==NULL) [self initPlaylistSettings];
+    NSLog(@"playlist settings are %@",_playlistSettings);
 }
 
 @end

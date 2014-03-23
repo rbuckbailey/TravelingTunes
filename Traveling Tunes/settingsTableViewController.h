@@ -36,11 +36,22 @@
 - (IBAction)artistAlignmentChanged:(id)sender;
 - (IBAction)artistFontSizeSliderChanged:(id)sender;
 
-@property (weak, nonatomic) IBOutlet UISlider *songFontSize;
+@property (weak, nonatomic) IBOutlet UILabel *songFontSizeLabel;
 @property (weak, nonatomic) IBOutlet UISlider *songFontSizeSlider;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *songAlignmentControl;
+@property (weak, nonatomic) IBOutlet UILabel *songColorLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *songColorCell;
+- (IBAction)songAlignmentChanged:(id)sender;
+- (IBAction)songFontSizeSliderChanged:(id)sender;
 
-@property (weak, nonatomic) IBOutlet UISlider *albumFontSize;
+@property (weak, nonatomic) IBOutlet UILabel *albumFontSizeLabel;
 @property (weak, nonatomic) IBOutlet UISlider *albumFontSizeSlider;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *albumAlignmentControl;
+@property (weak, nonatomic) IBOutlet UILabel *albumColorLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *albumColorCell;
+- (IBAction)albumAlignmentControl:(id)sender;
+- (IBAction)albumFontSizeSliderChanged:(id)sender;
+
 
 // custom color picker slider outlets
 @property (weak, nonatomic) IBOutlet UISlider *textRedSlider;
@@ -52,6 +63,13 @@
 // custom color picker example outlets
 @property (weak, nonatomic) IBOutlet UILabel *customExampleLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *customExampleCell;
+
+
+// playlist setting outlets
+@property (weak, nonatomic) IBOutlet UISwitch *playlistShuffle;
+@property (weak, nonatomic) IBOutlet UISwitch *playlistRepeat;
+- (IBAction)playlistShuffleChanged:(id)sender;
+- (IBAction)playlistRepeatChanged:(id)sender;
 
 // passes data from view to view
 @property NSMutableDictionary *passthrough;

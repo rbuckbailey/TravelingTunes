@@ -13,11 +13,14 @@
 
 @property (retain) NSMutableDictionary* assignments;
 @property (retain) NSMutableDictionary* displaySettings;
+@property (retain) NSMutableDictionary* playlistSettings;
 
-- (void)resetAssignments;
+- (void)initGestureAssignments;
 - (void)saveGestureAssignments;
-- (void)saveDisplaySettings;
 - (void)initDisplaySettings;
+- (void)saveDisplaySettings;
+- (void)initPlaylistSettings;
+- (void)savePlaylistSettings;
 
 @end
 

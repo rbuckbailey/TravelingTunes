@@ -412,6 +412,9 @@
                                                 <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7LA-y3-ELT">
                                                     <rect key="frame" x="251" y="6" width="51" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <connections>
+                                                        <action selector="playlistShuffleChanged:" destination="MyG-5e-5oZ" eventType="valueChanged" id="SL5-jZ-BzS"/>
+                                                    </connections>
                                                 </switch>
                                             </subviews>
                                             <constraints>
@@ -439,6 +442,9 @@
                                                 <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="arA-rd-XYN">
                                                     <rect key="frame" x="251" y="6" width="51" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <connections>
+                                                        <action selector="playlistRepeatChanged:" destination="MyG-5e-5oZ" eventType="valueChanged" id="OVi-Gf-B0e"/>
+                                                    </connections>
                                                 </switch>
                                             </subviews>
                                             <constraints>
@@ -459,6 +465,10 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" id="reR-C3-df4"/>
+                    <connections>
+                        <outlet property="playlistRepeat" destination="arA-rd-XYN" id="cxk-QZ-8Ys"/>
+                        <outlet property="playlistShuffle" destination="7LA-y3-ELT" id="4lR-Dt-wyW"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="IS0-mP-F4z" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -831,6 +841,9 @@
                                                         <segment title="Center"/>
                                                         <segment title="Right"/>
                                                     </segments>
+                                                    <connections>
+                                                        <action selector="songAlignmentChanged:" destination="yrz-qX-Lw2" eventType="valueChanged" id="aAd-pu-ewK"/>
+                                                    </connections>
                                                 </segmentedControl>
                                             </subviews>
                                             <constraints>
@@ -846,7 +859,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Size" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="dzJ-PG-R6g">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Size" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="dzJ-PG-R6g">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -858,11 +871,29 @@
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="185" id="MQ2-WG-Yfq"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="songFontSizeSliderChanged:" destination="yrz-qX-Lw2" eventType="valueChanged" id="uMj-jh-54R"/>
+                                                    </connections>
                                                 </slider>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="50" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="OWB-mS-C9n">
+                                                    <rect key="frame" x="59" y="12" width="65" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="65" id="chJ-9k-RJU"/>
+                                                    </constraints>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
                                             </subviews>
                                             <constraints>
                                                 <constraint firstItem="QVS-QE-yPm" firstAttribute="top" secondItem="KIE-XM-KFH" secondAttribute="top" constant="7" id="8Hr-57-FLj"/>
+                                                <constraint firstItem="dzJ-PG-R6g" firstAttribute="centerY" secondItem="KIE-XM-KFH" secondAttribute="centerY" id="Y4B-hA-XXx"/>
+                                                <constraint firstItem="dzJ-PG-R6g" firstAttribute="leading" secondItem="KIE-XM-KFH" secondAttribute="leading" constant="20" symbolic="YES" id="bNT-aA-ckO"/>
+                                                <constraint firstItem="OWB-mS-C9n" firstAttribute="centerY" secondItem="QVS-QE-yPm" secondAttribute="centerY" id="c8o-6C-d2g"/>
                                                 <constraint firstAttribute="trailing" secondItem="QVS-QE-yPm" secondAttribute="trailing" constant="20" symbolic="YES" id="eZs-bR-TuR"/>
+                                                <constraint firstItem="dzJ-PG-R6g" firstAttribute="trailing" secondItem="QVS-QE-yPm" secondAttribute="trailing" id="kil-2a-bgf"/>
+                                                <constraint firstItem="OWB-mS-C9n" firstAttribute="leading" secondItem="KIE-XM-KFH" secondAttribute="leading" constant="59" id="som-Ew-3Ag"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -929,6 +960,9 @@
                                                         <segment title="Center"/>
                                                         <segment title="Right"/>
                                                     </segments>
+                                                    <connections>
+                                                        <action selector="albumAlignmentControl:" destination="yrz-qX-Lw2" eventType="valueChanged" id="RJY-Fj-Oyd"/>
+                                                    </connections>
                                                 </segmentedControl>
                                             </subviews>
                                             <constraints>
@@ -944,7 +978,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Size" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="HgN-6f-2CK">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Size" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="HgN-6f-2CK">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -956,11 +990,29 @@
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="185" id="1hW-VL-eaI"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="albumFontSizeSliderChanged:" destination="yrz-qX-Lw2" eventType="valueChanged" id="zN3-hV-2vU"/>
+                                                    </connections>
                                                 </slider>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="50" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="F09-5V-bcj">
+                                                    <rect key="frame" x="62" y="11" width="65" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="65" id="zqb-P7-Eqs"/>
+                                                    </constraints>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
                                             </subviews>
                                             <constraints>
+                                                <constraint firstItem="HgN-6f-2CK" firstAttribute="baseline" secondItem="F09-5V-bcj" secondAttribute="baseline" id="03A-bI-DHF"/>
                                                 <constraint firstItem="ass-N3-KOp" firstAttribute="top" secondItem="CxO-65-oLN" secondAttribute="top" constant="7" id="4Hi-KC-C0j"/>
+                                                <constraint firstItem="F09-5V-bcj" firstAttribute="leading" secondItem="CxO-65-oLN" secondAttribute="leading" constant="62" id="CGq-Hh-elq"/>
                                                 <constraint firstAttribute="trailing" secondItem="ass-N3-KOp" secondAttribute="trailing" constant="20" symbolic="YES" id="Wtv-ar-qdI"/>
+                                                <constraint firstItem="HgN-6f-2CK" firstAttribute="leading" secondItem="CxO-65-oLN" secondAttribute="leading" constant="20" symbolic="YES" id="nVI-DT-ywj"/>
+                                                <constraint firstItem="HgN-6f-2CK" firstAttribute="trailing" secondItem="ass-N3-KOp" secondAttribute="trailing" id="tNw-OH-PWP"/>
+                                                <constraint firstItem="F09-5V-bcj" firstAttribute="centerY" secondItem="CxO-65-oLN" secondAttribute="centerY" id="ypm-dk-rBt"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -993,14 +1045,20 @@
                     </tableView>
                     <navigationItem key="navigationItem" id="mOd-ol-Lmx"/>
                     <connections>
-                        <outlet property="albumFontSize" destination="ass-N3-KOp" id="Y0W-PI-LDK"/>
+                        <outlet property="albumAlignmentControl" destination="eqF-Cw-Idz" id="4nA-Em-cf1"/>
+                        <outlet property="albumColorCell" destination="abC-9S-4AQ" id="ofh-XG-mgz"/>
+                        <outlet property="albumColorLabel" destination="W0r-EQ-6nU" id="DNu-MH-E2V"/>
+                        <outlet property="albumFontSizeLabel" destination="F09-5V-bcj" id="mO8-cJ-uFl"/>
                         <outlet property="albumFontSizeSlider" destination="ass-N3-KOp" id="yon-z0-0wt"/>
                         <outlet property="artistAlignmentControl" destination="CEA-Jg-FjK" id="EkT-CI-SKB"/>
                         <outlet property="artistColorCell" destination="fMi-VI-fmX" id="EB2-73-2OQ"/>
                         <outlet property="artistColorLabel" destination="iOA-zh-eTp" id="ZoS-xb-tAi"/>
-                        <outlet property="artistFontSizeLabel" destination="8AF-pk-ZkF" id="g7r-kd-WLn"/>
+                        <outlet property="artistFontSizeLabel" destination="8AF-pk-ZkF" id="5Cp-rO-zri"/>
                         <outlet property="artistFontSizeSlider" destination="dB7-KM-8Au" id="Bdz-n7-Pxo"/>
-                        <outlet property="songFontSize" destination="QVS-QE-yPm" id="DHk-2g-kyg"/>
+                        <outlet property="songAlignmentControl" destination="4C1-B4-otb" id="PlB-jg-Taw"/>
+                        <outlet property="songColorCell" destination="G84-Rc-dCO" id="Fgo-4r-9E9"/>
+                        <outlet property="songColorLabel" destination="LXQ-de-5Gz" id="vFn-kN-U5n"/>
+                        <outlet property="songFontSizeLabel" destination="OWB-mS-C9n" id="mJ9-3e-wnC"/>
                         <outlet property="songFontSizeSlider" destination="QVS-QE-yPm" id="qU3-eg-WeW"/>
                     </connections>
                 </tableViewController>
@@ -1242,7 +1300,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Red" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="uL1-HN-JSc">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Red" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="uL1-HN-JSc">
                                                     <rect key="frame" x="19" y="11" width="90" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -1261,8 +1319,8 @@
                                                 <constraint firstAttribute="trailing" secondItem="enr-BS-X4b" secondAttribute="trailing" constant="20" symbolic="YES" id="7hf-d0-3nE"/>
                                                 <constraint firstItem="enr-BS-X4b" firstAttribute="top" secondItem="0mH-iG-bKW" secondAttribute="top" constant="7" id="O8e-mC-4JS"/>
                                                 <constraint firstItem="uL1-HN-JSc" firstAttribute="centerY" secondItem="0mH-iG-bKW" secondAttribute="centerY" id="W6G-4c-p0Q"/>
-                                                <constraint firstItem="uL1-HN-JSc" firstAttribute="leading" secondItem="0mH-iG-bKW" secondAttribute="leading" constant="20" symbolic="YES" id="hX6-Xu-vPA"/>
-                                                <constraint firstItem="enr-BS-X4b" firstAttribute="leading" secondItem="uL1-HN-JSc" secondAttribute="trailing" constant="8" symbolic="YES" id="tVy-xJ-oKc"/>
+                                                <constraint firstItem="uL1-HN-JSc" firstAttribute="leading" secondItem="0mH-iG-bKW" secondAttribute="leading" constant="19" id="hX6-Xu-vPA"/>
+                                                <constraint firstItem="enr-BS-X4b" firstAttribute="leading" secondItem="uL1-HN-JSc" secondAttribute="trailing" constant="9" id="tVy-xJ-oKc"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -1436,7 +1494,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EDj-bU-DBO">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EDj-bU-DBO">
                                                     <rect key="frame" x="20" y="12" width="280" height="20"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -1445,8 +1503,10 @@
                                                 </label>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstItem="EDj-bU-DBO" firstAttribute="centerY" secondItem="5gn-lZ-ArW" secondAttribute="centerY" id="0Bi-F0-mfQ"/>
-                                                <constraint firstItem="EDj-bU-DBO" firstAttribute="leading" secondItem="5gn-lZ-ArW" secondAttribute="leading" constant="20" symbolic="YES" id="nJU-Du-sQt"/>
+                                                <constraint firstItem="EDj-bU-DBO" firstAttribute="top" secondItem="5gn-lZ-ArW" secondAttribute="top" constant="12" id="DdI-Zq-VWz"/>
+                                                <constraint firstAttribute="trailing" secondItem="EDj-bU-DBO" secondAttribute="trailing" constant="20" symbolic="YES" id="J0e-iq-sCN"/>
+                                                <constraint firstAttribute="bottom" secondItem="EDj-bU-DBO" secondAttribute="bottom" constant="11" id="K8d-ph-fVY"/>
+                                                <constraint firstItem="EDj-bU-DBO" firstAttribute="leading" secondItem="5gn-lZ-ArW" secondAttribute="leading" constant="20" symbolic="YES" id="NsD-g5-75a"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -2025,11 +2085,18 @@
                                                     <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="cdU-ou-r0c">
+                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="cdU-ou-r0c">
                                                     <rect key="frame" x="120" y="7" width="182" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="178" id="J8R-iO-TSu"/>
+                                                    </constraints>
                                                 </slider>
                                             </subviews>
+                                            <constraints>
+                                                <constraint firstAttribute="trailing" secondItem="cdU-ou-r0c" secondAttribute="trailing" constant="20" symbolic="YES" id="j5l-pV-8f2"/>
+                                                <constraint firstItem="cdU-ou-r0c" firstAttribute="top" secondItem="Yuw-DQ-4cB" secondAttribute="top" constant="7" id="wcl-em-DdG"/>
+                                            </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="LJY-Oc-I8t" customClass="settingsTableViewCell">
@@ -2046,11 +2113,18 @@
                                                     <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="5eF-du-qLS">
+                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="5eF-du-qLS">
                                                     <rect key="frame" x="121" y="7" width="181" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="177" id="N4j-lm-Tgq"/>
+                                                    </constraints>
                                                 </slider>
                                             </subviews>
+                                            <constraints>
+                                                <constraint firstAttribute="trailing" secondItem="5eF-du-qLS" secondAttribute="trailing" constant="20" symbolic="YES" id="Goh-30-d7J"/>
+                                                <constraint firstItem="5eF-du-qLS" firstAttribute="top" secondItem="YHJ-Vo-Nal" secondAttribute="top" constant="7" id="gvJ-Is-F4G"/>
+                                            </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                 </cells>
