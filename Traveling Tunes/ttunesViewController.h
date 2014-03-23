@@ -8,13 +8,15 @@
 
 #import <UIKit/UIKit.h>
 #import <MediaPlayer/MediaPlayer.h>
-
+#import "gestureAssignmentController.h"
 
 
 @interface ttunesViewController : UIViewController
 @property (weak, nonatomic) IBOutlet UILabel *artistTitle;
 @property (weak, nonatomic) IBOutlet UILabel *songTitle;
 @property (weak, nonatomic) IBOutlet UILabel *albumTitle;
+
+@property (atomic) gestureAssignmentController* masterController;
 
 
 
