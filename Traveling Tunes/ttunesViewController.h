@@ -16,9 +16,6 @@
 @property (weak, nonatomic) IBOutlet UILabel *songTitle;
 @property (weak, nonatomic) IBOutlet UILabel *albumTitle;
 
-@property (atomic) gestureAssignmentController* masterController;
-
-
 
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;

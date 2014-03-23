@@ -28,7 +28,11 @@
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"artistFontSize"]];
     NSNumber *temp=[[gestureController displaySettings] objectForKey:@"artistFontSize"];
-    _artistFontSize.value = (int)[temp floatValue];
+    _artistFontSizeSlider.value = (int)[temp floatValue];
+
+    temp=[[gestureController displaySettings] objectForKey:@"artistAlignment"];
+    _artistAlignmentControl.selectedSegmentIndex = (int)[temp floatValue];
+
 }
 
 
@@ -124,7 +128,7 @@
     else if (selection == _VolumeUp) [self configure:@"VolumeUp"];
     else if (selection == _VolumeDown) [self configure:@"VolumeDown"];
     else if (selection == _Menu) [self configure:@"Menu"];
-    else if (selection == _ResetGestureAssignments) [self resetGestureSettings];
+    else if (selection == _ResetGestureAssignments) [self initGestures];
     /*
      consider:  PLAYALLSHUFFLE
      PLAYSHUFFLEDALBUMS
@@ -188,7 +192,7 @@
     
 }
 
-- (void)resetGestureSettings {
+- (void)initGestures {
     UIAlertView *updateAlert = [[UIAlertView alloc] initWithTitle: @"Confirm Reset" message: @"Are you sure you want to reset to defaults?" delegate: self cancelButtonTitle: @"YES"  otherButtonTitles:@"NO",nil];
     [updateAlert show];
 }
@@ -196,9 +200,21 @@
 
 - (IBAction)artistFontSizeSliderChanged:(id)sender {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
-    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_artistFontSize.value];
-    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_artistFontSize.value] forKey:@"artistFontSize"];
+    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_artistFontSizeSlider.value];
+    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_artistFontSizeSlider.value] forKey:@"artistFontSize"];
     [gestureController saveDisplaySettings];
     //= [UIFont systemFontOfSize:50];
+}
+
+- (IBAction)artistAlignmentChanged:(id)sender {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    if (_artistAlignmentControl.selectedSegmentIndex == 0) {
+        [[gestureController displaySettings] setObject:@"0" forKey:@"artistAlignment"];
+    } else if(_artistAlignmentControl.selectedSegmentIndex == 1) {
+        [[gestureController displaySettings] setObject:@"1" forKey:@"artistAlignment"];
+    } else if(_artistAlignmentControl.selectedSegmentIndex == 2) {
+        [[gestureController displaySettings] setObject:@"2" forKey:@"artistAlignment"];
+    }
+    [gestureController saveDisplaySettings];
 }
 @end

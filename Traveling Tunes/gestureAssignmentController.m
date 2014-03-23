@@ -25,6 +25,9 @@
                             @"50",@"artistFontSize",
                             @"60",@"songFontSize",
                             @"50",@"albumFontSize",
+                            @"Left",@"artistAlignment",
+                            @"Left",@"songAlignment",
+                            @"Left",@"albumAlignment",
                             nil];
     [self saveDisplaySettings];
 }

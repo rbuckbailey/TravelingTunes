@@ -712,6 +712,9 @@
                                                         <segment title="Center"/>
                                                         <segment title="Right"/>
                                                     </segments>
+                                                    <connections>
+                                                        <action selector="artistAlignmentChanged:" destination="yrz-qX-Lw2" eventType="valueChanged" id="sLy-CY-aAP"/>
+                                                    </connections>
                                                 </segmentedControl>
                                             </subviews>
                                             <constraints>
@@ -727,7 +730,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" misplaced="YES" text="Size" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Soz-nR-9Ux">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Size" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Soz-nR-9Ux">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -755,8 +758,10 @@
                                                 </label>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstItem="8AF-pk-ZkF" firstAttribute="baseline" secondItem="Soz-nR-9Ux" secondAttribute="baseline" id="0TB-7P-eK6"/>
+                                                <constraint firstItem="Soz-nR-9Ux" firstAttribute="leading" secondItem="xkr-UR-ehG" secondAttribute="leading" constant="20" symbolic="YES" id="CUT-7U-Lc7"/>
+                                                <constraint firstItem="Soz-nR-9Ux" firstAttribute="trailing" secondItem="dB7-KM-8Au" secondAttribute="trailing" id="Nx8-At-m8g"/>
                                                 <constraint firstItem="dB7-KM-8Au" firstAttribute="top" secondItem="xkr-UR-ehG" secondAttribute="top" constant="7" id="P8e-vQ-VDK"/>
+                                                <constraint firstItem="Soz-nR-9Ux" firstAttribute="baseline" secondItem="8AF-pk-ZkF" secondAttribute="baseline" id="VFw-aH-zcQ"/>
                                                 <constraint firstAttribute="trailing" secondItem="dB7-KM-8Au" secondAttribute="trailing" constant="20" symbolic="YES" id="YI3-eP-zM3"/>
                                                 <constraint firstItem="8AF-pk-ZkF" firstAttribute="leading" secondItem="xkr-UR-ehG" secondAttribute="leading" constant="60" id="jfv-Py-NFC"/>
                                                 <constraint firstItem="8AF-pk-ZkF" firstAttribute="centerY" secondItem="xkr-UR-ehG" secondAttribute="centerY" id="mqs-3N-wgy"/>
@@ -989,9 +994,14 @@
                     <navigationItem key="navigationItem" id="mOd-ol-Lmx"/>
                     <connections>
                         <outlet property="albumFontSize" destination="ass-N3-KOp" id="Y0W-PI-LDK"/>
-                        <outlet property="artistFontSize" destination="dB7-KM-8Au" id="Yy8-xt-YYj"/>
+                        <outlet property="albumFontSizeSlider" destination="ass-N3-KOp" id="yon-z0-0wt"/>
+                        <outlet property="artistAlignmentControl" destination="CEA-Jg-FjK" id="EkT-CI-SKB"/>
+                        <outlet property="artistColorCell" destination="fMi-VI-fmX" id="EB2-73-2OQ"/>
+                        <outlet property="artistColorLabel" destination="iOA-zh-eTp" id="ZoS-xb-tAi"/>
                         <outlet property="artistFontSizeLabel" destination="8AF-pk-ZkF" id="g7r-kd-WLn"/>
+                        <outlet property="artistFontSizeSlider" destination="dB7-KM-8Au" id="Bdz-n7-Pxo"/>
                         <outlet property="songFontSize" destination="QVS-QE-yPm" id="DHk-2g-kyg"/>
+                        <outlet property="songFontSizeSlider" destination="QVS-QE-yPm" id="qU3-eg-WeW"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="wuA-EJ-HUu" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -1153,6 +1163,7 @@
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                             </subviews>
@@ -1169,9 +1180,11 @@
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                             </subviews>
+                                            <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                 </cells>
@@ -1229,8 +1242,8 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Red" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="uL1-HN-JSc">
-                                                    <rect key="frame" x="20" y="11" width="90" height="21"/>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Red" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="uL1-HN-JSc">
+                                                    <rect key="frame" x="19" y="11" width="90" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
@@ -1414,6 +1427,31 @@
                                     </tableViewCell>
                                 </cells>
                             </tableViewSection>
+                            <tableViewSection headerTitle="Example" id="kah-hc-Lrp">
+                                <cells>
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="hxb-M4-y4C">
+                                        <rect key="frame" x="0.0" y="330" width="320" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="hxb-M4-y4C" id="5gn-lZ-ArW">
+                                            <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EDj-bU-DBO">
+                                                    <rect key="frame" x="20" y="12" width="280" height="20"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="EDj-bU-DBO" firstAttribute="centerY" secondItem="5gn-lZ-ArW" secondAttribute="centerY" id="0Bi-F0-mfQ"/>
+                                                <constraint firstItem="EDj-bU-DBO" firstAttribute="leading" secondItem="5gn-lZ-ArW" secondAttribute="leading" constant="20" symbolic="YES" id="nJU-Du-sQt"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                </cells>
+                            </tableViewSection>
                         </sections>
                         <connections>
                             <outlet property="dataSource" destination="F2X-Ex-hDZ" id="v2m-WU-Ga5"/>
@@ -1421,6 +1459,17 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" id="0jP-Qf-qtr"/>
+                    <connections>
+                        <outlet property="bgBlueSlider" destination="JEI-Jy-UU8" id="4x6-tJ-4DF"/>
+                        <outlet property="bgGreenSlider" destination="TeM-di-DhK" id="qFq-DN-BiV"/>
+                        <outlet property="bgRedSlider" destination="tRy-ep-1Kg" id="3Qt-x7-0QY"/>
+                        <outlet property="customExampleCell" destination="hxb-M4-y4C" id="gHS-6c-ibP"/>
+                        <outlet property="customExampleLabel" destination="EDj-bU-DBO" id="fMS-l5-oAW"/>
+                        <outlet property="textBlueSlider" destination="pr4-Su-Y79" id="nYv-ip-Wtp"/>
+                        <outlet property="textGreenSlider" destination="aau-Dk-BTm" id="51d-ud-Crj"/>
+                        <outlet property="textRed" destination="uL1-HN-JSc" id="MUg-Mm-KOr"/>
+                        <outlet property="textRedSlider" destination="enr-BS-X4b" id="rYh-Km-dHz"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="heh-XX-dWy" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -2067,8 +2116,8 @@
         <simulatedScreenMetrics key="destination" type="retina4"/>
     </simulatedMetricsContainer>
     <inferredMetricsTieBreakers>
-        <segue reference="wve-v0-1eu"/>
+        <segue reference="UPl-mW-JoG"/>
         <segue reference="rxE-2j-rGF"/>
-        <segue reference="AAf-9w-j0l"/>
+        <segue reference="wve-v0-1eu"/>
     </inferredMetricsTieBreakers>
 </document>
