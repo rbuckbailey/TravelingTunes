@@ -308,14 +308,14 @@ MPMusicPlayerController*        mediaPlayer;
     
     
     //maybe this should dynamically change height to match font size? vertically centered so far. meh.
-   /*
+   
     _artistTitle.numberOfLines = 1;
     _artistTitle.text   = @"Artist Test This is a long string where does it cut off";
     _artistTitle.font   = [UIFont systemFontOfSize:artistSize];
     _artistTitle.frame = CGRectMake(_artistTitle.frame.origin.x, _artistTitle.frame.origin.y, _artistTitle.frame.size.width, _artistTitle.frame.size.height);
-    */
+    
 
-    _songTitle.numberOfLines = 2;
+    _songTitle.numberOfLines = 1;
     _songTitle.text   = @"Song Test This is a long string where does it cut off";
     _songTitle.font     = [UIFont systemFontOfSize:songSize];
     _songTitle.frame = CGRectMake(_songTitle.frame.origin.x, _songTitle.frame.origin.y-(_songTitle.frame.size.height/2), _songTitle.frame.size.width, _songTitle.frame.size.height*2);
