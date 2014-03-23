@@ -154,9 +154,10 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeUp"]) _songTitle.text = @"vol up";
     else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
     else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
-    [self setupLabels];
+    [self setupLabels:50:60:50];
 }
 
+/* backup of
 - (void)fitLongTitle {
     NSString *text = @"This is a long sentence. Wonder how much space is needed?";
     CGFloat width = 100;
@@ -193,16 +194,136 @@ MPMusicPlayerController*        mediaPlayer;
     }
     NSLog(@"Size found with width %f and height %f", width, height);
 }
+*/
+- (void)fitLongTitle:(NSString *)input {
+    NSString *text = input;
+    CGFloat width = _artistTitle.frame.size.width;
+    CGFloat height = _artistTitle.frame.size.height;
+    bool sizeFound = false;
+    float size = 50;
+    while (!sizeFound) {
+        NSLog(@"Begin loop");
+        CGFloat fontSize = 14;
+        CGFloat previousSize = 0.0;
+        CGFloat currSize = 0.0;
+        for (float fSize = fontSize; fSize < fontSize+12; fSize++) {
+            CGRect r = [text boundingRectWithSize:CGSizeMake(width, height)
+                                          options:NSStringDrawingUsesLineFragmentOrigin
+                                       attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:fSize]}
+                                          context:nil];
+            currSize =r.size.width*r.size.height;
+            if (previousSize >= currSize) {
+                width = width*11/10;
+                height = height*11/10;
+                fSize = fontSize+10;
+            }
+            else {
+                previousSize = currSize;
+            }
 
-- (void)setupLabels {
-    //maybe this should dynamically change height to match font size? vertically centered so far. meh.
-    _artistTitle.font   = [UIFont systemFontOfSize:50];
-    _songTitle.font     = [UIFont systemFontOfSize:60];
-    _albumTitle.font    = [UIFont systemFontOfSize:50];
+            NSLog(@"fontSize = %f\tbounds = (%f x %f) = %f",
+                  fSize,
+                  r.size.width,
+                  r.size.height,r.size.width*r.size.height);
+        }
+        if (previousSize == currSize) {
+            sizeFound = true;
+        }
+        
+    }
+    _artistTitle.numberOfLines = 1;
+    _artistTitle.text   = input;
+    _artistTitle.font   = [UIFont systemFontOfSize:size];
+    _artistTitle.frame = CGRectMake(_artistTitle.frame.origin.x, _artistTitle.frame.origin.y, width, height);
+    NSLog(@"Size %f found with width %f and height %f", size, width, height);
+}
+
+-(void)resizeSongTitle {
+    CGRect screenBound = [[UIScreen mainScreen] bounds];
+    CGSize screenSize = screenBound.size;
+    CGFloat screenWidth = screenSize.width;
+    CGFloat screenHeight = screenSize.height;
     
+    
+}
+
+- (void)drawLabelFromScratch {
+    CGRect screenBound = [[UIScreen mainScreen] bounds];
+    CGSize screenSize = screenBound.size;
+    CGFloat screenWidth = screenSize.width;
+    CGFloat screenHeight = screenSize.height;
+    
+    
+    CGRect labelFrame = CGRectMake(22, 50, _artistTitle.frame.size.width, _artistTitle.frame.size.height);
+    UILabel *myLabel = [[UILabel alloc] initWithFrame:labelFrame];
+    [myLabel setText:@"Artist Test This is a long string where does it cut off"];
+    [myLabel setBackgroundColor: [UIColor lightGrayColor]];
+    [myLabel setNumberOfLines:0];
+    
+    CGFloat fontSize = 0.0f;
+    labelFrame.size = [myLabel.text sizeWithFont:myLabel.font
+                                     minFontSize:myLabel.minimumFontSize
+                                  actualFontSize:&fontSize
+                                        forWidth:_artistTitle.frame.size.width //labelframe width from above
+                                   lineBreakMode:myLabel.lineBreakMode];
+    
+    myLabel.frame = labelFrame;
+    [self.view addSubview:myLabel];
+}
+
+/* from StackOverflow, marquee code from OSX. 
+ 
+-(void)awakeFromNib{
+    self.myTimer=[NSTimer new];
+    self.fullString=@"This is a long string to be shown.";
+    [self.label setAlignment:NSRightTextAlignment];
+}
+
+
+-(void)scrollText:(id)parameter{
+    static NSInteger len;
+//    [self.label setStringValue:[self.fullString substringWithRange:NSMakeRange(0, len++)]];
+    _songTitle.text = @"Artist Test This is a long string where does it cut off";
+
+    
+    if (self.label.stringValue.length==self.fullString.length) {
+        [self.myTimer invalidate];
+    }
+}
+
+- (IBAction)buttonAction:(id)sender {
+    
+    self.myTimer = [NSTimer scheduledTimerWithTimeInterval:0.2f
+                                                    target: self
+                                                  selector:@selector(scrollText:)
+                                                  userInfo: nil
+                                                   repeats:YES];
+}
+*/
+
+- (void)setupLabels:(int)artistSize :(int)songSize :(int)albumSize {
+//    [self fitLongTitle:@"monkey monkey badger monkey monkey badger monkey monkey badger monkey monkey badger"];
+  
+
+    
+    
+    //maybe this should dynamically change height to match font size? vertically centered so far. meh.
+   /*
+    _artistTitle.numberOfLines = 1;
     _artistTitle.text   = @"Artist Test This is a long string where does it cut off";
+    _artistTitle.font   = [UIFont systemFontOfSize:artistSize];
+    _artistTitle.frame = CGRectMake(_artistTitle.frame.origin.x, _artistTitle.frame.origin.y, _artistTitle.frame.size.width, _artistTitle.frame.size.height);
+    */
+
+    _songTitle.numberOfLines = 2;
     _songTitle.text   = @"Song Test This is a long string where does it cut off";
-    _albumTitle.text    = @"Album Test This is a long string where does it cut off";    
+    _songTitle.font     = [UIFont systemFontOfSize:songSize];
+    _songTitle.frame = CGRectMake(_songTitle.frame.origin.x, _songTitle.frame.origin.y-(_songTitle.frame.size.height/2), _songTitle.frame.size.width, _songTitle.frame.size.height*2);
+
+    _albumTitle.numberOfLines = 1;
+    _albumTitle.font    = [UIFont systemFontOfSize:albumSize];
+    _albumTitle.text    = @"Album Test This is a long string where does it cut off";
+    _albumTitle.frame = CGRectMake(_albumTitle.frame.origin.x, _albumTitle.frame.origin.y, _albumTitle.frame.size.width, _albumTitle.frame.size.height);
 }
 
 - (void)beatlesParty {
