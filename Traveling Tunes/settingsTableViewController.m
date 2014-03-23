@@ -190,9 +190,10 @@
 
 
 - (IBAction)artistFontSizeSliderChanged:(id)sender {
+    //stores NSNumber. need to get unsigned int value from this.
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *gc = [gestureController displaySettings];
-    [gc setObject:@"50" forKey:@"artistFontSize"];
+    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:_artistFontSize.value] forKey:@"artistFontSize"];
+    [gestureController saveDisplaySettings];
     //= [UIFont systemFontOfSize:50];
 }
 @end

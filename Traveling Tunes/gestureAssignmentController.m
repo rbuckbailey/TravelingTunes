@@ -14,7 +14,9 @@
 
 - (id)init {
     [self loadGestures];
+    [self loadDisplaySettings];
     if (_assignments==NULL) [self resetAssignments];
+  //  if (_displaySettings==NULL) [self initDisplaySettings];
      return self;
 }
 
@@ -24,6 +26,7 @@
                             @"60",@"songFontSize",
                             @"50",@"albumFontSize",
                             nil];
+    [self saveDisplaySettings];
 }
 
 - (void)resetAssignments {
@@ -57,6 +60,7 @@
      @"Unassigned" ?: [NSNull null], @"34Tap",
      @"Unassigned" ?: [NSNull null], @"3LongPress",
      nil];
+    [self saveGestureAssignments];
 }
 
 -(void)saveGestureAssignments {
@@ -65,7 +69,7 @@
     NSString *fileName = @"settings.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     [_assignments writeToFile:fileAndPath atomically:YES];
-
+    
 }
 
 -(void)loadGestures {
@@ -74,7 +78,26 @@
     NSString *fileName = @"settings.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _assignments = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
-    NSLog(@"assignments are %@",_assignments);
+//    NSLog(@"assignments are %@",_assignments);
+}
+
+-(void)saveDisplaySettings {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"display.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    [_displaySettings writeToFile:fileAndPath atomically:YES];
+    NSLog(@"display settings are %@",_displaySettings);
+    
+}
+
+-(void)loadDisplaySettings {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"display.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    _displaySettings = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    NSLog(@"display settings are %@",_displaySettings);
 }
 
 @end

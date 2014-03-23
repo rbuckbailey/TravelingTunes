@@ -16,6 +16,7 @@
 
 - (void)resetAssignments;
 - (void)saveGestureAssignments;
+- (void)saveDisplaySettings;
 - (void)initDisplaySettings;
 
 @end

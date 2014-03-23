@@ -87,7 +87,7 @@ MPMusicPlayerController*        mediaPlayer;
         [self performSelector:@selector(quadrupleTap) withObject:nil afterDelay:delay ];
     }
 }
-/*
+
 - (IBAction)pinchDetected:(id)sender {
     CGFloat scale = [(UIPinchGestureRecognizer *)sender scale];
     CGFloat velocity = [(UIPinchGestureRecognizer *)sender velocity];
@@ -105,7 +105,7 @@ MPMusicPlayerController*        mediaPlayer;
                               radians, velocity];
     _songTitle.text = resultString;
 }
- */
+ 
 
 - (IBAction)panDetected:(id)sender {
 //    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
@@ -239,20 +239,20 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void)resizeSongTitle {
-    CGRect screenBound = [[UIScreen mainScreen] bounds];
+/*    CGRect screenBound = [[UIScreen mainScreen] bounds];
     CGSize screenSize = screenBound.size;
     CGFloat screenWidth = screenSize.width;
     CGFloat screenHeight = screenSize.height;
-    
+ */
     
 }
 
 - (void)drawLabelFromScratch {
-    CGRect screenBound = [[UIScreen mainScreen] bounds];
+ /*   CGRect screenBound = [[UIScreen mainScreen] bounds];
     CGSize screenSize = screenBound.size;
     CGFloat screenWidth = screenSize.width;
     CGFloat screenHeight = screenSize.height;
-    
+*/
     
     CGRect labelFrame = CGRectMake(22, 50, _artistTitle.frame.size.width, _artistTitle.frame.size.height);
     UILabel *myLabel = [[UILabel alloc] initWithFrame:labelFrame];
