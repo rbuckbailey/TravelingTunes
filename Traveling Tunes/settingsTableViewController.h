@@ -62,6 +62,13 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeBlush;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeHotDogStand;
 
+// display preview cells and labels
+@property (weak, nonatomic) IBOutlet UILabel *themeSelectionPreviewLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeSeletionPreview;
+@property (weak, nonatomic) IBOutlet UILabel *customColorPreviewLabel2;
+@property (weak, nonatomic) IBOutlet UITableViewCell *customColorPreview2;
+@property (weak, nonatomic) IBOutlet UILabel *customColorPreviewLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *customColorPreview;
 
 // custom color picker slider outlets
 @property (weak, nonatomic) IBOutlet UISlider *textRedSlider;
@@ -70,9 +77,6 @@
 @property (weak, nonatomic) IBOutlet UISlider *bgRedSlider;
 @property (weak, nonatomic) IBOutlet UISlider *bgGreenSlider;
 @property (weak, nonatomic) IBOutlet UISlider *bgBlueSlider;
-// custom color picker example outlets
-@property (weak, nonatomic) IBOutlet UILabel *customExampleLabel;
-@property (weak, nonatomic) IBOutlet UITableViewCell *customExampleCell;
 
 
 // playlist setting outlets

@@ -60,9 +60,9 @@
                                                 [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255 alpha:1],nil],@"lavender",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 188/255.f   blue:196/255.f   alpha:1],
                                                 [UIColor colorWithRed: 255/255.f green: 239/255.f blue:242 alpha:1],nil],@"blush",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 0   blue:0   alpha:1],
-                                                [UIColor colorWithRed: 255/255.f green: 255/255.f blue:0 alpha:1],nil],@"hotdogstand",
-                   @"greyonwhite",@"current",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 255/255.f   blue:0   alpha:1],
+                                                [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"hotdogstand",
+                   @"lavender",@"current",
                    nil];
     
     [self saveThemes];
@@ -134,7 +134,7 @@
     NSString *fileName = @"themes.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     [_themes writeToFile:fileAndPath atomically:YES];
-    NSLog(@"themes are %@",_themes);
+//    NSLog(@"themes are %@",_themes);
 }
 
 -(void)loadThemes {
@@ -144,7 +144,7 @@
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _themes = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
     if (_themes==NULL) [self initThemes];
-       NSLog(@"themes are %@",_themes);
+//       NSLog(@"themes are %@",_themes);
 }
 
 -(void)saveDisplaySettings {
