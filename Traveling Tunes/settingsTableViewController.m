@@ -109,11 +109,10 @@
 {
     // load gesture controller and set up
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *assignments = [gestureController assignments];
     NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
 
     // change the dictionary
-    [assignments setObject:action forKey: fullGesture];
+    [[gestureController assignments] setObject:action forKey: fullGesture];
    
     // save the dictionary
     [gestureController saveGestureAssignments];
@@ -196,7 +195,7 @@
     else if ([[segue identifier] isEqual:@"4Tap"]) [passthrough setObject: @"4Tap" forKey: @"Gesture"];
     else if ([[segue identifier] isEqual:@"LongPress"]) [passthrough setObject: @"LongPress" forKey: @"Gesture"];
 
-    // if a segue is not coded here you get a crash on this passthrough. so if we don't need to pass data, fill in "X"
+    // if a segue is not coded here you get a crash on the passthrough. so if we don't need to pass data, fill in "X"
     if ([[segue identifier] isEqual:@"quickStartGuide"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
     else if ([[segue identifier] isEqual:@"themeSettings"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
 
