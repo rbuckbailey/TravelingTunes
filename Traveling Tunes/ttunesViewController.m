@@ -266,12 +266,12 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
  //   self.view.backgroundColor = [UIColor redColor];
-    NSString *currentTheme = [[gestureController themes] objectForKey:@"current"];
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
+
     NSMutableDictionary *themedict = [gestureController themes];
     NSArray *themecolors = [themedict objectForKey:currentTheme];
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
-    
     
     self.view.backgroundColor = themebg;
 
@@ -279,7 +279,7 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
         _artistTitle.font   = [UIFont systemFontOfSize:28];
-//        _artistTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
+//        _artistTitle.textColor = [[defaults objectForKey:[defaults objectForKey:@"leaf"]] objectAtIndex:1];
         _artistTitle.textColor = themecolor;
         [_artistTitle setAlpha:0.6f];
         

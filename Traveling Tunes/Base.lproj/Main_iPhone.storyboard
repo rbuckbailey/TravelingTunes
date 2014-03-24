@@ -1340,7 +1340,7 @@
                         <outlet property="themeGreyOnBlack" destination="AFm-v9-amb" id="MZI-pp-kiN"/>
                         <outlet property="themeGreyOnWhite" destination="4gH-oZ-L6C" id="hpz-2m-gFP"/>
                         <outlet property="themeHotDogStand" destination="DmW-tk-FnG" id="6Ah-yS-8et"/>
-                        <outlet property="themeLavender" destination="39U-ce-aG1" id="Xl7-wl-e6p"/>
+                        <outlet property="themeLavender" destination="Z0p-hc-l9J" id="puu-Za-h0w"/>
                         <outlet property="themeLeaf" destination="Vyh-Cm-7hE" id="CAj-9q-wEH"/>
                         <outlet property="themeOlive" destination="OcN-fL-GR5" id="0RW-eK-TQO"/>
                         <outlet property="themePeriwinkleBlue" destination="ndn-T8-Hfa" id="f9X-KJ-fMn"/>
