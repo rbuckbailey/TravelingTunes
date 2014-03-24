@@ -33,7 +33,6 @@ MPMusicPlayerController*        mediaPlayer;
     [self.navigationController setNavigationBarHidden:YES];
     [self setupLabels];
     self.timer=[NSTimer new];
-    [self startTimer];
 }
 
 /*** Gesture Actions begin ************************************************************************************************************************/
@@ -229,20 +228,34 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void)startTimer { // wait 4 seconds on title, then scroll it
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:4
-                                                  target: self
-                                                selector:@selector(scrollingTimer)
-                                                userInfo: nil
-                                                 repeats:NO];
+    // check the size. if the text doesn't fit, scroll it.
+    CGSize size = [_songTitle.text sizeWithFont:_songTitle.font];
+//    if (size.width > _songTitle.bounds.size.width)
+        
+    float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
+    int temp=_songTitle.frame.size.width;
+    if (textWidth > _songTitle.frame.size.width)
+        self.timer = [NSTimer scheduledTimerWithTimeInterval: 4
+                                                      target: self
+                                                    selector: @selector(scrollingTimer)
+                                                    userInfo: nil
+                                                     repeats: NO];
+    // otherwise the timer will restart itself to check for need due to new orientations
+    else self.timer = [NSTimer scheduledTimerWithTimeInterval: 4
+                                                       target: self
+                                                     selector: @selector(startTimer)
+                                                     userInfo: nil
+                                                      repeats: NO];
+
 }
 
 //- (IBAction)buttonAction:(id)sender {
 - (void)scrollingTimer {
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:0.2f
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:   0.2f
                                                     target: self
-                                                  selector:@selector(scrollSongTitle:)
+                                                  selector: @selector(scrollSongTitle:)
                                                   userInfo: nil
-                                                 repeats:YES];
+                                                   repeats: YES];
 }
 
 - (void)setupLabels {
@@ -274,6 +287,7 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
 
     }
+    [self startTimer];
 }
 
 - (void)beatlesParty {
