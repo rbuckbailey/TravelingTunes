@@ -19,13 +19,52 @@
 -(void)viewWillAppear:(BOOL)animated
 {
     [self.navigationController setNavigationBarHidden:NO];
+    
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    
+    
+    // initialize labels and controls for Display Settings view
+    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"artistFontSize"]];
+    _artistFontSizeSlider.value = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
+    _artistAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"artistAlignment"] floatValue];
+    _songFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"songFontSize"]];
+    _songFontSizeSlider.value = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
+    _songAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"songAlignment"] floatValue];
+    _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"albumFontSize"]];
+    _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
+    _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
+    
+    // initialize theme previews for Display settings
+    
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
+    
+    NSMutableDictionary *themedict = [gestureController themes];
+    NSArray *themecolors = [themedict objectForKey:currentTheme];
+    UIColor *themebg = [themecolors objectAtIndex:0];
+    UIColor *themecolor = [themecolors objectAtIndex:1];
+    
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        _themeInvert.on = YES;
+        _themeSelectionPreviewLabel.textColor = themebg;
+        _themeSelectionPreviewLabel.text = currentTheme;
+        _themeSelectionPreview.backgroundColor = themecolor; }
+    else {
+        _themeInvert.on = NO;
+        _themeSelectionPreviewLabel.textColor = themecolor;
+        _themeSelectionPreviewLabel.text = currentTheme;
+        _themeSelectionPreview.backgroundColor = themebg; }
+    
+    // initialize switches and controls for playlist view
+    if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
+    if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
 }
 
-- (void)viewDidLoad
-{
+- (void)viewDidLoad {
     [super viewDidLoad];
-
+/*** these were set on load but on appearance may be better ************************************************************
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     
     // initialize labels and controls for Display Settings view
@@ -39,12 +78,23 @@
     _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
     _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
 
+    // initialize theme previews for Display settings
+    
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
+    
+    NSMutableDictionary *themedict = [gestureController themes];
+    NSArray *themecolors = [themedict objectForKey:currentTheme];
+    UIColor *themebg = [themecolors objectAtIndex:0];
+    UIColor *themecolor = [themecolors objectAtIndex:1];
+    
+    _themeSelectionPreviewLabel.textColor = themebg;
+    _themeSelectionPreviewLabel.text = currentTheme;
+    _themeSeletionPreview.backgroundColor = themecolor;
     
     // initialize switches and controls for playlist view
     if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
-//    if ([[[gestureController playlistSettings] objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
     if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
- 
+ */
 }
 
 
@@ -107,7 +157,7 @@
 }
 */
 
--(void) configure:(NSString *)action
+-(void)configure:(NSString *)action
 {
     // load gesture controller and set up
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -125,7 +175,6 @@
 
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-//    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
@@ -146,14 +195,14 @@
     else if (selection == _ResetGestureAssignments) [self initGestures];
     
     // if a theme cell was selected, set current theme
-    else if (selection == _themeGreyOnWhite) [defaults setObject:@"greyonwhite" forKey:@"currentTheme"];
-    else if (selection == _themeGreyOnBlack) [defaults setObject:@"greyonblack" forKey:@"currentTheme"];
-    else if (selection == _themeLeaf) [defaults setObject:@"leaf" forKey:@"currentTheme"];
-    else if (selection == _themeOlive) [defaults setObject:@"olive" forKey:@"currentTheme"];
-    else if (selection == _themeLavender) [defaults setObject:@"lavender" forKey:@"currentTheme"];
-    else if (selection == _themePeriwinkleBlue) [defaults setObject:@"periwinkleblue" forKey:@"currentTheme"];
-    else if (selection == _themeBlush) [defaults setObject:@"blush" forKey:@"currentTheme"];
-    else if (selection == _themeHotDogStand) [defaults setObject:@"hotdogstand" forKey:@"currentTheme"];
+    else if (selection == _themeGreyOnWhite) [defaults setObject:@"Grey on White" forKey:@"currentTheme"];
+    else if (selection == _themeGreyOnBlack) [defaults setObject:@"Grey on Black" forKey:@"currentTheme"];
+    else if (selection == _themeLeaf) [defaults setObject:@"Leaf" forKey:@"currentTheme"];
+    else if (selection == _themeOlive) [defaults setObject:@"Olive" forKey:@"currentTheme"];
+    else if (selection == _themeLavender) [defaults setObject:@"Lavender" forKey:@"currentTheme"];
+    else if (selection == _themePeriwinkleBlue) [defaults setObject:@"Periwinkle Blue" forKey:@"currentTheme"];
+    else if (selection == _themeBlush) [defaults setObject:@"Blush" forKey:@"currentTheme"];
+    else if (selection == _themeHotDogStand) [defaults setObject:@"Hot Dog Stand" forKey:@"currentTheme"];
     NSLog(@"Defaults are %@",[defaults objectForKey:@"currentTheme"]);
 //    [gestureController saveAll];
                               
@@ -307,4 +356,16 @@
     NSLog(@"repeat: %hhd",_playlistRepeat.on);
     [defaults synchronize];
 }
+
+- (IBAction)themeInvertChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_themeInvert.on) [defaults setObject:@"YES" forKey:@"themeInvert"];
+    else [defaults setObject:@"NO" forKey:@"themeInvert"];
+    UIColor *temp = _themeSelectionPreview.backgroundColor;
+    _themeSelectionPreview.backgroundColor = _themeSelectionPreviewLabel.textColor;
+    _themeSelectionPreviewLabel.textColor = temp;
+    NSLog(@"themeInvert: %hhd",_themeInvert.on);
+    [defaults synchronize];
+}
+    
 @end

@@ -45,7 +45,6 @@ MPMusicPlayerController*        mediaPlayer;
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        NSLog(@"long gesture is %@",[defaults objectForKey:@"11Tap"]);
         [self performPlayerAction:[defaults objectForKey:@"1LongPress"]:@"1LongPress"];
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
@@ -53,7 +52,6 @@ MPMusicPlayerController*        mediaPlayer;
 -(void)singleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
-    NSLog(@"gesture is %@",[defaults objectForKey:@"11Tap"]);
 }
 -(void)doubleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -156,9 +154,6 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeUp"]) _songTitle.text = @"vol up";
     else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
     else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
-
- //   [self setupLabels];
-    NSLog(@"%f",[mediaPlayer currentPlaybackTime]);
 }
 
 - (void) togglePlayPause {
@@ -170,6 +165,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void) restartPrevious {
+    NSLog(@"%f",[mediaPlayer currentPlaybackTime]);
     if ([mediaPlayer currentPlaybackTime] < 5) [mediaPlayer skipToPreviousItem]; else [mediaPlayer skipToBeginning];
 }
 
@@ -263,6 +259,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)setupLabels {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    [gestureController initThemes];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
  //   self.view.backgroundColor = [UIColor redColor];
@@ -272,6 +269,10 @@ MPMusicPlayerController*        mediaPlayer;
     NSArray *themecolors = [themedict objectForKey:currentTheme];
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+         UIColor *temp = themebg;
+         themebg = themecolor;
+         themecolor = temp; }
     
     self.view.backgroundColor = themebg;
 

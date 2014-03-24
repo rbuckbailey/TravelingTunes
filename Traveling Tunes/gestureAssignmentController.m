@@ -40,21 +40,21 @@
     //bg, artist, song, album
     self.themes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f    alpha:1],
-                                                [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f    alpha:1],nil],@"greyonwhite",
+                                                [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f    alpha:1],nil],@"Grey on White",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 0         green: 0           blue:0          alpha:1],
-                                                [UIColor colorWithRed: 190/255.f green: 190/255.f   blue:190/255.f  alpha:1],nil],@"greyonblack",
+                                                [UIColor colorWithRed: 190/255.f green: 190/255.f   blue:190/255.f  alpha:1],nil],@"Grey on Black",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 205/255.f green: 241/255.f   blue:5/255.f    alpha:1],
-                                                [UIColor colorWithRed: 98/255.f  green: 128/255.f   blue:29/255.f   alpha:1],nil],@"leaf",
+                                                [UIColor colorWithRed: 98/255.f  green: 128/255.f   blue:29/255.f   alpha:1],nil],@"Leaf",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 112/255.f green: 128/255.f   blue:34/255.f   alpha:1],
-                                                [UIColor colorWithRed: 179/255.f green: 171/255.f   blue:125/255.f  alpha:1],nil],@"olive",
+                                                [UIColor colorWithRed: 179/255.f green: 171/255.f   blue:125/255.f  alpha:1],nil],@"Olive",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 155/255.f green: 178/255.f   blue:255/255.f  alpha:1],
-                                                [UIColor colorWithRed: 98/255.f  green: 91/255.f    blue:255        alpha:1],nil],@"periwinkleblue",
+                                                [UIColor colorWithRed: 98/255.f  green: 91/255.f    blue:255        alpha:1],nil],@"Periwinkle Blue",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 195/255.f green: 192/255.f   blue:255/255.f  alpha:1],
-                                                [UIColor colorWithRed: 255/255.f green: 255/255.f   blue:255        alpha:1],nil],@"lavender",
+                                                [UIColor colorWithRed: 255/255.f green: 255/255.f   blue:255        alpha:1],nil],@"Lavender",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f green: 188/255.f   blue:196/255.f  alpha:1],
-                                                [UIColor colorWithRed: 255/255.f green: 239/255.f   blue:242        alpha:1],nil],@"blush",
+                                                [UIColor colorWithRed: 255/255.f green: 239/255.f   blue:242        alpha:1],nil],@"Blush",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f green: 255/255.f   blue:0          alpha:1],
-                                                [UIColor colorWithRed: 255/255.f green: 0           blue:0          alpha:1],nil],@"hotdogstand",
+                                                [UIColor colorWithRed: 255/255.f green: 0           blue:0          alpha:1],nil],@"Hot Dog Stand",
                    nil];
     
     [self saveThemes];
@@ -67,8 +67,8 @@
     [defaults setObject:@"VolumeUp" forKey:@"1SwipeUp"];
     [defaults setObject:@"VolumeDown" forKey:@"1SwipeDown"];
     [defaults setObject:@"PlayPause" forKey:@"11Tap"];
-    [defaults setObject:@"Unassigned" forKey:@"12Tap"];
-    [defaults setObject:@"Menu" forKey:@"13Tap"];
+    [defaults setObject:@"Menu" forKey:@"12Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"13Tap"];
     [defaults setObject:@"Menu" forKey:@"14Tap"];
     [defaults setObject:@"Menu" forKey:@"1LongPress"];
     [defaults setObject:@"Rewind" forKey:@"2SwipeLeft"];
