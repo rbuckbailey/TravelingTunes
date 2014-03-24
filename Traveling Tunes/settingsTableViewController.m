@@ -123,6 +123,8 @@
 
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
     if (selection == _Nothing) [self configure:@"Unassigned"];
     else if (selection == _Play) [self configure:@"Play"];
@@ -139,6 +141,18 @@
     else if (selection == _VolumeDown) [self configure:@"VolumeDown"];
     else if (selection == _Menu) [self configure:@"Menu"];
     else if (selection == _ResetGestureAssignments) [self initGestures];
+    
+    // if a theme cell was selected, set current theme
+    else if (selection == _themeGreyOnWhite) [[gestureController themes] setObject:@"greyonwhite" forKey:@"current"];
+    else if (selection == _themeGreyOnBlack) [[gestureController themes] setObject:@"greyonblack" forKey:@"current"];
+    else if (selection == _themeLeaf) [[gestureController themes] setObject:@"leaf" forKey:@"current"];
+    else if (selection == _themeOlive) [[gestureController themes] setObject:@"olive" forKey:@"current"];
+    else if (selection == _themeLavender) [[gestureController themes] setObject:@"lavender" forKey:@"current"];
+    else if (selection == _themePeriwinkleBlue) [[gestureController themes] setObject:@"periwinkleblue" forKey:@"current"];
+    else if (selection == _themeBlush) [[gestureController themes] setObject:@"blush" forKey:@"current"];
+    else if (selection == _themeHotDogStand) [[gestureController themes] setObject:@"hotdogstand" forKey:@"current"];
+    
+    [gestureController saveAll];
     /*
      consider:  PLAYALLSHUFFLE
      PLAYSHUFFLEDALBUMS

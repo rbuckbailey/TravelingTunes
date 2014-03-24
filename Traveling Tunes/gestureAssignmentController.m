@@ -62,7 +62,7 @@
                                                 [UIColor colorWithRed: 255/255.f green: 239/255.f blue:242 alpha:1],nil],@"blush",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 0   blue:0   alpha:1],
                                                 [UIColor colorWithRed: 255/255.f green: 255/255.f blue:0 alpha:1],nil],@"hotdogstand",
-                   @"greyOnWhite",@"current",
+                   @"greyonwhite",@"current",
                    nil];
     
     [self saveThemes];
@@ -102,6 +102,13 @@
     [self saveGestureAssignments];
 }
 
+-(void)saveAll {
+    [self saveGestureAssignments];
+    [self saveDisplaySettings];
+    [self saveThemes];
+    [self savePlaylistSettings];
+}
+
 -(void)saveGestureAssignments {
     NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentDirPath = [path objectAtIndex:0];
@@ -127,7 +134,7 @@
     NSString *fileName = @"themes.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     [_themes writeToFile:fileAndPath atomically:YES];
-//        NSLog(@"themes are %@",_themes);
+    NSLog(@"themes are %@",_themes);
 }
 
 -(void)loadThemes {
@@ -137,7 +144,7 @@
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _themes = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
     if (_themes==NULL) [self initThemes];
-    //    NSLog(@"themes are %@",_assignments);
+       NSLog(@"themes are %@",_themes);
 }
 
 -(void)saveDisplaySettings {

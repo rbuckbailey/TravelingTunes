@@ -16,11 +16,14 @@
 @property (retain) NSMutableDictionary* playlistSettings;
 @property (retain) NSMutableDictionary* themes;
 
+- (void)saveAll;
+
 - (void)initGestureAssignments;
-- (void)saveGestureAssignments;
 - (void)initDisplaySettings;
-- (void)saveDisplaySettings;
 - (void)initPlaylistSettings;
+
+- (void)saveGestureAssignments;
+- (void)saveDisplaySettings;
 - (void)savePlaylistSettings;
 
 @end

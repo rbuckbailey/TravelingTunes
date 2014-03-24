@@ -267,27 +267,32 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)setupLabels {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
  //   self.view.backgroundColor = [UIColor redColor];
-    UIColor *temp = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:0];
-    temp = [
+    NSString *currentTheme = [[gestureController themes] objectForKey:@"current"];
+    NSMutableDictionary *themedict = [gestureController themes];
+    NSArray *themecolors = [themedict objectForKey:currentTheme];
+    UIColor *themebg = [themecolors objectAtIndex:0];
+    UIColor *themecolor = [themecolors objectAtIndex:1];
     
-    self.view.backgroundColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:0];
+    
+    self.view.backgroundColor = themebg;
 
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
         _artistTitle.font   = [UIFont systemFontOfSize:28];
-        _artistTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
+//        _artistTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
+        _artistTitle.textColor = themecolor;
         [_artistTitle setAlpha:0.6f];
         
         _songTitle.numberOfLines = 1;
         _songTitle.text   = @"Tap for default playlist.";
         _songTitle.font   = [UIFont systemFontOfSize:28];
-        _songTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
+        _songTitle.textColor = themecolor;
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.text    = @"Long hold for menu.";
         _albumTitle.font    =  [UIFont systemFontOfSize:28];
-        _albumTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
+        _albumTitle.textColor = themecolor;
         [_albumTitle setAlpha:0.6f];
     } else {
         _artistTitle.numberOfLines = 1;
