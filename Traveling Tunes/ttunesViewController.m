@@ -145,13 +145,13 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
-    else if ([action isEqual:@"PlayPause"]) _songTitle.text = @"playPause";
-    else if ([action isEqual:@"Play"]) _songTitle.text = @"play";
-    else if ([action isEqual:@"Pause"]) _songTitle.text = @"Pause";
+    else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
+    else if ([action isEqual:@"Play"]) [mediaPlayer play];
+    else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
     else if ([action isEqual:@"NextSong"]) { [mediaPlayer skipToNextItem]; }
     else if ([action isEqual:@"PreviousSong"]) { [mediaPlayer skipToPreviousItem]; }
-    else if ([action isEqual:@"RestartPrevious"]) { [mediaPlayer skipToPreviousItem]; }
-    else if ([action isEqual:@"Restart"]) { [mediaPlayer skipToPreviousItem]; }
+    else if ([action isEqual:@"RestartPrevious"]) { [self restartPrevious]; }
+    else if ([action isEqual:@"Restart"]) { [mediaPlayer skipToBeginning]; }
     else if ([action isEqual:@"Rewind"]) _songTitle.text = @"rewind";
     else if ([action isEqual:@"FastForward"]) _songTitle.text = @"FF";
     else if ([action isEqual:@"VolumeUp"]) _songTitle.text = @"vol up";
@@ -159,6 +159,19 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
 
     [self setupLabels];
+    NSLog(@"%f",[mediaPlayer currentPlaybackTime]);
+}
+
+- (void) togglePlayPause {
+    if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
+        [mediaPlayer pause];
+    } else {
+        [mediaPlayer play];
+    }
+}
+
+- (void) restartPrevious {
+    if ([mediaPlayer currentPlaybackTime] < 5) [mediaPlayer skipToPreviousItem]; else [mediaPlayer skipToBeginning];
 }
 
 /* backup of
