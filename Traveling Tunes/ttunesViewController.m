@@ -32,6 +32,9 @@ MPMusicPlayerController*        mediaPlayer;
 {
     [self.navigationController setNavigationBarHidden:YES];
     [self setupLabels];
+    
+    self.timer=[NSTimer new];
+    self.longString=@"this is an awful long string I am testing";
 }
 
 /*** Gesture Actions begin ************************************************************************************************************************/
@@ -145,7 +148,8 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
-    else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
+    else if ([action isEqual:@"PlayPause"]) [self startTimer];
+//    else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [mediaPlayer play];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
     else if ([action isEqual:@"NextSong"]) { [mediaPlayer skipToNextItem]; }
@@ -213,31 +217,34 @@ MPMusicPlayerController*        mediaPlayer;
 }
 */
 
-/* from StackOverflow, marquee code from OSX. 
- ********************************************
--(void)awakeFromNib{
-    self.myTimer=[NSTimer new];
-    self.fullString=@"This is a long string to be shown.";
-    [self.label setAlignment:NSRightTextAlignment];
-}
 -(void)scrollText:(id)parameter{
     static NSInteger len;
-//    [self.label setStringValue:[self.fullString substringWithRange:NSMakeRange(0, len++)]];
-    _songTitle.text = @"Artist Test This is a long string where does it cut off";
-
+    // this should be calculated by width and font size
+    int charactersLeft = 25;
+    if ((len+charactersLeft) > [_longString length]) charactersLeft=[_longString length]-len;
+    _songTitle.text = [_longString substringWithRange:NSMakeRange(len++,charactersLeft)];
     
-    if (self.label.stringValue.length==self.fullString.length) {
-        [self.myTimer invalidate];
+    if (len==[_longString length]) {
+        [self.timer invalidate]; len=0; [self startTimer];
     }
 }
-- (IBAction)buttonAction:(id)sender {
-    self.myTimer = [NSTimer scheduledTimerWithTimeInterval:0.2f
+
+- (void)startTimer {
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:4
+                                                  target: self
+                                                selector:@selector(scrollingTimer)
+                                                userInfo: nil
+                                                 repeats:NO];
+}
+
+//- (IBAction)buttonAction:(id)sender {
+- (void)scrollingTimer {
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:0.2f
                                                     target: self
                                                   selector:@selector(scrollText:)
                                                   userInfo: nil
-                                                   repeats:YES];
+                                                 repeats:YES];
 }
-************************************************/
 
 - (void)setupLabels {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
