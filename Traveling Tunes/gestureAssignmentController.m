@@ -89,9 +89,8 @@
     NSString *fileName = @"settings.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _assignments = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
-    NSLog(@"assignments are %@",_assignments);
     if (_assignments==NULL) [self initGestureAssignments];
-    NSLog(@"assignments are %@",_assignments);
+//    NSLog(@"assignments are %@",_assignments);
 }
 
 -(void)saveDisplaySettings {
@@ -110,9 +109,8 @@
     NSString *fileName = @"display.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _displaySettings = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
-    NSLog(@"display settings are %@",_displaySettings);
     if (_displaySettings==NULL) [self initDisplaySettings];
-    NSLog(@"display settings are %@",_displaySettings);
+//    NSLog(@"display settings are %@",_displaySettings);
 }
 
 -(void)savePlaylistSettings {
@@ -131,9 +129,8 @@
     NSString *fileName = @"playlist.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _playlistSettings = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
-    NSLog(@"playlist settings are %@",_playlistSettings);
     if (_playlistSettings==NULL) [self initPlaylistSettings];
-    NSLog(@"playlist settings are %@",_playlistSettings);
+//    NSLog(@"playlist settings are %@",_playlistSettings);
 }
 
 @end

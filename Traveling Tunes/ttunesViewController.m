@@ -31,6 +31,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)viewWillAppear:(BOOL)animated
 {
     [self.navigationController setNavigationBarHidden:YES];
+    [self setupLabels];
 }
 
 - (IBAction)twoFingerTap:(id)sender {
@@ -154,7 +155,8 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeUp"]) _songTitle.text = @"vol up";
     else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
     else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
-    [self setupLabels:50:60:50];
+
+    [self setupLabels];
 }
 
 /* backup of
@@ -301,29 +303,24 @@ MPMusicPlayerController*        mediaPlayer;
 }
 */
 
-- (void)setupLabels:(int)artistSize :(int)songSize :(int)albumSize {
-//    [self fitLongTitle:@"monkey monkey badger monkey monkey badger monkey monkey badger monkey monkey badger"];
-  
-
-    
-    
-    //maybe this should dynamically change height to match font size? vertically centered so far. meh.
+- (void)setupLabels {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
    
     _artistTitle.numberOfLines = 1;
     _artistTitle.text   = @"Artist Test This is a long string where does it cut off";
-    _artistTitle.font   = [UIFont systemFontOfSize:artistSize];
-    _artistTitle.frame = CGRectMake(_artistTitle.frame.origin.x, _artistTitle.frame.origin.y, _artistTitle.frame.size.width, _artistTitle.frame.size.height);
+        _artistTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"artistFontSize"] floatValue]];
+    //  _artistTitle.frame = CGRectMake(_artistTitle.frame.origin.x, _artistTitle.frame.origin.y, _artistTitle.frame.size.width, _artistTitle.frame.size.height);
     
 
     _songTitle.numberOfLines = 1;
     _songTitle.text   = @"Song Test This is a long string where does it cut off";
-    _songTitle.font     = [UIFont systemFontOfSize:songSize];
-    _songTitle.frame = CGRectMake(_songTitle.frame.origin.x, _songTitle.frame.origin.y-(_songTitle.frame.size.height/2), _songTitle.frame.size.width, _songTitle.frame.size.height*2);
+    _songTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"songFontSize"] floatValue]];
+ //   _songTitle.frame = CGRectMake(_songTitle.frame.origin.x, _songTitle.frame.origin.y-(_songTitle.frame.size.height/2), _songTitle.frame.size.width, _songTitle.frame.size.height*2);
 
     _albumTitle.numberOfLines = 1;
-    _albumTitle.font    = [UIFont systemFontOfSize:albumSize];
+    _albumTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"albumFontSize"] floatValue]];
     _albumTitle.text    = @"Album Test This is a long string where does it cut off";
-    _albumTitle.frame = CGRectMake(_albumTitle.frame.origin.x, _albumTitle.frame.origin.y, _albumTitle.frame.size.width, _albumTitle.frame.size.height);
+//    _albumTitle.frame = CGRectMake(_albumTitle.frame.origin.x, _albumTitle.frame.origin.y, _albumTitle.frame.size.width, _albumTitle.frame.size.height);
 }
 
 - (void)beatlesParty {
