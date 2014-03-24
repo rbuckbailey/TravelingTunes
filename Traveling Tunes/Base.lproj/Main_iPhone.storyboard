@@ -1320,6 +1320,7 @@
                         <outlet property="customColorPreview" destination="2cX-dY-1s1" id="ogw-Hy-UFU"/>
                         <outlet property="customColorPreviewLabel" destination="cO3-ID-gpR" id="oJW-b5-Of1"/>
                         <outlet property="themeBlush" destination="39U-ce-aG1" id="EGk-VU-Cua"/>
+                        <outlet property="themeCustom" destination="2cX-dY-1s1" id="Od3-us-MCK"/>
                         <outlet property="themeGreyOnBlack" destination="AFm-v9-amb" id="MZI-pp-kiN"/>
                         <outlet property="themeGreyOnWhite" destination="4gH-oZ-L6C" id="hpz-2m-gFP"/>
                         <outlet property="themeHotDogStand" destination="DmW-tk-FnG" id="6Ah-yS-8et"/>
@@ -1364,6 +1365,9 @@
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="182" id="41V-xL-S86"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="textRedChanged:" destination="F2X-Ex-hDZ" eventType="valueChanged" id="gxi-OT-3iU"/>
+                                                    </connections>
                                                 </slider>
                                             </subviews>
                                             <constraints>
@@ -1395,6 +1399,9 @@
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="182" id="rD5-G0-Od0"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="textGreenChanged:" destination="F2X-Ex-hDZ" eventType="valueChanged" id="yGa-Bg-ST4"/>
+                                                    </connections>
                                                 </slider>
                                             </subviews>
                                             <constraints>
@@ -1426,6 +1433,9 @@
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="182" id="tsr-IB-sVQ"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="textBlueChanged:" destination="F2X-Ex-hDZ" eventType="valueChanged" id="RK2-QR-0sL"/>
+                                                    </connections>
                                                 </slider>
                                             </subviews>
                                             <constraints>
@@ -1461,6 +1471,9 @@
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="182" id="We4-pP-eCR"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="bgRedChanged:" destination="F2X-Ex-hDZ" eventType="valueChanged" id="tjb-nV-qoL"/>
+                                                    </connections>
                                                 </slider>
                                             </subviews>
                                             <constraints>
@@ -1492,6 +1505,9 @@
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="182" id="VTV-YB-Mzn"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="bgGreenChanged:" destination="F2X-Ex-hDZ" eventType="valueChanged" id="gby-if-ZFC"/>
+                                                    </connections>
                                                 </slider>
                                             </subviews>
                                             <constraints>
@@ -1523,6 +1539,9 @@
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="182" id="yz0-1p-bgY"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="bgBlueChanged:" destination="F2X-Ex-hDZ" eventType="valueChanged" id="Sa6-R1-B41"/>
+                                                    </connections>
                                                 </slider>
                                             </subviews>
                                             <constraints>

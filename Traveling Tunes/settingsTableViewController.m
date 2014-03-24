@@ -54,6 +54,16 @@
         _themeSelectionPreviewLabel.textColor = themecolor;
         _themeSelectionPreviewLabel.text = currentTheme;
         _themeSelectionPreview.backgroundColor = themebg; }
+
+    _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
+    _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
+    _bgBlueSlider.value = (int)[[defaults objectForKey:@"customBGBlue"] floatValue];
+    _textRedSlider.value = (int)[[defaults objectForKey:@"customTextRed"] floatValue];
+    _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
+    _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
+    
+    [self updateCustomPreview];
+    [self updateCustomPreview2];
     
     // initialize switches and controls for playlist view
     if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
@@ -203,6 +213,7 @@
     else if (selection == _themePeriwinkleBlue) [defaults setObject:@"Periwinkle Blue" forKey:@"currentTheme"];
     else if (selection == _themeBlush) [defaults setObject:@"Blush" forKey:@"currentTheme"];
     else if (selection == _themeHotDogStand) [defaults setObject:@"Hot Dog Stand" forKey:@"currentTheme"];
+    else if (selection == _themeCustom) [defaults setObject:@"Custom" forKey:@"currentTheme"];
     NSLog(@"Defaults are %@",[defaults objectForKey:@"currentTheme"]);
 //    [gestureController saveAll];
                               
@@ -366,6 +377,96 @@
     _themeSelectionPreviewLabel.textColor = temp;
     NSLog(@"themeInvert: %hhd",_themeInvert.on);
     [defaults synchronize];
+}
+
+- (void)updateCustomPreview {
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+        if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+                _customColorPreview.backgroundColor =
+                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
+                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
+                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
+                _customColorPreviewLabel.textColor =
+                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
+                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
+                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
+        else {
+                _customColorPreviewLabel.textColor =
+                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
+                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
+                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
+                _customColorPreview.backgroundColor =
+                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
+                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
+                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
+    }
+
+- (void)updateCustomPreview2 {
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    
+        if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+                _customColorPreview2.backgroundColor =
+                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
+                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
+                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
+                _customColorPreviewLabel2.textColor =
+                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
+                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
+                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
+        else {
+                _customColorPreviewLabel2.textColor =
+                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
+                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
+                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
+                _customColorPreview2.backgroundColor =
+                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
+                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
+                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
+    }
+
+
+- (IBAction)textRedChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_textRedSlider.value] forKey:@"customTextRed"];
+    [defaults synchronize];
+    [self updateCustomPreview2];
+}
+
+- (IBAction)textGreenChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_textGreenSlider.value] forKey:@"customTextGreen"];
+    [defaults synchronize];    
+    [self updateCustomPreview2];
+}
+
+- (IBAction)textBlueChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_textBlueSlider.value] forKey:@"customTextBlue"];
+    [defaults synchronize];
+    [self updateCustomPreview2];
+}
+
+- (IBAction)bgRedChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_bgRedSlider.value] forKey:@"customBGRed"];
+    [defaults synchronize];
+    [self updateCustomPreview2];
+}
+
+- (IBAction)bgGreenChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_bgGreenSlider.value] forKey:@"customBGGreen"];    
+    [defaults synchronize];
+    [self updateCustomPreview2];
+}
+
+- (IBAction)bgBlueChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_bgBlueSlider.value] forKey:@"customBGBlue"];
+    [defaults synchronize];
+    [self updateCustomPreview2];
 }
     
 @end

@@ -55,7 +55,7 @@
                     [UIColor colorWithRed: 255/255.f green: 239/255.f blue:242 alpha:1],nil],@"Blush",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 255/255.f   blue:0   alpha:1],
                     [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"Hot Dog Stand",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 255/255.f   blue:0   alpha:1],
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 10/255.f   green: 10/255.f   blue:0   alpha:1],
                     [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"Custom",
                    @"Lavender",@"current",
                    nil];
