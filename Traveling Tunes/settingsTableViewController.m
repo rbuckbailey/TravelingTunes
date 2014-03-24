@@ -38,6 +38,11 @@
     _albumFontSizeSlider.value = (int)[[[gestureController displaySettings] objectForKey:@"albumFontSize"] floatValue];
     _albumAlignmentControl.selectedSegmentIndex = (int)[[[gestureController displaySettings] objectForKey:@"albumAlignment"] floatValue];
 
+    
+    // initialize switches and controls for playlist view
+    if ([[[gestureController playlistSettings] objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
+    if ([[[gestureController playlistSettings] objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
+ 
 }
 
 
@@ -263,12 +268,18 @@
 
 - (IBAction)playlistShuffleChanged:(id)sender {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    if (_playlistShuffle.on) [[gestureController playlistSettings] setObject:@"YES" forKey:@"shuffle"];
+        else [[gestureController playlistSettings] setObject:@"NO" forKey:@"shuffle"];
+    NSLog(@"shuffle: %hhd",_playlistShuffle.enabled);
     [gestureController savePlaylistSettings];
 
 }
 
 - (IBAction)playlistRepeatChanged:(id)sender {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    if (_playlistRepeat.on) [[gestureController playlistSettings] setObject:@"YES" forKey:@"repeat"];
+    else [[gestureController playlistSettings] setObject:@"NO" forKey:@"repeat"];
+    NSLog(@"repeat: %hhd",_playlistRepeat.enabled);
     [gestureController savePlaylistSettings];
 }
 @end
