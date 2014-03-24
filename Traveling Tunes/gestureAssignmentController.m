@@ -13,6 +13,7 @@
 @implementation gestureAssignmentController
 
 - (id)init {
+    _themes = [[NSMutableDictionary alloc] init];
     [self loadThemes];
      return self;
 }
@@ -100,8 +101,34 @@
     NSString *documentDirPath = [path objectAtIndex:0];
     NSString *fileName = @"themes.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
-    [_themes writeToFile:fileAndPath atomically:YES];
-//    NSLog(@"themes are %@",_themes);
+
+    NSArray *themecolors;
+    NSMutableDictionary *temp = [[NSMutableDictionary alloc] init];
+
+//    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:themecolors];
+//    [temp setObject:data forKey:@"Grey on White"];
+
+    themecolors = [_themes objectForKey:@"Grey on White"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Grey on White"];
+    themecolors = [_themes objectForKey:@"Grey on Black"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Grey on Black"];
+    themecolors = [_themes objectForKey:@"Lavender"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Lavender"];
+    themecolors = [_themes objectForKey:@"Leaf"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Leaf"];
+    themecolors = [_themes objectForKey:@"Olive"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Olive"];
+    themecolors = [_themes objectForKey:@"Blush"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Blush"];
+    themecolors = [_themes objectForKey:@"Periwinkle Blue"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Periwinkle Blue"];
+    themecolors = [_themes objectForKey:@"Hot Dog Stand"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Hot Dog Stand"];
+    themecolors = [_themes objectForKey:@"Custom"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Custom"];
+
+    [temp writeToFile:fileAndPath atomically:YES];
+//    NSLog(@"themes are %@",_themes);*/
 }
 
 -(void)loadThemes {
@@ -109,7 +136,20 @@
     NSString *documentDirPath = [path objectAtIndex:0];
     NSString *fileName = @"themes.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
-    _themes = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    NSMutableDictionary *temp;
+
+    temp = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on White"]] forKey:@"Grey on White"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on Black"]] forKey:@"Grey on Black"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Lavender"]] forKey:@"Lavender"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Leaf"]] forKey:@"Leaf"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Olive"]] forKey:@"Olive"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Blush"]] forKey:@"Blush"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Periwinkle Blue"]] forKey:@"Periwinkle Blue"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Hot Dog Stand"]] forKey:@"Hot Dog Stand"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Custom"]] forKey:@"Custom"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Leaf"]] forKey:@"Leaf"];
+
     if (_themes==NULL) [self initThemes];
 //       NSLog(@"themes are %@",_themes);
 }

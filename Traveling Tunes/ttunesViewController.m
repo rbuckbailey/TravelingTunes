@@ -259,7 +259,6 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)setupLabels {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    [gestureController initThemes];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
  //   self.view.backgroundColor = [UIColor redColor];
@@ -297,14 +296,15 @@ MPMusicPlayerController*        mediaPlayer;
     } else {
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
-        _artistTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"artistFontSize"] floatValue]];
+//        _artistTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"artistFontSize"] floatValue]];
+        _artistTitle.font   = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"artistFontSize"] floatValue]];
     
         _songTitle.numberOfLines = 1;
         _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-        _songTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"songFontSize"] floatValue]];
+        _songTitle.font   = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"songFontSize"] floatValue]];
         
         _albumTitle.numberOfLines = 1;
-        _albumTitle.font    = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"albumFontSize"] floatValue]];
+        _albumTitle.font    = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"albumFontSize"] floatValue]];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
 
     }
