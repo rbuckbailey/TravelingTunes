@@ -44,27 +44,27 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
-        gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-        NSMutableDictionary *assignments = [gestureController assignments];
-        [self performPlayerAction:[assignments objectForKey:@"1LongPress"]:@"1LongPress"];
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [self performPlayerAction:[defaults objectForKey:@"1LongPress"]:@"1LongPress"];
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
 
 -(void)singleTap{
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    [self performPlayerAction:[gestureController.assignments objectForKey:@"11Tap"]:@"11Tap"];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
+    NSLog(@"gesture is %@",[defaults objectForKey:@"1Tap"]);
 }
 -(void)doubleTap{
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    [self performPlayerAction:[gestureController.assignments objectForKey:@"12Tap"]:@"12Tap"];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"12Tap"]:@"12Tap"];
 }
 -(void)tripleTap{
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    [self performPlayerAction:[gestureController.assignments objectForKey:@"13Tap"]:@"13Tap"];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"13Tap"]:@"13Tap"];
 }
 -(void)quadrupleTap{
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    [self performPlayerAction:[gestureController.assignments objectForKey:@"14Tap"]:@"14Tap"];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"14Tap"]:@"14Tap"];
 }
 
 
@@ -118,27 +118,23 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (IBAction)swipeLeftDetected:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *assignments = [gestureController assignments];
-    [self performPlayerAction:[assignments objectForKey:@"1SwipeLeft"]:@"swipeLeft"];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"1SwipeLeft"]:@"swipeLeft"];
 }
 
 - (IBAction)swipeRight:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *assignments = [gestureController assignments];
-    [self performPlayerAction:[assignments objectForKey:@"1SwipRight"]:@"swipeRight"];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"1SwipRight"]:@"swipeRight"];
 }
 
 - (IBAction)swipeUpDetected:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *assignments = [gestureController assignments];
-    [self performPlayerAction:[assignments objectForKey:@"1SwipeUp"]:@"swipeUp"];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"1SwipeUp"]:@"swipeUp"];
 }
 
 - (IBAction)swipeDownDetected:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSMutableDictionary *assignments = [gestureController assignments];
-    [self performPlayerAction:[assignments objectForKey:@"1SwipeDown"]:@"swipeDown"];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"1SwipeDown"]:@"swipeDown"];
 }
 
 /****** Gesture Actions end *********************************************************************************************************************************/
@@ -266,6 +262,8 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)setupLabels {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
  //   self.view.backgroundColor = [UIColor redColor];
     NSString *currentTheme = [[gestureController themes] objectForKey:@"current"];
     NSMutableDictionary *themedict = [gestureController themes];

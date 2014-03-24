@@ -21,24 +21,22 @@
 }
 
 - (void)initDisplaySettings {
-    self.displaySettings = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-                            @"50",@"artistFontSize",
-                            @"60",@"songFontSize",
-                            @"50",@"albumFontSize",
-                            @"Left",@"artistAlignment",
-                            @"Left",@"songAlignment",
-                            @"Left",@"albumAlignment",
-                            nil];
-    [self saveDisplaySettings];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:@"50" forKey:@"artistFontSize"];
+    [defaults setObject:@"70" forKey:@"songFontSize"];
+    [defaults setObject:@"50" forKey:@"albumFontSize"];
+    [defaults setObject:@"Left" forKey:@"artistAlignment"];
+    [defaults setObject:@"Left" forKey:@"songAlignment"];
+    [defaults setObject:@"Left" forKey:@"albumAlignment"];
+    [defaults synchronize];
 }
 
 - (void)initPlaylistSettings {
-    self.playlistSettings = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-                             @"1",@"repeat",
-                             @"1",@"shuffle",
-                             @"play all",@"playlist",
-                             nil];
-    [self savePlaylistSettings];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:@"1" forKey:@"repeat"];
+    [defaults setObject:@"1" forKey:@"shuffle"];
+    [defaults setObject:@"play all" forKey:@"playlist"];
+    [defaults synchronize];
 }
 
 - (void)initThemes {
@@ -69,37 +67,37 @@
 }
 
 - (void)initGestureAssignments {
-     // this configures array to defaults.
-     self.assignments = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-     @"Previous" ?: [NSNull null], @"1SwipeLeft",
-     @"Next" ?: [NSNull null], @"1SwipeRight",
-     @"VolumeUp" ?: [NSNull null], @"1SwipeUp",
-     @"VolumeDown" ?: [NSNull null], @"1SwipeDown",
-     @"PlayPause" ?: [NSNull null], @"11Tap",
-     @"Unassigned" ?: [NSNull null], @"12Tap",
-     @"Unassigned" ?: [NSNull null], @"13Tap",
-     @"Menu" ?: [NSNull null], @"14Tap",
-     @"Menu" ?: [NSNull null], @"1LongPress",
-     @"Rewind" ?: [NSNull null], @"2SwipeLeft",
-     @"FastForward" ?: [NSNull null], @"2SwipeRight",
-     @"Unassigned" ?: [NSNull null], @"2SwipeUp",
-     @"Unassigned" ?: [NSNull null], @"2SwipeDown",
-     @"Unassigned" ?: [NSNull null], @"21Tap",
-     @"Unassigned" ?: [NSNull null], @"22Tap",
-     @"Unassigned" ?: [NSNull null], @"23Tap",
-     @"Unassigned" ?: [NSNull null], @"24Tap",
-     @"Unassigned" ?: [NSNull null], @"2LongPress",
-     @"Unassigned" ?: [NSNull null], @"3SwipeLeft",
-     @"Unassigned" ?: [NSNull null], @"3SwipeRight",
-     @"Unassigned" ?: [NSNull null], @"3SwipeUp",
-     @"Unassigned" ?: [NSNull null], @"3SwipeDown",
-     @"Unassigned" ?: [NSNull null], @"31Tap",
-     @"Unassigned" ?: [NSNull null], @"32Tap",
-     @"Unassigned" ?: [NSNull null], @"33Tap",
-     @"Unassigned" ?: [NSNull null], @"34Tap",
-     @"Unassigned" ?: [NSNull null], @"3LongPress",
-     nil];
-    [self saveGestureAssignments];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:@"Previous" forKey:@"1SwipeLeft"];
+    [defaults setObject:@"Next" forKey:@"1SwipeRight"];
+    [defaults setObject:@"VolumeUp" forKey:@"1SwipeUp"];
+    [defaults setObject:@"VolumeDown" forKey:@"1SwipeDown"];
+    [defaults setObject:@"PlayPause" forKey:@"11Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"12Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"13Tap"];
+    [defaults setObject:@"Menu" forKey:@"14Tap"];
+    [defaults setObject:@"Menu" forKey:@"1LongPress"];
+    [defaults setObject:@"Rewind" forKey:@"2SwipeLeft"];
+    [defaults setObject:@"FastForward" forKey:@"2SwipeRight"];
+    [defaults setObject:@"Unassigned" forKey:@"2SwipeUp"];
+    [defaults setObject:@"Unassigned" forKey:@"2SwipeDown"];
+    [defaults setObject:@"Unassigned" forKey:@"21Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"22Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"23Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"24Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"2LongPress"];
+    [defaults setObject:@"Unassigned" forKey:@"3SwipeLeft"];
+    [defaults setObject:@"Unassigned" forKey:@"3SwipeRight"];
+    [defaults setObject:@"Unassigned" forKey:@"3SwipeUp"];
+    [defaults setObject:@"Unassigned" forKey:@"3SwipeDown"];
+    [defaults setObject:@"Unassigned" forKey:@"31Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"32Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"33Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"34Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"3LongPress"];
+    [defaults synchronize];
+    NSLog(@"defaults are %@",[defaults objectForKey:@"1Tap"]);
+
 }
 
 -(void)saveAll {

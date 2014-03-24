@@ -25,23 +25,25 @@
 {
     [super viewDidLoad];
 
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
+    
     // initialize labels and controls for Display Settings view
-    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"artistFontSize"]];
-    _artistFontSizeSlider.value = (int)[[[gestureController displaySettings] objectForKey:@"artistFontSize"] floatValue];
-    _artistAlignmentControl.selectedSegmentIndex = (int)[[[gestureController displaySettings] objectForKey:@"artistAlignment"] floatValue];
-    _songFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"songFontSize"]];
-    _songFontSizeSlider.value = (int)[[[gestureController displaySettings] objectForKey:@"songFontSize"] floatValue];
-    _songAlignmentControl.selectedSegmentIndex = (int)[[[gestureController displaySettings] objectForKey:@"songAlignment"] floatValue];
-    _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[[gestureController displaySettings] objectForKey:@"albumFontSize"]];
-    _albumFontSizeSlider.value = (int)[[[gestureController displaySettings] objectForKey:@"albumFontSize"] floatValue];
-    _albumAlignmentControl.selectedSegmentIndex = (int)[[[gestureController displaySettings] objectForKey:@"albumAlignment"] floatValue];
+    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"artistFontSize"]];
+    _artistFontSizeSlider.value = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
+    _artistAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"artistAlignment"] floatValue];
+    _songFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"songFontSize"]];
+    _songFontSizeSlider.value = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
+    _songAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"songAlignment"] floatValue];
+    _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"albumFontSize"]];
+    _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
+    _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
 
     
     // initialize switches and controls for playlist view
-    if ([[[gestureController playlistSettings] objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
-    if ([[[gestureController playlistSettings] objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
+    if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
+//    if ([[[gestureController playlistSettings] objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
+    if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
  
 }
 
@@ -108,14 +110,15 @@
 -(void) configure:(NSString *)action
 {
     // load gesture controller and set up
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
-
+    NSLog(@"defaults was %@",[defaults objectForKey:fullGesture]);
     // change the dictionary
-    [[gestureController assignments] setObject:action forKey: fullGesture];
-   
+    [defaults setObject:action forKey: fullGesture];
+    NSLog(@"defaults is %@",[defaults objectForKey:fullGesture]);
+
     // save the dictionary
-    [gestureController saveGestureAssignments];
+    [defaults synchronize];
     
     NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
 }
@@ -123,6 +126,7 @@
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
     if (selection == _Nothing) [self configure:@"Unassigned"];
@@ -208,9 +212,9 @@
 {
     if(buttonIndex==0)
     {
-        gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-        [gestureController initGestureAssignments];
-        [gestureController saveGestureAssignments];
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+//        [gestureController initGestureAssignments];
+        [defaults synchronize];
     }
     
 }
@@ -221,78 +225,84 @@
 }
 
 
+// *** title display actions ********************************************************************
 - (IBAction)artistAlignmentChanged:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     if (_artistAlignmentControl.selectedSegmentIndex == 0) {
-        [[gestureController displaySettings] setObject:@"0" forKey:@"artistAlignment"];
+        [defaults setObject:@"0" forKey:@"artistAlignment"];
     } else if(_artistAlignmentControl.selectedSegmentIndex == 1) {
-        [[gestureController displaySettings] setObject:@"1" forKey:@"artistAlignment"];
+        [defaults setObject:@"1" forKey:@"artistAlignment"];
     } else if(_artistAlignmentControl.selectedSegmentIndex == 2) {
-        [[gestureController displaySettings] setObject:@"2" forKey:@"artistAlignment"];
+        [defaults setObject:@"2" forKey:@"artistAlignment"];
     }
-    [gestureController saveDisplaySettings];
+    [defaults synchronize];
 }
 
 - (IBAction)artistFontSizeSliderChanged:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     _artistFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_artistFontSizeSlider.value];
-    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_artistFontSizeSlider.value] forKey:@"artistFontSize"];
-    [gestureController saveDisplaySettings];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_artistFontSizeSlider.value] forKey:@"artistFontSize"];
+    [defaults synchronize];
     //= [UIFont systemFontOfSize:50];
 }
 
 - (IBAction)songAlignmentChanged:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     if (_songAlignmentControl.selectedSegmentIndex == 0) {
-        [[gestureController displaySettings] setObject:@"0" forKey:@"songAlignment"];
+        [defaults setObject:@"0" forKey:@"songAlignment"];
     } else if(_songAlignmentControl.selectedSegmentIndex == 1) {
-        [[gestureController displaySettings] setObject:@"1" forKey:@"songAlignment"];
+        [defaults setObject:@"1" forKey:@"songAlignment"];
     } else if(_songAlignmentControl.selectedSegmentIndex == 2) {
-        [[gestureController displaySettings] setObject:@"2" forKey:@"songAlignment"];
+        [defaults setObject:@"2" forKey:@"songAlignment"];
     }
-    [gestureController saveDisplaySettings];
+    [defaults synchronize];
 }
 
 - (IBAction)songFontSizeSliderChanged:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     _songFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_songFontSizeSlider.value];
-    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_songFontSizeSlider.value] forKey:@"songFontSize"];
-    [gestureController saveDisplaySettings];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_songFontSizeSlider.value] forKey:@"songFontSize"];
+    [defaults synchronize];
 }
 
 - (IBAction)albumAlignmentControl:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     if (_albumAlignmentControl.selectedSegmentIndex == 0) {
-        [[gestureController displaySettings] setObject:@"0" forKey:@"albumAlignment"];
+        [defaults setObject:@"0" forKey:@"albumAlignment"];
     } else if(_albumAlignmentControl.selectedSegmentIndex == 1) {
-        [[gestureController displaySettings] setObject:@"1" forKey:@"albumAlignment"];
+        [defaults setObject:@"1" forKey:@"albumAlignment"];
     } else if(_albumAlignmentControl.selectedSegmentIndex == 2) {
-        [[gestureController displaySettings] setObject:@"2" forKey:@"albumAlignment"];
+        [defaults setObject:@"2" forKey:@"albumAlignment"];
     }
-    [gestureController saveDisplaySettings];
+    [defaults synchronize];
 }
 
 - (IBAction)albumFontSizeSliderChanged:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     _albumFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_albumFontSizeSlider.value];
-    [[gestureController displaySettings] setObject:[NSNumber numberWithFloat:(int)_albumFontSizeSlider.value] forKey:@"albumFontSize"];
-    [gestureController saveDisplaySettings];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_albumFontSizeSlider.value] forKey:@"albumFontSize"];
+    [defaults synchronize];
 }
 
+// *** playlist switch actions ********************************************************************
 - (IBAction)playlistShuffleChanged:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
-    if (_playlistShuffle.on) [[gestureController playlistSettings] setObject:@"YES" forKey:@"shuffle"];
-        else [[gestureController playlistSettings] setObject:@"NO" forKey:@"shuffle"];
-    NSLog(@"shuffle: %hhd",_playlistShuffle.enabled);
-    [gestureController savePlaylistSettings];
-
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_playlistShuffle.on) [defaults setObject:@"YES" forKey:@"shuffle"];
+    else [defaults setObject:@"NO" forKey:@"shuffle"];
+    [defaults synchronize];
+    NSLog(@"shuffle: %hhd",_playlistShuffle.on);
 }
 
 - (IBAction)playlistRepeatChanged:(id)sender {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];;
-    if (_playlistRepeat.on) [[gestureController playlistSettings] setObject:@"YES" forKey:@"repeat"];
-    else [[gestureController playlistSettings] setObject:@"NO" forKey:@"repeat"];
-    NSLog(@"repeat: %hhd",_playlistRepeat.enabled);
-    [gestureController savePlaylistSettings];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_playlistRepeat.on) [defaults setObject:@"YES" forKey:@"repeat"];
+    else [defaults setObject:@"NO" forKey:@"repeat"];
+    NSLog(@"repeat: %hhd",_playlistRepeat.on);
+    [defaults synchronize];
 }
 @end
