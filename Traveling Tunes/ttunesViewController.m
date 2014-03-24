@@ -32,7 +32,8 @@ MPMusicPlayerController*        mediaPlayer;
 {
     [self.navigationController setNavigationBarHidden:YES];
     [self setupLabels];
-    self.timer=[NSTimer new];
+   
+    [self firstStartTimer];
 }
 
 /*** Gesture Actions begin ************************************************************************************************************************/
@@ -159,7 +160,7 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
     else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
 
-    [self setupLabels];
+ //   [self setupLabels];
     NSLog(@"%f",[mediaPlayer currentPlaybackTime]);
 }
 
@@ -227,13 +228,18 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 
+// this super kludgey fix gives the labels a moment to set up before startTimer grabs the width
+- (void)firstStartTimer {
+    self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                                                  target: self
+                                                selector: @selector(startTimer)
+                                                userInfo: nil
+                                                 repeats: NO];
+}
+
 - (void)startTimer { // wait 4 seconds on title, then scroll it
     // check the size. if the text doesn't fit, scroll it.
-    CGSize size = [_songTitle.text sizeWithFont:_songTitle.font];
-//    if (size.width > _songTitle.bounds.size.width)
-        
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
-    int temp=_songTitle.frame.size.width;
     if (textWidth > _songTitle.frame.size.width)
         self.timer = [NSTimer scheduledTimerWithTimeInterval: 4
                                                       target: self
@@ -287,7 +293,6 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
 
     }
-    [self startTimer];
 }
 
 - (void)beatlesParty {
