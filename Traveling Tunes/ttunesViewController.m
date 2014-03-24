@@ -218,7 +218,7 @@ MPMusicPlayerController*        mediaPlayer;
 // this always scrolls, even if the text fits.
 -(void)scrollSongTitle:(id)parameter{
     static NSInteger len;
-    NSString *scrollString = ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) ? @"Tap to start default playlist." : [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+    NSString *scrollString = ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) ? @"Tap for default playlist." : [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
     int charactersLeft = [scrollString length]-len;
     if ((len+charactersLeft) > [scrollString length]) charactersLeft=[scrollString length]-len;
     _songTitle.text = [scrollString substringWithRange:NSMakeRange(len++,charactersLeft)];
@@ -270,15 +270,15 @@ MPMusicPlayerController*        mediaPlayer;
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "none playing screen"
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
-        _artistTitle.font   = [UIFont systemFontOfSize:30];
+        _artistTitle.font   = [UIFont systemFontOfSize:28];
         
         _songTitle.numberOfLines = 1;
-        _songTitle.text   = @"Tap to start default playlist.";
-        _songTitle.font   = [UIFont systemFontOfSize:30];
+        _songTitle.text   = @"Tap for default playlist.";
+        _songTitle.font   = [UIFont systemFontOfSize:28];
         
         _albumTitle.numberOfLines = 1;
-        _albumTitle.text    = @"...";
-        _albumTitle.font    =  [UIFont systemFontOfSize:30];
+        _albumTitle.text    = @" ";
+        _albumTitle.font    =  [UIFont systemFontOfSize:28];
     } else { // output song titles and info
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];

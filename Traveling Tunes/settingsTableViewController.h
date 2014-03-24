@@ -52,6 +52,16 @@
 - (IBAction)albumAlignmentControl:(id)sender;
 - (IBAction)albumFontSizeSliderChanged:(id)sender;
 
+//display theme cell outlets
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnWhite;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnBlack;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeLeaf;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeOlive;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themePeriwinklueBlue;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeLavender;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeBlush;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeHotDogStand;
+
 
 // custom color picker slider outlets
 @property (weak, nonatomic) IBOutlet UISlider *textRedSlider;

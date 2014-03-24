@@ -14,6 +14,7 @@
 @property (retain) NSMutableDictionary* assignments;
 @property (retain) NSMutableDictionary* displaySettings;
 @property (retain) NSMutableDictionary* playlistSettings;
+@property (retain) NSMutableDictionary* themes;
 
 - (void)initGestureAssignments;
 - (void)saveGestureAssignments;
