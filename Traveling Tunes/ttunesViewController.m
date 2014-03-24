@@ -266,20 +266,30 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)setupLabels {
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-   
-    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "none playing screen"
+ //   self.view.backgroundColor = [UIColor redColor];
+    UIColor *temp = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:0];
+    temp = [
+    
+    self.view.backgroundColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:0];
+
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
         _artistTitle.font   = [UIFont systemFontOfSize:28];
+        _artistTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
+        [_artistTitle setAlpha:0.6f];
         
         _songTitle.numberOfLines = 1;
         _songTitle.text   = @"Tap for default playlist.";
         _songTitle.font   = [UIFont systemFontOfSize:28];
+        _songTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
         
         _albumTitle.numberOfLines = 1;
-        _albumTitle.text    = @" ";
+        _albumTitle.text    = @"Long hold for menu.";
         _albumTitle.font    =  [UIFont systemFontOfSize:28];
-    } else { // output song titles and info
+        _albumTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
+        [_albumTitle setAlpha:0.6f];
+    } else {
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
         _artistTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"artistFontSize"] floatValue]];

@@ -46,42 +46,23 @@
     
     //bg, artist, song, album
     self.themes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255 green: 255 blue:255 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 130 green: 130 blue:130 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"greyOnWhite",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f alpha:1],
+                                                [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f alpha:1],nil],@"greyonwhite",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 0   green: 0   blue:0   alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:0.8],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"alphaTest",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 0   green: 0   blue:0   alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 190 green: 190 blue:190 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"greyOnBlack",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 205   green: 241   blue:5   alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 98 green: 128 blue:29 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"leaf",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 112   green: 128   blue:34   alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 179 green: 171 blue:125 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"olive",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 155   green: 178   blue:255   alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 98 green: 91 blue:255 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"periwinkleblue",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 195   green: 192   blue:255   alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 255 green: 255 blue:255 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"lavender",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255   green: 188   blue:196   alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 255 green: 239 blue:242 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"blush",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255   green: 0   blue:0   alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],
-                                                [UIColor colorWithRed: 255 green: 255 blue:0 alpha:1],
-                                                [UIColor colorWithRed: 170 green: 170 blue:170 alpha:1],nil],@"hotdogstand",
+                                                [UIColor colorWithRed: 190/255.f green: 190/255.f blue:190/255.f alpha:1],nil],@"greyonblack",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 205/255.f   green: 241/255.f   blue:5/255.f   alpha:1],
+                                                [UIColor colorWithRed: 98/255.f green: 128/255.f blue:29/255.f alpha:1],nil],@"leaf",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 112/255.f   green: 128/255.f   blue:34/255.f   alpha:1],
+                                                [UIColor colorWithRed: 179/255.f green: 171/255.f blue:125/255.f alpha:1],nil],@"olive",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 155/255.f   green: 178/255.f   blue:255/255.f   alpha:1],
+                                                [UIColor colorWithRed: 98/255.f green: 91/255.f blue:255 alpha:1],nil],@"periwinkleblue",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 195/255.f   green: 192/255.f   blue:255/255.f   alpha:1],
+                                                [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255 alpha:1],nil],@"lavender",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 188/255.f   blue:196/255.f   alpha:1],
+                                                [UIColor colorWithRed: 255/255.f green: 239/255.f blue:242 alpha:1],nil],@"blush",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 0   blue:0   alpha:1],
+                                                [UIColor colorWithRed: 255/255.f green: 255/255.f blue:0 alpha:1],nil],@"hotdogstand",
+                   @"greyOnWhite",@"current",
                    nil];
     
     [self saveThemes];
@@ -133,11 +114,11 @@
 -(void)loadGestures {
     NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentDirPath = [path objectAtIndex:0];
-    NSString *fileName = @"settings.plist";
+    NSString *fileName = @"gestures.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
     _assignments = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
     if (_assignments==NULL) [self initGestureAssignments];
-    //    NSLog(@"assignments are %@",_assignments);
+ //       NSLog(@"assignments are %@",_assignments);
 }
 
 -(void)saveThemes {
@@ -145,8 +126,8 @@
     NSString *documentDirPath = [path objectAtIndex:0];
     NSString *fileName = @"themes.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
-    [_assignments writeToFile:fileAndPath atomically:YES];
-        NSLog(@"themes are %@",_themes);
+    [_themes writeToFile:fileAndPath atomically:YES];
+//        NSLog(@"themes are %@",_themes);
 }
 
 -(void)loadThemes {
@@ -154,8 +135,8 @@
     NSString *documentDirPath = [path objectAtIndex:0];
     NSString *fileName = @"themes.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
-    _assignments = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
-    if (_assignments==NULL) [self initThemes];
+    _themes = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    if (_themes==NULL) [self initThemes];
     //    NSLog(@"themes are %@",_assignments);
 }
 
