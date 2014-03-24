@@ -32,9 +32,8 @@ MPMusicPlayerController*        mediaPlayer;
 {
     [self.navigationController setNavigationBarHidden:YES];
     [self setupLabels];
-    
     self.timer=[NSTimer new];
-    self.longString=@"this is an awful long string I am testing";
+    [self startTimer];
 }
 
 /*** Gesture Actions begin ************************************************************************************************************************/
@@ -148,8 +147,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
-    else if ([action isEqual:@"PlayPause"]) [self startTimer];
-//    else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
+    else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [mediaPlayer play];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
     else if ([action isEqual:@"NextSong"]) { [mediaPlayer skipToNextItem]; }
@@ -217,19 +215,20 @@ MPMusicPlayerController*        mediaPlayer;
 }
 */
 
--(void)scrollText:(id)parameter{
+// this always scrolls, even if the text fits.
+-(void)scrollSongTitle:(id)parameter{
     static NSInteger len;
-    // this should be calculated by width and font size
-    int charactersLeft = 25;
-    if ((len+charactersLeft) > [_longString length]) charactersLeft=[_longString length]-len;
-    _songTitle.text = [_longString substringWithRange:NSMakeRange(len++,charactersLeft)];
+    NSString *scrollString = ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) ? @"Tap to start default playlist." : [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+    int charactersLeft = [scrollString length]-len;
+    if ((len+charactersLeft) > [scrollString length]) charactersLeft=[scrollString length]-len;
+    _songTitle.text = [scrollString substringWithRange:NSMakeRange(len++,charactersLeft)];
     
-    if (len==[_longString length]) {
-        [self.timer invalidate]; len=0; [self startTimer];
+    if (len==[scrollString length]) {
+        [self.timer invalidate]; len=0; _songTitle.text = scrollString; [self startTimer];
     }
 }
 
-- (void)startTimer {
+- (void)startTimer { // wait 4 seconds on title, then scroll it
     self.timer = [NSTimer scheduledTimerWithTimeInterval:4
                                                   target: self
                                                 selector:@selector(scrollingTimer)
@@ -241,7 +240,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)scrollingTimer {
     self.timer = [NSTimer scheduledTimerWithTimeInterval:0.2f
                                                     target: self
-                                                  selector:@selector(scrollText:)
+                                                  selector:@selector(scrollSongTitle:)
                                                   userInfo: nil
                                                  repeats:YES];
 }
@@ -255,7 +254,7 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.font   = [UIFont systemFontOfSize:30];
         
         _songTitle.numberOfLines = 1;
-        _songTitle.text   = @"Tap screen to play default playlist.";
+        _songTitle.text   = @"Tap to start default playlist.";
         _songTitle.font   = [UIFont systemFontOfSize:30];
         
         _albumTitle.numberOfLines = 1;
