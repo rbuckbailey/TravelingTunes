@@ -258,21 +258,7 @@
                     <view key="view" contentMode="scaleToFill" id="uGb-Q3-ryA">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                        <subviews>
-                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Quick Start Guide" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="K1n-kG-W3C">
-                                <rect key="frame" x="20" y="20" width="280" height="38"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                        </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
-                        <constraints>
-                            <constraint firstItem="K1n-kG-W3C" firstAttribute="leading" secondItem="uGb-Q3-ryA" secondAttribute="leading" constant="20" symbolic="YES" id="c2d-NO-Ty1"/>
-                            <constraint firstItem="K1n-kG-W3C" firstAttribute="top" secondItem="uGb-Q3-ryA" secondAttribute="top" constant="20" symbolic="YES" id="cu8-Zt-ZmV"/>
-                            <constraint firstItem="TIB-Ob-09O" firstAttribute="top" secondItem="K1n-kG-W3C" secondAttribute="bottom" constant="510" id="kAR-aa-8f2"/>
-                            <constraint firstAttribute="trailing" secondItem="K1n-kG-W3C" secondAttribute="trailing" constant="20" symbolic="YES" id="lDS-aI-fRs"/>
-                        </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="VSo-iA-vlA"/>
                 </viewController>
