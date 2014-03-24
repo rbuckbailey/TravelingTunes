@@ -54,12 +54,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/gestureAssignmentController.m"
-            timestampString = "416173988.687436"
+            timestampString = "417362867.11158"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "27"
-            endingLineNumber = "27"
-            landmarkName = "-resetAssignments"
+            startingLineNumber = "24"
+            endingLineNumber = "24"
+            landmarkName = "-initDisplaySettings"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
@@ -70,28 +70,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "416176875.88495"
+            timestampString = "417363038.434395"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "108"
-            endingLineNumber = "108"
-            landmarkName = "@implementation ttunesViewController"
-            landmarkType = "3">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "416176875.88495"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "110"
-            endingLineNumber = "110"
-            landmarkName = "-panDetected:"
+            startingLineNumber = "109"
+            endingLineNumber = "109"
+            landmarkName = "-rotationDetected:"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
@@ -102,12 +86,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "416176807.638398"
+            timestampString = "417363038.434395"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "51"
-            endingLineNumber = "51"
-            landmarkName = "-singleTap"
+            startingLineNumber = "111"
+            endingLineNumber = "111"
+            landmarkName = "-rotationDetected:"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
@@ -118,12 +102,76 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/gestureAssignmentController.m"
-            timestampString = "417277970.900096"
+            timestampString = "417362867.11158"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "25"
-            endingLineNumber = "25"
-            landmarkName = "-resetAssignments"
+            startingLineNumber = "22"
+            endingLineNumber = "22"
+            landmarkName = "-initDisplaySettings"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Traveling Tunes/settingsTableViewController.m"
+            timestampString = "417362946.904506"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "123"
+            endingLineNumber = "123"
+            landmarkName = "-configure:"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Traveling Tunes/ttunesViewController.m"
+            timestampString = "417363056.191163"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "56"
+            endingLineNumber = "56"
+            landmarkName = "-singleTap"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Traveling Tunes/ttunesViewController.m"
+            timestampString = "417363094.872396"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "50"
+            endingLineNumber = "50"
+            landmarkName = "-longPressDetected:"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Traveling Tunes/gestureAssignmentController.m"
+            timestampString = "417363479.075428"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "95"
+            endingLineNumber = "95"
+            landmarkName = "-initGestureAssignments"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>

@@ -13,9 +13,6 @@
 @implementation gestureAssignmentController
 
 - (id)init {
-    [self loadGestures];
-    [self loadDisplaySettings];
-    [self loadPlaylistSettings];
     [self loadThemes];
      return self;
 }
@@ -74,7 +71,7 @@
     [defaults setObject:@"VolumeDown" forKey:@"1SwipeDown"];
     [defaults setObject:@"PlayPause" forKey:@"11Tap"];
     [defaults setObject:@"Unassigned" forKey:@"12Tap"];
-    [defaults setObject:@"Unassigned" forKey:@"13Tap"];
+    [defaults setObject:@"Menu" forKey:@"13Tap"];
     [defaults setObject:@"Menu" forKey:@"14Tap"];
     [defaults setObject:@"Menu" forKey:@"1LongPress"];
     [defaults setObject:@"Rewind" forKey:@"2SwipeLeft"];
@@ -96,8 +93,6 @@
     [defaults setObject:@"Unassigned" forKey:@"34Tap"];
     [defaults setObject:@"Unassigned" forKey:@"3LongPress"];
     [defaults synchronize];
-    NSLog(@"defaults are %@",[defaults objectForKey:@"1Tap"]);
-
 }
 
 -(void)saveAll {

@@ -210,10 +210,11 @@
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     if(buttonIndex==0)
     {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-//        [gestureController initGestureAssignments];
+        [gestureController initGestureAssignments];
         [defaults synchronize];
     }
     

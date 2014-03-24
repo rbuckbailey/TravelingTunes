@@ -45,6 +45,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        NSLog(@"long gesture is %@",[defaults objectForKey:@"11Tap"]);
         [self performPlayerAction:[defaults objectForKey:@"1LongPress"]:@"1LongPress"];
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
@@ -52,7 +53,7 @@ MPMusicPlayerController*        mediaPlayer;
 -(void)singleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
-    NSLog(@"gesture is %@",[defaults objectForKey:@"1Tap"]);
+    NSLog(@"gesture is %@",[defaults objectForKey:@"11Tap"]);
 }
 -(void)doubleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
