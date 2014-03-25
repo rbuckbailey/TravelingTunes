@@ -1260,11 +1260,10 @@
                     </tableView>
                     <navigationItem key="navigationItem" id="Ik3-3J-k78"/>
                     <connections>
-                        <outlet property="customColorPreview" destination="2cX-dY-1s1" id="ogw-Hy-UFU"/>
-                        <outlet property="customColorPreviewLabel" destination="cO3-ID-gpR" id="oJW-b5-Of1"/>
                         <outlet property="themeBlush" destination="39U-ce-aG1" id="EGk-VU-Cua"/>
                         <outlet property="themeBlushLabel" destination="beW-wb-Gt7" id="ekp-jN-XoK"/>
                         <outlet property="themeCustom" destination="2cX-dY-1s1" id="Od3-us-MCK"/>
+                        <outlet property="themeCustomLabel" destination="cO3-ID-gpR" id="ALW-tC-PJZ"/>
                         <outlet property="themeGreyOnBlack" destination="AFm-v9-amb" id="MZI-pp-kiN"/>
                         <outlet property="themeGreyOnBlackLabel" destination="H9h-lI-zIb" id="1bN-vl-yK2"/>
                         <outlet property="themeGreyOnWhite" destination="4gH-oZ-L6C" id="hpz-2m-gFP"/>
@@ -1717,25 +1716,6 @@
                                         </tableViewCellContentView>
                                         <connections>
                                             <segue destination="vZ5-Y4-J4G" kind="push" identifier="4Tap" id="mxG-5m-7Z9"/>
-                                        </connections>
-                                    </tableViewCell>
-                                    <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="Gue-7N-52V">
-                                        <rect key="frame" x="0.0" y="352" width="320" height="44"/>
-                                        <autoresizingMask key="autoresizingMask"/>
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Gue-7N-52V" id="tcW-IA-ieq">
-                                            <rect key="frame" x="0.0" y="0.0" width="287" height="43"/>
-                                            <autoresizingMask key="autoresizingMask"/>
-                                            <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Long Press" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="pWO-bt-hGa">
-                                                    <rect key="frame" x="20" y="11" width="280" height="21"/>
-                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                                    <nil key="highlightedColor"/>
-                                                </label>
-                                            </subviews>
-                                        </tableViewCellContentView>
-                                        <connections>
-                                            <segue destination="vZ5-Y4-J4G" kind="push" identifier="LongPress" id="aKb-k3-DFf"/>
                                         </connections>
                                     </tableViewCell>
                                 </cells>

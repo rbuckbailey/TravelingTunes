@@ -66,6 +66,7 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeHotDogStand;
 @property (weak, nonatomic) IBOutlet UILabel *themeHotDogStandLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeCustom;
+@property (weak, nonatomic) IBOutlet UILabel *themeCustomLabel;
 
 // display preview cells and labels
 @property (weak, nonatomic) IBOutlet UILabel *themeSelectionPreviewLabel;

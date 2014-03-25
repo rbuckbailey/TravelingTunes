@@ -54,6 +54,8 @@
         _themeSelectionPreviewLabel.textColor = themecolor;
         _themeSelectionPreviewLabel.text = currentTheme;
         _themeSelectionPreview.backgroundColor = themebg; }
+    _themeCustomLabel.textColor = themecolor;
+    _themeCustom.backgroundColor = themebg;
 
     _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
     _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
@@ -373,9 +375,46 @@
     else [defaults setObject:@"NO" forKey:@"themeInvert"];
 
     // invert all labels in picker here
-    UIColor *temp = _themeSelectionPreview.backgroundColor;
+    UIColor *temp;
+    temp = _themeGreyOnWhite.backgroundColor;
+    _themeGreyOnWhite.backgroundColor = _themeGreyOnWhiteLabel.textColor;
+    _themeGreyOnWhiteLabel.textColor = temp;
+
+    temp = _themeGreyOnBlack.backgroundColor;
+    _themeGreyOnBlack.backgroundColor = _themeGreyOnBlackLabel.textColor;
+    _themeGreyOnBlackLabel.textColor = temp;
+    
+    temp = _themeLeaf.backgroundColor;
+    _themeLeaf.backgroundColor = _themeLeafLabel.textColor;
+    _themeLeafLabel.textColor = temp;
+    
+    temp = _themePeriwinkleBlue.backgroundColor;
+    _themePeriwinkleBlue.backgroundColor = _themePeriwinkleBlueLabel.textColor;
+    _themePeriwinkleBlueLabel.textColor = temp;
+    
+    temp = _themeLavender.backgroundColor;
+    _themeLavender.backgroundColor = _themeLavenderLabel.textColor;
+    _themeLavenderLabel.textColor = temp;
+    
+    temp = _themeBlush.backgroundColor;
+    _themeBlush.backgroundColor = _themeBlushLabel.textColor;
+    _themeBlushLabel.textColor = temp;
+    
+    temp = _themeHotDogStand.backgroundColor;
+    _themeHotDogStand.backgroundColor = _themeHotDogStandLabel.textColor;
+    _themeHotDogStandLabel.textColor = temp;
+    
+    temp = _themeCustom.backgroundColor;
+    _themeCustom.backgroundColor = _themeCustomLabel.textColor;
+    _themeCustomLabel.textColor = temp;
+    
+    temp = _themeOlive.backgroundColor;
+    _themeOlive.backgroundColor = _themeOliveLabel.textColor;
+    _themeOliveLabel.textColor = temp;
+
+/*    UIColor *temp = _themeSelectionPreview.backgroundColor;
     _themeSelectionPreview.backgroundColor = _themeSelectionPreviewLabel.textColor;
-    _themeSelectionPreviewLabel.textColor = temp;
+    _themeSelectionPreviewLabel.textColor = temp; */
 
     NSLog(@"themeInvert: %hhd",_themeInvert.on);
     [defaults synchronize];
