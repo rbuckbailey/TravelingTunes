@@ -56,14 +56,9 @@
                             <constraint firstAttribute="trailing" secondItem="OCq-tB-ORW" secondAttribute="trailing" constant="15" id="vvp-sk-ygP"/>
                         </constraints>
                         <connections>
-                            <outletCollection property="gestureRecognizers" destination="pqR-GO-tXG" appends="YES" id="IcC-RG-BRu"/>
-                            <outletCollection property="gestureRecognizers" destination="bBm-Uo-aRl" appends="YES" id="5ob-UM-0iA"/>
-                            <outletCollection property="gestureRecognizers" destination="ggY-ix-P1S" appends="YES" id="TiP-RC-Hbg"/>
                             <outletCollection property="gestureRecognizers" destination="Xfa-qB-Yyw" appends="YES" id="k5c-Ch-tAs"/>
                             <outletCollection property="gestureRecognizers" destination="Zcv-Wk-9xm" appends="YES" id="yAo-VF-y9q"/>
-                            <outletCollection property="gestureRecognizers" destination="uuK-AF-k7P" appends="YES" id="Skx-VN-abg"/>
                             <outletCollection property="gestureRecognizers" destination="KpV-sg-Yej" appends="YES" id="m8j-ho-vUZ"/>
-                            <outletCollection property="gestureRecognizers" destination="Nl0-EI-yF7" appends="YES" id="wZe-oU-3Yu"/>
                         </connections>
                     </view>
                     <navigationItem key="navigationItem" id="vAC-Uz-lP5"/>
@@ -75,41 +70,11 @@
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="x5A-6p-PRh" sceneMemberID="firstResponder"/>
-                <pinchGestureRecognizer cancelsTouchesInView="NO" id="pqR-GO-tXG">
-                    <connections>
-                        <action selector="pinchDetected:" destination="vXZ-lx-hvc" id="djh-bW-pMV"/>
-                    </connections>
-                </pinchGestureRecognizer>
-                <rotationGestureRecognizer cancelsTouchesInView="NO" id="bBm-Uo-aRl">
-                    <connections>
-                        <action selector="rotationDetected:" destination="vXZ-lx-hvc" id="k8F-vP-Ox9"/>
-                    </connections>
-                </rotationGestureRecognizer>
                 <tapGestureRecognizer cancelsTouchesInView="NO" id="Zcv-Wk-9xm" userLabel="Tap Single-1 Gesture Recognizer">
                     <connections>
                         <action selector="singleTapDetected:" destination="vXZ-lx-hvc" id="uvW-Si-Z6T"/>
                     </connections>
                 </tapGestureRecognizer>
-                <panGestureRecognizer cancelsTouchesInView="NO" minimumNumberOfTouches="1" id="ggY-ix-P1S">
-                    <connections>
-                        <action selector="panDetected:" destination="vXZ-lx-hvc" id="7j0-JF-upb"/>
-                    </connections>
-                </panGestureRecognizer>
-                <swipeGestureRecognizer cancelsTouchesInView="NO" direction="right" id="CyG-oC-Pft" userLabel="Swipe Right Gesture Recognizer">
-                    <connections>
-                        <action selector="swipeRight:" destination="vXZ-lx-hvc" id="WSD-yL-XJF"/>
-                    </connections>
-                </swipeGestureRecognizer>
-                <swipeGestureRecognizer cancelsTouchesInView="NO" direction="up" id="uuK-AF-k7P" userLabel="Swipe Up Gesture Recognizer">
-                    <connections>
-                        <action selector="swipeUpDetected:" destination="vXZ-lx-hvc" id="laF-TY-Pg6"/>
-                    </connections>
-                </swipeGestureRecognizer>
-                <swipeGestureRecognizer cancelsTouchesInView="NO" direction="down" id="ba7-fH-iNl" userLabel="Swipe Down Gesture Recognizer">
-                    <connections>
-                        <action selector="swipeDownDetected:" destination="vXZ-lx-hvc" id="O0R-4Z-gLq"/>
-                    </connections>
-                </swipeGestureRecognizer>
                 <tapGestureRecognizer cancelsTouchesInView="NO" numberOfTouchesRequired="2" id="KpV-sg-Yej" userLabel="2 Finger Tap Gesture Recognizer">
                     <connections>
                         <action selector="twoFingerTap:" destination="vXZ-lx-hvc" id="zNt-wY-gfB"/>
@@ -120,11 +85,6 @@
                         <action selector="longPressDetected:" destination="vXZ-lx-hvc" id="lN4-w0-kjc"/>
                     </connections>
                 </pongPressGestureRecognizer>
-                <swipeGestureRecognizer direction="left" id="Nl0-EI-yF7" userLabel="Swipe Left Gesture Recognizer">
-                    <connections>
-                        <action selector="swipeLeftDetected:" destination="vXZ-lx-hvc" id="c8m-hS-JiN"/>
-                    </connections>
-                </swipeGestureRecognizer>
             </objects>
             <point key="canvasLocation" x="508" y="445"/>
         </scene>

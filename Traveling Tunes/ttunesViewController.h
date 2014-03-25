@@ -29,12 +29,5 @@ typedef enum : NSInteger {
 
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;
-- (IBAction)pinchDetected:(id)sender;
-- (IBAction)rotationDetected:(id)sender;
-- (IBAction)panDetected:(id)sender;
-- (IBAction)swipeLeftDetected:(id)sender;
-- (IBAction)swipeRight:(id)sender;
-- (IBAction)swipeUpDetected:(id)sender;
-- (IBAction)swipeDownDetected:(id)sender;
 
 @end
