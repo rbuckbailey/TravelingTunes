@@ -18,10 +18,9 @@
         [self initGestureAssignments];
         [self initDisplaySettings];
         [self initPlaylistSettings];
+        [self initThemes];
         [defaults setObject:@"Yes!" forKey:@"firstRun"]; [defaults synchronize];
-    }
-//    [self loadThemes];
-    [self initThemes];
+    } else [self loadThemes];
 /*    [self initGestureAssignments];
     [self initDisplaySettings];
     [self initPlaylistSettings]; */
@@ -145,6 +144,7 @@
 }
 
 -(void)loadThemes {
+    self.themes = [[NSMutableDictionary alloc] init];
     NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentDirPath = [path objectAtIndex:0];
     NSString *fileName = @"themes.plist";
@@ -152,6 +152,7 @@
     NSMutableDictionary *temp;
 
     temp = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on White"]] forKey:@"Grey on White"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on Black"]] forKey:@"Grey on Black"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Lavender"]] forKey:@"Lavender"];

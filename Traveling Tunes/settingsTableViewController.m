@@ -494,7 +494,7 @@
                                            [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
                                                            green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
                                                             blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1],nil] forKey:@"Custom"];
-   //     [gestureController saveThemes];
+    [gestureController saveThemes];
 }
 
 - (IBAction)textRedChanged:(id)sender {
