@@ -374,12 +374,7 @@
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
     _themeSelectionPreview.backgroundColor = themebg;
     _themeSelectionPreviewLabel.textColor = themecolor;
-    CGColorRef color = [_themeSelectionPreview.backgroundColor CGColor];
-    int numComponents = CGColorGetNumberOfComponents(color);
-    if (numComponents == 4) {
-        const CGFloat *components = CGColorGetComponents(color); CGFloat red = components[0]; CGFloat green = components[1]; CGFloat blue = components[2];
-        if (((red+green+blue)/3)<0.5f) _themeSelectionPreviewTitle.textColor = [UIColor whiteColor]; else _themeSelectionPreviewTitle.textColor = [UIColor blackColor];
-    }
+    _themeSelectionPreviewTitle.textColor = themecolor;
     
     themecolors = [[gestureController themes] objectForKey:@"Grey on White"];
     themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
