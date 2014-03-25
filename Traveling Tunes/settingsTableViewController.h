@@ -25,6 +25,7 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *Menu;
 @property (weak, nonatomic) IBOutlet UITableViewCell *VolumeUp;
 @property (weak, nonatomic) IBOutlet UITableViewCell *VolumeDown;
+@property (weak, nonatomic) IBOutlet UITableViewCell *startDefaultPlaylist;
 @property (weak, nonatomic) IBOutlet settingsTableViewCell *ResetGestureAssignments;
 
 // display settings outlets

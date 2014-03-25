@@ -191,6 +191,7 @@
     else if (selection == _SongPicker) [self configure:@"SongPicker"];
     else if (selection == _VolumeUp) [self configure:@"VolumeUp"];
     else if (selection == _VolumeDown) [self configure:@"VolumeDown"];
+    else if (selection == _startDefaultPlaylist) [self configure:@"StartDefaultPlaylist"];
     else if (selection == _Menu) [self configure:@"Menu"];
     else if (selection == _ResetGestureAssignments) [self initGestures];
     

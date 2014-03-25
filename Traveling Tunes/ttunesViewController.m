@@ -48,6 +48,10 @@ MPMusicPlayerController*        mediaPlayer;
     [self.view addGestureRecognizer:recognizer];
 }
 
+
+/*** Gesture Actions begin ************************************************************************************************************************/
+
+
 - (void)handleSwipe:(UIPanGestureRecognizer *)gesture {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     CGPoint translation = [gesture translationInView:self.view];
@@ -137,11 +141,14 @@ MPMusicPlayerController*        mediaPlayer;
     return _direction;
 }
 
-
-/*** Gesture Actions begin ************************************************************************************************************************/
-
 - (IBAction)twoFingerTap:(id)sender {
-    _songTitle.text=@"Two Fingers Detected";
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"21Tap"]:@"21Tap"];
+}
+
+- (IBAction)threeFingerTap:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"31Tap"]:@"31Tap"];
 }
 
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
@@ -150,6 +157,22 @@ MPMusicPlayerController*        mediaPlayer;
         [self performPlayerAction:[defaults objectForKey:@"1LongPress"]:@"1LongPress"];
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
+
+- (IBAction)longPress2Detected:(UIGestureRecognizer *)sender {
+    if (sender.state == UIGestureRecognizerStateBegan) {
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [self performPlayerAction:[defaults objectForKey:@"2LongPress"]:@"2LongPress"];
+    } // else, UIGestureRecognizerState[Changed / Ended]
+}
+
+- (IBAction)longPress3Detected:(UIGestureRecognizer *)sender {
+    if (sender.state == UIGestureRecognizerStateBegan) {
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [self performPlayerAction:[defaults objectForKey:@"3LongPress"]:@"3LongPress"];
+    } // else, UIGestureRecognizerState[Changed / Ended]
+}
+
+
 /*
 -(void)singleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -195,44 +218,6 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 */
-- (IBAction)pinchDetected:(id)sender {
-    CGFloat scale = [(UIPinchGestureRecognizer *)sender scale];
-    CGFloat velocity = [(UIPinchGestureRecognizer *)sender velocity];
-    NSString *resultString = [[NSString alloc] initWithFormat:
-                              @"Pinch - scale = %f, velocity = %f",
-                              scale, velocity];
-    _songTitle.text = resultString;
-}
-
-- (IBAction)rotationDetected:(id)sender {
-    CGFloat radians = [(UIRotationGestureRecognizer *)sender rotation];
-    CGFloat velocity = [(UIRotationGestureRecognizer *)sender velocity];
-    NSString *resultString = [[NSString alloc] initWithFormat:
-                              @"Rotation - Radians = %f, velocity = %f",
-                              radians, velocity];
-    _songTitle.text = resultString;
-}
-/*
-- (IBAction)swipeLeftDetected:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [self performPlayerAction:[defaults objectForKey:@"1SwipeLeft"]:@"swipeLeft"];
-}
-
-- (IBAction)swipeRight:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [self performPlayerAction:[defaults objectForKey:@"1SwipRight"]:@"swipeRight"];
-}
-
-- (IBAction)swipeUpDetected:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [self performPlayerAction:[defaults objectForKey:@"1SwipeUp"]:@"swipeUp"];
-}
-
-- (IBAction)swipeDownDetected:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [self performPlayerAction:[defaults objectForKey:@"1SwipeDown"]:@"swipeDown"];
-}
- */
 
 /****** Gesture Actions end *********************************************************************************************************************************/
 /****** Player Actions begin *********************************************************************************************************************************/
@@ -253,7 +238,7 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"FastForward"]) NSLog(@"FF");
     else if ([action isEqual:@"VolumeUp"]) NSLog(@"vol up");
     else if ([action isEqual:@"VolumeDown"]) NSLog(@"vol down");
-    else if ([action isEqual:@"PlayAllBeatles"]) [self playAllSongs];
+    else if ([action isEqual:@"StartDefaultPlaylist"]) [self playAllSongs];
     [self setupLabels];
 }
 
@@ -285,7 +270,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 // this super kludgey fix gives the labels a moment to set up before startTimer grabs the width
 - (void)firstStartTimer {
-    self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+    self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.5f
                                                   target: self
                                                 selector: @selector(startTimer)
                                                 userInfo: nil
@@ -310,7 +295,6 @@ MPMusicPlayerController*        mediaPlayer;
 
 }
 
-//- (IBAction)buttonAction:(id)sender {
 - (void)scrollingTimer {
     self.timer = [NSTimer scheduledTimerWithTimeInterval:   0.2f
                                                     target: self

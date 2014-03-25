@@ -82,9 +82,9 @@
     [defaults setObject:@"VolumeUp" forKey:@"1SwipeUp"];
     [defaults setObject:@"VolumeDown" forKey:@"1SwipeDown"];
     [defaults setObject:@"PlayPause" forKey:@"11Tap"];
-    [defaults setObject:@"Menu" forKey:@"12Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"12Tap"];
     [defaults setObject:@"Unassigned" forKey:@"13Tap"];
-    [defaults setObject:@"Menu" forKey:@"14Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"14Tap"];
     [defaults setObject:@"Menu" forKey:@"1LongPress"];
     [defaults setObject:@"Rewind" forKey:@"2SwipeLeft"];
     [defaults setObject:@"FastForward" forKey:@"2SwipeRight"];
@@ -94,7 +94,7 @@
     [defaults setObject:@"Unassigned" forKey:@"22Tap"];
     [defaults setObject:@"Unassigned" forKey:@"23Tap"];
     [defaults setObject:@"Unassigned" forKey:@"24Tap"];
-    [defaults setObject:@"Unassigned" forKey:@"2LongPress"];
+    [defaults setObject:@"StartDefaultPlaylist" forKey:@"2LongPress"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeLeft"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeRight"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeUp"];
@@ -105,7 +105,7 @@
     [defaults setObject:@"Unassigned" forKey:@"34Tap"];
     [defaults setObject:@"Unassigned" forKey:@"3LongPress"];
     [defaults synchronize];
-    NSLog(@"gesture init test is %@",[defaults objectForKey:@"3LongPress"]);
+    NSLog(@"Initializing gestures assignments.");
 }
 
 -(void)saveThemes {
