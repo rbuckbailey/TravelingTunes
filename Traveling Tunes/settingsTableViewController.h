@@ -31,24 +31,28 @@
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;
 @property (weak, nonatomic) IBOutlet UISlider *artistFontSizeSlider;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *artistAlignmentControl;
+@property (weak, nonatomic) IBOutlet UILabel *artistColorLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *artistColorCell;
 - (IBAction)artistAlignmentChanged:(id)sender;
 - (IBAction)artistFontSizeSliderChanged:(id)sender;
 
 @property (weak, nonatomic) IBOutlet UILabel *songFontSizeLabel;
 @property (weak, nonatomic) IBOutlet UISlider *songFontSizeSlider;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *songAlignmentControl;
+@property (weak, nonatomic) IBOutlet UILabel *songColorLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *songColorCell;
 - (IBAction)songAlignmentChanged:(id)sender;
 - (IBAction)songFontSizeSliderChanged:(id)sender;
 
 @property (weak, nonatomic) IBOutlet UILabel *albumFontSizeLabel;
 @property (weak, nonatomic) IBOutlet UISlider *albumFontSizeSlider;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *albumAlignmentControl;
+@property (weak, nonatomic) IBOutlet UILabel *albumColorLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *albumColorCell;
 - (IBAction)albumAlignmentControl:(id)sender;
 - (IBAction)albumFontSizeSliderChanged:(id)sender;
 
 //display theme cell outlets
-@property (strong, nonatomic) IBOutlet UISwitch *themeInvert;
-- (IBAction)themeInvertChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnWhite;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnBlack;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLeaf;
@@ -57,11 +61,10 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLavender;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeBlush;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeHotDogStand;
-@property (weak, nonatomic) IBOutlet UITableViewCell *themeCustom;
 
 // display preview cells and labels
 @property (weak, nonatomic) IBOutlet UILabel *themeSelectionPreviewLabel;
-@property (weak, nonatomic) IBOutlet UITableViewCell *themeSelectionPreview;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeSeletionPreview;
 @property (weak, nonatomic) IBOutlet UILabel *customColorPreviewLabel2;
 @property (weak, nonatomic) IBOutlet UITableViewCell *customColorPreview2;
 @property (weak, nonatomic) IBOutlet UILabel *customColorPreviewLabel;

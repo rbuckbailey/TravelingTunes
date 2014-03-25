@@ -13,7 +13,9 @@
 @implementation gestureAssignmentController
 
 - (id)init {
-    _themes = [[NSMutableDictionary alloc] init];
+    [self loadGestures];
+    [self loadDisplaySettings];
+    [self loadPlaylistSettings];
     [self loadThemes];
      return self;
 }
@@ -38,27 +40,27 @@
 }
 
 - (void)initThemes {
+//    NSArray *temp = [NSArray arrayWithObjects:[UIColor colorWithRed: 25 green: 25 blue:25 alpha:1],[UIColor colorWithRed: 25 green: 25 blue:25 alpha:1],[UIColor colorWithRed: 25 green: 25 blue:25 alpha:1],nil];
+    
     //bg, artist, song, album
     self.themes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f alpha:1],
-                    [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f alpha:1],nil],@"Grey on White",
+                                                [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f alpha:1],nil],@"greyonwhite",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 0   green: 0   blue:0   alpha:1],
-                    [UIColor colorWithRed: 190/255.f green: 190/255.f blue:190/255.f alpha:1],nil],@"Grey on Black",
+                                                [UIColor colorWithRed: 190/255.f green: 190/255.f blue:190/255.f alpha:1],nil],@"greyonblack",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 205/255.f   green: 241/255.f   blue:5/255.f   alpha:1],
-                    [UIColor colorWithRed: 98/255.f green: 128/255.f blue:29/255.f alpha:1],nil],@"Leaf",
+                                                [UIColor colorWithRed: 98/255.f green: 128/255.f blue:29/255.f alpha:1],nil],@"leaf",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 112/255.f   green: 128/255.f   blue:34/255.f   alpha:1],
-                    [UIColor colorWithRed: 179/255.f green: 171/255.f blue:125/255.f alpha:1],nil],@"Olive",
+                                                [UIColor colorWithRed: 179/255.f green: 171/255.f blue:125/255.f alpha:1],nil],@"olive",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 155/255.f   green: 178/255.f   blue:255/255.f   alpha:1],
-                    [UIColor colorWithRed: 98/255.f green: 91/255.f blue:255 alpha:1],nil],@"Periwinkle Blue",
+                                                [UIColor colorWithRed: 98/255.f green: 91/255.f blue:255 alpha:1],nil],@"periwinkleblue",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 195/255.f   green: 192/255.f   blue:255/255.f   alpha:1],
-                    [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255 alpha:1],nil],@"Lavender",
+                                                [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255 alpha:1],nil],@"lavender",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 188/255.f   blue:196/255.f   alpha:1],
-                    [UIColor colorWithRed: 255/255.f green: 239/255.f blue:242 alpha:1],nil],@"Blush",
+                                                [UIColor colorWithRed: 255/255.f green: 239/255.f blue:242 alpha:1],nil],@"blush",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 255/255.f   blue:0   alpha:1],
-                    [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"Hot Dog Stand",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 10/255.f   green: 10/255.f   blue:0   alpha:1],
-                    [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"Custom",
-                   @"Lavender",@"current",
+                                                [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"hotdogstand",
+                   @"lavender",@"current",
                    nil];
     
     [self saveThemes];
@@ -71,7 +73,7 @@
     [defaults setObject:@"VolumeUp" forKey:@"1SwipeUp"];
     [defaults setObject:@"VolumeDown" forKey:@"1SwipeDown"];
     [defaults setObject:@"PlayPause" forKey:@"11Tap"];
-    [defaults setObject:@"Menu" forKey:@"12Tap"];
+    [defaults setObject:@"Unassigned" forKey:@"12Tap"];
     [defaults setObject:@"Unassigned" forKey:@"13Tap"];
     [defaults setObject:@"Menu" forKey:@"14Tap"];
     [defaults setObject:@"Menu" forKey:@"1LongPress"];
@@ -94,6 +96,34 @@
     [defaults setObject:@"Unassigned" forKey:@"34Tap"];
     [defaults setObject:@"Unassigned" forKey:@"3LongPress"];
     [defaults synchronize];
+    NSLog(@"defaults are %@",[defaults objectForKey:@"1Tap"]);
+
+}
+
+-(void)saveAll {
+    [self saveGestureAssignments];
+    [self saveDisplaySettings];
+    [self saveThemes];
+    [self savePlaylistSettings];
+}
+
+-(void)saveGestureAssignments {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"gestures.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    [_assignments writeToFile:fileAndPath atomically:YES];
+    //    NSLog(@"assignments are %@",_assignments);
+}
+
+-(void)loadGestures {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"gestures.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    _assignments = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    if (_assignments==NULL) [self initGestureAssignments];
+ //       NSLog(@"assignments are %@",_assignments);
 }
 
 -(void)saveThemes {
@@ -101,34 +131,8 @@
     NSString *documentDirPath = [path objectAtIndex:0];
     NSString *fileName = @"themes.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
-
-    NSArray *themecolors;
-    NSMutableDictionary *temp = [[NSMutableDictionary alloc] init];
-
-//    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:themecolors];
-//    [temp setObject:data forKey:@"Grey on White"];
-
-    themecolors = [_themes objectForKey:@"Grey on White"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Grey on White"];
-    themecolors = [_themes objectForKey:@"Grey on Black"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Grey on Black"];
-    themecolors = [_themes objectForKey:@"Lavender"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Lavender"];
-    themecolors = [_themes objectForKey:@"Leaf"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Leaf"];
-    themecolors = [_themes objectForKey:@"Olive"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Olive"];
-    themecolors = [_themes objectForKey:@"Blush"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Blush"];
-    themecolors = [_themes objectForKey:@"Periwinkle Blue"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Periwinkle Blue"];
-    themecolors = [_themes objectForKey:@"Hot Dog Stand"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Hot Dog Stand"];
-    themecolors = [_themes objectForKey:@"Custom"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Custom"];
-
-    [temp writeToFile:fileAndPath atomically:YES];
-//    NSLog(@"themes are %@",_themes);*/
+    [_themes writeToFile:fileAndPath atomically:YES];
+//    NSLog(@"themes are %@",_themes);
 }
 
 -(void)loadThemes {
@@ -136,22 +140,49 @@
     NSString *documentDirPath = [path objectAtIndex:0];
     NSString *fileName = @"themes.plist";
     NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
-    NSMutableDictionary *temp;
-
-    temp = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on White"]] forKey:@"Grey on White"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on Black"]] forKey:@"Grey on Black"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Lavender"]] forKey:@"Lavender"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Leaf"]] forKey:@"Leaf"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Olive"]] forKey:@"Olive"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Blush"]] forKey:@"Blush"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Periwinkle Blue"]] forKey:@"Periwinkle Blue"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Hot Dog Stand"]] forKey:@"Hot Dog Stand"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Custom"]] forKey:@"Custom"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Leaf"]] forKey:@"Leaf"];
-
+    _themes = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
     if (_themes==NULL) [self initThemes];
 //       NSLog(@"themes are %@",_themes);
+}
+
+-(void)saveDisplaySettings {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"display.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    [_displaySettings writeToFile:fileAndPath atomically:YES];
+//    NSLog(@"display settings are %@",_displaySettings);
+    
+}
+
+-(void)loadDisplaySettings {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"display.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    _displaySettings = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    if (_displaySettings==NULL) [self initDisplaySettings];
+//    NSLog(@"display settings are %@",_displaySettings);
+}
+
+-(void)savePlaylistSettings {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"playlist.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    [_playlistSettings writeToFile:fileAndPath atomically:YES];
+//    NSLog(@"playlist settings are %@",_playlistSettings);
+    
+}
+
+-(void)loadPlaylistSettings {
+    NSArray *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirPath = [path objectAtIndex:0];
+    NSString *fileName = @"playlist.plist";
+    NSString *fileAndPath = [documentDirPath stringByAppendingPathComponent:fileName];
+    _playlistSettings = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
+    if (_playlistSettings==NULL) [self initPlaylistSettings];
+//    NSLog(@"playlist settings are %@",_playlistSettings);
 }
 
 @end

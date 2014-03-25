@@ -11,13 +11,20 @@
 
 @interface gestureAssignmentController : NSObject
 
+@property (retain) NSMutableDictionary* assignments;
+@property (retain) NSMutableDictionary* displaySettings;
+@property (retain) NSMutableDictionary* playlistSettings;
 @property (retain) NSMutableDictionary* themes;
+
+- (void)saveAll;
 
 - (void)initGestureAssignments;
 - (void)initDisplaySettings;
 - (void)initPlaylistSettings;
-- (void)initThemes;
-- (void)saveThemes;
+
+- (void)saveGestureAssignments;
+- (void)saveDisplaySettings;
+- (void)savePlaylistSettings;
 
 @end
 

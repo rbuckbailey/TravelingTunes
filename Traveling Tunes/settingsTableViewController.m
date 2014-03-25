@@ -19,61 +19,13 @@
 -(void)viewWillAppear:(BOOL)animated
 {
     [self.navigationController setNavigationBarHidden:NO];
-    
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    
-    
-    // initialize labels and controls for Display Settings view
-    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"artistFontSize"]];
-    _artistFontSizeSlider.value = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
-    _artistAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"artistAlignment"] floatValue];
-    _songFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"songFontSize"]];
-    _songFontSizeSlider.value = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
-    _songAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"songAlignment"] floatValue];
-    _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"albumFontSize"]];
-    _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
-    _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
-    
-    // initialize theme previews for Display settings
-    
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-    
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
-        _themeInvert.on = YES;
-        _themeSelectionPreviewLabel.textColor = themebg;
-        _themeSelectionPreviewLabel.text = currentTheme;
-        _themeSelectionPreview.backgroundColor = themecolor; }
-    else {
-        _themeInvert.on = NO;
-        _themeSelectionPreviewLabel.textColor = themecolor;
-        _themeSelectionPreviewLabel.text = currentTheme;
-        _themeSelectionPreview.backgroundColor = themebg; }
-
-    _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
-    _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
-    _bgBlueSlider.value = (int)[[defaults objectForKey:@"customBGBlue"] floatValue];
-    _textRedSlider.value = (int)[[defaults objectForKey:@"customTextRed"] floatValue];
-    _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
-    _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
-    
-    [self updateCustomPreviews];
-    
-    // initialize switches and controls for playlist view
-    if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
-    if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
 }
 
-- (void)viewDidLoad {
+- (void)viewDidLoad
+{
     [super viewDidLoad];
-/*** these were set on load but on appearance may be better ************************************************************
+
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     
     // initialize labels and controls for Display Settings view
@@ -87,23 +39,12 @@
     _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
     _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
 
-    // initialize theme previews for Display settings
-    
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-    
-    _themeSelectionPreviewLabel.textColor = themebg;
-    _themeSelectionPreviewLabel.text = currentTheme;
-    _themeSeletionPreview.backgroundColor = themecolor;
     
     // initialize switches and controls for playlist view
     if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
+//    if ([[[gestureController playlistSettings] objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
     if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
- */
+ 
 }
 
 
@@ -166,7 +107,7 @@
 }
 */
 
--(void)configure:(NSString *)action
+-(void) configure:(NSString *)action
 {
     // load gesture controller and set up
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -184,7 +125,8 @@
 
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
     if (selection == _Nothing) [self configure:@"Unassigned"];
@@ -204,17 +146,16 @@
     else if (selection == _ResetGestureAssignments) [self initGestures];
     
     // if a theme cell was selected, set current theme
-    else if (selection == _themeGreyOnWhite) [defaults setObject:@"Grey on White" forKey:@"currentTheme"];
-    else if (selection == _themeGreyOnBlack) [defaults setObject:@"Grey on Black" forKey:@"currentTheme"];
-    else if (selection == _themeLeaf) [defaults setObject:@"Leaf" forKey:@"currentTheme"];
-    else if (selection == _themeOlive) [defaults setObject:@"Olive" forKey:@"currentTheme"];
-    else if (selection == _themeLavender) [defaults setObject:@"Lavender" forKey:@"currentTheme"];
-    else if (selection == _themePeriwinkleBlue) [defaults setObject:@"Periwinkle Blue" forKey:@"currentTheme"];
-    else if (selection == _themeBlush) [defaults setObject:@"Blush" forKey:@"currentTheme"];
-    else if (selection == _themeHotDogStand) [defaults setObject:@"Hot Dog Stand" forKey:@"currentTheme"];
-    else if (selection == _themeCustom) [defaults setObject:@"Custom" forKey:@"currentTheme"];
-    NSLog(@"Defaults are %@",[defaults objectForKey:@"currentTheme"]);
+    else if (selection == _themeGreyOnWhite) [[gestureController themes] setObject:@"greyonwhite" forKey:@"current"];
+    else if (selection == _themeGreyOnBlack) [[gestureController themes] setObject:@"greyonblack" forKey:@"current"];
+    else if (selection == _themeLeaf) [[gestureController themes] setObject:@"leaf" forKey:@"current"];
+    else if (selection == _themeOlive) [[gestureController themes] setObject:@"olive" forKey:@"current"];
+    else if (selection == _themeLavender) [[gestureController themes] setObject:@"lavender" forKey:@"current"];
+    else if (selection == _themePeriwinkleBlue) [[gestureController themes] setObject:@"periwinkleblue" forKey:@"current"];
+    else if (selection == _themeBlush) [[gestureController themes] setObject:@"blush" forKey:@"current"];
+    else if (selection == _themeHotDogStand) [[gestureController themes] setObject:@"hotdogstand" forKey:@"current"];
     
+    [gestureController saveAll];
     /*
      consider:  PLAYALLSHUFFLE
      PLAYSHUFFLEDALBUMS
@@ -269,11 +210,10 @@
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     if(buttonIndex==0)
     {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        [gestureController initGestureAssignments];
+//        [gestureController initGestureAssignments];
         [defaults synchronize];
     }
     
@@ -365,109 +305,4 @@
     NSLog(@"repeat: %hhd",_playlistRepeat.on);
     [defaults synchronize];
 }
-
-- (IBAction)themeInvertChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if (_themeInvert.on) [defaults setObject:@"YES" forKey:@"themeInvert"];
-    else [defaults setObject:@"NO" forKey:@"themeInvert"];
-    UIColor *temp = _themeSelectionPreview.backgroundColor;
-    _themeSelectionPreview.backgroundColor = _themeSelectionPreviewLabel.textColor;
-    _themeSelectionPreviewLabel.textColor = temp;
-    NSLog(@"themeInvert: %hhd",_themeInvert.on);
-    [defaults synchronize];
-}
-
-- (void)updateCustomPreviews {
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    
-        if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
-                _customColorPreview.backgroundColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
-                _customColorPreviewLabel.textColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
-        else {
-                _customColorPreviewLabel.textColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
-                _customColorPreview.backgroundColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
-
-        if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
-                _customColorPreview2.backgroundColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
-                _customColorPreviewLabel2.textColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
-        else {
-                _customColorPreviewLabel2.textColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
-                _customColorPreview2.backgroundColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
-    [[gestureController themes] setObject:[NSArray arrayWithObjects:
-                                           [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
-                                                           green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
-                                                            blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f   alpha:1],
-                                           [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
-                                                           green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
-                                                            blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1],nil] forKey:@"Custom"];
-        [gestureController saveThemes];
-}
-
-- (IBAction)textRedChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:[NSNumber numberWithFloat:(int)_textRedSlider.value] forKey:@"customTextRed"];
-    [defaults synchronize];
-    [self updateCustomPreviews];
-}
-
-- (IBAction)textGreenChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:[NSNumber numberWithFloat:(int)_textGreenSlider.value] forKey:@"customTextGreen"];
-    [defaults synchronize];    
-    [self updateCustomPreviews];
-}
-
-- (IBAction)textBlueChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:[NSNumber numberWithFloat:(int)_textBlueSlider.value] forKey:@"customTextBlue"];
-    [defaults synchronize];
-    [self updateCustomPreviews];
-}
-
-- (IBAction)bgRedChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:[NSNumber numberWithFloat:(int)_bgRedSlider.value] forKey:@"customBGRed"];
-    [defaults synchronize];
-    [self updateCustomPreviews];
-}
-
-- (IBAction)bgGreenChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:[NSNumber numberWithFloat:(int)_bgGreenSlider.value] forKey:@"customBGGreen"];    
-    [defaults synchronize];
-    [self updateCustomPreviews];
-}
-
-- (IBAction)bgBlueChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:[NSNumber numberWithFloat:(int)_bgBlueSlider.value] forKey:@"customBGBlue"];
-    [defaults synchronize];
-    [self updateCustomPreviews];
-}
-    
 @end
