@@ -10,8 +10,18 @@
 #import <MediaPlayer/MediaPlayer.h>
 #import "gestureAssignmentController.h"
 
+CGFloat const gestureMinimumTranslation = 20.0;
+
+typedef enum : NSInteger {
+    directionNone,
+    directionUp,
+    directionDown,
+    directionRight,
+    directionLeft
+} swipeDirections;
 
 @interface ttunesViewController : UIViewController
+@property swipeDirections direction;
 @property (weak, nonatomic) IBOutlet UILabel *artistTitle;
 @property (weak, nonatomic) IBOutlet UILabel *songTitle;
 @property (weak, nonatomic) IBOutlet UILabel *albumTitle;

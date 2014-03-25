@@ -22,9 +22,13 @@ MPMusicPlayerController*        mediaPlayer;
 
 @implementation ttunesViewController
 
-- (IBAction)singleTapDetected:(id)sender { }
+- (IBAction)singleTapDetected:(id)sender {     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
+    NSLog(@"gesture is %@",[defaults objectForKey:@"11Tap"]);
+}
 
 - (id)init{
+//    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     return 0;
 }
 
@@ -35,6 +39,104 @@ MPMusicPlayerController*        mediaPlayer;
    
     [self firstStartTimer];
 }
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
+    [self.view addGestureRecognizer:recognizer];
+}
+
+- (void)handleSwipe:(UIPanGestureRecognizer *)gesture
+{
+    CGPoint translation = [gesture translationInView:self.view];
+    
+    if (gesture.state == UIGestureRecognizerStateBegan)
+    {
+        _direction = directionNone;
+    }
+    else if (gesture.state == UIGestureRecognizerStateChanged && _direction == directionNone)
+    {
+        _direction = [self determineSwipeDirectiond:translation];
+        
+        // ok, now initiate movement in the direction indicated by the user's gesture
+        
+       switch (_direction) {
+            case directionDown:
+                NSLog(@"Start moving down");
+                break;
+                
+            case directionUp:
+                NSLog(@"Start moving up");
+                break;
+                
+            case directionRight:
+                NSLog(@"Start moving right");
+                break;
+                
+            case directionLeft:
+                NSLog(@"Start moving left");
+                break;
+                
+            default:
+                break;
+        }
+    }
+    else if (gesture.state == UIGestureRecognizerStateEnded)
+    {
+        // now tell the camera to stop
+        NSLog(@"Stop");
+    }
+}
+
+- (swipeDirections)determineSwipeDirectiond:(CGPoint)translation
+{
+    if (_direction != directionNone)
+        return _direction;
+    
+    // determine if horizontal swipe only if you meet some minimum velocity
+    
+    if (fabs(translation.x) > gestureMinimumTranslation)
+    {
+        BOOL gestureHorizontal = NO;
+        
+        if (translation.y == 0.0)
+            gestureHorizontal = YES;
+        else
+            gestureHorizontal = (fabs(translation.x / translation.y) > 5.0);
+        
+        if (gestureHorizontal)
+        {
+            if (translation.x > 0.0)
+                return directionRight;
+            else
+                return directionLeft;
+        }
+    }
+    // determine if vertical swipe only if you meet some minimum velocity
+    
+    else if (fabs(translation.y) > gestureMinimumTranslation)
+    {
+        BOOL gestureVertical = NO;
+        
+        if (translation.x == 0.0)
+            gestureVertical = YES;
+        else
+            gestureVertical = (fabs(translation.y / translation.x) > 5.0);
+        
+        if (gestureVertical)
+        {
+            if (translation.y > 0.0)
+                return directionDown;
+            else
+                return directionUp;
+        }
+    }
+    
+    return _direction;
+}
+
 
 /*** Gesture Actions begin ************************************************************************************************************************/
 
@@ -48,7 +150,7 @@ MPMusicPlayerController*        mediaPlayer;
         [self performPlayerAction:[defaults objectForKey:@"1LongPress"]:@"1LongPress"];
     } // else, UIGestureRecognizerState[Changed / Ended]
 }
-
+/*
 -(void)singleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
@@ -92,7 +194,7 @@ MPMusicPlayerController*        mediaPlayer;
         [self performSelector:@selector(quadrupleTap) withObject:nil afterDelay:delay ];
     }
 }
-
+*/
 - (IBAction)pinchDetected:(id)sender {
     CGFloat scale = [(UIPinchGestureRecognizer *)sender scale];
     CGFloat velocity = [(UIPinchGestureRecognizer *)sender velocity];
@@ -113,8 +215,24 @@ MPMusicPlayerController*        mediaPlayer;
  
 
 - (IBAction)panDetected:(id)sender {
-//    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-//    _songTitle.text = assignments.panning;
+/*    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
+    if(sender.state == UIGestureRecognizerStateBegan) _panning = NO;
+    
+    CGPoint v =[sender velocity];
+    
+    NSLog(@"%f, %f",v.x,v.y);
+    
+    if( (abs(v.x) >= UMBRAL) && !_panning)
+    {
+        _panning = YES;
+        [sender cancelsTouchesInView];
+        
+        if(v.x>0) NSLog(@"Right");
+        else NSLog(@"Left");
+        
+        [self doSomething];
+    }
+ */
 }
 
 - (IBAction)swipeLeftDetected:(id)sender {
@@ -141,6 +259,7 @@ MPMusicPlayerController*        mediaPlayer;
 /****** Player Actions begin *********************************************************************************************************************************/
 
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
+    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
@@ -153,13 +272,15 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"Rewind"]) _songTitle.text = @"rewind";
     else if ([action isEqual:@"FastForward"]) _songTitle.text = @"FF";
     else if ([action isEqual:@"VolumeUp"]) _songTitle.text = @"vol up";
-    else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
+//    else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
+    else if ([action isEqual:@"VolumeDown"]) [self beatlesParty];
     else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
 
     NSLog(@"%f",[mediaPlayer currentPlaybackTime]);
 }
 
 - (void) togglePlayPause {
+    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
         [mediaPlayer pause];
     } else {
@@ -170,45 +291,6 @@ MPMusicPlayerController*        mediaPlayer;
 - (void) restartPrevious {
     if ([mediaPlayer currentPlaybackTime] < 5) [mediaPlayer skipToPreviousItem]; else [mediaPlayer skipToBeginning];
 }
-
-/* backup of
-- (void)fitLongTitle {
-    NSString *text = @"This is a long sentence. Wonder how much space is needed?";
-    CGFloat width = 100;
-    CGFloat height = 100;
-    bool sizeFound = false;
-    while (!sizeFound) {
-        NSLog(@"Begin loop");
-        CGFloat fontSize = 14;
-        CGFloat previousSize = 0.0;
-        CGFloat currSize = 0.0;
-        for (float fSize = fontSize; fSize < fontSize+6; fSize++) {
-            CGRect r = [text boundingRectWithSize:CGSizeMake(width, height)
-                                          options:NSStringDrawingUsesLineFragmentOrigin
-                                       attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:fSize]}
-                                          context:nil];
-            currSize =r.size.width*r.size.height;
-            if (previousSize >= currSize) {
-                width = width*11/10;
-                height = height*11/10;
-                fSize = fontSize+10;
-            }
-            else {
-                previousSize = currSize;
-            }
-            NSLog(@"fontSize = %f\tbounds = (%f x %f) = %f",
-                  fSize,
-                  r.size.width,
-                  r.size.height,r.size.width*r.size.height);
-        }
-        if (previousSize == currSize) {
-            sizeFound = true;
-        }
-        
-    }
-    NSLog(@"Size found with width %f and height %f", width, height);
-}
-*/
 
 // this always scrolls, even if the text fits.
 -(void)scrollSongTitle:(id)parameter{
@@ -260,6 +342,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void)setupLabels {
+    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
