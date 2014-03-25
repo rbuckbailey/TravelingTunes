@@ -51,8 +51,11 @@
 - (IBAction)themeInvertChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnWhite;
 @property (weak, nonatomic) IBOutlet UILabel *themeGreyOnWhiteLabel;
+//@property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnBlack;
+//@property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnBlack;
 @property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackLabel;
+
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLeaf;
 @property (weak, nonatomic) IBOutlet UILabel *themeLeafLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeOlive;

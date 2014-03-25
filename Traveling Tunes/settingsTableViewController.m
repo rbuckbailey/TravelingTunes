@@ -21,8 +21,7 @@
     [self.navigationController setNavigationBarHidden:NO];
     
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    
+//    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     
     // initialize labels and controls for Display Settings view
     _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"artistFontSize"]];
@@ -391,8 +390,7 @@
     themecolors = [[gestureController themes] objectForKey:@"Grey on Black"];
     themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
-//    _themeGreyOnBlack.backgroundColor = themebg;
-    _themeGreyOnBlack.backgroundColor = [UIColor redColor];
+    _themeGreyOnBlack.backgroundColor = themebg;
     _themeGreyOnBlackLabel.textColor = themecolor;
     
     themecolors = [[gestureController themes] objectForKey:@"Leaf"];
