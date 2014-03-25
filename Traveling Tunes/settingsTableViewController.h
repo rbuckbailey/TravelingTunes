@@ -50,13 +50,21 @@
 @property (strong, nonatomic) IBOutlet UISwitch *themeInvert;
 - (IBAction)themeInvertChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnWhite;
+@property (weak, nonatomic) IBOutlet UILabel *themeGreyOnWhiteLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnBlack;
+@property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLeaf;
+@property (weak, nonatomic) IBOutlet UILabel *themeLeafLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeOlive;
+@property (weak, nonatomic) IBOutlet UILabel *themeOliveLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themePeriwinkleBlue;
+@property (weak, nonatomic) IBOutlet UILabel *themePeriwinkleBlueLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLavender;
+@property (weak, nonatomic) IBOutlet UILabel *themeLavenderLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeBlush;
+@property (weak, nonatomic) IBOutlet UILabel *themeBlushLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeHotDogStand;
+@property (weak, nonatomic) IBOutlet UILabel *themeHotDogStandLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeCustom;
 
 // display preview cells and labels

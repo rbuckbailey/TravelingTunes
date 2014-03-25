@@ -268,8 +268,15 @@ MPMusicPlayerController*        mediaPlayer;
     NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
     NSMutableDictionary *themedict = [gestureController themes];
     NSArray *themecolors = [themedict objectForKey:currentTheme];
+    UIColor *temp;
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
+    
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        temp = themebg;
+        themebg = themecolor;
+        themecolor = temp;
+    }
     
     
     self.view.backgroundColor = themebg;

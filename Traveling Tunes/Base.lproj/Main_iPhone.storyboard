@@ -242,7 +242,7 @@
                                         <rect key="frame" x="0.0" y="220" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="oF3-MK-pag" id="KZZ-C3-LFv">
-                                            <rect key="frame" x="0.0" y="0.0" width="287" height="43"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="287" height="44"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Rotation" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="aiX-nd-u4Q">
@@ -1263,15 +1263,23 @@
                         <outlet property="customColorPreview" destination="2cX-dY-1s1" id="ogw-Hy-UFU"/>
                         <outlet property="customColorPreviewLabel" destination="cO3-ID-gpR" id="oJW-b5-Of1"/>
                         <outlet property="themeBlush" destination="39U-ce-aG1" id="EGk-VU-Cua"/>
+                        <outlet property="themeBlushLabel" destination="beW-wb-Gt7" id="ekp-jN-XoK"/>
                         <outlet property="themeCustom" destination="2cX-dY-1s1" id="Od3-us-MCK"/>
                         <outlet property="themeGreyOnBlack" destination="AFm-v9-amb" id="MZI-pp-kiN"/>
+                        <outlet property="themeGreyOnBlackLabel" destination="H9h-lI-zIb" id="1bN-vl-yK2"/>
                         <outlet property="themeGreyOnWhite" destination="4gH-oZ-L6C" id="hpz-2m-gFP"/>
+                        <outlet property="themeGreyOnWhiteLabel" destination="6rq-wX-qzn" id="9jt-hc-5QX"/>
                         <outlet property="themeHotDogStand" destination="DmW-tk-FnG" id="6Ah-yS-8et"/>
+                        <outlet property="themeHotDogStandLabel" destination="iA0-dN-OxS" id="D3t-PR-cAk"/>
                         <outlet property="themeInvert" destination="CwJ-L5-VBT" id="u4t-uW-X21"/>
                         <outlet property="themeLavender" destination="Z0p-hc-l9J" id="puu-Za-h0w"/>
+                        <outlet property="themeLavenderLabel" destination="pnL-jM-xDP" id="bCZ-MU-IcF"/>
                         <outlet property="themeLeaf" destination="Vyh-Cm-7hE" id="CAj-9q-wEH"/>
+                        <outlet property="themeLeafLabel" destination="3A0-Cx-pWc" id="Zvj-Ds-Xyt"/>
                         <outlet property="themeOlive" destination="OcN-fL-GR5" id="0RW-eK-TQO"/>
+                        <outlet property="themeOliveLabel" destination="9Xp-BI-ceu" id="ZuZ-jC-kAo"/>
                         <outlet property="themePeriwinkleBlue" destination="ndn-T8-Hfa" id="f9X-KJ-fMn"/>
+                        <outlet property="themePeriwinkleBlueLabel" destination="KUN-Wi-9Mp" id="Qhu-7d-8UA"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="5fT-be-4g5" userLabel="First Responder" sceneMemberID="firstResponder"/>
