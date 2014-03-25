@@ -48,8 +48,8 @@ MPMusicPlayerController*        mediaPlayer;
     [self.view addGestureRecognizer:recognizer];
 }
 
-- (void)handleSwipe:(UIPanGestureRecognizer *)gesture
-{
+- (void)handleSwipe:(UIPanGestureRecognizer *)gesture {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     CGPoint translation = [gesture translationInView:self.view];
     
     if (gesture.state == UIGestureRecognizerStateBegan)
@@ -58,25 +58,28 @@ MPMusicPlayerController*        mediaPlayer;
     }
     else if (gesture.state == UIGestureRecognizerStateChanged && _direction == directionNone)
     {
-        _direction = [self determineSwipeDirectiond:translation];
-        
-        // ok, now initiate movement in the direction indicated by the user's gesture
-        
+        _direction = [self determineSwipeDirectiond:translation];      
        switch (_direction) {
             case directionDown:
                 NSLog(@"Start moving down");
+               [self performPlayerAction:[defaults objectForKey:@"1SwipeDown"]:@"swipeDown"];
                 break;
                 
             case directionUp:
                 NSLog(@"Start moving up");
+               [self performPlayerAction:[defaults objectForKey:@"1SwipeUp"]:@"swipeUp"];
                 break;
                 
             case directionRight:
                 NSLog(@"Start moving right");
+               [self performPlayerAction:[defaults objectForKey:@"1SwipeRight"]:@"swipeRight"];
+
                 break;
                 
             case directionLeft:
                 NSLog(@"Start moving left");
+               [self performPlayerAction:[defaults objectForKey:@"1SwipeLeft"]:@"swipeLeft"];
+
                 break;
                 
             default:
@@ -84,10 +87,7 @@ MPMusicPlayerController*        mediaPlayer;
         }
     }
     else if (gesture.state == UIGestureRecognizerStateEnded)
-    {
-        // now tell the camera to stop
         NSLog(@"Stop");
-    }
 }
 
 - (swipeDirections)determineSwipeDirectiond:(CGPoint)translation
@@ -212,29 +212,7 @@ MPMusicPlayerController*        mediaPlayer;
                               radians, velocity];
     _songTitle.text = resultString;
 }
- 
-
-- (IBAction)panDetected:(id)sender {
-/*    gestureAssignmentController *assignments = [[gestureAssignmentController alloc] init];
-    if(sender.state == UIGestureRecognizerStateBegan) _panning = NO;
-    
-    CGPoint v =[sender velocity];
-    
-    NSLog(@"%f, %f",v.x,v.y);
-    
-    if( (abs(v.x) >= UMBRAL) && !_panning)
-    {
-        _panning = YES;
-        [sender cancelsTouchesInView];
-        
-        if(v.x>0) NSLog(@"Right");
-        else NSLog(@"Left");
-        
-        [self doSomething];
-    }
- */
-}
-
+/*
 - (IBAction)swipeLeftDetected:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"1SwipeLeft"]:@"swipeLeft"];
@@ -254,29 +232,29 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"1SwipeDown"]:@"swipeDown"];
 }
+ */
 
 /****** Gesture Actions end *********************************************************************************************************************************/
 /****** Player Actions begin *********************************************************************************************************************************/
 
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+    NSLog(@"Performing action %@",action);
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [mediaPlayer play];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
-    else if ([action isEqual:@"NextSong"]) { [mediaPlayer skipToNextItem]; }
-    else if ([action isEqual:@"PreviousSong"]) { [mediaPlayer skipToPreviousItem]; }
+    else if ([action isEqual:@"Next"]) { [mediaPlayer skipToNextItem]; }
+    else if ([action isEqual:@"Previous"]) { [mediaPlayer skipToPreviousItem]; }
     else if ([action isEqual:@"RestartPrevious"]) { [self restartPrevious]; }
     else if ([action isEqual:@"Restart"]) { [mediaPlayer skipToBeginning]; }
-    else if ([action isEqual:@"Rewind"]) _songTitle.text = @"rewind";
-    else if ([action isEqual:@"FastForward"]) _songTitle.text = @"FF";
-    else if ([action isEqual:@"VolumeUp"]) _songTitle.text = @"vol up";
-//    else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
-    else if ([action isEqual:@"VolumeDown"]) [self beatlesParty];
-    else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
-
-    NSLog(@"%f",[mediaPlayer currentPlaybackTime]);
+    else if ([action isEqual:@"Rewind"]) NSLog(@"rewind");
+    else if ([action isEqual:@"FastForward"]) NSLog(@"FF");
+    else if ([action isEqual:@"VolumeUp"]) NSLog(@"vol up");
+    else if ([action isEqual:@"VolumeDown"]) NSLog(@"vol down");
+    else if ([action isEqual:@"PlayAllBeatles"]) [self playAllSongs];
+    [self setupLabels];
 }
 
 - (void) togglePlayPause {
@@ -289,7 +267,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void) restartPrevious {
-    if ([mediaPlayer currentPlaybackTime] < 5) [mediaPlayer skipToPreviousItem]; else [mediaPlayer skipToBeginning];
+    if ([mediaPlayer currentPlaybackTime] < 2.5f) [mediaPlayer skipToPreviousItem]; else [mediaPlayer skipToBeginning];
 }
 
 // this always scrolls, even if the text fits.
@@ -346,7 +324,7 @@ MPMusicPlayerController*        mediaPlayer;
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
+//    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
     NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
     NSMutableDictionary *themedict = [gestureController themes];
     NSArray *themecolors = [themedict objectForKey:currentTheme];
@@ -359,7 +337,7 @@ MPMusicPlayerController*        mediaPlayer;
         themebg = themecolor;
         themecolor = temp;
     }
-    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
+//    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
     
     self.view.backgroundColor = themebg;
 
@@ -369,34 +347,45 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.font   = [UIFont systemFontOfSize:28];
         _artistTitle.textColor = themecolor;
         [_artistTitle setAlpha:0.6f];
-        
+        [_artistTitle sizeToFit];
+
         _songTitle.numberOfLines = 1;
         _songTitle.text   = @"Tap for default playlist.";
         _songTitle.font   = [UIFont systemFontOfSize:28];
         _songTitle.textColor = themecolor;
-        
+        [_songTitle sizeToFit];
+
         _albumTitle.numberOfLines = 1;
         _albumTitle.text    = @"Long hold for menu.";
         _albumTitle.font    =  [UIFont systemFontOfSize:28];
         _albumTitle.textColor = themecolor;
         [_albumTitle setAlpha:0.6f];
+        [_albumTitle sizeToFit];
     } else {
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
-        _artistTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"artistFontSize"] floatValue]];
+        _artistTitle.font   = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"artistFontSize"] floatValue]];
+        _artistTitle.textColor = themecolor;
+        [_artistTitle setAlpha:0.6f];
+        [_artistTitle sizeToFit];
+
     
         _songTitle.numberOfLines = 1;
         _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-        _songTitle.font   = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"songFontSize"] floatValue]];
+        _songTitle.font   = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"songFontSize"] floatValue]];
+        _songTitle.textColor = themecolor;
+        [_songTitle sizeToFit];
         
         _albumTitle.numberOfLines = 1;
-        _albumTitle.font    = [UIFont systemFontOfSize:(int)[[[gestureController displaySettings] objectForKey:@"albumFontSize"] floatValue]];
+        _albumTitle.font    = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"albumFontSize"] floatValue]];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
-
+        _albumTitle.textColor = themecolor;
+        [_albumTitle setAlpha:0.6f];
+        [_albumTitle sizeToFit];
     }
 }
 
-- (void)beatlesParty {
+- (void)playAllSongs {
     //Create a query that will return all songs by The Beatles grouped by album
     MPMediaQuery* query = [MPMediaQuery songsQuery];
     [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
