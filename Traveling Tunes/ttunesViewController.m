@@ -241,10 +241,20 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"Restart"]) { [mediaPlayer skipToBeginning]; }
     else if ([action isEqual:@"Rewind"]) NSLog(@"rewind");
     else if ([action isEqual:@"FastForward"]) NSLog(@"FF");
-    else if ([action isEqual:@"VolumeUp"]) NSLog(@"vol up");
-    else if ([action isEqual:@"VolumeDown"]) NSLog(@"vol down");
+    else if ([action isEqual:@"VolumeUp"]) [self increaseVolume];
+    else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playAllSongs];
     [self setupLabels];
+}
+
+- (void) increaseVolume {
+    float volume = mediaPlayer.volume;
+    mediaPlayer.volume = volume+0.1f;
+}
+
+- (void) decreaseVolume {
+    float volume = mediaPlayer.volume;
+    mediaPlayer.volume = volume-0.1f;
 }
 
 - (void) togglePlayPause {
