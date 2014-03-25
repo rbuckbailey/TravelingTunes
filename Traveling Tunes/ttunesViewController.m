@@ -55,43 +55,48 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)handleSwipe:(UIPanGestureRecognizer *)gesture {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     CGPoint translation = [gesture translationInView:self.view];
+    NSString *key;
     
+// this useful debug info is spammy
+//    NSLog(@"%lu touches",(unsigned long)gesture.numberOfTouches);
     if (gesture.state == UIGestureRecognizerStateBegan)
     {
         _direction = directionNone;
     }
     else if (gesture.state == UIGestureRecognizerStateChanged && _direction == directionNone)
     {
-        _direction = [self determineSwipeDirectiond:translation];      
+        _direction = [self determineSwipeDirectiond:translation];
        switch (_direction) {
             case directionDown:
-                NSLog(@"Start moving down");
-               [self performPlayerAction:[defaults objectForKey:@"1SwipeDown"]:@"swipeDown"];
+               key = [NSString stringWithFormat:@"%luSwipeDown",(unsigned long)gesture.numberOfTouches];
+               [self performPlayerAction:[defaults objectForKey:key]:key];
+               NSLog(@"Swipe gesture %@",key);
                 break;
                 
             case directionUp:
-                NSLog(@"Start moving up");
-               [self performPlayerAction:[defaults objectForKey:@"1SwipeUp"]:@"swipeUp"];
+               key = [NSString stringWithFormat:@"%luSwipeUp",(unsigned long)gesture.numberOfTouches];
+               [self performPlayerAction:[defaults objectForKey:key]:key];
+               NSLog(@"Swipe gesture %@",key);
                 break;
                 
             case directionRight:
-                NSLog(@"Start moving right");
-               [self performPlayerAction:[defaults objectForKey:@"1SwipeRight"]:@"swipeRight"];
-
+               key = [NSString stringWithFormat:@"%luSwipeRight",(unsigned long)gesture.numberOfTouches];
+               [self performPlayerAction:[defaults objectForKey:key]:key];
+               NSLog(@"Swipe gesture %@",key);
                 break;
                 
             case directionLeft:
-                NSLog(@"Start moving left");
-               [self performPlayerAction:[defaults objectForKey:@"1SwipeLeft"]:@"swipeLeft"];
-
+               key = [NSString stringWithFormat:@"%luSwipeLeft",(unsigned long)gesture.numberOfTouches];
+               [self performPlayerAction:[defaults objectForKey:key]:key];
+               NSLog(@"Swipe gesture %@",key);
                 break;
                 
             default:
                 break;
         }
+        
     }
-    else if (gesture.state == UIGestureRecognizerStateEnded)
-        NSLog(@"Stop");
+//    else if (gesture.state == UIGestureRecognizerStateEnded) NSLog(@"Stop");
 }
 
 - (swipeDirections)determineSwipeDirectiond:(CGPoint)translation
