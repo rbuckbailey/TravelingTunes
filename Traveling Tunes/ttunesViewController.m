@@ -52,7 +52,7 @@ MPMusicPlayerController*        mediaPlayer;
 -(void)singleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
-    NSLog(@"gesture is %@",[defaults objectForKey:@"1Tap"]);
+    NSLog(@"gesture is %@",[defaults objectForKey:@"11Tap"]);
 }
 -(void)doubleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -156,7 +156,6 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeDown"]) _songTitle.text = @"vol down";
     else if ([action isEqual:@"PlayAllBeatles"]) [self beatlesParty];
 
- //   [self setupLabels];
     NSLog(@"%f",[mediaPlayer currentPlaybackTime]);
 }
 
@@ -265,7 +264,8 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
  //   self.view.backgroundColor = [UIColor redColor];
-    NSString *currentTheme = [[gestureController themes] objectForKey:@"current"];
+    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
     NSMutableDictionary *themedict = [gestureController themes];
     NSArray *themecolors = [themedict objectForKey:currentTheme];
     UIColor *themebg = [themecolors objectAtIndex:0];
@@ -278,7 +278,6 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
         _artistTitle.font   = [UIFont systemFontOfSize:28];
-//        _artistTitle.textColor = [[[gestureController themes] objectForKey:[[gestureController themes] objectForKey:@"leaf"]] objectAtIndex:1];
         _artistTitle.textColor = themecolor;
         [_artistTitle setAlpha:0.6f];
         
