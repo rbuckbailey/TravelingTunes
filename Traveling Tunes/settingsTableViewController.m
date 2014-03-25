@@ -44,18 +44,17 @@
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
     
+    _themeSelectionPreviewLabel.text = currentTheme;
+    _themeSelectionPreview.backgroundColor = themebg;
+    _themeSelectionPreviewLabel.textColor = themecolor;
+
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
         _themeInvert.on = YES;
-        _themeSelectionPreviewLabel.textColor = themebg;
-        _themeSelectionPreviewLabel.text = currentTheme;
-        _themeSelectionPreview.backgroundColor = themecolor; }
+  /*      _themeCustomLabel.textColor = themecolor;
+        _themeCustom.backgroundColor = themebg; */
+        [self invertThemeLabels]; }
     else {
-        _themeInvert.on = NO;
-        _themeSelectionPreviewLabel.textColor = themecolor;
-        _themeSelectionPreviewLabel.text = currentTheme;
-        _themeSelectionPreview.backgroundColor = themebg; }
-    _themeCustomLabel.textColor = themecolor;
-    _themeCustom.backgroundColor = themebg;
+        _themeInvert.on = NO; }
 
     _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
     _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
@@ -369,17 +368,13 @@
     [defaults synchronize];
 }
 
-- (IBAction)themeInvertChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if (_themeInvert.on) [defaults setObject:@"YES" forKey:@"themeInvert"];
-    else [defaults setObject:@"NO" forKey:@"themeInvert"];
-
+- (void) invertThemeLabels {
     // invert all labels in picker here
     UIColor *temp;
     temp = _themeGreyOnWhite.backgroundColor;
     _themeGreyOnWhite.backgroundColor = _themeGreyOnWhiteLabel.textColor;
     _themeGreyOnWhiteLabel.textColor = temp;
-
+    
     temp = _themeGreyOnBlack.backgroundColor;
     _themeGreyOnBlack.backgroundColor = _themeGreyOnBlackLabel.textColor;
     _themeGreyOnBlackLabel.textColor = temp;
@@ -411,10 +406,18 @@
     temp = _themeOlive.backgroundColor;
     _themeOlive.backgroundColor = _themeOliveLabel.textColor;
     _themeOliveLabel.textColor = temp;
+    
+     temp = _themeSelectionPreview.backgroundColor;
+     _themeSelectionPreview.backgroundColor = _themeSelectionPreviewLabel.textColor;
+     _themeSelectionPreviewLabel.textColor = temp;
+}
 
-/*    UIColor *temp = _themeSelectionPreview.backgroundColor;
-    _themeSelectionPreview.backgroundColor = _themeSelectionPreviewLabel.textColor;
-    _themeSelectionPreviewLabel.textColor = temp; */
+- (IBAction)themeInvertChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_themeInvert.on) [defaults setObject:@"YES" forKey:@"themeInvert"];
+    else [defaults setObject:@"NO" forKey:@"themeInvert"];
+
+    [self invertThemeLabels];
 
     NSLog(@"themeInvert: %hhd",_themeInvert.on);
     [defaults synchronize];
