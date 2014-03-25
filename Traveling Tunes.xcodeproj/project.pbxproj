@@ -129,7 +129,7 @@
 				8E3C8CE3189BF785004A90AE /* ttunesAppDelegate.m */,
 				8E3C8CEB189BF785004A90AE /* ttunesViewController.h */,
 				8E3C8CEC189BF785004A90AE /* ttunesViewController.m */,
-				F41DA66A18D489D600D86912 /* Settings Views */,
+				F41DA66A18D489D600D86912 /* Settings Pane Stuff */,
 				8E3C8CEE189BF785004A90AE /* Images.xcassets */,
 				8E3C8CDA189BF785004A90AE /* Supporting Files */,
 			);
@@ -165,7 +165,7 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
-		F41DA66A18D489D600D86912 /* Settings Views */ = {
+		F41DA66A18D489D600D86912 /* Settings Pane Stuff */ = {
 			isa = PBXGroup;
 			children = (
 				8E4312D918CE312E0037688F /* gestureAssignmentController.h */,
@@ -175,7 +175,7 @@
 				F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */,
 				F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */,
 			);
-			name = "Settings Views";
+			name = "Settings Pane Stuff";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

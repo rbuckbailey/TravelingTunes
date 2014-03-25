@@ -263,7 +263,6 @@ MPMusicPlayerController*        mediaPlayer;
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
- //   self.view.backgroundColor = [UIColor redColor];
     NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
     NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
     NSMutableDictionary *themedict = [gestureController themes];
@@ -277,7 +276,7 @@ MPMusicPlayerController*        mediaPlayer;
         themebg = themecolor;
         themecolor = temp;
     }
-    
+    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
     
     self.view.backgroundColor = themebg;
 

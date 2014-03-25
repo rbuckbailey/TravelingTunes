@@ -36,23 +36,14 @@
     _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
     
     // initialize theme previews for Display settings
-    
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-    
-    _themeSelectionPreviewLabel.text = currentTheme;
-    _themeSelectionPreview.backgroundColor = themebg;
-    _themeSelectionPreviewLabel.textColor = themecolor;
-
+    _themeSelectionPreviewLabel.text = [defaults objectForKey:@"currentTheme"];
+    [self setThemeLabels];
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
         _themeInvert.on = YES;
-  /*      _themeCustomLabel.textColor = themecolor;
-        _themeCustom.backgroundColor = themebg; */
-        [self invertThemeLabels]; }
+/*        _themeCustomLabel.textColor = themecolor;
+        _themeCustom.backgroundColor = themebg;
+        [self invertThemeLabels]; */
+    }
     else {
         _themeInvert.on = NO; }
 
@@ -368,58 +359,92 @@
     [defaults synchronize];
 }
 
-- (void) invertThemeLabels {
-    // invert all labels in picker here
+- (void) setThemeLabels {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+
+    NSLog(@"Invert is %@",[defaults objectForKey:@"themeInvert"]);
+    
+    NSArray *themecolors;
     UIColor *temp;
-    temp = _themeGreyOnWhite.backgroundColor;
-    _themeGreyOnWhite.backgroundColor = _themeGreyOnWhiteLabel.textColor;
-    _themeGreyOnWhiteLabel.textColor = temp;
+    UIColor *themebg;
+    UIColor *themecolor;
+
+    themecolors = [[gestureController themes] objectForKey:[defaults objectForKey:@"currentTheme"]];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themeSelectionPreview.backgroundColor = themebg;
+    _themeSelectionPreviewLabel.textColor = themecolor;
+    CGColorRef color = [_themeSelectionPreview.backgroundColor CGColor];
+    int numComponents = CGColorGetNumberOfComponents(color);
+    if (numComponents == 4) {
+        const CGFloat *components = CGColorGetComponents(color); CGFloat red = components[0]; CGFloat green = components[1]; CGFloat blue = components[2];
+        if (((red+green+blue)/3)<0.5f) _themeSelectionPreviewTitle.textColor = [UIColor whiteColor]; else _themeSelectionPreviewTitle.textColor = [UIColor blackColor];
+    }
     
-    temp = _themeGreyOnBlack.backgroundColor;
-    _themeGreyOnBlack.backgroundColor = _themeGreyOnBlackLabel.textColor;
-    _themeGreyOnBlackLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Grey on White"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themeGreyOnWhite.backgroundColor = themebg;
+    _themeGreyOnWhiteLabel.textColor = themecolor;
     
-    temp = _themeLeaf.backgroundColor;
-    _themeLeaf.backgroundColor = _themeLeafLabel.textColor;
-    _themeLeafLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Grey on Black"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+//    _themeGreyOnBlack.backgroundColor = themebg;
+    _themeGreyOnBlack.backgroundColor = [UIColor redColor];
+    _themeGreyOnBlackLabel.textColor = themecolor;
     
-    temp = _themePeriwinkleBlue.backgroundColor;
-    _themePeriwinkleBlue.backgroundColor = _themePeriwinkleBlueLabel.textColor;
-    _themePeriwinkleBlueLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Leaf"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themeLeaf.backgroundColor = themebg;
+    _themeLeafLabel.textColor = themecolor;
     
-    temp = _themeLavender.backgroundColor;
-    _themeLavender.backgroundColor = _themeLavenderLabel.textColor;
-    _themeLavenderLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Olive"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themeOlive.backgroundColor = themebg;
+    _themeOliveLabel.textColor = themecolor;
     
-    temp = _themeBlush.backgroundColor;
-    _themeBlush.backgroundColor = _themeBlushLabel.textColor;
-    _themeBlushLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Lavender"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themeLavender.backgroundColor = themebg;
+    _themeLavenderLabel.textColor = themecolor;
     
-    temp = _themeHotDogStand.backgroundColor;
-    _themeHotDogStand.backgroundColor = _themeHotDogStandLabel.textColor;
-    _themeHotDogStandLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Blush"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themeBlush.backgroundColor = themebg;
+    _themeBlushLabel.textColor = themecolor;
     
-    temp = _themeCustom.backgroundColor;
-    _themeCustom.backgroundColor = _themeCustomLabel.textColor;
-    _themeCustomLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Periwinkle Blue"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themePeriwinkleBlue.backgroundColor = themebg;
+    _themePeriwinkleBlueLabel.textColor = themecolor;
     
-    temp = _themeOlive.backgroundColor;
-    _themeOlive.backgroundColor = _themeOliveLabel.textColor;
-    _themeOliveLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Hot Dog Stand"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themeHotDogStand.backgroundColor = themebg;
+    _themeHotDogStandLabel.textColor = themecolor;
     
-     temp = _themeSelectionPreview.backgroundColor;
-     _themeSelectionPreview.backgroundColor = _themeSelectionPreviewLabel.textColor;
-     _themeSelectionPreviewLabel.textColor = temp;
+    themecolors = [[gestureController themes] objectForKey:@"Custom"];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
+    _themeCustom.backgroundColor = themebg;
+    _themeCustomLabel.textColor = themecolor;
+    
 }
 
 - (IBAction)themeInvertChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_themeInvert.on) [defaults setObject:@"YES" forKey:@"themeInvert"];
     else [defaults setObject:@"NO" forKey:@"themeInvert"];
-
-    [self invertThemeLabels];
-
-    NSLog(@"themeInvert: %hhd",_themeInvert.on);
+    [self setThemeLabels];
+    NSLog(@"themeInvertChanged: %hhd",_themeInvert.on);
     [defaults synchronize];
 }
 

@@ -69,6 +69,7 @@
 @property (weak, nonatomic) IBOutlet UILabel *themeCustomLabel;
 
 // display preview cells and labels
+@property (weak, nonatomic) IBOutlet UILabel *themeSelectionPreviewTitle;
 @property (weak, nonatomic) IBOutlet UILabel *themeSelectionPreviewLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeSelectionPreview;
 @property (weak, nonatomic) IBOutlet UILabel *customColorPreviewLabel2;

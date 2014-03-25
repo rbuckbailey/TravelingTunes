@@ -291,6 +291,7 @@
                     <connections>
                         <outlet property="themeSelectionPreview" destination="esH-RK-Af1" id="1z4-t7-9oB"/>
                         <outlet property="themeSelectionPreviewLabel" destination="yXb-7I-CrA" id="5ru-V3-eP4"/>
+                        <outlet property="themeSelectionPreviewTitle" destination="PpQ-Bp-Mey" id="Qf3-MF-Rwi"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="PA0-YC-wAN" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -1264,7 +1265,7 @@
                         <outlet property="themeBlushLabel" destination="beW-wb-Gt7" id="ekp-jN-XoK"/>
                         <outlet property="themeCustom" destination="2cX-dY-1s1" id="Od3-us-MCK"/>
                         <outlet property="themeCustomLabel" destination="cO3-ID-gpR" id="ALW-tC-PJZ"/>
-                        <outlet property="themeGreyOnBlack" destination="AFm-v9-amb" id="MZI-pp-kiN"/>
+                        <outlet property="themeGreyOnBlack" destination="AFm-v9-amb" id="qBf-Fa-Qww"/>
                         <outlet property="themeGreyOnBlackLabel" destination="H9h-lI-zIb" id="1bN-vl-yK2"/>
                         <outlet property="themeGreyOnWhite" destination="4gH-oZ-L6C" id="hpz-2m-gFP"/>
                         <outlet property="themeGreyOnWhiteLabel" destination="6rq-wX-qzn" id="9jt-hc-5QX"/>
