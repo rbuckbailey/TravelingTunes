@@ -21,7 +21,13 @@
     [self.navigationController setNavigationBarHidden:NO];
     
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-//    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+
+    //initialize check marks Action Selector view
+    _themeSelectionPreviewLabel.text = [defaults objectForKey:@"currentTheme"];
+    // only set the check marks for actions if we're all the way inside that thread
+    [self setUpActionChecks];
+    [self setUpThemeChecks];
     
     // initialize labels and controls for Display Settings view
     _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"artistFontSize"]];
@@ -35,7 +41,6 @@
     _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
     
     // initialize theme previews for Display settings
-    _themeSelectionPreviewLabel.text = [defaults objectForKey:@"currentTheme"];
     [self setThemeLabels];
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
         _themeInvert.on = YES;
@@ -170,6 +175,7 @@
     // save the dictionary
     [defaults synchronize];
     
+    [self setUpActionChecks];
     NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
 }
 
@@ -196,16 +202,16 @@
     else if (selection == _ResetGestureAssignments) [self initGestures];
     
     // if a theme cell was selected, set current theme
-    else if (selection == _themeGreyOnWhite) [defaults setObject:@"Grey on White" forKey:@"currentTheme"];
-    else if (selection == _themeGreyOnBlack) [defaults setObject:@"Grey on Black" forKey:@"currentTheme"];
-    else if (selection == _themeLeaf) [defaults setObject:@"Leaf" forKey:@"currentTheme"];
-    else if (selection == _themeOlive) [defaults setObject:@"Olive" forKey:@"currentTheme"];
-    else if (selection == _themeLavender) [defaults setObject:@"Lavender" forKey:@"currentTheme"];
-    else if (selection == _themePeriwinkleBlue) [defaults setObject:@"Periwinkle Blue" forKey:@"currentTheme"];
-    else if (selection == _themeBlush) [defaults setObject:@"Blush" forKey:@"currentTheme"];
-    else if (selection == _themeHotDogStand) [defaults setObject:@"Hot Dog Stand" forKey:@"currentTheme"];
-    else if (selection == _themeCustom) [defaults setObject:@"Custom" forKey:@"currentTheme"];
-    NSLog(@"Defaults are %@",[defaults objectForKey:@"currentTheme"]);
+    else if (selection == _themeGreyOnWhite) { [defaults setObject:@"Grey on White" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeGreyOnBlack) { [defaults setObject:@"Grey on Black" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeLeaf) { [defaults setObject:@"Leaf" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeOlive) { [defaults setObject:@"Olive" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeLavender) { [defaults setObject:@"Lavender" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themePeriwinkleBlue) { [defaults setObject:@"Periwinkle Blue" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeBlush) { [defaults setObject:@"Blush" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeHotDogStand) { [defaults setObject:@"Hot Dog Stand" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeCustom) { [defaults setObject:@"Custom" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+//    NSLog(@"Defaults are %@",[defaults objectForKey:@"currentTheme"]);
     
     /*
      consider:  PLAYALLSHUFFLE
@@ -363,7 +369,7 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
-    NSLog(@"Invert is %@",[defaults objectForKey:@"themeInvert"]);
+//    NSLog(@"Invert is %@",[defaults objectForKey:@"themeInvert"]);
     
     NSArray *themecolors;
     UIColor *temp;
@@ -438,6 +444,7 @@
     if (_themeInvert.on) [defaults setObject:@"YES" forKey:@"themeInvert"];
     else [defaults setObject:@"NO" forKey:@"themeInvert"];
     [self setThemeLabels];
+    [self setUpThemeChecks];
     NSLog(@"themeInvertChanged: %hhd",_themeInvert.on);
     [defaults synchronize];
 }
@@ -533,6 +540,82 @@
     [defaults setObject:[NSNumber numberWithFloat:(int)_bgBlueSlider.value] forKey:@"customBGBlue"];
     [defaults synchronize];
     [self updateCustomPreviews];
+}
+
+- (void)setUpThemeChecks {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+
+    NSArray *themecolors;
+    UIColor *themebg;
+    UIColor *themecolor;
+    int index = 0;
+    themecolors = [[gestureController themes] objectForKey:[defaults objectForKey:@"currentTheme"]];
+    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        index = 1;
+    }
+    _themeGreyOnWhiteCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on White"] objectAtIndex:index];
+    _themeGreyOnBlackCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on Black"] objectAtIndex:index];
+    _themeLavenderCheck.textColor = [[[gestureController themes] objectForKey:@"Lavender"] objectAtIndex:index];
+    _themeBlushCheck.textColor = [[[gestureController themes] objectForKey:@"Blush"] objectAtIndex:index];
+    _themeLeafCheck.textColor = [[[gestureController themes] objectForKey:@"Leaf"] objectAtIndex:index];
+    _themeOliveCheck.textColor = [[[gestureController themes] objectForKey:@"Olive"] objectAtIndex:index];
+    _themePeriwinkleBlueCheck.textColor = [[[gestureController themes] objectForKey:@"Periwinkle Blue"] objectAtIndex:index];
+    _themeHotDogStandCheck.textColor = [[[gestureController themes] objectForKey:@"Hot Dog Stand"] objectAtIndex:index];
+    _themeCustomCheck.textColor = [[[gestureController themes] objectForKey:@"Custom"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        index = 0;
+    } else index = 1;
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Grey on White"]) _themeGreyOnWhiteCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on White"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Grey on Black"]) _themeGreyOnBlackCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on Black"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Lavender"]) _themeLavenderCheck.textColor = [[[gestureController themes] objectForKey:@"Lavender"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Blush"]) _themeBlushCheck.textColor = [[[gestureController themes] objectForKey:@"Blush"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Leaf"]) _themeLeafCheck.textColor = [[[gestureController themes] objectForKey:@"Leaf"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Olive"]) _themeOliveCheck.textColor = [[[gestureController themes] objectForKey:@"Olive"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Periwinkle Blue"]) _themePeriwinkleBlueCheck.textColor = [[[gestureController themes] objectForKey:@"Periwinkle Blue"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Hot Dog Stand"]) _themeHotDogStandCheck.textColor = [[[gestureController themes] objectForKey:@"Hot Dog Stand"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Custom"]) _themeCustomCheck.textColor = [[[gestureController themes] objectForKey:@"Custom"] objectAtIndex:index];
+}
+
+
+
+- (void)setUpActionChecks {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (([_passthrough objectForKey:@"Fingers"]!=NULL) & ([_passthrough objectForKey:@"Gesture"]!=NULL)) {
+        NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
+        NSLog(@"fullGesture is %@",[defaults objectForKey:fullGesture]);
+        _nothingCheck.textColor = [UIColor whiteColor];
+        _menuCheck.textColor = [UIColor whiteColor];
+        _playCheck.textColor = [UIColor whiteColor];
+        _pauseCheck.textColor = [UIColor whiteColor];
+        _playPauseCheck.textColor = [UIColor whiteColor];
+        _nextCheck.textColor = [UIColor whiteColor];
+        _previousCheck.textColor = [UIColor whiteColor];
+        _restartCheck.textColor = [UIColor whiteColor];
+        _restartPreviousCheck.textColor = [UIColor whiteColor];
+        _rewindCheck.textColor = [UIColor whiteColor];
+        _fastForwardCheck.textColor = [UIColor whiteColor];
+        _volumeUpCheck.textColor = [UIColor whiteColor];
+        _volumeDownCheck.textColor = [UIColor whiteColor];
+        _startDefaultPlaylistCheck.textColor = [UIColor whiteColor];
+        _songPickerCheck.textColor = [UIColor whiteColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"Play"]) _playCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"Pause"]) _pauseCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"PlayPause"]) _playPauseCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"Next"]) _nextCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"Previous"]) _previousCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"Restart"]) _restartCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"RestartPrevious"]) _restartPreviousCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"Rewind"]) _rewindCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"FastForward"]) _fastForwardCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"VolumeUp"]) _volumeUpCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"VolumeDown"]) _volumeDownCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"StartDefaultPlaylist"]) _startDefaultPlaylistCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"SongPicker"]) _songPickerCheck.textColor = [UIColor blackColor];
+    }
 }
 
 @end

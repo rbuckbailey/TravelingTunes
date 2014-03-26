@@ -247,17 +247,18 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeUp"]) [self increaseVolume];
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playAllSongs];
+    else if ([action isEqual:@"SongPicker"]) NSLog(@"Song picker");
     [self setupLabels];
 }
 
 - (void) increaseVolume {
     float volume = mediaPlayer.volume;
-    mediaPlayer.volume = volume+0.1f;
+    mediaPlayer.volume = volume+0.05f;
 }
 
 - (void) decreaseVolume {
     float volume = mediaPlayer.volume;
-    mediaPlayer.volume = volume-0.1f;
+    mediaPlayer.volume = volume-0.05f;
 }
 
 - (void) togglePlayPause {
@@ -362,7 +363,6 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.font    =  [UIFont systemFontOfSize:28];
         _albumTitle.textColor = themecolor;
         [_albumTitle setAlpha:0.6f];
-        [_albumTitle sizeToFit];
     } else {
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
@@ -376,7 +376,6 @@ MPMusicPlayerController*        mediaPlayer;
         _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
         _songTitle.font   = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"songFontSize"] floatValue]];
         _songTitle.textColor = themecolor;
-        [_songTitle sizeToFit];
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"albumFontSize"] floatValue]];
