@@ -56,6 +56,14 @@
 - (IBAction)songAlignmentChanged:(id)sender;
 - (IBAction)songFontSizeSliderChanged:(id)sender;
 
+@property (weak, nonatomic) IBOutlet UISwitch *titleShrinkInPortrait;
+@property (weak, nonatomic) IBOutlet UISwitch *titleShrinkLong;
+@property (weak, nonatomic) IBOutlet UILabel *titleShrinkMinimumLabel;
+@property (weak, nonatomic) IBOutlet UISlider *titleShrinkMinimumSlider;
+- (IBAction)titleShrinkInPortraitChanged:(id)sender;
+- (IBAction)titleShrinkToFitChanged:(id)sender;
+- (IBAction)titleShrinkMinimumChanged:(id)sender;
+
 @property (weak, nonatomic) IBOutlet UILabel *albumFontSizeLabel;
 @property (weak, nonatomic) IBOutlet UISlider *albumFontSizeSlider;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *albumAlignmentControl;

@@ -21,7 +21,7 @@
     [self.navigationController setNavigationBarHidden:NO];
     
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+//    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     //initialize check marks Action Selector view
     _themeSelectionPreviewLabel.text = [defaults objectForKey:@"currentTheme"];
@@ -29,7 +29,7 @@
     [self setUpActionChecks];
     [self setUpThemeChecks];
     
-    // initialize labels and controls for Display Settings view
+    // initialize labels and controls for Title Settings view
     _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"artistFontSize"]];
     _artistFontSizeSlider.value = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
     _artistAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"artistAlignment"] floatValue];
@@ -39,7 +39,12 @@
     _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"albumFontSize"]];
     _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
     _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
+    _titleShrinkMinimumSlider.value = (int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+    _titleShrinkMinimumLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"minimumFontSize"]];
+    if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _titleShrinkLong.on = YES; else _titleShrinkLong.on = NO;
+    if ([[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) _titleShrinkInPortrait.on = YES; else _titleShrinkInPortrait.on = NO;
     
+
     // initialize theme previews for Display settings
     [self setThemeLabels];
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
@@ -617,5 +622,41 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"SongPicker"]) _songPickerCheck.textColor = [UIColor blackColor];
     }
 }
+/*
+ - (IBAction)albumFontSizeSliderChanged:(id)sender {
+ NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+ _albumFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_albumFontSizeSlider.value];
+ [defaults setObject:[NSNumber numberWithFloat:(int)_albumFontSizeSlider.value] forKey:@"albumFontSize"];
+ [defaults synchronize];
+ }
+ 
+ // *** playlist switch actions ********************************************************************
+ - (IBAction)playlistShuffleChanged:(id)sender {
+ NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+ if (_playlistShuffle.on) [defaults setObject:@"YES" forKey:@"shuffle"];
+ else [defaults setObject:@"NO" forKey:@"shuffle"];
+ [defaults synchronize];
+ NSLog(@"shuffle: %hhd",_playlistShuffle.on);
+ }
+*/
+- (IBAction)titleShrinkInPortraitChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_titleShrinkInPortrait.on) [defaults setObject:@"YES" forKey:@"titleShrinkInPortrait"];
+    else [defaults setObject:@"NO" forKey:@"titleShrinkInPortrait"];
+    [defaults synchronize];
+}
 
+- (IBAction)titleShrinkToFitChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_titleShrinkLong.on) [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
+    else [defaults setObject:@"NO" forKey:@"titleShrinkLong"];
+    [defaults synchronize];
+}
+
+- (IBAction)titleShrinkMinimumChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    _titleShrinkMinimumLabel.text = [NSString stringWithFormat:@"%i",(int)_titleShrinkMinimumSlider.value];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_titleShrinkMinimumSlider.value] forKey:@"minimumFontSize"];
+    [defaults synchronize];
+}
 @end

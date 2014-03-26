@@ -236,7 +236,7 @@ MPMusicPlayerController*        mediaPlayer;
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
-    else if ([action isEqual:@"Play"]) [mediaPlayer play];
+    else if ([action isEqual:@"Play"]) [self playOrDefault];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
     else if ([action isEqual:@"Next"]) { [mediaPlayer skipToNextItem]; }
     else if ([action isEqual:@"Previous"]) { [mediaPlayer skipToPreviousItem]; }
@@ -261,9 +261,15 @@ MPMusicPlayerController*        mediaPlayer;
     mediaPlayer.volume = volume-0.05f;
 }
 
+- (void) playOrDefault {
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playAllSongs];
+    else [mediaPlayer play];
+}
+
 - (void) togglePlayPause {
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
-    if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playAllSongs];
+    else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
         [mediaPlayer pause];
     } else {
         [mediaPlayer play];
@@ -322,7 +328,13 @@ MPMusicPlayerController*        mediaPlayer;
                                                    repeats: YES];
 }
 
+-(void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration
+{
+    [self setupLabels];
+}
+
 - (void)setupLabels {
+    int orientation = [[UIDevice currentDevice] orientation];
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -339,6 +351,17 @@ MPMusicPlayerController*        mediaPlayer;
         temp = themebg;
         themebg = themecolor;
         themecolor = temp;
+    }
+    int artistFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
+    int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
+    int albumFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
+    if (((orientation==1) | (orientation==2)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
+        artistFontSize = (int)artistFontSize/2;
+        if (artistFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) artistFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        songFontSize = (int)songFontSize/2;
+        if (songFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) songFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        albumFontSize = (int)albumFontSize/2;
+        if (albumFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) albumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
     }
 //    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
     
@@ -366,7 +389,7 @@ MPMusicPlayerController*        mediaPlayer;
     } else {
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
-        _artistTitle.font   = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"artistFontSize"] floatValue]];
+        _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
         _artistTitle.textColor = themecolor;
         [_artistTitle setAlpha:0.6f];
         [_artistTitle sizeToFit];
@@ -374,11 +397,11 @@ MPMusicPlayerController*        mediaPlayer;
     
         _songTitle.numberOfLines = 1;
         _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-        _songTitle.font   = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"songFontSize"] floatValue]];
+        _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
         _songTitle.textColor = themecolor;
         
         _albumTitle.numberOfLines = 1;
-        _albumTitle.font    = [UIFont systemFontOfSize:(int)[[defaults objectForKey:@"albumFontSize"] floatValue]];
+        _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
         _albumTitle.textColor = themecolor;
         [_albumTitle setAlpha:0.6f];
