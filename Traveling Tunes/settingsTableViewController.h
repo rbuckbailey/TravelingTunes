@@ -27,6 +27,21 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *VolumeDown;
 @property (weak, nonatomic) IBOutlet UITableViewCell *startDefaultPlaylist;
 @property (weak, nonatomic) IBOutlet settingsTableViewCell *ResetGestureAssignments;
+@property (weak, nonatomic) IBOutlet UILabel *nothingCheck;
+@property (weak, nonatomic) IBOutlet UILabel *playCheck;
+@property (weak, nonatomic) IBOutlet UILabel *pauseCheck;
+@property (weak, nonatomic) IBOutlet UILabel *playPauseCheck;
+@property (weak, nonatomic) IBOutlet UILabel *volumeUpCheck;
+@property (weak, nonatomic) IBOutlet UILabel *volumeDownCheck;
+@property (weak, nonatomic) IBOutlet UILabel *fastForwardCheck;
+@property (weak, nonatomic) IBOutlet UILabel *rewindCheck;
+@property (weak, nonatomic) IBOutlet UILabel *nextCheck;
+@property (weak, nonatomic) IBOutlet UILabel *restartCheck;
+@property (weak, nonatomic) IBOutlet UILabel *previousCheck;
+@property (weak, nonatomic) IBOutlet UILabel *restartPreviousCheck;
+@property (weak, nonatomic) IBOutlet UILabel *songPickerCheck;
+@property (weak, nonatomic) IBOutlet UILabel *startDefaultPlaylistCheck;
+@property (weak, nonatomic) IBOutlet UILabel *menuCheck;
 
 // display settings outlets
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;
@@ -52,11 +67,8 @@
 - (IBAction)themeInvertChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnWhite;
 @property (weak, nonatomic) IBOutlet UILabel *themeGreyOnWhiteLabel;
-//@property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnBlack;
-//@property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnBlack;
 @property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackLabel;
-
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLeaf;
 @property (weak, nonatomic) IBOutlet UILabel *themeLeafLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeOlive;
@@ -71,6 +83,15 @@
 @property (weak, nonatomic) IBOutlet UILabel *themeHotDogStandLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeCustom;
 @property (weak, nonatomic) IBOutlet UILabel *themeCustomLabel;
+@property (weak, nonatomic) IBOutlet UILabel *themeGreyOnWhiteCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeLavenderCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeBlushCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themePeriwinkleBlueCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeOliveCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeLeafCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeHotDogStandCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeCustomCheck;
 
 // display preview cells and labels
 @property (weak, nonatomic) IBOutlet UILabel *themeSelectionPreviewTitle;

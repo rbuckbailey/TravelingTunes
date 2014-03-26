@@ -63,6 +63,9 @@ MPMusicPlayerController*        mediaPlayer;
     {
         _direction = directionNone;
     }
+// this is continuous gesture, bad for some actions, good for others.
+//    else if (gesture.state == UIGestureRecognizerStateChanged)
+// this is trigger-once actions
     else if (gesture.state == UIGestureRecognizerStateChanged && _direction == directionNone)
     {
         _direction = [self determineSwipeDirectiond:translation];
