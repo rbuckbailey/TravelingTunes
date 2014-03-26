@@ -37,7 +37,7 @@ MPMusicPlayerController*        mediaPlayer;
     [self.navigationController setNavigationBarHidden:YES];
     [self setupLabels];
    
-    [self firstStartTimer];
+//    [self firstStartTimer];
 }
 
 - (void)viewDidLoad
@@ -289,7 +289,7 @@ MPMusicPlayerController*        mediaPlayer;
     _songTitle.text = [scrollString substringWithRange:NSMakeRange(len++,charactersLeft)];
     
     if (len==[scrollString length]) {
-        [self.timer invalidate]; len=0; _songTitle.text = scrollString; [self startTimer];
+        [self.timer invalidate]; len=0; _songTitle.text = scrollString;// [self startTimer];
     }
 }
 
