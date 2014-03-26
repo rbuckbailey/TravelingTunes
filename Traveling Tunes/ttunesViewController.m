@@ -389,13 +389,16 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)playAllSongs {
     //Create a query that will return all songs by The Beatles grouped by album
     MPMediaQuery* query = [MPMediaQuery songsQuery];
-    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
-    [query setGroupingType:MPMediaGroupingAlbum];
+//    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
+//    [query setGroupingType:MPMediaGroupingAlbum];
+    
+    [mediaPlayer setQueueWithQuery: [MPMediaQuery songsQuery]];
+//    plus = @"random";
+    
     //Pass the query to the player
     [mediaPlayer setQueueWithQuery:query];
     //Start playing and set a label text to the name and image to the cover art of the song that is playing
     [mediaPlayer play];
-    _songTitle.text = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
 }
 
 
