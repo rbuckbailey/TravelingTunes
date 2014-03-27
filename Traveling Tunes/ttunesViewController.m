@@ -55,7 +55,11 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)handleSwipe:(UIPanGestureRecognizer *)gesture {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     CGPoint translation = [gesture translationInView:self.view];
-    NSString *key;
+    NSString *key,*keyContinuous;
+    swipeDirections oldDirection;
+
+    oldDirection = _direction;
+    _direction = directionNone;
     
 // this useful debug info is spammy
 //    NSLog(@"%lu touches",(unsigned long)gesture.numberOfTouches);
@@ -72,40 +76,69 @@ MPMusicPlayerController*        mediaPlayer;
        switch (_direction) {
             case directionDown:
                key = [NSString stringWithFormat:@"%luSwipeDown",(unsigned long)gesture.numberOfTouches];
-               [self performPlayerAction:[defaults objectForKey:key]:key];
-               NSLog(@"Swipe gesture %@",key);
+               keyContinuous = [NSString stringWithFormat:@"%luSwipeDownContinuous",(unsigned long)gesture.numberOfTouches];
+               if ([[defaults objectForKey:keyContinuous] isEqual:@"YES"]) [self performPlayerAction:[defaults objectForKey:key]:key];
+               else {
+                   if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
+                       [self performPlayerAction:[defaults objectForKey:key]:key];
+                       [defaults setObject:key forKey:@"doNotRepeat"];
+                   }
+               }
+//               NSLog(@"Swipe gesture %@ is %@ continuous",key,[defaults objectForKey:keyContinuous]);
                 break;
                 
             case directionUp:
                key = [NSString stringWithFormat:@"%luSwipeUp",(unsigned long)gesture.numberOfTouches];
-               [self performPlayerAction:[defaults objectForKey:key]:key];
-               NSLog(@"Swipe gesture %@",key);
+               keyContinuous = [NSString stringWithFormat:@"%luSwipeUpContinuous",(unsigned long)gesture.numberOfTouches];
+               if ([[defaults objectForKey:keyContinuous] isEqual:@"YES"]) [self performPlayerAction:[defaults objectForKey:key]:key];
+               else {
+                   if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
+                       [self performPlayerAction:[defaults objectForKey:key]:key];
+                       [defaults setObject:key forKey:@"doNotRepeat"];
+                   }
+               }
+//               NSLog(@"Swipe gesture %@ is %@ continuous",key,[defaults objectForKey:keyContinuous]);
                 break;
                 
             case directionRight:
                key = [NSString stringWithFormat:@"%luSwipeRight",(unsigned long)gesture.numberOfTouches];
-               [self performPlayerAction:[defaults objectForKey:key]:key];
-               NSLog(@"Swipe gesture %@",key);
+               keyContinuous = [NSString stringWithFormat:@"%luSwipeRightContinuous",(unsigned long)gesture.numberOfTouches];
+               if ([[defaults objectForKey:keyContinuous] isEqual:@"YES"]) [self performPlayerAction:[defaults objectForKey:key]:key];
+               else {
+                   if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
+                       [self performPlayerAction:[defaults objectForKey:key]:key];
+                       [defaults setObject:key forKey:@"doNotRepeat"];
+                   }
+               }
                 break;
                 
             case directionLeft:
                key = [NSString stringWithFormat:@"%luSwipeLeft",(unsigned long)gesture.numberOfTouches];
-               [self performPlayerAction:[defaults objectForKey:key]:key];
-               NSLog(@"Swipe gesture %@",key);
+               keyContinuous = [NSString stringWithFormat:@"%luSwipeLeftContinuous",(unsigned long)gesture.numberOfTouches];
+               if ([[defaults objectForKey:keyContinuous] isEqual:@"YES"]) [self performPlayerAction:[defaults objectForKey:key]:key];
+               else {
+                   if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
+                       [self performPlayerAction:[defaults objectForKey:key]:key];
+                       [defaults setObject:key forKey:@"doNotRepeat"];
+                   }
+               }
                 break;
                 
             default:
                 break;
-        }
+       }
+      //  _direction=directionNone;
         
     }
-//    else if (gesture.state == UIGestureRecognizerStateEnded) NSLog(@"Stop");
+    else if (gesture.state == UIGestureRecognizerStateEnded) {
+        NSLog(@"Stop");
+    }
 }
 
 - (swipeDirections)determineSwipeDirectiond:(CGPoint)translation
 {
-    if (_direction != directionNone)
-        return _direction;
+  //  if (_direction != directionNone)
+    //    return _direction;
     
     // determine if horizontal swipe only if you meet some minimum velocity
     

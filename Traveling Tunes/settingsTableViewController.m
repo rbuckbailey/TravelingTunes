@@ -172,9 +172,15 @@
     // load gesture controller and set up
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
+    NSString *fullGestureContinuous = [fullGesture stringByAppendingString:@"Continuous"];
+    
     NSLog(@"defaults was %@",[defaults objectForKey:fullGesture]);
     // change the dictionary
     [defaults setObject:action forKey: fullGesture];
+    if ([action isEqual:@"VolumeUp"] | [action isEqual:@"VolumeDown"] | [action isEqual:@"Rewind"] | [action isEqual:@"FastForward" ]) [defaults setObject:@"YES" forKey:fullGestureContinuous];
+    else [defaults setObject:@"NO" forKey:fullGestureContinuous];
+
+
     NSLog(@"defaults is %@",[defaults objectForKey:fullGesture]);
 
     // save the dictionary

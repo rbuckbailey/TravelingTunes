@@ -81,24 +81,38 @@
     [defaults setObject:@"Next" forKey:@"1SwipeRight"];
     [defaults setObject:@"VolumeUp" forKey:@"1SwipeUp"];
     [defaults setObject:@"VolumeDown" forKey:@"1SwipeDown"];
+    [defaults setObject:@"NO" forKey:@"1SwipeLeftContinuous"];
+    [defaults setObject:@"NO" forKey:@"1SwipeRightContinuous"];
+    [defaults setObject:@"YES" forKey:@"1SwipeUpContinuous"];
+    [defaults setObject:@"YES" forKey:@"1SwipeDownContinuous"];
     [defaults setObject:@"PlayPause" forKey:@"11Tap"];
     [defaults setObject:@"Unassigned" forKey:@"12Tap"];
     [defaults setObject:@"Unassigned" forKey:@"13Tap"];
     [defaults setObject:@"Unassigned" forKey:@"14Tap"];
     [defaults setObject:@"Menu" forKey:@"1LongPress"];
+
     [defaults setObject:@"Rewind" forKey:@"2SwipeLeft"];
     [defaults setObject:@"FastForward" forKey:@"2SwipeRight"];
     [defaults setObject:@"Unassigned" forKey:@"2SwipeUp"];
     [defaults setObject:@"Unassigned" forKey:@"2SwipeDown"];
+    [defaults setObject:@"YES" forKey:@"2SwipeLeftContinuous"];
+    [defaults setObject:@"YES" forKey:@"2SwipeRightContinuous"];
+    [defaults setObject:@"NO" forKey:@"2SwipeUpContinuous"];
+    [defaults setObject:@"NO" forKey:@"2SwipeDownContinuous"];
     [defaults setObject:@"Unassigned" forKey:@"21Tap"];
     [defaults setObject:@"Unassigned" forKey:@"22Tap"];
     [defaults setObject:@"Unassigned" forKey:@"23Tap"];
     [defaults setObject:@"Unassigned" forKey:@"24Tap"];
     [defaults setObject:@"StartDefaultPlaylist" forKey:@"2LongPress"];
+
     [defaults setObject:@"Unassigned" forKey:@"3SwipeLeft"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeRight"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeUp"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeDown"];
+    [defaults setObject:@"YES" forKey:@"3SwipeLeftContinuous"];
+    [defaults setObject:@"YES" forKey:@"3SwipeRightContinuous"];
+    [defaults setObject:@"NO" forKey:@"3SwipeUpContinuous"];
+    [defaults setObject:@"NO" forKey:@"3SwipeDownContinuous"];
     [defaults setObject:@"Unassigned" forKey:@"31Tap"];
     [defaults setObject:@"Unassigned" forKey:@"32Tap"];
     [defaults setObject:@"Unassigned" forKey:@"33Tap"];
