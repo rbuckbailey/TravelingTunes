@@ -118,6 +118,15 @@
 @property (weak, nonatomic) IBOutlet UISlider *bgGreenSlider;
 @property (weak, nonatomic) IBOutlet UISlider *bgBlueSlider;
 
+// HUD options
+@property (weak, nonatomic) IBOutlet UISegmentedControl *HUDType;
+@property (weak, nonatomic) IBOutlet UISwitch *volumeAlwaysOn;
+@property (weak, nonatomic) IBOutlet UISwitch *showStatusBar;
+- (IBAction)showStatusBarChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *volumeAlwaysOnChanged;
+- (IBAction)HUDTypeChanged:(id)sender;
+
+
 @property (weak, nonatomic) IBOutlet UISlider *volumeSensitivitySlider;
 - (IBAction)volumeSensitivityChanged:(id)sender;
 

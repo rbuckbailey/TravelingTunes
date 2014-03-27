@@ -31,7 +31,9 @@
 - (void)initOtherSettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
-    [defaults setObject:@"TT" forKey:@"VolumeHUD"];
+    [defaults setObject:@"Block" forKey:@"VolumeHUD"];
+    [defaults setObject:@"No" forKey:@"ShowStatusBar"];
+    [defaults setObject:@"Block" forKey:@"HUDType"];
 }
 
 - (void)initDisplaySettings {

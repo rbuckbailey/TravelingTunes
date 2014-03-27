@@ -24,6 +24,12 @@ MPMusicPlayerController*        mediaPlayer;
 
 @implementation ttunesViewController
 
+- (BOOL)prefersStatusBarHidden {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"ShowStatusBar"] isEqual:@"NO"]) return YES;
+    else return NO;
+}
+
 - (IBAction)singleTapDetected:(id)sender {     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
     NSLog(@"gesture is %@",[defaults objectForKey:@"11Tap"]);
@@ -47,7 +53,8 @@ MPMusicPlayerController*        mediaPlayer;
     [super viewDidLoad];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
    
-    if ([[defaults objectForKey:@"hideSystemVolumeHUD"] isEqual:@"YES"]) {
+    // hide system HUD if type not set to "system"
+    if (![[defaults objectForKey:@"HUDType"] isEqual:@"System"]) {
         _volume = [[MPVolumeView alloc] initWithFrame: CGRectMake(-100,-100,16,16)];
         _volume.showsRouteButton = NO;
         _volume.userInteractionEnabled = NO;
