@@ -30,4 +30,6 @@ typedef enum : NSInteger {
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;
 
+- (void)setupLabels;
+
 @end
