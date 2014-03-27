@@ -82,6 +82,11 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
+                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.25f
+                                                                     target: self
+                                                                   selector: @selector(resetDoNotRepeat)
+                                                                   userInfo: nil
+                                                                    repeats: NO];
                    }
                }
 //               NSLog(@"Swipe gesture %@ is %@ continuous",key,[defaults objectForKey:keyContinuous]);
@@ -95,6 +100,11 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
+                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.25f
+                                                                     target: self
+                                                                   selector: @selector(resetDoNotRepeat)
+                                                                   userInfo: nil
+                                                                    repeats: NO];
                    }
                }
 //               NSLog(@"Swipe gesture %@ is %@ continuous",key,[defaults objectForKey:keyContinuous]);
@@ -108,6 +118,11 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
+                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.25f
+                                                                     target: self
+                                                                   selector: @selector(resetDoNotRepeat)
+                                                                   userInfo: nil
+                                                                    repeats: NO];
                    }
                }
                 break;
@@ -120,6 +135,11 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
+                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.25f
+                                                                     target: self
+                                                                   selector: @selector(resetDoNotRepeat)
+                                                                   userInfo: nil
+                                                                    repeats: NO];
                    }
                }
                 break;
@@ -133,6 +153,11 @@ MPMusicPlayerController*        mediaPlayer;
     else if (gesture.state == UIGestureRecognizerStateEnded) {
         NSLog(@"Stop");
     }
+}
+
+- (void) resetDoNotRepeat {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:@"narf!" forKey:@"doNotRepeat"];
 }
 
 - (swipeDirections)determineSwipeDirectiond:(CGPoint)translation
