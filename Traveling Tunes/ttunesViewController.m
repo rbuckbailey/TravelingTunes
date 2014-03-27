@@ -82,7 +82,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.25f
+                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -100,7 +100,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.25f
+                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -118,7 +118,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.25f
+                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -135,7 +135,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.25f
+                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -154,6 +154,7 @@ MPMusicPlayerController*        mediaPlayer;
         NSLog(@"Stop");
     }
 }
+
 
 - (void) resetDoNotRepeat {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -311,12 +312,12 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void) increaseVolume {
     float volume = mediaPlayer.volume;
-    mediaPlayer.volume = volume+0.05f;
+    mediaPlayer.volume = volume+0.01f;
 }
 
 - (void) decreaseVolume {
     float volume = mediaPlayer.volume;
-    mediaPlayer.volume = volume-0.05f;
+    mediaPlayer.volume = volume-0.01f;
 }
 
 - (void) playOrDefault {
