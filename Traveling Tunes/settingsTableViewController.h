@@ -118,6 +118,8 @@
 @property (weak, nonatomic) IBOutlet UISlider *bgGreenSlider;
 @property (weak, nonatomic) IBOutlet UISlider *bgBlueSlider;
 
+@property (weak, nonatomic) IBOutlet UISlider *volumeSensitivitySlider;
+- (IBAction)volumeSensitivityChanged:(id)sender;
 
 // playlist setting outlets
 @property (weak, nonatomic) IBOutlet UISwitch *playlistShuffle;

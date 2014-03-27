@@ -27,6 +27,11 @@
      return self;
 }
 
+- (void)initOtherSettings {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
+}
+
 - (void)initDisplaySettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:@"70" forKey:@"artistFontSize"];

@@ -62,6 +62,8 @@
     _textRedSlider.value = (int)[[defaults objectForKey:@"customTextRed"] floatValue];
     _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
     _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
+    _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
+
     
     [self updateCustomPreviews];
     
@@ -663,6 +665,12 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     _titleShrinkMinimumLabel.text = [NSString stringWithFormat:@"%i",(int)_titleShrinkMinimumSlider.value];
     [defaults setObject:[NSNumber numberWithFloat:(int)_titleShrinkMinimumSlider.value] forKey:@"minimumFontSize"];
+    [defaults synchronize];
+}
+
+- (IBAction)volumeSensitivityChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:_volumeSensitivitySlider.value] forKey:@"volumeSensitivity"];
     [defaults synchronize];
 }
 @end

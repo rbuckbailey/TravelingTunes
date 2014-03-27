@@ -342,13 +342,16 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void) increaseVolume {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     float volume = mediaPlayer.volume;
-    mediaPlayer.volume = volume+0.01f;
+    mediaPlayer.volume = volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    NSLog(@"%f",[[defaults objectForKey:@"volumeSensitivity"] floatValue]);
 }
 
 - (void) decreaseVolume {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     float volume = mediaPlayer.volume;
-    mediaPlayer.volume = volume-0.01f;
+    mediaPlayer.volume = volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
 }
 
 - (void) playOrDefault {
