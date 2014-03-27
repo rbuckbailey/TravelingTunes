@@ -13,7 +13,7 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-
+/*
  NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
     MPMusicPlayerController *mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     
@@ -23,7 +23,7 @@
                              object:mediaPlayer];
     
     [mediaPlayer beginGeneratingPlaybackNotifications];
-
+*/
     return YES;
 }
 							
@@ -53,7 +53,7 @@
 {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
-
+/*
 -(void) nowPlayingItemChanged:(NSNotification *)notification {
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
     
@@ -73,6 +73,7 @@
         NSLog(@"playCount: %@", playCount);
     }
 }
+ */
 
 @end
 

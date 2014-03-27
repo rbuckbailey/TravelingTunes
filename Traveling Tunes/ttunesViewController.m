@@ -46,6 +46,37 @@ MPMusicPlayerController*        mediaPlayer;
     
     UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
     [self.view addGestureRecognizer:recognizer];
+    
+    NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
+    MPMusicPlayerController *mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+    
+    [notificationCenter addObserver:self
+                           selector:@selector(nowPlayingItemChanged:)
+                               name:MPMusicPlayerControllerNowPlayingItemDidChangeNotification
+                             object:mediaPlayer];
+    
+    [mediaPlayer beginGeneratingPlaybackNotifications];
+
+}
+
+-(void) nowPlayingItemChanged:(NSNotification *)notification {
+    MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
+    
+    MPMediaItem *song = [mediaPlayer nowPlayingItem];
+    
+    if (song) {
+        [self setupLabels];
+        
+        NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
+        NSString *album = [song valueForProperty:MPMediaItemPropertyAlbumTitle];
+        NSString *artist = [song valueForProperty:MPMediaItemPropertyArtist];
+        NSString *playCount = [song valueForProperty:MPMediaItemPropertyPlayCount];
+        
+        NSLog(@"title: %@", title);
+        NSLog(@"album: %@", album);
+        NSLog(@"artist: %@", artist);
+        NSLog(@"playCount: %@", playCount);
+    }
 }
 
 
