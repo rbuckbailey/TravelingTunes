@@ -45,11 +45,14 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
-    _volume = [[MPVolumeView alloc] initWithFrame: CGRectMake(-100,-100,16,16)];
-    _volume.showsRouteButton = NO;
-    _volume.userInteractionEnabled = NO;
-    [self.view addSubview:_volume];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+   
+    if ([[defaults objectForKey:@"hideSystemVolumeHUD"] isEqual:@"YES"]) {
+        _volume = [[MPVolumeView alloc] initWithFrame: CGRectMake(-100,-100,16,16)];
+        _volume.showsRouteButton = NO;
+        _volume.userInteractionEnabled = NO;
+        [self.view addSubview:_volume];
+    }
     
     UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
     [self.view addGestureRecognizer:recognizer];

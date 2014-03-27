@@ -72,8 +72,19 @@
     if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
 }
 
+- (void) popTest {
+//    [self.navigationController popViewControllerAnimated:YES];
+    [self.navigationController popToRootViewControllerAnimated:YES]; //requires iOS 7+
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
+
+    UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"Done"
+                                                                    style:UIBarButtonItemStyleDone target:self action:@selector(popTest)];
+    self.navigationItem.rightBarButtonItem = rightButton;
+
+    
 /*** these were set on load but on appearance may be better ************************************************************
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];

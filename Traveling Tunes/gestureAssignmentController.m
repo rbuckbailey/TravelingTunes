@@ -19,6 +19,7 @@
         [self initDisplaySettings];
         [self initPlaylistSettings];
         [self initThemes];
+        [self initOtherSettings];
         [defaults setObject:@"Yes!" forKey:@"firstRun"]; [defaults synchronize];
     } else [self loadThemes];
 /*    [self initGestureAssignments];
@@ -30,6 +31,7 @@
 - (void)initOtherSettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
+    [defaults setObject:@"TT" forKey:@"VolumeHUD"];
 }
 
 - (void)initDisplaySettings {
