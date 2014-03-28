@@ -26,6 +26,8 @@ typedef enum : NSInteger {
 @property (weak, nonatomic) IBOutlet UILabel *songTitle;
 @property (weak, nonatomic) IBOutlet UILabel *albumTitle;
 @property NSTimer *timer;
+@property MPVolumeView* volume;
+
 
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;

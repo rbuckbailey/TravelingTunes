@@ -18,7 +18,6 @@ MPMusicPlayerController*        mediaPlayer;
 //MPMediaPlayback*        mediaPlayer;
 
 @interface ttunesViewController ()
-@property MPVolumeView* volume;
 @property UIView *barView,*lineView;
 @end
 
@@ -31,7 +30,8 @@ MPMusicPlayerController*        mediaPlayer;
     else return NO;
 }
 
-- (IBAction)singleTapDetected:(id)sender {     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+- (IBAction)singleTapDetected:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
     NSLog(@"gesture is %@",[defaults objectForKey:@"11Tap"]);
 }
@@ -46,6 +46,7 @@ MPMusicPlayerController*        mediaPlayer;
     [self.navigationController setNavigationBarHidden:YES];
     [self setupLabels];
     [self setupHUD];
+    [self setupSystemHUD];
    
 //    [self firstStartTimer];
 }
@@ -61,7 +62,7 @@ MPMusicPlayerController*        mediaPlayer;
     _lineView.backgroundColor = [UIColor clearColor];
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     
     //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
     NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
@@ -74,14 +75,6 @@ MPMusicPlayerController*        mediaPlayer;
         temp = themebg;
         themebg = themecolor;
         themecolor = temp;
-    }
-    
-    // hide system HUD if type not set to "system"
-    if (![[defaults objectForKey:@"HUDType"] isEqual:@"System"]) {
-        _volume = [[MPVolumeView alloc] initWithFrame: CGRectMake(-100,-100,16,16)];
-        _volume.showsRouteButton = NO;
-        _volume.userInteractionEnabled = NO;
-        [self.view addSubview:_volume];
     }
     
     UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
@@ -115,23 +108,36 @@ MPMusicPlayerController*        mediaPlayer;
     }
     float red, green, blue, alpha;
     BOOL conversionToRGBWentOk = [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
-    float volumeLevel=(self.view.bounds.size.height-(self.view.bounds.size.height/mediaPlayer.volume))*-1;
-    NSLog(@"volume is %f",mediaPlayer.volume);
+//    float volumeLevel=((self.view.bounds.size.height-(self.view.bounds.size.height/mediaPlayer.volume))*-1)/2;
+    float volumeLevel=self.view.bounds.size.height-(self.view.bounds.size.height*mediaPlayer.volume);
+//    NSLog(@"volume is %f",mediaPlayer.volume);
     
+    _lineView.backgroundColor = [UIColor clearColor];
+    _barView.backgroundColor = [UIColor clearColor];
+
     //setup for rectangle drawing display
-    if ([[defaults objectForKey:@"HUDType"] isEqual:@"Bar"]) {
+    if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) {
         _barView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _barView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
-        _lineView.backgroundColor = [UIColor clearColor];
-    } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"Line"]) {
+    } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) {
         _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 10);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
-        _barView.backgroundColor = [UIColor clearColor];
     }
-    NSLog(@"HUD is %@",[defaults objectForKey:@"HUDType"]);
-    NSLog(@"Volume level is %f",volumeLevel);
+    NSLog(@"Volume level is %f out of %f",volumeLevel,self.view.bounds.size.height);
 }
 
+-(void)setupSystemHUD {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"HUDType"] isEqual:@"0"]) { // 0 is control index for System HUD, so turn it on by removing the volume view
+        [_volume removeFromSuperview];
+    } else { // or turn on volume view, and hide form sight
+        _volume = [[MPVolumeView alloc] initWithFrame: CGRectMake(-100,-100,16,16)];
+        _volume.showsRouteButton = NO;
+        _volume.userInteractionEnabled = NO;
+        [self.view addSubview:_volume];
+    }
+
+}
 
 -(void) nowPlayingItemChanged:(NSNotification *)notification {
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
@@ -255,9 +261,10 @@ MPMusicPlayerController*        mediaPlayer;
       //  _direction=directionNone;
         
     }
-    else if (gesture.state == UIGestureRecognizerStateEnded) {
+/*    else if (gesture.state == UIGestureRecognizerStateEnded) {
         NSLog(@"Stop");
     }
+ */
 }
 
 
@@ -497,7 +504,7 @@ MPMusicPlayerController*        mediaPlayer;
                                                    repeats: YES];
 }
 
--(void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration
+-(void)didRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration
 {
     [self setupLabels];
     [self setupHUD];

@@ -157,8 +157,12 @@
                                             <segue destination="MyG-5e-5oZ" kind="push" identifier="PlaylistsMenu" id="Guj-dj-cD7"/>
                                         </connections>
                                     </tableViewCell>
+                                </cells>
+                            </tableViewSection>
+                            <tableViewSection headerTitle="Appearance" id="WOk-yf-CH6">
+                                <cells>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="esH-RK-Af1">
-                                        <rect key="frame" x="0.0" y="174" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="196" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="esH-RK-Af1" id="z0u-1K-ziL">
                                             <rect key="frame" x="0.0" y="0.0" width="287" height="44"/>
@@ -184,7 +188,7 @@
                                         </connections>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="submenu" id="7Vh-AM-E51" customClass="settingsTableViewCell">
-                                        <rect key="frame" x="0.0" y="218" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="240" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="7Vh-AM-E51" id="f9r-OJ-6i3">
                                             <rect key="frame" x="0.0" y="0.0" width="287" height="44"/>
@@ -204,10 +208,6 @@
                                             <segue destination="yrz-qX-Lw2" kind="push" identifier="songTitleSettings" id="zhk-9T-JPy"/>
                                         </connections>
                                     </tableViewCell>
-                                </cells>
-                            </tableViewSection>
-                            <tableViewSection headerTitle="Appearance" id="WOk-yf-CH6">
-                                <cells>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="submenu" id="7Ct-y2-Vo2" customClass="settingsTableViewCell">
                                         <rect key="frame" x="0.0" y="284" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
@@ -1104,6 +1104,41 @@
                                             <constraints>
                                                 <constraint firstAttribute="trailing" secondItem="7vM-F0-BIE" secondAttribute="trailing" constant="15" id="dQp-oT-QvQ"/>
                                                 <constraint firstItem="7vM-F0-BIE" firstAttribute="top" secondItem="rnZ-bs-0JS" secondAttribute="top" constant="8" id="qSA-fa-xep"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="Zcp-cg-rqA">
+                                        <rect key="frame" x="0.0" y="416" width="320" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Zcp-cg-rqA" id="aXU-Oe-61E">
+                                            <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Type" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MAs-Zw-KZh">
+                                                    <rect key="frame" x="20" y="11" width="280" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <segmentedControl opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="pwg-cf-XX0">
+                                                    <rect key="frame" x="129" y="8" width="176" height="29"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="234" id="gJu-eZ-zW8"/>
+                                                    </constraints>
+                                                    <segments>
+                                                        <segment title="Bar"/>
+                                                        <segment title="Line"/>
+                                                        <segment title="None"/>
+                                                    </segments>
+                                                    <connections>
+                                                        <action selector="HUDTypeChanged:" destination="02N-Jq-DSM" eventType="valueChanged" id="4Ko-PP-2rS"/>
+                                                    </connections>
+                                                </segmentedControl>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="pwg-cf-XX0" firstAttribute="top" secondItem="aXU-Oe-61E" secondAttribute="top" constant="8" id="IOW-jW-H2p"/>
+                                                <constraint firstAttribute="trailing" secondItem="pwg-cf-XX0" secondAttribute="trailing" constant="15" id="x8E-VB-291"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>

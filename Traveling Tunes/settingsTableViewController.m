@@ -43,7 +43,8 @@
     _titleShrinkMinimumLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"minimumFontSize"]];
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _titleShrinkLong.on = YES; else _titleShrinkLong.on = NO;
     if ([[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) _titleShrinkInPortrait.on = YES; else _titleShrinkInPortrait.on = NO;
-    
+    _HUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"HUDType"] floatValue];
+
 
     // initialize theme previews for Display settings
     [self setThemeLabels];
@@ -696,13 +697,13 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     if (_HUDType.selectedSegmentIndex == 0) {
-        [defaults setObject:@"System" forKey:@"HUDType"];
+        [defaults setObject:@"0" forKey:@"HUDType"];
     } else if(_HUDType.selectedSegmentIndex == 1) {
-        [defaults setObject:@"Bar" forKey:@"HUDType"];
+        [defaults setObject:@"1" forKey:@"HUDType"];
     } else if(_HUDType.selectedSegmentIndex == 2) {
-        [defaults setObject:@"Line" forKey:@"HUDType"];
+        [defaults setObject:@"2" forKey:@"HUDType"];
     } else if(_HUDType.selectedSegmentIndex == 3) {
-        [defaults setObject:@"None" forKey:@"HUDType"];
+        [defaults setObject:@"3" forKey:@"HUDType"];
     }
     [defaults synchronize];
 }
