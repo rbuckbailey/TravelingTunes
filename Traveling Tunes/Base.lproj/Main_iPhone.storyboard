@@ -1085,14 +1085,14 @@
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="7vM-F0-BIE">
-                                                    <rect key="frame" x="113" y="8" width="192" height="29"/>
+                                                    <rect key="frame" x="71" y="8" width="234" height="29"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
-                                                        <constraint firstAttribute="width" constant="192" id="U3q-bg-MMt"/>
+                                                        <constraint firstAttribute="width" constant="234" id="U3q-bg-MMt"/>
                                                     </constraints>
                                                     <segments>
                                                         <segment title="System"/>
-                                                        <segment title="Block"/>
+                                                        <segment title="Bar"/>
                                                         <segment title="Line"/>
                                                         <segment title="None"/>
                                                     </segments>

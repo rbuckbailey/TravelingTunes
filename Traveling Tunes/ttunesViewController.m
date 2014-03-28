@@ -9,6 +9,7 @@
 #import "ttunesViewController.h"
 #import "gestureAssignmentController.h"
 #import "settingsTableViewController.h"
+//#import "rectangleView.h"
 
 
 
@@ -18,7 +19,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 @interface ttunesViewController ()
 @property MPVolumeView* volume;
-
+@property UIView *barView,*lineView;
 @end
 
 
@@ -44,6 +45,7 @@ MPMusicPlayerController*        mediaPlayer;
 {
     [self.navigationController setNavigationBarHidden:YES];
     [self setupLabels];
+    [self setupHUD];
    
 //    [self firstStartTimer];
 }
@@ -51,8 +53,29 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    _barView = [[UIView alloc] init];
+    _lineView = [[UIView alloc] init];
+    [self.view addSubview:_barView];
+    [self.view addSubview:_lineView];
+    _barView.backgroundColor = [UIColor clearColor];
+    _lineView.backgroundColor = [UIColor clearColor];
+
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-   
+        gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    
+    //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
+    NSMutableDictionary *themedict = [gestureController themes];
+    NSArray *themecolors = [themedict objectForKey:currentTheme];
+    UIColor *temp;
+    UIColor *themebg = [themecolors objectAtIndex:0];
+    UIColor *themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        temp = themebg;
+        themebg = themecolor;
+        themecolor = temp;
+    }
+    
     // hide system HUD if type not set to "system"
     if (![[defaults objectForKey:@"HUDType"] isEqual:@"System"]) {
         _volume = [[MPVolumeView alloc] initWithFrame: CGRectMake(-100,-100,16,16)];
@@ -75,6 +98,40 @@ MPMusicPlayerController*        mediaPlayer;
     [mediaPlayer beginGeneratingPlaybackNotifications];
 
 }
+
+-(void) setupHUD {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
+    NSMutableDictionary *themedict = [gestureController themes];
+    NSArray *themecolors = [themedict objectForKey:currentTheme];
+    UIColor *temp;
+    UIColor *themebg = [themecolors objectAtIndex:0];
+    UIColor *themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        temp = themebg;
+        themebg = themecolor;
+        themecolor = temp;
+    }
+    float red, green, blue, alpha;
+    BOOL conversionToRGBWentOk = [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
+    float volumeLevel=(self.view.bounds.size.height-(self.view.bounds.size.height/mediaPlayer.volume))*-1;
+    NSLog(@"volume is %f",mediaPlayer.volume);
+    
+    //setup for rectangle drawing display
+    if ([[defaults objectForKey:@"HUDType"] isEqual:@"Bar"]) {
+        _barView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
+        _barView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
+        _lineView.backgroundColor = [UIColor clearColor];
+    } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"Line"]) {
+        _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 10);
+        _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
+        _barView.backgroundColor = [UIColor clearColor];
+    }
+    NSLog(@"HUD is %@",[defaults objectForKey:@"HUDType"]);
+    NSLog(@"Volume level is %f",volumeLevel);
+}
+
 
 -(void) nowPlayingItemChanged:(NSNotification *)notification {
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
@@ -362,6 +419,7 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     float volume = mediaPlayer.volume;
     mediaPlayer.volume = volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    [self setupHUD];
     NSLog(@"%f",[[defaults objectForKey:@"volumeSensitivity"] floatValue]);
 }
 
@@ -369,6 +427,7 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     float volume = mediaPlayer.volume;
     mediaPlayer.volume = volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    [self setupHUD];
 }
 
 - (void) playOrDefault {
@@ -441,6 +500,7 @@ MPMusicPlayerController*        mediaPlayer;
 -(void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration
 {
     [self setupLabels];
+    [self setupHUD];
 }
 
 - (void)setupLabels {
@@ -456,7 +516,7 @@ MPMusicPlayerController*        mediaPlayer;
     UIColor *temp;
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
-    
+
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
         temp = themebg;
         themebg = themecolor;

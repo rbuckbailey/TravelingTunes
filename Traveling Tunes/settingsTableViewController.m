@@ -697,11 +697,11 @@
     
     if (_HUDType.selectedSegmentIndex == 0) {
         [defaults setObject:@"System" forKey:@"HUDType"];
-    } else if(_artistAlignmentControl.selectedSegmentIndex == 1) {
-        [defaults setObject:@"Block" forKey:@"HUDType"];
-    } else if(_artistAlignmentControl.selectedSegmentIndex == 2) {
+    } else if(_HUDType.selectedSegmentIndex == 1) {
         [defaults setObject:@"Bar" forKey:@"HUDType"];
-    } else if(_artistAlignmentControl.selectedSegmentIndex == 3) {
+    } else if(_HUDType.selectedSegmentIndex == 2) {
+        [defaults setObject:@"Line" forKey:@"HUDType"];
+    } else if(_HUDType.selectedSegmentIndex == 3) {
         [defaults setObject:@"None" forKey:@"HUDType"];
     }
     [defaults synchronize];
