@@ -120,11 +120,13 @@
 
 // HUD options
 @property (weak, nonatomic) IBOutlet UISegmentedControl *HUDType;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *ScrubHUDType;
 @property (weak, nonatomic) IBOutlet UISwitch *volumeAlwaysOn;
+- (IBAction)volumeAlwaysOnChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISwitch *showStatusBar;
 - (IBAction)showStatusBarChanged:(id)sender;
-@property (weak, nonatomic) IBOutlet UISwitch *volumeAlwaysOnChanged;
 - (IBAction)HUDTypeChanged:(id)sender;
+- (IBAction)scrubHUDTypeChanged:(id)sender;
 
 
 @property (weak, nonatomic) IBOutlet UISlider *volumeSensitivitySlider;

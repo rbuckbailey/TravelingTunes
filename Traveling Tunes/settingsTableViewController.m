@@ -43,7 +43,9 @@
     _titleShrinkMinimumLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"minimumFontSize"]];
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _titleShrinkLong.on = YES; else _titleShrinkLong.on = NO;
     if ([[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) _titleShrinkInPortrait.on = YES; else _titleShrinkInPortrait.on = NO;
+
     _HUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"HUDType"] floatValue];
+    _ScrubHUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"ScrubHUDType"] floatValue];
 
 
     // initialize theme previews for Display settings
@@ -64,61 +66,27 @@
     _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
     _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
     _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
-
     
     [self updateCustomPreviews];
     
-    // initialize switches and controls for playlist view
+    // initialize more switches
     if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
     if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
+    if ([[defaults objectForKey:@"VolumeAlwaysOn"] isEqual:@"YES"]) _volumeAlwaysOn.on = YES; else _volumeAlwaysOn.on = NO;
+    if ([[defaults objectForKey:@"ShowStatusBar"] isEqual:@"YES"]) _showStatusBar.on = YES; else _showStatusBar.on = NO;
+
+    
 }
 
-- (void) popTest {
-//    [self.navigationController popViewControllerAnimated:YES];
+- (void) popToRoot {
     [self.navigationController popToRootViewControllerAnimated:YES]; //requires iOS 7+
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-
     UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"Done"
-                                                                    style:UIBarButtonItemStyleDone target:self action:@selector(popTest)];
+                                                                    style:UIBarButtonItemStyleDone target:self action:@selector(popToRoot)];
     self.navigationItem.rightBarButtonItem = rightButton;
-
-    
-/*** these were set on load but on appearance may be better ************************************************************
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-
-    
-    // initialize labels and controls for Display Settings view
-    _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"artistFontSize"]];
-    _artistFontSizeSlider.value = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
-    _artistAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"artistAlignment"] floatValue];
-    _songFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"songFontSize"]];
-    _songFontSizeSlider.value = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
-    _songAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"songAlignment"] floatValue];
-    _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"albumFontSize"]];
-    _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
-    _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
-
-    // initialize theme previews for Display settings
-    
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-    
-    _themeSelectionPreviewLabel.textColor = themebg;
-    _themeSelectionPreviewLabel.text = currentTheme;
-    _themeSeletionPreview.backgroundColor = themecolor;
-    
-    // initialize switches and controls for playlist view
-    if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _playlistShuffle.on = YES; else _playlistShuffle.on = NO;
-    if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
- */
 }
 
 
@@ -706,5 +674,26 @@
         [defaults setObject:@"3" forKey:@"HUDType"];
     }
     [defaults synchronize];
+}
+
+- (IBAction)scrubHUDTypeChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    if (_ScrubHUDType.selectedSegmentIndex == 0) {
+        [defaults setObject:@"0" forKey:@"ScrubHUDType"];
+    } else if(_ScrubHUDType.selectedSegmentIndex == 1) {
+        [defaults setObject:@"1" forKey:@"ScrubHUDType"];
+    } else if(_ScrubHUDType.selectedSegmentIndex == 2) {
+        [defaults setObject:@"2" forKey:@"ScrubHUDType"];
+    }
+    [defaults synchronize];
+}
+
+- (IBAction)volumeAlwaysOnChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_volumeAlwaysOn.on) [defaults setObject:@"YES" forKey:@"VolumeAlwaysOn"];
+    else [defaults setObject:@"NO" forKey:@"VolumeAlwaysOn"];
+    [defaults synchronize];
+
 }
 @end

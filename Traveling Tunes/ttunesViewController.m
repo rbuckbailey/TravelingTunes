@@ -92,6 +92,11 @@ MPMusicPlayerController*        mediaPlayer;
 
 }
 
+-(void) fadeHUD {
+    _lineView.backgroundColor = [UIColor clearColor];
+    _barView.backgroundColor = [UIColor clearColor];
+}
+
 -(void) setupHUD {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
@@ -114,7 +119,6 @@ MPMusicPlayerController*        mediaPlayer;
     
     _lineView.backgroundColor = [UIColor clearColor];
     _barView.backgroundColor = [UIColor clearColor];
-
     //setup for rectangle drawing display
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) {
         _barView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
@@ -123,6 +127,11 @@ MPMusicPlayerController*        mediaPlayer;
         _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 10);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
     }
+/*    self.timer = [NSTimer scheduledTimerWithTimeInterval: 2.0f
+                                                  target: self
+                                                selector: @selector(fadeHUD)
+                                                userInfo: nil
+                                                 repeats: NO]; */
     NSLog(@"Volume level is %f out of %f",volumeLevel,self.view.bounds.size.height);
 }
 
