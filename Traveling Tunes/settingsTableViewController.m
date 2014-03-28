@@ -660,7 +660,7 @@
 
 - (IBAction)rotationPortraitChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if (_sdfsd.on) [defaults setObject:@"YES" forKey:@"RotationPortrait"];
+    if (_rotationPortrait.on) [defaults setObject:@"YES" forKey:@"RotationPortrait"];
     else [defaults setObject:@"NO" forKey:@"RotationPortrait"];
     [defaults synchronize];
 }
