@@ -89,7 +89,17 @@ MPMusicPlayerController*        mediaPlayer;
                              object:mediaPlayer];
     
     [mediaPlayer beginGeneratingPlaybackNotifications];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(deviceOrientationDidChangeNotification:)
+     name:UIDeviceOrientationDidChangeNotification
+     object:nil];
+}
 
+- (void)deviceOrientationDidChangeNotification:(NSNotification*)note
+{
+    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    [self setupHUD];
 }
 
 -(void) fadeHUD {
@@ -124,7 +134,7 @@ MPMusicPlayerController*        mediaPlayer;
         _barView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _barView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) {
-        _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 10);
+        _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 15);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
     }
 /*    self.timer = [NSTimer scheduledTimerWithTimeInterval: 2.0f
@@ -513,11 +523,13 @@ MPMusicPlayerController*        mediaPlayer;
                                                    repeats: YES];
 }
 
+/*
 -(void)didRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration
 {
     [self setupLabels];
     [self setupHUD];
 }
+ */
 
 - (void)setupLabels {
     int orientation = [[UIDevice currentDevice] orientation];
