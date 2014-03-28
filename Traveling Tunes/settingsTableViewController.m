@@ -74,6 +74,10 @@
     if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _playlistRepeat.on = YES; else _playlistRepeat.on = NO;
     if ([[defaults objectForKey:@"VolumeAlwaysOn"] isEqual:@"YES"]) _volumeAlwaysOn.on = YES; else _volumeAlwaysOn.on = NO;
     if ([[defaults objectForKey:@"ShowStatusBar"] isEqual:@"YES"]) _showStatusBar.on = YES; else _showStatusBar.on = NO;
+    if ([[defaults objectForKey:@"RotationClockwise"] isEqual:@"YES"]) _rotationClockwise.on = YES; else _rotationClockwise.on = NO;
+    if ([[defaults objectForKey:@"RotationAntiClockwise"] isEqual:@"YES"]) _rotationAntiClockwise.on = YES; else _rotationAntiClockwise.on = NO;
+    if ([[defaults objectForKey:@"RotationInverted"] isEqual:@"YES"]) _rotationInverted.on = YES; else _rotationInverted.on = NO;
+    if ([[defaults objectForKey:@"RotationPortrait"] isEqual:@"YES"]) _rotationPortrait.on = YES; else _rotationPortrait.on = NO;
 
     
 }
@@ -651,6 +655,34 @@
 - (IBAction)volumeSensitivityChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:_volumeSensitivitySlider.value] forKey:@"volumeSensitivity"];
+    [defaults synchronize];
+}
+
+- (IBAction)rotationPortraitChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_sdfsd.on) [defaults setObject:@"YES" forKey:@"RotationPortrait"];
+    else [defaults setObject:@"NO" forKey:@"RotationPortrait"];
+    [defaults synchronize];
+}
+
+- (IBAction)rotationClockwiseChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_rotationClockwise.on) [defaults setObject:@"YES" forKey:@"RotationClockwise"];
+    else [defaults setObject:@"NO" forKey:@"RotationClockwise"];
+    [defaults synchronize];
+}
+
+- (IBAction)rotationAntiClockwiseChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_rotationAntiClockwise.on) [defaults setObject:@"YES" forKey:@"RotationAntiClockwise"];
+    else [defaults setObject:@"NO" forKey:@"RotationAntiClockwise"];
+    [defaults synchronize];
+}
+
+- (IBAction)rotationInvertedChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_rotationInverted.on) [defaults setObject:@"YES" forKey:@"RotationInverted"];
+    else [defaults setObject:@"NO" forKey:@"RotationInverted"];
     [defaults synchronize];
 }
 

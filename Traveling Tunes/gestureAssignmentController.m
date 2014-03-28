@@ -22,9 +22,6 @@
         [self initOtherSettings];
         [defaults setObject:@"Yes!" forKey:@"firstRun"]; [defaults synchronize];
     } else [self loadThemes];
-/*    [self initGestureAssignments];
-    [self initDisplaySettings];
-    [self initPlaylistSettings]; */
      return self;
 }
 
@@ -33,6 +30,12 @@
     [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
     [defaults setObject:@"No" forKey:@"ShowStatusBar"];
     [defaults setObject:@"1" forKey:@"HUDType"];
+    [defaults setObject:@"1" forKey:@"ScrubHUDType"];
+    [defaults setObject:@"YES" forKey:@"RotationClockwise"];
+    [defaults setObject:@"YES" forKey:@"RotationAntiClockwise"];
+    [defaults setObject:@"YES" forKey:@"RotationInverted"];
+    [defaults setObject:@"YES" forKey:@"RotationPortrait"];
+
 }
 
 - (void)initDisplaySettings {

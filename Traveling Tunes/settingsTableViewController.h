@@ -132,6 +132,15 @@
 @property (weak, nonatomic) IBOutlet UISlider *volumeSensitivitySlider;
 - (IBAction)volumeSensitivityChanged:(id)sender;
 
+- (IBAction)rotationPortraitChanged:(id)sender;
+- (IBAction)rotationClockwiseChanged:(id)sender;
+- (IBAction)rotationAntiClockwiseChanged:(id)sender;
+- (IBAction)rotationInvertedChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *rotationPortrait;
+@property (weak, nonatomic) IBOutlet UISwitch *rotationClockwise;
+@property (weak, nonatomic) IBOutlet UISwitch *rotationAntiClockwise;
+@property (weak, nonatomic) IBOutlet UISwitch *rotationInverted;
+
 // playlist setting outlets
 @property (weak, nonatomic) IBOutlet UISwitch *playlistShuffle;
 @property (weak, nonatomic) IBOutlet UISwitch *playlistRepeat;
