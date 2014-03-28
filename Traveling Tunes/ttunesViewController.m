@@ -18,7 +18,7 @@ MPMusicPlayerController*        mediaPlayer;
 //MPMediaPlayback*        mediaPlayer;
 
 @interface ttunesViewController ()
-@property UIView *barView,*lineView;
+@property UIView *barView,*lineView,*playbackLineView;
 @end
 
 
@@ -49,6 +49,7 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupSystemHUD];
    
 //    [self firstStartTimer];
+    [self startPlaybackWatcher];
 }
 
 - (void)viewDidLoad
@@ -56,10 +57,13 @@ MPMusicPlayerController*        mediaPlayer;
     [super viewDidLoad];
     _barView = [[UIView alloc] init];
     _lineView = [[UIView alloc] init];
+    _playbackLineView = [[UIView alloc] init];
     [self.view addSubview:_barView];
     [self.view addSubview:_lineView];
+    [self.view addSubview:_playbackLineView];
     _barView.backgroundColor = [UIColor clearColor];
     _lineView.backgroundColor = [UIColor clearColor];
+    _playbackLineView.backgroundColor = [UIColor clearColor];
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
@@ -96,9 +100,62 @@ MPMusicPlayerController*        mediaPlayer;
      object:nil];
 }
 
+-(void) startPlaybackWatcher {
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:   0.2f
+                                                  target: self
+                                                selector: @selector(updatePlaybackHUD)
+                                                userInfo: nil
+                                                 repeats: YES];
+}
+
+-(void) updatePlaybackHUD {
+    
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
+    NSMutableDictionary *themedict = [gestureController themes];
+    NSArray *themecolors = [themedict objectForKey:currentTheme];
+    UIColor *temp;
+    UIColor *themebg = [themecolors objectAtIndex:0];
+    UIColor *themecolor = [themecolors objectAtIndex:1];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        temp = themebg;
+        themebg = themecolor;
+        themecolor = temp;
+    }
+    float red, green, blue, alpha;
+    BOOL conversionToRGBWentOk = [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
+    
+    MPMediaItem *playingItem=[mediaPlayer nowPlayingItem];
+    long totalPlaybackTime = [[[mediaPlayer nowPlayingItem] valueForProperty: @"playbackDuration"] longValue];
+//    long playbackPosition=self.view.bounds.size.width-self.view.bounds.size.width*(float)(totalPlaybackTime-[mediaPlayer currentPlaybackTime]);
+//    float volumeLevel=self.view.bounds.size.height-(self.view.bounds.size.height*mediaPlayer.volume);
+
+    float playbackPosition=(self.view.bounds.size.width*([mediaPlayer currentPlaybackTime]/totalPlaybackTime));
+
+    
+    NSLog(@"%f of %ld yields %f",[mediaPlayer currentPlaybackTime],totalPlaybackTime,playbackPosition);
+    _playbackLineView.backgroundColor = [UIColor clearColor];
+    //setup for rectangle drawing display
+    
+    if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"0"]) {
+//        _playbackLineView.frame=CGRectMake(0, 0, playbackPosition, self.view.bounds.size.height);
+        _playbackLineView.frame=CGRectMake(playbackPosition, 0,  self.view.bounds.size.width, self.view.bounds.size.height);
+        _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+    } else if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"1"]) {
+        _playbackLineView.frame = CGRectMake(playbackPosition, 0, 15, self.view.bounds.size.height);
+        _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+    }
+}
+
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
+}
+
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
 {
     UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    [self setupLabels];
     [self setupHUD];
 }
 
@@ -123,7 +180,6 @@ MPMusicPlayerController*        mediaPlayer;
     }
     float red, green, blue, alpha;
     BOOL conversionToRGBWentOk = [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
-//    float volumeLevel=((self.view.bounds.size.height-(self.view.bounds.size.height/mediaPlayer.volume))*-1)/2;
     float volumeLevel=self.view.bounds.size.height-(self.view.bounds.size.height*mediaPlayer.volume);
 //    NSLog(@"volume is %f",mediaPlayer.volume);
     
@@ -132,17 +188,19 @@ MPMusicPlayerController*        mediaPlayer;
     //setup for rectangle drawing display
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) {
         _barView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
-        _barView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
+        _barView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) {
         _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 15);
-        _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.3f];
+        _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
     }
-/*    self.timer = [NSTimer scheduledTimerWithTimeInterval: 2.0f
+/*
+ self.timer = [NSTimer scheduledTimerWithTimeInterval: 2.5f
                                                   target: self
                                                 selector: @selector(fadeHUD)
                                                 userInfo: nil
-                                                 repeats: NO]; */
-    NSLog(@"Volume level is %f out of %f",volumeLevel,self.view.bounds.size.height);
+                                                 repeats: NO];
+ */
+//    NSLog(@"Volume level is %f out of %f",volumeLevel,self.view.bounds.size.height);
 }
 
 -(void)setupSystemHUD {

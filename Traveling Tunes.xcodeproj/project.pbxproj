@@ -233,6 +233,11 @@
 				TargetAttributes = {
 					8E3C8CCF189BF785004A90AE = {
 						DevelopmentTeam = 69HKE3UF64;
+						SystemCapabilities = {
+							com.apple.InAppPurchase = {
+								enabled = 0;
+							};
+						};
 					};
 					8E3C8CF3189BF785004A90AE = {
 						TestTargetID = 8E3C8CCF189BF785004A90AE;
