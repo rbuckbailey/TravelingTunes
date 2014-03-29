@@ -14,7 +14,7 @@
 MPMusicPlayerController*        mediaPlayer;
 
 @interface ttunesViewController ()
-@property UIView *barView,*lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG;
+@property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG;
 @end
 
 
@@ -66,18 +66,15 @@ MPMusicPlayerController*        mediaPlayer;
     appDelegate.ttunes = self;
 
     [self startPlaybackWatcher];
-    _barView = [[UIView alloc] init];
     _lineView = [[UIView alloc] init];
     _edgeViewBG = [[UIView alloc] init];
     _playbackEdgeViewBG = [[UIView alloc] init];
 
     _playbackLineView = [[UIView alloc] init];
-    [self.view addSubview:_barView];
     [self.view addSubview:_edgeViewBG];
     [self.view addSubview:_playbackEdgeViewBG];
     [self.view addSubview:_lineView];
     [self.view addSubview:_playbackLineView];
-    _barView.backgroundColor = [UIColor clearColor];
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
     _playbackLineView.backgroundColor = [UIColor clearColor];
@@ -185,7 +182,8 @@ MPMusicPlayerController*        mediaPlayer;
     
 //    NSLog(@"%f of %ld yields %f",[mediaPlayer currentPlaybackTime],totalPlaybackTime,playbackPosition);
     _playbackLineView.backgroundColor = [UIColor clearColor];
-    
+    _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
+
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"0"]) {
         _playbackLineView.frame=CGRectMake(playbackPosition, 0,  self.view.bounds.size.width, self.view.bounds.size.height);
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
@@ -215,7 +213,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void) fadeHUD {
     _lineView.backgroundColor = [UIColor clearColor];
-    _barView.backgroundColor = [UIColor clearColor];
+    _edgeViewBG.backgroundColor = [UIColor clearColor];
 }
 
 -(void) setupHUD {
@@ -242,11 +240,12 @@ MPMusicPlayerController*        mediaPlayer;
 //    NSLog(@"volume is %f",mediaPlayer.volume);
     
     _lineView.backgroundColor = [UIColor clearColor];
-    _barView.backgroundColor = [UIColor clearColor];
+    _edgeViewBG.backgroundColor = [UIColor clearColor];
+
     //setup for rectangle drawing display
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) {
-        _barView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
-        _barView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+        _lineView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
+        _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
         _edgeViewBG.backgroundColor = [UIColor clearColor];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) {
         _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 15);
