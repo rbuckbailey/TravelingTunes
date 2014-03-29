@@ -67,6 +67,7 @@
     _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
     _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
     
+    NSLog(@"Custom color is fore r %f g %f b %f back %f g %f b %f",_textRedSlider.value,_textGreenSlider.value,_textBlueSlider.value,_bgRedSlider.value,_bgGreenSlider.value,_bgBlueSlider.value);
     [self updateCustomPreviews];
     
     // initialize more switches
@@ -202,7 +203,7 @@
     else if (selection == _themeGreyOnWhite) { [defaults setObject:@"Grey on White" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themeGreyOnBlack) { [defaults setObject:@"Grey on Black" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themeLeaf) { [defaults setObject:@"Leaf" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
-    else if (selection == _themeOlive) { [defaults setObject:@"Olive" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeOldWest) { [defaults setObject:@"Old West" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themeLavender) { [defaults setObject:@"Lavender" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themePeriwinkleBlue) { [defaults setObject:@"Periwinkle Blue" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themeBlush) { [defaults setObject:@"Blush" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
@@ -398,11 +399,11 @@
     _themeLeaf.backgroundColor = themebg;
     _themeLeafLabel.textColor = themecolor;
     
-    themecolors = [[gestureController themes] objectForKey:@"Olive"];
+    themecolors = [[gestureController themes] objectForKey:@"Old West"];
     themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
-    _themeOlive.backgroundColor = themebg;
-    _themeOliveLabel.textColor = themecolor;
+    _themeOldWest.backgroundColor = themebg;
+    _themeOldWestLabel.textColor = themecolor;
     
     themecolors = [[gestureController themes] objectForKey:@"Lavender"];
     themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
@@ -557,7 +558,7 @@
     _themeLavenderCheck.textColor = [[[gestureController themes] objectForKey:@"Lavender"] objectAtIndex:index];
     _themeBlushCheck.textColor = [[[gestureController themes] objectForKey:@"Blush"] objectAtIndex:index];
     _themeLeafCheck.textColor = [[[gestureController themes] objectForKey:@"Leaf"] objectAtIndex:index];
-    _themeOliveCheck.textColor = [[[gestureController themes] objectForKey:@"Olive"] objectAtIndex:index];
+    _themeOldWestCheck.textColor = [[[gestureController themes] objectForKey:@"Old West"] objectAtIndex:index];
     _themePeriwinkleBlueCheck.textColor = [[[gestureController themes] objectForKey:@"Periwinkle Blue"] objectAtIndex:index];
     _themeHotDogStandCheck.textColor = [[[gestureController themes] objectForKey:@"Hot Dog Stand"] objectAtIndex:index];
     _themeCustomCheck.textColor = [[[gestureController themes] objectForKey:@"Custom"] objectAtIndex:index];
@@ -569,7 +570,7 @@
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Lavender"]) _themeLavenderCheck.textColor = [[[gestureController themes] objectForKey:@"Lavender"] objectAtIndex:index];
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Blush"]) _themeBlushCheck.textColor = [[[gestureController themes] objectForKey:@"Blush"] objectAtIndex:index];
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Leaf"]) _themeLeafCheck.textColor = [[[gestureController themes] objectForKey:@"Leaf"] objectAtIndex:index];
-    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Olive"]) _themeOliveCheck.textColor = [[[gestureController themes] objectForKey:@"Olive"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Old West"]) _themeOldWestCheck.textColor = [[[gestureController themes] objectForKey:@"Old West"] objectAtIndex:index];
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Periwinkle Blue"]) _themePeriwinkleBlueCheck.textColor = [[[gestureController themes] objectForKey:@"Periwinkle Blue"] objectAtIndex:index];
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Hot Dog Stand"]) _themeHotDogStandCheck.textColor = [[[gestureController themes] objectForKey:@"Hot Dog Stand"] objectAtIndex:index];
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Custom"]) _themeCustomCheck.textColor = [[[gestureController themes] objectForKey:@"Custom"] objectAtIndex:index];
@@ -704,6 +705,8 @@
         [defaults setObject:@"2" forKey:@"HUDType"];
     } else if(_HUDType.selectedSegmentIndex == 3) {
         [defaults setObject:@"3" forKey:@"HUDType"];
+    } else if(_HUDType.selectedSegmentIndex == 4) {
+        [defaults setObject:@"4" forKey:@"HUDType"];
     }
     [defaults synchronize];
 }
@@ -717,6 +720,8 @@
         [defaults setObject:@"1" forKey:@"ScrubHUDType"];
     } else if(_ScrubHUDType.selectedSegmentIndex == 2) {
         [defaults setObject:@"2" forKey:@"ScrubHUDType"];
+    } else if(_ScrubHUDType.selectedSegmentIndex == 3) {
+        [defaults setObject:@"3" forKey:@"ScrubHUDType"];
     }
     [defaults synchronize];
 }

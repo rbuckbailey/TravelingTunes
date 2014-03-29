@@ -28,7 +28,7 @@
 - (void)initOtherSettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
-    [defaults setObject:@"No" forKey:@"ShowStatusBar"];
+    [defaults setObject:@"NO" forKey:@"ShowStatusBar"];
     [defaults setObject:@"1" forKey:@"HUDType"];
     [defaults setObject:@"1" forKey:@"ScrubHUDType"];
     [defaults setObject:@"YES" forKey:@"RotationClockwise"];
@@ -60,29 +60,43 @@
 - (void)initThemes {
     //bg, artist, song, album
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if (![defaults objectForKey:@"currentTheme"]) [defaults setObject:@"Lavender" forKey:@"currentTheme"];
+    [defaults setObject:@"Lavender" forKey:@"currentTheme"];
+//    [defaults setObject:"dsf"]
+    
+    /*
+     _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
+     _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
+     _bgBlueSlider.value = (int)[[defaults objectForKey:@"customBGBlue"] floatValue];
+     _textRedSlider.value = (int)[[defaults objectForKey:@"customTextRed"] floatValue];
+     _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
+     _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
+     _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
+*/
     [defaults synchronize];
     self.themes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f alpha:1],
-                    [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f alpha:1],nil],@"Grey on White",
+                                                [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f alpha:1],nil],@"Grey on White",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 0   green: 0   blue:0   alpha:1],
-                    [UIColor colorWithRed: 190/255.f green: 190/255.f blue:190/255.f alpha:1],nil],@"Grey on Black",
+                                                [UIColor colorWithRed: 190/255.f green: 190/255.f blue:190/255.f alpha:1],nil],@"Grey on Black",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 205/255.f   green: 241/255.f   blue:5/255.f   alpha:1],
-                    [UIColor colorWithRed: 98/255.f green: 128/255.f blue:29/255.f alpha:1],nil],@"Leaf",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 112/255.f   green: 128/255.f   blue:34/255.f   alpha:1],
-                    [UIColor colorWithRed: 179/255.f green: 171/255.f blue:125/255.f alpha:1],nil],@"Olive",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 155/255.f   green: 178/255.f   blue:255/255.f   alpha:1],
-                    [UIColor colorWithRed: 98/255.f green: 91/255.f blue:255 alpha:1],nil],@"Periwinkle Blue",
+                                                [UIColor colorWithRed: 98/255.f green: 128/255.f blue:29/255.f alpha:1],nil],@"Leaf",
+//                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 98/255.f green: 128/255.f blue:29/255.f alpha:1],
+//                                                [UIColor colorWithRed: 205/255.f   green: 241/255.f   blue:5/255.f   alpha:1],nil],@"Leaf",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 241/255.f   green: 195/255.f   blue:146/255.f   alpha:1],
+                                                [UIColor colorWithRed: 119/255.f green: 68/255.f blue:39/255.f alpha:1],nil],@"Old West",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 98/255.f green: 91/255.f blue:255 alpha:1],
+                                                [UIColor colorWithRed: 155/255.f   green: 178/255.f   blue:255/255.f   alpha:1],nil],@"Periwinkle Blue",
+//                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 155/255.f   green: 178/255.f   blue:255/255.f   alpha:1],
+//                                                [UIColor colorWithRed: 98/255.f green: 91/255.f blue:255 alpha:1],nil],@"Periwinkle Blue",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 195/255.f   green: 192/255.f   blue:255/255.f   alpha:1],
                                                 [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255 alpha:1],nil],@"Lavender",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 188/255.f   blue:196/255.f   alpha:1],
-                    [UIColor colorWithRed: 255/255.f green: 239/255.f blue:242 alpha:1],nil],@"Blush",
+                                                [UIColor colorWithRed: 255/255.f green: 239/255.f blue:242 alpha:1],nil],@"Blush",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 255/255.f   blue:0   alpha:1],
-                    [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"Hot Dog Stand",
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 10/255.f   green: 10/255.f   blue:0   alpha:1],
-                    [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"Custom",
+                                                [UIColor colorWithRed: 255/255.f green: 0 blue:0 alpha:1],nil],@"Hot Dog Stand",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 10/255.f   green: 10/255.f   blue:10/255.f   alpha:1],
+                                                [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f alpha:1],nil],@"Custom",
                    nil];
-    
     [self saveThemes];
 }
 
@@ -153,8 +167,8 @@
     [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Lavender"];
     themecolors = [_themes objectForKey:@"Leaf"];
     [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Leaf"];
-    themecolors = [_themes objectForKey:@"Olive"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Olive"];
+    themecolors = [_themes objectForKey:@"Old West"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Old West"];
     themecolors = [_themes objectForKey:@"Blush"];
     [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Blush"];
     themecolors = [_themes objectForKey:@"Periwinkle Blue"];
@@ -182,7 +196,7 @@
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on Black"]] forKey:@"Grey on Black"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Lavender"]] forKey:@"Lavender"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Leaf"]] forKey:@"Leaf"];
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Olive"]] forKey:@"Olive"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Old West"]] forKey:@"Old West"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Blush"]] forKey:@"Blush"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Periwinkle Blue"]] forKey:@"Periwinkle Blue"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Hot Dog Stand"]] forKey:@"Hot Dog Stand"];

@@ -79,8 +79,8 @@
 @property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLeaf;
 @property (weak, nonatomic) IBOutlet UILabel *themeLeafLabel;
-@property (weak, nonatomic) IBOutlet UITableViewCell *themeOlive;
-@property (weak, nonatomic) IBOutlet UILabel *themeOliveLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeOldWest;
+@property (weak, nonatomic) IBOutlet UILabel *themeOldWestLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themePeriwinkleBlue;
 @property (weak, nonatomic) IBOutlet UILabel *themePeriwinkleBlueLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLavender;
@@ -96,7 +96,7 @@
 @property (weak, nonatomic) IBOutlet UILabel *themeLavenderCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeBlushCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themePeriwinkleBlueCheck;
-@property (weak, nonatomic) IBOutlet UILabel *themeOliveCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeOldWestCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeLeafCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeHotDogStandCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeCustomCheck;
