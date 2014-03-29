@@ -665,8 +665,8 @@ MPMusicPlayerController*        mediaPlayer;
 //    NSLog(@"orientation is %d",orientation);
     //wtf is orientation 5??
 //    if (((orientation==1) | (orientation==2)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
-    if ((self.view.bounds.size.height==480) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
-        NSLog(@"height is %f",self.view.bounds.size.height);
+    NSLog(@"height is %f",self.view.bounds.size.height);
+    if (((self.view.bounds.size.height==480) | (self.view.bounds.size.height==568)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
     
         artistFontSize = (int)artistFontSize/2;
         if (artistFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) artistFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
@@ -706,22 +706,24 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
         _artistTitle.textColor = themecolor;
         [_artistTitle setAlpha:0.6f];
-//        [_artistTitle sizeToFit];
-
+        _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _artistTitle.adjustsFontSizeToFitWidth=YES; else _artistTitle.adjustsFontSizeToFitWidth=NO;
     
         _songTitle.numberOfLines = 1;
         _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
         _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
         _songTitle.textColor = themecolor;
-        _songTitle.frame=CGRectMake(20, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
-
+        _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
+        _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _songTitle.adjustsFontSizeToFitWidth=YES; else _songTitle.adjustsFontSizeToFitWidth=NO;
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
-        _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
+         .text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
         _albumTitle.textColor = themecolor;
         [_albumTitle setAlpha:0.6f];
-//        [_albumTitle sizeToFit];
+        _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
     }
 }
 
