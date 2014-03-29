@@ -1761,7 +1761,7 @@
                                                     <rect key="frame" x="251" y="6" width="51" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <connections>
-                                                        <action selector="themeInvertChanged:" destination="2X2-CN-VUX" eventType="valueChanged" id="hTb-dd-0dn"/>
+                                                        <action selector="themeInvertChanged:" destination="F2X-Ex-hDZ" eventType="valueChanged" id="veg-W8-lPU"/>
                                                     </connections>
                                                 </switch>
                                             </subviews>
@@ -1815,6 +1815,7 @@
                         <outlet property="textBlueSlider" destination="pr4-Su-Y79" id="nYv-ip-Wtp"/>
                         <outlet property="textGreenSlider" destination="aau-Dk-BTm" id="51d-ud-Crj"/>
                         <outlet property="textRedSlider" destination="enr-BS-X4b" id="rYh-Km-dHz"/>
+                        <outlet property="themeInvert" destination="np0-nh-wHs" id="6uO-Kt-aDc"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="heh-XX-dWy" userLabel="First Responder" sceneMemberID="firstResponder"/>

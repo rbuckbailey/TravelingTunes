@@ -444,6 +444,7 @@
     else [defaults setObject:@"NO" forKey:@"themeInvert"];
     [self setThemeLabels];
     [self setUpThemeChecks];
+    [self updateCustomPreviews];
     NSLog(@"themeInvertChanged: %hhd",_themeInvert.on);
     [defaults synchronize];
 }
