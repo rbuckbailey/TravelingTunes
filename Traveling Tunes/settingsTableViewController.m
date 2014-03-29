@@ -83,8 +83,8 @@
     if ([[defaults objectForKey:@"PlayOnLaunch"] isEqual:@"YES"]) _playOnLaunch.on = YES; else _playOnLaunch.on = NO;
     if ([[defaults objectForKey:@"PauseOnExit"] isEqual:@"YES"]) _pauseOnExit.on = YES; else _pauseOnExit.on = NO;
 
-    
-    
+    // to insert Navigation View titles
+    //self.navigationItem.title = @"Test";
 }
 
 - (void) popToRoot {

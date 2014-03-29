@@ -148,7 +148,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="287" height="44"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Controls" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ep1-LD-gHo">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Gestures" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ep1-LD-gHo">
                                                     <rect key="frame" x="20" y="11" width="111" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -874,7 +874,7 @@
             </objects>
             <point key="canvasLocation" x="1586" y="-127"/>
         </scene>
-        <!--Settings Table View Controller-->
+        <!--Settings Table View Controller - Layout-->
         <scene sceneID="cmH-TU-1FW">
             <objects>
                 <tableViewController id="02N-Jq-DSM" customClass="settingsTableViewController" sceneMemberID="viewController">
@@ -1171,7 +1171,7 @@
                             <outlet property="delegate" destination="02N-Jq-DSM" id="91M-C6-Ujs"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" id="jl7-aj-ISG"/>
+                    <navigationItem key="navigationItem" title="Layout" id="jl7-aj-ISG"/>
                     <connections>
                         <outlet property="HUDType" destination="7vM-F0-BIE" id="Rpz-xD-1In"/>
                         <outlet property="ScrubHUDType" destination="pwg-cf-XX0" id="7Ie-pB-nEH"/>
