@@ -150,6 +150,10 @@
 @property (weak, nonatomic) IBOutlet UISwitch *playlistRepeat;
 - (IBAction)playlistShuffleChanged:(id)sender;
 - (IBAction)playlistRepeatChanged:(id)sender;
+- (IBAction)playOnLaunchChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *playOnLaunch;
+@property (weak, nonatomic) IBOutlet UISwitch *pauseOnExit;
+- (IBAction)pauseOnExitChanged:(id)sender;
 
 // passes data from view to view
 @property NSMutableDictionary *passthrough;

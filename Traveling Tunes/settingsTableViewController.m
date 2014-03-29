@@ -80,7 +80,10 @@
     if ([[defaults objectForKey:@"RotationAntiClockwise"] isEqual:@"YES"]) _rotationAntiClockwise.on = YES; else _rotationAntiClockwise.on = NO;
     if ([[defaults objectForKey:@"RotationInverted"] isEqual:@"YES"]) _rotationInverted.on = YES; else _rotationInverted.on = NO;
     if ([[defaults objectForKey:@"RotationPortrait"] isEqual:@"YES"]) _rotationPortrait.on = YES; else _rotationPortrait.on = NO;
+    if ([[defaults objectForKey:@"PlayOnLaunch"] isEqual:@"YES"]) _playOnLaunch.on = YES; else _playOnLaunch.on = NO;
+    if ([[defaults objectForKey:@"PauseOnExit"] isEqual:@"YES"]) _pauseOnExit.on = YES; else _pauseOnExit.on = NO;
 
+    
     
 }
 
@@ -741,4 +744,17 @@
     [defaults synchronize];
 
 }
+
+- (IBAction)playOnLaunchChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_playOnLaunch.on) [defaults setObject:@"YES" forKey:@"PlayOnLaunch"];
+    else [defaults setObject:@"NO" forKey:@"PlayOnLaunch"];
+    [defaults synchronize];
+}
+
+- (IBAction)pauseOnExitChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_pauseOnExit.on) [defaults setObject:@"YES" forKey:@"PauseOnExit"];
+    else [defaults setObject:@"NO" forKey:@"PauseOnExit"];
+    [defaults synchronize];}
 @end

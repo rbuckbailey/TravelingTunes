@@ -30,18 +30,15 @@
     [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
     [defaults setObject:@"5" forKey:@"seekSensitivity"];
     [defaults setObject:@"NO" forKey:@"ShowStatusBar"];
+    [defaults setObject:@"YES" forKey:@"VolumeAlwaysOn"];
     [defaults setObject:@"1" forKey:@"HUDType"];
     [defaults setObject:@"2" forKey:@"ScrubHUDType"];
     [defaults setObject:@"YES" forKey:@"RotationClockwise"];
     [defaults setObject:@"YES" forKey:@"RotationAntiClockwise"];
     [defaults setObject:@"YES" forKey:@"RotationInverted"];
     [defaults setObject:@"YES" forKey:@"RotationPortrait"];
-    [defaults setObject:[NSNumber numberWithFloat:22] forKey:@"customTextRed"];
-    [defaults setObject:[NSNumber numberWithFloat:22] forKey:@"customTextGreen"];
-    [defaults setObject:[NSNumber numberWithFloat:180] forKey:@"customTextBlue"];
-    [defaults setObject:[NSNumber numberWithFloat:200] forKey:@"customBGRed"];
-    [defaults setObject:[NSNumber numberWithFloat:200] forKey:@"customBGGreen"];
-    [defaults setObject:[NSNumber numberWithFloat:100] forKey:@"customBGBlue"];
+    [defaults setObject:@"NO" forKey:@"PlayOnLaunch"];
+    [defaults setObject:@"NO" forKey:@"PauseOnExit"];
 }
 
 - (void)initDisplaySettings {
@@ -69,15 +66,6 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:@"Old West" forKey:@"currentTheme"];
     
-    /*
-     _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
-     _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
-     _bgBlueSlider.value = (int)[[defaults objectForKey:@"customBGBlue"] floatValue];
-     _textRedSlider.value = (int)[[defaults objectForKey:@"customTextRed"] floatValue];
-     _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
-     _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
-     _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
-*/
     [defaults synchronize];
     self.themes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f alpha:1],
@@ -103,6 +91,21 @@
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 10/255.f   green: 10/255.f   blue:10/255.f   alpha:1],
                                                 [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f alpha:1],nil],@"Custom",
                    nil];
+    [defaults setObject:[NSNumber numberWithFloat:22] forKey:@"customTextRed"];
+    [defaults setObject:[NSNumber numberWithFloat:22] forKey:@"customTextGreen"];
+    [defaults setObject:[NSNumber numberWithFloat:180] forKey:@"customTextBlue"];
+    [defaults setObject:[NSNumber numberWithFloat:200] forKey:@"customBGRed"];
+    [defaults setObject:[NSNumber numberWithFloat:200] forKey:@"customBGGreen"];
+    [defaults setObject:[NSNumber numberWithFloat:100] forKey:@"customBGBlue"];
+    [_themes setObject:[NSArray arrayWithObjects:
+                                           [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
+                                                           green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
+                                                            blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f   alpha:1],
+                                           [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
+                                                           green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
+                                                            blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1],nil] forKey:@"Custom"];
+    
+
     [self saveThemes];
 }
 
