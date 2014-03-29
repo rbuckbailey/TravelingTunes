@@ -756,5 +756,9 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_pauseOnExit.on) [defaults setObject:@"YES" forKey:@"PauseOnExit"];
     else [defaults setObject:@"NO" forKey:@"PauseOnExit"];
-    [defaults synchronize];}
+    [defaults synchronize];
+}
+
+
+
 @end

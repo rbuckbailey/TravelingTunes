@@ -113,10 +113,6 @@ MPMusicPlayerController*        mediaPlayer;
      selector:@selector(deviceOrientationDidChangeNotification:)
      name:UIDeviceOrientationDidChangeNotification
      object:nil];
-    
-    // first load: play automatically if specified
-    if ([defaults objectForKey:@"PlayOnLaunch"]) [self performPlayerAction:@"Play":@"Startup"];
-
 }
 
 -(void) startPlaybackWatcher {
