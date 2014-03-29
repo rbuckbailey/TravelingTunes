@@ -49,7 +49,7 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupSystemHUD];
    
     //reset marquee
-    [self.timer invalidate]; _marqueePosition=0; [self firstStartTimer];
+  //  [self.timer invalidate]; _marqueePosition=0; [self firstStartTimer];
 }
 
 - (void)viewDidLoad
@@ -64,8 +64,8 @@ MPMusicPlayerController*        mediaPlayer;
     _playbackLineView = [[UIView alloc] init];
     [self.view addSubview:_barView];
     [self.view addSubview:_edgeViewBG];
-    [self.view addSubview:_lineView];
     [self.view addSubview:_playbackEdgeViewBG];
+    [self.view addSubview:_lineView];
     [self.view addSubview:_playbackLineView];
     _barView.backgroundColor = [UIColor clearColor];
     _lineView.backgroundColor = [UIColor clearColor];
@@ -109,7 +109,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void) startPlaybackWatcher {
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:   0.2f
+    self.scrubTimer = [NSTimer scheduledTimerWithTimeInterval:   0.2f
                                                   target: self
                                                 selector: @selector(updatePlaybackHUD)
                                                 userInfo: nil
@@ -138,7 +138,7 @@ MPMusicPlayerController*        mediaPlayer;
     [themebg getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
     
-    MPMediaItem *playingItem=[mediaPlayer nowPlayingItem];
+//    MPMediaItem *playingItem=[mediaPlayer nowPlayingItem];
     long totalPlaybackTime = [[[mediaPlayer nowPlayingItem] valueForProperty: @"playbackDuration"] longValue];
 
     float playbackPosition=(self.view.bounds.size.width*([mediaPlayer currentPlaybackTime]/totalPlaybackTime));
@@ -150,6 +150,7 @@ MPMusicPlayerController*        mediaPlayer;
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"0"]) {
         _playbackLineView.frame=CGRectMake(playbackPosition, 0,  self.view.bounds.size.width, self.view.bounds.size.height);
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+        _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
     } else if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"1"]) {
         _playbackLineView.frame = CGRectMake(playbackPosition, 0, 15, self.view.bounds.size.height);
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
@@ -168,7 +169,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
 {
-    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+//    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
     [self setupLabels];
     [self setupHUD];
 }
@@ -242,6 +243,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void) nowPlayingItemChanged:(NSNotification *)notification {
+//    [self.timer invalidate]; _marqueePosition=0; [self firstStartTimer];
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
     
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
@@ -719,7 +721,7 @@ MPMusicPlayerController*        mediaPlayer;
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
-         .text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
+         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
         _albumTitle.textColor = themecolor;
         [_albumTitle setAlpha:0.6f];
         _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];

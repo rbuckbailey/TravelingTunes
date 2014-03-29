@@ -31,12 +31,17 @@
     [defaults setObject:@"5" forKey:@"seekSensitivity"];
     [defaults setObject:@"NO" forKey:@"ShowStatusBar"];
     [defaults setObject:@"1" forKey:@"HUDType"];
-    [defaults setObject:@"1" forKey:@"ScrubHUDType"];
+    [defaults setObject:@"2" forKey:@"ScrubHUDType"];
     [defaults setObject:@"YES" forKey:@"RotationClockwise"];
     [defaults setObject:@"YES" forKey:@"RotationAntiClockwise"];
     [defaults setObject:@"YES" forKey:@"RotationInverted"];
     [defaults setObject:@"YES" forKey:@"RotationPortrait"];
-
+    [defaults setObject:[NSNumber numberWithFloat:22] forKey:@"customTextRed"];
+    [defaults setObject:[NSNumber numberWithFloat:22] forKey:@"customTextGreen"];
+    [defaults setObject:[NSNumber numberWithFloat:180] forKey:@"customTextBlue"];
+    [defaults setObject:[NSNumber numberWithFloat:200] forKey:@"customBGRed"];
+    [defaults setObject:[NSNumber numberWithFloat:200] forKey:@"customBGGreen"];
+    [defaults setObject:[NSNumber numberWithFloat:100] forKey:@"customBGBlue"];
 }
 
 - (void)initDisplaySettings {
@@ -47,6 +52,7 @@
     [defaults setObject:@"Left" forKey:@"artistAlignment"];
     [defaults setObject:@"Left" forKey:@"songAlignment"];
     [defaults setObject:@"Left" forKey:@"albumAlignment"];
+    [defaults setObject:@"40" forKey:@"minimumFontSize"];
     [defaults synchronize];
 }
 
@@ -61,8 +67,7 @@
 - (void)initThemes {
     //bg, artist, song, album
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:@"Lavender" forKey:@"currentTheme"];
-//    [defaults setObject:"dsf"]
+    [defaults setObject:@"Old West" forKey:@"currentTheme"];
     
     /*
      _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
@@ -103,12 +108,14 @@
 
 - (void)initGestureAssignments {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:@"Previous" forKey:@"1SwipeLeft"];
-    [defaults setObject:@"Next" forKey:@"1SwipeRight"];
+    [defaults setObject:@"Rewind" forKey:@"1SwipeLeft"];
+    [defaults setObject:@"FastForward" forKey:@"1SwipeRight"];
+//    [defaults setObject:@"RestartPrevious" forKey:@"1SwipeLeft"];
+//    [defaults setObject:@"Next" forKey:@"1SwipeRight"];
     [defaults setObject:@"VolumeUp" forKey:@"1SwipeUp"];
     [defaults setObject:@"VolumeDown" forKey:@"1SwipeDown"];
-    [defaults setObject:@"NO" forKey:@"1SwipeLeftContinuous"];
-    [defaults setObject:@"NO" forKey:@"1SwipeRightContinuous"];
+    [defaults setObject:@"YES" forKey:@"1SwipeLeftContinuous"];
+    [defaults setObject:@"YES" forKey:@"1SwipeRightContinuous"];
     [defaults setObject:@"YES" forKey:@"1SwipeUpContinuous"];
     [defaults setObject:@"YES" forKey:@"1SwipeDownContinuous"];
     [defaults setObject:@"PlayPause" forKey:@"11Tap"];
@@ -117,12 +124,12 @@
     [defaults setObject:@"Unassigned" forKey:@"14Tap"];
     [defaults setObject:@"Menu" forKey:@"1LongPress"];
 
-    [defaults setObject:@"Rewind" forKey:@"2SwipeLeft"];
-    [defaults setObject:@"FastForward" forKey:@"2SwipeRight"];
+    [defaults setObject:@"RestartPrevious" forKey:@"2SwipeLeft"];
+    [defaults setObject:@"Next" forKey:@"2SwipeRight"];
     [defaults setObject:@"Unassigned" forKey:@"2SwipeUp"];
     [defaults setObject:@"Unassigned" forKey:@"2SwipeDown"];
-    [defaults setObject:@"YES" forKey:@"2SwipeLeftContinuous"];
-    [defaults setObject:@"YES" forKey:@"2SwipeRightContinuous"];
+    [defaults setObject:@"NO" forKey:@"2SwipeLeftContinuous"];
+    [defaults setObject:@"NO" forKey:@"2SwipeRightContinuous"];
     [defaults setObject:@"NO" forKey:@"2SwipeUpContinuous"];
     [defaults setObject:@"NO" forKey:@"2SwipeDownContinuous"];
     [defaults setObject:@"Unassigned" forKey:@"21Tap"];
@@ -135,8 +142,8 @@
     [defaults setObject:@"Unassigned" forKey:@"3SwipeRight"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeUp"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeDown"];
-    [defaults setObject:@"YES" forKey:@"3SwipeLeftContinuous"];
-    [defaults setObject:@"YES" forKey:@"3SwipeRightContinuous"];
+    [defaults setObject:@"NO" forKey:@"3SwipeLeftContinuous"];
+    [defaults setObject:@"NO" forKey:@"3SwipeRightContinuous"];
     [defaults setObject:@"NO" forKey:@"3SwipeUpContinuous"];
     [defaults setObject:@"NO" forKey:@"3SwipeDownContinuous"];
     [defaults setObject:@"Unassigned" forKey:@"31Tap"];
