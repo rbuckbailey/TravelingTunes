@@ -642,6 +642,21 @@ MPMusicPlayerController*        mediaPlayer;
         themebg = themecolor;
         themecolor = temp;
     }
+    switch ((int)[[defaults objectForKey:@"artistAlignment"] floatValue]) {
+        case 0: _artistTitle.textAlignment = NSTextAlignmentLeft; break;
+        case 1: _artistTitle.textAlignment = NSTextAlignmentCenter;  break;
+        case 2: _artistTitle.textAlignment = NSTextAlignmentRight;  break;
+    }
+    switch ((int)[[defaults objectForKey:@"songAlignment"] floatValue]) {
+        case 0: _songTitle.textAlignment = NSTextAlignmentLeft; break;
+        case 1: _songTitle.textAlignment = NSTextAlignmentCenter;  break;
+        case 2: _songTitle.textAlignment = NSTextAlignmentRight;  break;
+    }
+    switch ((int)[[defaults objectForKey:@"albumAlignment"] floatValue]) {
+        case 0: _albumTitle.textAlignment = NSTextAlignmentLeft; break;
+        case 1: _albumTitle.textAlignment = NSTextAlignmentCenter;  break;
+        case 2: _albumTitle.textAlignment = NSTextAlignmentRight;  break;
+    }
     int artistFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
     int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
     int albumFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
@@ -682,7 +697,7 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
         _artistTitle.textColor = themecolor;
         [_artistTitle setAlpha:0.6f];
-        [_artistTitle sizeToFit];
+//        [_artistTitle sizeToFit];
 
     
         _songTitle.numberOfLines = 1;
@@ -695,7 +710,7 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
         _albumTitle.textColor = themecolor;
         [_albumTitle setAlpha:0.6f];
-        [_albumTitle sizeToFit];
+//        [_albumTitle sizeToFit];
     }
 }
 
