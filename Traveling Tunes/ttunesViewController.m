@@ -48,13 +48,14 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupHUD];
     [self setupSystemHUD];
    
-//    [self firstStartTimer];
-    [self startPlaybackWatcher];
+    //reset marquee
+    [self.timer invalidate]; _marqueePosition=0; [self firstStartTimer];
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    [self startPlaybackWatcher];
     _barView = [[UIView alloc] init];
     _lineView = [[UIView alloc] init];
     _edgeViewBG = [[UIView alloc] init];
@@ -569,14 +570,15 @@ MPMusicPlayerController*        mediaPlayer;
 
 // this always scrolls, even if the text fits.
 -(void)scrollSongTitle:(id)parameter{
-    static NSInteger len;
+    float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
     NSString *scrollString = ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) ? @"Tap for default playlist." : [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-    int charactersLeft = [scrollString length]-len;
-    if ((len+charactersLeft) > [scrollString length]) charactersLeft=[scrollString length]-len;
-    _songTitle.text = [scrollString substringWithRange:NSMakeRange(len++,charactersLeft)];
+    _marqueePosition=_marqueePosition+3;
+    _songTitle.frame=CGRectMake(20-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
     
-    if (len==[scrollString length]) {
-        [self.timer invalidate]; len=0; _songTitle.text = scrollString;// [self startTimer];
+    if (_marqueePosition>= textWidth+20) {
+        [self.timer invalidate]; _marqueePosition=0;
+        _songTitle.frame=CGRectMake(20, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
+        [self firstStartTimer];
     }
 }
 
@@ -592,7 +594,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)startTimer { // wait 4 seconds on title, then scroll it
     // check the size. if the text doesn't fit, scroll it.
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
-    if (textWidth > _songTitle.frame.size.width)
+    if (textWidth > self.view.bounds.size.width)
         self.timer = [NSTimer scheduledTimerWithTimeInterval: 4
                                                       target: self
                                                     selector: @selector(scrollingTimer)
@@ -608,7 +610,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void)scrollingTimer {
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:   0.2f
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:   0.05f
                                                     target: self
                                                   selector: @selector(scrollSongTitle:)
                                                   userInfo: nil
@@ -660,7 +662,12 @@ MPMusicPlayerController*        mediaPlayer;
     int artistFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
     int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
     int albumFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
-    if (((orientation==1) | (orientation==2)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
+//    NSLog(@"orientation is %d",orientation);
+    //wtf is orientation 5??
+//    if (((orientation==1) | (orientation==2)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
+    if ((self.view.bounds.size.height==480) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
+        NSLog(@"height is %f",self.view.bounds.size.height);
+    
         artistFontSize = (int)artistFontSize/2;
         if (artistFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) artistFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         songFontSize = (int)songFontSize/2;
@@ -677,6 +684,7 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.text   = @"No music playing.";
         _artistTitle.font   = [UIFont systemFontOfSize:28];
         _artistTitle.textColor = themecolor;
+        
         [_artistTitle setAlpha:0.6f];
         [_artistTitle sizeToFit];
 
@@ -684,6 +692,7 @@ MPMusicPlayerController*        mediaPlayer;
         _songTitle.text   = @"Tap for default playlist.";
         _songTitle.font   = [UIFont systemFontOfSize:28];
         _songTitle.textColor = themecolor;
+        
         [_songTitle sizeToFit];
 
         _albumTitle.numberOfLines = 1;
@@ -704,6 +713,8 @@ MPMusicPlayerController*        mediaPlayer;
         _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
         _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
         _songTitle.textColor = themecolor;
+        _songTitle.frame=CGRectMake(20, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
+
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
@@ -728,6 +739,5 @@ MPMusicPlayerController*        mediaPlayer;
     //Start playing and set a label text to the name and image to the cover art of the song that is playing
     [mediaPlayer play];
 }
-
 
 @end

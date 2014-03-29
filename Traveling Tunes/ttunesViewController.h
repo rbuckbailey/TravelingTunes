@@ -27,6 +27,8 @@ typedef enum : NSInteger {
 @property (weak, nonatomic) IBOutlet UILabel *albumTitle;
 @property NSTimer *timer;
 @property MPVolumeView* volume;
+@property NSInteger marqueePosition;
+
 
 
 - (IBAction)singleTapDetected:(id)sender;
