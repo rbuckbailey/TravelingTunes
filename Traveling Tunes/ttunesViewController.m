@@ -362,10 +362,10 @@ MPMusicPlayerController*        mediaPlayer;
       //  _direction=directionNone;
         
     }
-/*    else if (gesture.state == UIGestureRecognizerStateEnded) {
-        NSLog(@"Stop");
+    else if (gesture.state == UIGestureRecognizerStateEnded) {
+        NSLog(@"Stop. Mediaplayer state is %ld",(long)[mediaPlayer playbackState]);
+        //if ([mediaPlayer playbackState] == MPMusicPlaybackStateSeekingForward | [mediaPlayer playbackState]==MPMusicPlaybackStateSeekingBackward) [mediaPlayer endSeeking];
     }
- */
 }
 
 
@@ -514,13 +514,23 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"Previous"]) { [mediaPlayer skipToPreviousItem]; }
     else if ([action isEqual:@"RestartPrevious"]) { [self restartPrevious]; }
     else if ([action isEqual:@"Restart"]) { [mediaPlayer skipToBeginning]; }
-    else if ([action isEqual:@"Rewind"]) NSLog(@"rewind");
-    else if ([action isEqual:@"FastForward"]) NSLog(@"FF");
+    else if ([action isEqual:@"Rewind"]) [self rewind];
+    else if ([action isEqual:@"FastForward"]) [self fastForward];
     else if ([action isEqual:@"VolumeUp"]) [self increaseVolume];
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playAllSongs];
     else if ([action isEqual:@"SongPicker"]) NSLog(@"Song picker");
     [self setupLabels];
+}
+
+-(void) fastForward {
+    //[mediaPlayer beginSeekingForward];
+    [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]+4];
+}
+
+-(void)rewind {
+    //[mediaPlayer beginSeekingBackward];
+    [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]-4];
 }
 
 - (void) increaseVolume {
