@@ -2571,10 +2571,10 @@
             </objects>
             <point key="canvasLocation" x="1586" y="-789"/>
         </scene>
-        <!--Navigation Controller-->
+        <!--Ttunes Nav View Controller-->
         <scene sceneID="Qfv-tJ-1in">
             <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="6im-dd-IBQ" sceneMemberID="viewController">
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="6im-dd-IBQ" customClass="ttunesNavViewController" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="HnZ-im-U1f">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>

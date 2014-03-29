@@ -11,13 +11,7 @@
 #import "settingsTableViewController.h"
 #import "ttunesAppDelegate.h"
 
-//#import "rectangleView.h"
-
-
-
 MPMusicPlayerController*        mediaPlayer;
-//may want to switch this to mediaplayer protocol which has built-in "current time" property
-//MPMediaPlayback*        mediaPlayer;
 
 @interface ttunesViewController ()
 @property UIView *barView,*lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG;
@@ -25,6 +19,11 @@ MPMusicPlayerController*        mediaPlayer;
 
 
 @implementation ttunesViewController
+
+
+- (BOOL) shouldAutorotate {
+    return TRUE;
+}
 
 - (BOOL)prefersStatusBarHidden {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -49,7 +48,11 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupLabels];
     [self setupHUD];
     [self setupSystemHUD];
-   
+   /*
+    UIApplication *application = [UIApplication sharedApplication];
+    [application setStatusBarOrientation:UIInterfaceOrientationPortrait
+                                animated:YES];
+    */
     //reset marquee
   //  [self.timer invalidate]; _marqueePosition=0; [self firstStartTimer];
 }
@@ -113,6 +116,35 @@ MPMusicPlayerController*        mediaPlayer;
      selector:@selector(deviceOrientationDidChangeNotification:)
      name:UIDeviceOrientationDidChangeNotification
      object:nil];
+    
+    //notifier for orientation changes
+    [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self selector:@selector(orientationChanged:)
+     name:UIDeviceOrientationDidChangeNotification
+     object:[UIDevice currentDevice]];
+}
+
+- (void) orientationChanged:(NSNotification *)note{
+    UIDevice * device = [UIDevice currentDevice];
+    switch(device.orientation)
+    {
+        case UIDeviceOrientationPortrait:
+            
+            break;
+        case UIDeviceOrientationPortraitUpsideDown:
+            
+            break;
+        case UIDeviceOrientationLandscapeLeft:
+            
+            break;
+        case UIDeviceOrientationLandscapeRight:
+            
+            break;
+            
+        default:
+            break;
+    };
 }
 
 -(void) startPlaybackWatcher {
@@ -580,7 +612,6 @@ MPMusicPlayerController*        mediaPlayer;
 // this always scrolls, even if the text fits.
 -(void)scrollSongTitle:(id)parameter{
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
-    NSString *scrollString = ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) ? @"Tap for default playlist." : [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
     _marqueePosition=_marqueePosition+3;
     _songTitle.frame=CGRectMake(20-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
     
@@ -635,7 +666,6 @@ MPMusicPlayerController*        mediaPlayer;
  */
 
 - (void)setupLabels {
-    int orientation = [[UIDevice currentDevice] orientation];
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
