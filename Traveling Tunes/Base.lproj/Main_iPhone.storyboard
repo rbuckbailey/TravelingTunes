@@ -96,7 +96,7 @@
                         <action selector="longPress2Detected:" destination="vXZ-lx-hvc" id="FDM-ac-p0G"/>
                     </connections>
                 </pongPressGestureRecognizer>
-                <pongPressGestureRecognizer allowableMovement="10" minimumPressDuration="1" numberOfTouchesRequired="3" id="Emy-5s-can" userLabel="3 Long Press Gesture Recognizer">
+                <pongPressGestureRecognizer allowableMovement="30" minimumPressDuration="1" numberOfTouchesRequired="3" id="Emy-5s-can" userLabel="3 Long Press Gesture Recognizer">
                     <connections>
                         <action selector="longPress3Detected:" destination="vXZ-lx-hvc" id="T9J-Dy-3B9"/>
                     </connections>

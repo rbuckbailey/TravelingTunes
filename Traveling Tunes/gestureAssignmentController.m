@@ -39,6 +39,9 @@
     [defaults setObject:@"YES" forKey:@"RotationPortrait"];
     [defaults setObject:@"NO" forKey:@"PlayOnLaunch"];
     [defaults setObject:@"NO" forKey:@"PauseOnExit"];
+    [defaults setObject:@"YES" forKey:@"titleShrinkInPortrait"];
+    [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
+    
 }
 
 - (void)initDisplaySettings {
