@@ -9,6 +9,8 @@
 #import "ttunesViewController.h"
 #import "gestureAssignmentController.h"
 #import "settingsTableViewController.h"
+#import "ttunesAppDelegate.h"
+
 //#import "rectangleView.h"
 
 
@@ -55,6 +57,11 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    
+    // attach to delegate so launch/exit actions can be called
+    ttunesAppDelegate *appDelegate = [[UIApplication sharedApplication] delegate];
+    appDelegate.ttunes = self;
+
     [self startPlaybackWatcher];
     _barView = [[UIView alloc] init];
     _lineView = [[UIView alloc] init];
@@ -106,6 +113,10 @@ MPMusicPlayerController*        mediaPlayer;
      selector:@selector(deviceOrientationDidChangeNotification:)
      name:UIDeviceOrientationDidChangeNotification
      object:nil];
+    
+    // first load: play automatically if specified
+    if ([defaults objectForKey:@"PlayOnLaunch"]) [self performPlayerAction:@"Play":@"Startup"];
+
 }
 
 -(void) startPlaybackWatcher {
@@ -558,7 +569,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void) togglePlayPause {
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
-    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playAllSongs];
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playOrDefault];
     else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
         [mediaPlayer pause];
     } else {

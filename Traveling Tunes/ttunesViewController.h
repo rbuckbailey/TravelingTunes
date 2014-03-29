@@ -33,6 +33,8 @@ typedef enum : NSInteger {
 
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;
+- (void)performPlayerAction:(NSString *)action :(NSString*)sender;
+
 
 - (void)setupLabels;
 

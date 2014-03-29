@@ -13,5 +13,6 @@
 
 @interface ttunesAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
+@property (weak, nonatomic) ttunesViewController *ttunes;
 @end
 
