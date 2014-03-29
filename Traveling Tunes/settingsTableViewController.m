@@ -66,6 +66,7 @@
     _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
     _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
     _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    _seekSensitivitySlider.value = [[defaults objectForKey:@"seekSensitivity"] floatValue];
     
     NSLog(@"Custom color is fore r %f g %f b %f back %f g %f b %f",_textRedSlider.value,_textGreenSlider.value,_textBlueSlider.value,_bgRedSlider.value,_bgGreenSlider.value,_bgBlueSlider.value);
     [self updateCustomPreviews];
@@ -656,6 +657,12 @@
 - (IBAction)volumeSensitivityChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:_volumeSensitivitySlider.value] forKey:@"volumeSensitivity"];
+    [defaults synchronize];
+}
+
+- (IBAction)seekSensitivityChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:_seekSensitivitySlider.value] forKey:@"seekSensitivity"];
     [defaults synchronize];
 }
 

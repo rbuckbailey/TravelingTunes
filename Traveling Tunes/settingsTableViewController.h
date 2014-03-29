@@ -128,9 +128,13 @@
 - (IBAction)HUDTypeChanged:(id)sender;
 - (IBAction)scrubHUDTypeChanged:(id)sender;
 
-
+//continuous gesture sensitivity sliders
 @property (weak, nonatomic) IBOutlet UISlider *volumeSensitivitySlider;
 - (IBAction)volumeSensitivityChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISlider *seekSensitivitySlider;
+- (IBAction)seekSensitivityChanged:(id)sender;
+
+
 
 - (IBAction)rotationPortraitChanged:(id)sender;
 - (IBAction)rotationClockwiseChanged:(id)sender;

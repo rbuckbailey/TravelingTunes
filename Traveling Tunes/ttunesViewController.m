@@ -524,13 +524,13 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void) fastForward {
-    //[mediaPlayer beginSeekingForward];
-    [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]+4];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]+[[defaults objectForKey:@"seekSensitivity"] floatValue]];
 }
 
 -(void)rewind {
-    //[mediaPlayer beginSeekingBackward];
-    [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]-4];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]-[[defaults objectForKey:@"seekSensitivity"] floatValue]];
 }
 
 - (void) increaseVolume {

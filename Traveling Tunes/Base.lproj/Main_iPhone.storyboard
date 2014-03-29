@@ -2474,7 +2474,7 @@
                                                     <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.01" minValue="0.0" maxValue="0.035000000000000003" translatesAutoresizingMaskIntoConstraints="NO" id="cdU-ou-r0c">
+                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.01" minValue="0.0" maxValue="0.050000000000000003" translatesAutoresizingMaskIntoConstraints="NO" id="cdU-ou-r0c">
                                                     <rect key="frame" x="120" y="7" width="182" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
@@ -2498,19 +2498,22 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Jog" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="LN3-LO-z0y">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="FF/Rewind" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="LN3-LO-z0y">
                                                     <rect key="frame" x="20" y="11" width="234" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="5eF-du-qLS">
+                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="5" minValue="1" maxValue="10" translatesAutoresizingMaskIntoConstraints="NO" id="5eF-du-qLS">
                                                     <rect key="frame" x="121" y="7" width="181" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="177" id="N4j-lm-Tgq"/>
                                                     </constraints>
+                                                    <connections>
+                                                        <action selector="seekSensitivityChanged:" destination="TYz-Hb-1pf" eventType="valueChanged" id="Hhr-qU-pcZ"/>
+                                                    </connections>
                                                 </slider>
                                             </subviews>
                                             <constraints>
@@ -2551,6 +2554,7 @@
                     <navigationItem key="navigationItem" id="pRA-R4-08H"/>
                     <connections>
                         <outlet property="ResetGestureAssignments" destination="Hih-O9-4Mm" id="bnO-KS-6L6"/>
+                        <outlet property="seekSensitivitySlider" destination="5eF-du-qLS" id="iQU-DU-Dqi"/>
                         <outlet property="volumeSensitivitySlider" destination="cdU-ou-r0c" id="9Wg-Zf-8JZ"/>
                     </connections>
                 </tableViewController>
