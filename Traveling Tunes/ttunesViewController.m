@@ -258,7 +258,7 @@ MPMusicPlayerController*        mediaPlayer;
     [dateFormatter setDateFormat:@"HH"];
     NSString *resultString = [dateFormatter stringFromDate: currentTime];
     float theHour = [resultString floatValue];
-    [dateFormatter setDateFormat:@"HH"];
+    [dateFormatter setDateFormat:@"mm"];
     resultString = [dateFormatter stringFromDate: currentTime];
     float theMinute = [resultString floatValue];
     float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
@@ -269,7 +269,8 @@ MPMusicPlayerController*        mediaPlayer;
         themebg = themecolor;
         themecolor = temp;
     }
-    NSLog(@"hour is %@ sundown is %f",theHour,sundown);
+    NSLog(@"time is %f:%f sundown is %f",theHour,theMinute,sundown);
+    NSLog(@"adjusting overlay by %f",0+((theMinute/60)/2));
     // dim display if it's night and dim-at-night is on
     if (((theHour>=sundown) | (theHour < sunup)) & ([[defaults objectForKey:@"DimAtNight" ] isEqual:@"YES"])) {
         // fade towards half-dark during the hour after sundown
