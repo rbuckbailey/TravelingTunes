@@ -17,6 +17,7 @@ MPMusicPlayerController*        mediaPlayer;
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha;
+@property int activeOrientation;
 @end
 
 
@@ -42,8 +43,14 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
 {
-    //    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
-    [self scrollingTimerKiller]; [self startMarqueeTimer];
+    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    // do not reset marquee if the device has been set face-up (orientation 5), but do reset for other changes
+    if (orientation != 5) {
+        if (_activeOrientation != orientation) {
+            [self scrollingTimerKiller]; [self startMarqueeTimer];
+        }
+        _activeOrientation = orientation;
+    }
     [self setupLabels];
     [self setupHUD];
 }
