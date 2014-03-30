@@ -195,7 +195,13 @@ MPMusicPlayerController*        mediaPlayer;
     UIColor *temp;
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        NSDate *currentTime = [NSDate date];
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setDateFormat:@"HH"];
+        NSString *resultString = [dateFormatter stringFromDate: currentTime];
+        float theHour = [resultString floatValue];
+        float sundown = 19; float sunup = 6;
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
         temp = themebg;
         themebg = themecolor;
         themecolor = temp;
@@ -246,12 +252,6 @@ MPMusicPlayerController*        mediaPlayer;
     UIColor *temp;
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
-        temp = themebg;
-        themebg = themecolor;
-        themecolor = temp;
-    }
-    
     //setup hour string, configure night-time overlay if necessary
     NSDate *currentTime = [NSDate date];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
@@ -259,9 +259,15 @@ MPMusicPlayerController*        mediaPlayer;
     NSString *resultString = [dateFormatter stringFromDate: currentTime];
     float theHour = [resultString floatValue];
     float sundown = 19; float sunup = 6;
-//    NSString *theHourString = [dateFormatter stringFromDate: currentTime];
-    if ((theHour>sundown) | (theHour < sunup)) {
-//        _nightTimeFade.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+    
+    // invert themes if "invert" is on, or if "invert at night" is on and also it is night
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
+        temp = themebg;
+        themebg = themecolor;
+        themecolor = temp;
+    }
+    // dim display if it's night and dim-at-night is on
+    if (((theHour>sundown) | (theHour < sunup)) & ([[defaults objectForKey:@"DimAtNight" ] isEqual:@"YES"])) {
         _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5f];
     } else _nightTimeFade.backgroundColor = [UIColor clearColor];
     
@@ -430,7 +436,15 @@ MPMusicPlayerController*        mediaPlayer;
     UIColor *temp;
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+    
+    NSDate *currentTime = [NSDate date];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"HH"];
+    NSString *resultString = [dateFormatter stringFromDate: currentTime];
+    float theHour = [resultString floatValue];
+    float sundown = 19; float sunup = 6;
+    
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
         temp = themebg;
         themebg = themecolor;
         themecolor = temp;

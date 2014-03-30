@@ -82,6 +82,8 @@
     if ([[defaults objectForKey:@"RotationPortrait"] isEqual:@"YES"]) _rotationPortrait.on = YES; else _rotationPortrait.on = NO;
     if ([[defaults objectForKey:@"PlayOnLaunch"] isEqual:@"YES"]) _playOnLaunch.on = YES; else _playOnLaunch.on = NO;
     if ([[defaults objectForKey:@"PauseOnExit"] isEqual:@"YES"]) _pauseOnExit.on = YES; else _pauseOnExit.on = NO;
+    if ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"]) _invertAtNight.on = YES; else _invertAtNight.on = NO;
+    if ([[defaults objectForKey:@"DimAtNight"] isEqual:@"YES"]) _dimAtNightSwitch.on = YES; else _dimAtNightSwitch.on = NO;
 
     // to insert Navigation View titles
     //self.navigationItem.title = @"Test";
@@ -751,15 +753,25 @@
     [defaults synchronize];
 }
 
-
+- (IBAction)invertAtNightChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_invertAtNight.on) [defaults setObject:@"YES" forKey:@"InvertAtNight"];
+    else [defaults setObject:@"NO" forKey:@"InvertAtNight"];
+    [defaults synchronize];
+}
 
 - (IBAction)dimAtNightChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_dimAtNightSwitch.on) [defaults setObject:@"YES" forKey:@"DimAtNight"];
+    else [defaults setObject:@"NO" forKey:@"DimAtNight"];
+    [defaults synchronize];
 }
+
 - (IBAction)sunRiseChanged:(id)sender {
 }
 
 - (IBAction)sunSetChanged:(id)sender {
 }
-- (IBAction)invertAtNightChanged:(id)sender {
-}
+
+
 @end

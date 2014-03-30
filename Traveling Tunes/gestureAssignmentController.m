@@ -41,6 +41,10 @@
     [defaults setObject:@"NO" forKey:@"PauseOnExit"];
     [defaults setObject:@"YES" forKey:@"titleShrinkInPortrait"];
     [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
+    [defaults setObject:@"NO" forKey:@"InvertAtNight"];
+    [defaults setObject:@"YES" forKey:@"DimAtNight"];
+
+    
     
 }
 
