@@ -173,7 +173,7 @@ MPMusicPlayerController*        mediaPlayer;
     
     if (song) {
         [self setupLabels];
-        [self startMarqueeTimer];
+        [self scrollingTimerKiller]; [self startMarqueeTimer];
         
         NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
         NSString *album = [song valueForProperty:MPMediaItemPropertyAlbumTitle];
