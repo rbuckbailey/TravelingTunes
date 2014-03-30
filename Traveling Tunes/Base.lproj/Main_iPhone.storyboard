@@ -1110,7 +1110,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sun Rise" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="R71-Gf-YaM">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sunrise" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="R71-Gf-YaM">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -1126,11 +1126,11 @@
                                                         <action selector="sunRiseChanged:" destination="02N-Jq-DSM" eventType="valueChanged" id="ODQ-BD-qpM"/>
                                                     </connections>
                                                 </slider>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="6am" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Hwc-FF-7bp">
-                                                    <rect key="frame" x="91" y="11" width="65" height="21"/>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="6am" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Hwc-FF-7bp">
+                                                    <rect key="frame" x="83" y="11" width="51" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
-                                                        <constraint firstAttribute="width" constant="65" id="oHv-FE-4Rj"/>
+                                                        <constraint firstAttribute="width" constant="51" id="oHv-FE-4Rj"/>
                                                     </constraints>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
@@ -1140,7 +1140,7 @@
                                             <constraints>
                                                 <constraint firstItem="3VI-hN-jIv" firstAttribute="top" secondItem="k4K-UY-Pfr" secondAttribute="top" constant="7" id="MT2-BW-JWS"/>
                                                 <constraint firstItem="R71-Gf-YaM" firstAttribute="centerY" secondItem="k4K-UY-Pfr" secondAttribute="centerY" id="SMR-gY-Ihh"/>
-                                                <constraint firstItem="Hwc-FF-7bp" firstAttribute="leading" secondItem="k4K-UY-Pfr" secondAttribute="leading" constant="91" id="WWh-uu-z5B"/>
+                                                <constraint firstItem="Hwc-FF-7bp" firstAttribute="leading" secondItem="k4K-UY-Pfr" secondAttribute="leading" constant="83" id="WWh-uu-z5B"/>
                                                 <constraint firstItem="R71-Gf-YaM" firstAttribute="leading" secondItem="k4K-UY-Pfr" secondAttribute="leading" constant="20" symbolic="YES" id="cEo-bA-Ddr"/>
                                                 <constraint firstItem="Hwc-FF-7bp" firstAttribute="baseline" secondItem="R71-Gf-YaM" secondAttribute="baseline" id="rBi-OZ-llp"/>
                                                 <constraint firstAttribute="trailing" secondItem="3VI-hN-jIv" secondAttribute="trailing" constant="20" symbolic="YES" id="unG-bB-1O5"/>
@@ -1155,7 +1155,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sun Set" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="QN1-UH-Gv9">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sunset" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="QN1-UH-Gv9">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -1171,11 +1171,11 @@
                                                         <action selector="sunSetChanged:" destination="02N-Jq-DSM" eventType="valueChanged" id="jvA-Zk-hAd"/>
                                                     </connections>
                                                 </slider>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="7pm" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="SFb-9v-Qr8">
-                                                    <rect key="frame" x="92" y="11" width="65" height="21"/>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="7pm" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="SFb-9v-Qr8">
+                                                    <rect key="frame" x="83" y="11" width="51" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
-                                                        <constraint firstAttribute="width" constant="65" id="TbT-Hm-Zt2"/>
+                                                        <constraint firstAttribute="width" constant="51" id="TbT-Hm-Zt2"/>
                                                     </constraints>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
@@ -1185,7 +1185,7 @@
                                             <constraints>
                                                 <constraint firstItem="QN1-UH-Gv9" firstAttribute="leading" secondItem="PMk-Cs-vbF" secondAttribute="leading" constant="20" symbolic="YES" id="CuF-J0-UTz"/>
                                                 <constraint firstItem="QN1-UH-Gv9" firstAttribute="trailing" secondItem="zbk-56-ea7" secondAttribute="trailing" id="Ftx-4R-c4V"/>
-                                                <constraint firstItem="SFb-9v-Qr8" firstAttribute="leading" secondItem="PMk-Cs-vbF" secondAttribute="leading" constant="92" id="Kvr-4Q-cu1"/>
+                                                <constraint firstItem="SFb-9v-Qr8" firstAttribute="leading" secondItem="PMk-Cs-vbF" secondAttribute="leading" constant="83" id="Kvr-4Q-cu1"/>
                                                 <constraint firstItem="zbk-56-ea7" firstAttribute="top" secondItem="PMk-Cs-vbF" secondAttribute="top" constant="7" id="ag0-O0-qKk"/>
                                                 <constraint firstItem="QN1-UH-Gv9" firstAttribute="centerY" secondItem="PMk-Cs-vbF" secondAttribute="centerY" id="b21-Sy-OgK"/>
                                                 <constraint firstAttribute="trailing" secondItem="zbk-56-ea7" secondAttribute="trailing" constant="20" symbolic="YES" id="hQd-lw-DRx"/>

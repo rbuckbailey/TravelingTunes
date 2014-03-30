@@ -200,7 +200,7 @@ MPMusicPlayerController*        mediaPlayer;
         [dateFormatter setDateFormat:@"HH"];
         NSString *resultString = [dateFormatter stringFromDate: currentTime];
         float theHour = [resultString floatValue];
-        float sundown = 19; float sunup = 6;
+        float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
         temp = themebg;
         themebg = themecolor;
@@ -258,7 +258,7 @@ MPMusicPlayerController*        mediaPlayer;
     [dateFormatter setDateFormat:@"HH"];
     NSString *resultString = [dateFormatter stringFromDate: currentTime];
     float theHour = [resultString floatValue];
-    float sundown = 19; float sunup = 6;
+    float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
     
     // invert themes if "invert" is on, or if "invert at night" is on and also it is night
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
@@ -442,7 +442,7 @@ MPMusicPlayerController*        mediaPlayer;
     [dateFormatter setDateFormat:@"HH"];
     NSString *resultString = [dateFormatter stringFromDate: currentTime];
     float theHour = [resultString floatValue];
-    float sundown = 19; float sunup = 6;
+    float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
     
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
         temp = themebg;

@@ -43,9 +43,9 @@
     [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
     [defaults setObject:@"NO" forKey:@"InvertAtNight"];
     [defaults setObject:@"YES" forKey:@"DimAtNight"];
+    [defaults setObject:@"17" forKey:@"SunSetHour"];
+    [defaults setObject:@"6" forKey:@"SunRiseHour"];
 
-    
-    
 }
 
 - (void)initDisplaySettings {

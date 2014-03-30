@@ -29,7 +29,7 @@
     [self setUpActionChecks];
     [self setUpThemeChecks];
     
-    // initialize labels and controls for Title Settings view
+    // initialize slider controls
     _artistFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"artistFontSize"]];
     _artistFontSizeSlider.value = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
     _artistAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"artistAlignment"] floatValue];
@@ -39,11 +39,32 @@
     _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"albumFontSize"]];
     _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
     _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
+
     _titleShrinkMinimumSlider.value = (int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
     _titleShrinkMinimumLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"minimumFontSize"]];
-    if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _titleShrinkLong.on = YES; else _titleShrinkLong.on = NO;
-    if ([[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) _titleShrinkInPortrait.on = YES; else _titleShrinkInPortrait.on = NO;
+    _sunRiseSlider.value = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
+    _sunSetSlider.value = (int)[[defaults objectForKey:@"SunSetHour"] floatValue];
+    NSString *labelText;
+    if ((int)[[defaults objectForKey:@"SunSetHour"] floatValue] > 12) {
+        labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunSetHour"] floatValue]-12)] stringByAppendingString:@" pm"];
+    } else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunSetHour"] floatValue]] stringByAppendingString:@" am"];
+    _sunSetLabel.text = labelText;
+    if ((int)[[defaults objectForKey:@"SunRiseHour"] floatValue] > 12) {
+        labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunRiseHour"] floatValue]-12)] stringByAppendingString:@" pm"];
+    } else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
+    _sunRiseLabel.text = labelText;
 
+    
+    _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
+    _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
+    _bgBlueSlider.value = (int)[[defaults objectForKey:@"customBGBlue"] floatValue];
+    _textRedSlider.value = (int)[[defaults objectForKey:@"customTextRed"] floatValue];
+    _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
+    _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
+    _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    _seekSensitivitySlider.value = [[defaults objectForKey:@"seekSensitivity"] floatValue];
+    
+    // initialized segmented switches
     _HUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"HUDType"] floatValue];
     _ScrubHUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"ScrubHUDType"] floatValue];
 
@@ -59,15 +80,6 @@
     else {
         _themeInvert.on = NO; }
 
-    _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
-    _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
-    _bgBlueSlider.value = (int)[[defaults objectForKey:@"customBGBlue"] floatValue];
-    _textRedSlider.value = (int)[[defaults objectForKey:@"customTextRed"] floatValue];
-    _textGreenSlider.value = (int)[[defaults objectForKey:@"customTextGreen"] floatValue];
-    _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
-    _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
-    _seekSensitivitySlider.value = [[defaults objectForKey:@"seekSensitivity"] floatValue];
-    
     NSLog(@"Custom color is fore r %f g %f b %f back %f g %f b %f",_textRedSlider.value,_textGreenSlider.value,_textBlueSlider.value,_bgRedSlider.value,_bgGreenSlider.value,_bgBlueSlider.value);
     [self updateCustomPreviews];
     
@@ -84,6 +96,8 @@
     if ([[defaults objectForKey:@"PauseOnExit"] isEqual:@"YES"]) _pauseOnExit.on = YES; else _pauseOnExit.on = NO;
     if ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"]) _invertAtNight.on = YES; else _invertAtNight.on = NO;
     if ([[defaults objectForKey:@"DimAtNight"] isEqual:@"YES"]) _dimAtNightSwitch.on = YES; else _dimAtNightSwitch.on = NO;
+    if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _titleShrinkLong.on = YES; else _titleShrinkLong.on = NO;
+    if ([[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) _titleShrinkInPortrait.on = YES; else _titleShrinkInPortrait.on = NO;
 
     // to insert Navigation View titles
     //self.navigationItem.title = @"Test";
@@ -768,9 +782,26 @@
 }
 
 - (IBAction)sunRiseChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_sunRiseSlider.value] forKey:@"SunRiseHour"];
+    NSString *labelText;
+    if ((int)[[defaults objectForKey:@"SunRiseHour"] floatValue] > 12) {
+        labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunRiseHour"] floatValue]-12)] stringByAppendingString:@" pm"];
+    } else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
+    _sunRiseLabel.text = labelText;
+    [defaults synchronize];
 }
 
 - (IBAction)sunSetChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+//    _sunSetLabel.text = [NSString stringWithFormat:@"%i",(int)_sunSetSlider.value];
+    [defaults setObject:[NSNumber numberWithFloat:(int)_sunSetSlider.value] forKey:@"SunSetHour"];
+    NSString *labelText;
+    if ((int)[[defaults objectForKey:@"SunSetHour"] floatValue] > 12) {
+        labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunSetHour"] floatValue]-12)] stringByAppendingString:@" pm"];
+    } else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunSetHour"] floatValue]] stringByAppendingString:@" am"];
+    _sunSetLabel.text = labelText;
+    [defaults synchronize];
 }
 
 
