@@ -43,6 +43,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
 {
     //    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    [self scrollingTimerKiller]; [self startMarqueeTimer];
     [self setupLabels];
     [self setupHUD];
 }
