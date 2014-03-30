@@ -269,7 +269,7 @@ MPMusicPlayerController*        mediaPlayer;
         themebg = themecolor;
         themecolor = temp;
     }
-    NSLog(@"time is %f:%f sundown is %f",theHour,theMinute,sundown);
+    NSLog(@"time is %f:%f sundown is %f and sunup is %f",theHour,theMinute,sundown,sunup);
     NSLog(@"adjusting overlay by %f",0+((theMinute/60)/2));
     // dim display if it's night and dim-at-night is on
     if (((theHour>=sundown) | (theHour < sunup)) & ([[defaults objectForKey:@"DimAtNight" ] isEqual:@"YES"])) {
@@ -827,6 +827,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void)marqueeTimerKiller {
+    [self setupLabels]; // also refresh labels every 4 seconds? keeps fading current
     NSLog(@"marqueeTimerKiller");
     if ( [[self marqueeTimer] isValid]){
         [[self marqueeTimer] invalidate];

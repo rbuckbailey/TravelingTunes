@@ -47,11 +47,15 @@
     NSString *labelText;
     if ((int)[[defaults objectForKey:@"SunSetHour"] floatValue] > 12) {
         labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunSetHour"] floatValue]-12)] stringByAppendingString:@" pm"];
-    } else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunSetHour"] floatValue]] stringByAppendingString:@" am"];
+    } else if ((int)[[defaults objectForKey:@"SunSetHour"] floatValue] == 12)
+        labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunSetHour"] floatValue])] stringByAppendingString:@" pm"];
+    else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunSetHour"] floatValue]] stringByAppendingString:@" am"];
     _sunSetLabel.text = labelText;
     if ((int)[[defaults objectForKey:@"SunRiseHour"] floatValue] > 12) {
         labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunRiseHour"] floatValue]-12)] stringByAppendingString:@" pm"];
-    } else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
+    } else if ((int)[[defaults objectForKey:@"SunRiseHour"] floatValue] == 12)
+        labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunRiseHour"] floatValue])] stringByAppendingString:@" pm"];
+    else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
     _sunRiseLabel.text = labelText;
 
     
@@ -787,7 +791,9 @@
     NSString *labelText;
     if ((int)[[defaults objectForKey:@"SunRiseHour"] floatValue] > 12) {
         labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunRiseHour"] floatValue]-12)] stringByAppendingString:@" pm"];
-    } else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
+    } else if ((int)[[defaults objectForKey:@"SunRiseHour"] floatValue] == 12)
+        labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunRiseHour"] floatValue])] stringByAppendingString:@" pm"];
+    else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
     _sunRiseLabel.text = labelText;
     [defaults synchronize];
 }
@@ -799,7 +805,9 @@
     NSString *labelText;
     if ((int)[[defaults objectForKey:@"SunSetHour"] floatValue] > 12) {
         labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunSetHour"] floatValue]-12)] stringByAppendingString:@" pm"];
-    } else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunSetHour"] floatValue]] stringByAppendingString:@" am"];
+    } else if ((int)[[defaults objectForKey:@"SunSetHour"] floatValue] == 12)
+        labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunSetHour"] floatValue])] stringByAppendingString:@" pm"];
+    else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunSetHour"] floatValue]] stringByAppendingString:@" am"];
     _sunSetLabel.text = labelText;
     [defaults synchronize];
 }
