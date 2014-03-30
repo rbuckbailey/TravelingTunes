@@ -16,6 +16,7 @@ MPMusicPlayerController*        mediaPlayer;
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG;
 @property int timersRunning;
+@property float adjustedSongFontSize;
 @end
 
 
@@ -175,6 +176,10 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void) updatePlaybackHUD {
     
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL) {
+//    else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
+
+    
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
@@ -194,12 +199,12 @@ MPMusicPlayerController*        mediaPlayer;
     [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
     [themebg getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
-    
 //    MPMediaItem *playingItem=[mediaPlayer nowPlayingItem];
     long totalPlaybackTime = [[[mediaPlayer nowPlayingItem] valueForProperty: @"playbackDuration"] longValue];
 
     float playbackPosition=(self.view.bounds.size.width*([mediaPlayer currentPlaybackTime]/totalPlaybackTime));
 
+    
     
 //    NSLog(@"%f of %ld yields %f",[mediaPlayer currentPlaybackTime],totalPlaybackTime,playbackPosition);
     _playbackLineView.backgroundColor = [UIColor clearColor];
@@ -218,6 +223,7 @@ MPMusicPlayerController*        mediaPlayer;
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.f];
         _playbackEdgeViewBG.frame = CGRectMake(0, self.view.bounds.size.height-15, self.view.bounds.size.width, 15);
         _playbackEdgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
+    }
     }
 }
 
@@ -304,13 +310,24 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _artistTitle.adjustsFontSizeToFitWidth=YES; else _artistTitle.adjustsFontSizeToFitWidth=NO;
         
-        _songTitle.numberOfLines = 1;
-        _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-        _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
-        _songTitle.textColor = themecolor;
-        _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
-        _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _songTitle.adjustsFontSizeToFitWidth=YES; else _songTitle.adjustsFontSizeToFitWidth=NO;
+        if (_timersRunning==0) {
+            _songTitle.numberOfLines = 1;
+            _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+            _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
+            _songTitle.textColor = themecolor;
+            _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
+            _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+            _adjustedSongFontSize = _songTitle.font.pointSize;
+            //NSLog(@"font size %f",_adjustedSongFontSize);
+
+            if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) {
+                _songTitle.adjustsFontSizeToFitWidth=YES;
+                _adjustedSongFontSize = _songTitle.font.pointSize;
+                //NSLog(@"adjusted font size %f",_adjustedSongFontSize);
+
+            }
+            else _songTitle.adjustsFontSizeToFitWidth=NO;
+        }
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
@@ -732,7 +749,10 @@ MPMusicPlayerController*        mediaPlayer;
     
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
     _marqueePosition=_marqueePosition+3;
+    _adjustedSongFontSize = _songTitle.font.pointSize;
     _songTitle.frame=CGRectMake(20-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
+    [_songTitle setFont:[UIFont systemFontOfSize:_adjustedSongFontSize]];
+//    NSLog(@"scrolling font size %f",_adjustedSongFontSize);
     
     if (_marqueePosition>= textWidth+20) {
         [self scrollingTimerKiller];
