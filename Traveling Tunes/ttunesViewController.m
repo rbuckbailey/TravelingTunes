@@ -258,6 +258,9 @@ MPMusicPlayerController*        mediaPlayer;
     [dateFormatter setDateFormat:@"HH"];
     NSString *resultString = [dateFormatter stringFromDate: currentTime];
     float theHour = [resultString floatValue];
+    [dateFormatter setDateFormat:@"HH"];
+    resultString = [dateFormatter stringFromDate: currentTime];
+    float theMinute = [resultString floatValue];
     float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
     
     // invert themes if "invert" is on, or if "invert at night" is on and also it is night
@@ -266,9 +269,17 @@ MPMusicPlayerController*        mediaPlayer;
         themebg = themecolor;
         themecolor = temp;
     }
+    NSLog(@"hour is %@ sundown is %f",theHour,sundown);
     // dim display if it's night and dim-at-night is on
-    if (((theHour>sundown) | (theHour < sunup)) & ([[defaults objectForKey:@"DimAtNight" ] isEqual:@"YES"])) {
-        _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5f];
+    if (((theHour>=sundown) | (theHour < sunup)) & ([[defaults objectForKey:@"DimAtNight" ] isEqual:@"YES"])) {
+        // fade towards half-dark during the hour after sundown
+        if (theHour==sundown) {
+            _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0+((theMinute/60)/2)];
+        } // or fade in before sunup
+        else if (theHour==sunup-1) {
+            _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:1-((theMinute/60)/2)];
+        } // if the middle of the night, go half dark
+        else _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5f];
     } else _nightTimeFade.backgroundColor = [UIColor clearColor];
     
     
@@ -291,12 +302,8 @@ MPMusicPlayerController*        mediaPlayer;
     int artistFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
     int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
     int albumFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
-    //    NSLog(@"orientation is %d",orientation);
-    //wtf is orientation 5??
-    //    if (((orientation==1) | (orientation==2)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
-    NSLog(@"height is %f",self.view.bounds.size.height);
+
     if (((self.view.bounds.size.height==480) | (self.view.bounds.size.height==568)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
-        
         artistFontSize = (int)artistFontSize/2;
         if (artistFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) artistFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         songFontSize = (int)songFontSize/2;
@@ -882,13 +889,6 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 
-/*
--(void)didRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration
-{
-    [self setupLabels];
-    [self setupHUD];
-}
- */
 
 - (void)playAllSongs {
     //Create a query that will return all songs by The Beatles grouped by album
