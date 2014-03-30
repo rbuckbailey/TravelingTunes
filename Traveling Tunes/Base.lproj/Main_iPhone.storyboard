@@ -1188,34 +1188,6 @@
             <point key="canvasLocation" x="1586" y="539"/>
         </scene>
         <!--Settings Table View Controller-->
-        <scene sceneID="G4H-0n-U9J">
-            <objects>
-                <tableViewController id="ld4-dz-mbD" customClass="settingsTableViewController" sceneMemberID="viewController">
-                    <tableView key="view" opaque="NO" clipsSubviews="YES" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="22" sectionFooterHeight="22" id="ppB-Tv-lMR">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                        <prototypes>
-                            <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="ps3-rf-LVJ">
-                                <rect key="frame" x="0.0" y="22" width="320" height="44"/>
-                                <autoresizingMask key="autoresizingMask"/>
-                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="ps3-rf-LVJ" id="8cd-OX-OOO">
-                                    <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
-                                    <autoresizingMask key="autoresizingMask"/>
-                                </tableViewCellContentView>
-                            </tableViewCell>
-                        </prototypes>
-                        <connections>
-                            <outlet property="dataSource" destination="ld4-dz-mbD" id="CO9-GI-IQn"/>
-                            <outlet property="delegate" destination="ld4-dz-mbD" id="C5f-el-2vW"/>
-                        </connections>
-                    </tableView>
-                </tableViewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="VTS-vt-rrp" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="2108" y="412"/>
-        </scene>
-        <!--Settings Table View Controller-->
         <scene sceneID="qm3-5N-pTH">
             <objects>
                 <tableViewController id="2X2-CN-VUX" customClass="settingsTableViewController" sceneMemberID="viewController">

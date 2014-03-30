@@ -549,15 +549,7 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
-    NSArray *themecolors;
-    UIColor *themebg;
-    UIColor *themecolor;
     int index = 0;
-    themecolors = [[gestureController themes] objectForKey:[defaults objectForKey:@"currentTheme"]];
-    themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
-        index = 1;
-    }
     _themeGreyOnWhiteCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on White"] objectAtIndex:index];
     _themeGreyOnBlackCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on Black"] objectAtIndex:index];
     _themeLavenderCheck.textColor = [[[gestureController themes] objectForKey:@"Lavender"] objectAtIndex:index];

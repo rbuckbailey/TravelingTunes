@@ -15,10 +15,14 @@ MPMusicPlayerController*        mediaPlayer;
 
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG;
+@property int timersRunning;
 @end
 
 
 @implementation ttunesViewController
+
+
+/*** initialization and watchers ********************************************************************************************************************************************/
 
 
 - (BOOL) shouldAutorotate {
@@ -29,6 +33,17 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if ([[defaults objectForKey:@"ShowStatusBar"] isEqual:@"NO"]) return YES;
     else return NO;
+}
+
+-(UIStatusBarStyle)preferredStatusBarStyle{
+    return UIStatusBarStyleLightContent;
+}
+
+- (void)deviceOrientationDidChangeNotification:(NSNotification*)note
+{
+    //    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    [self setupLabels];
+    [self setupHUD];
 }
 
 - (IBAction)singleTapDetected:(id)sender {
@@ -48,18 +63,16 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupLabels];
     [self setupHUD];
     [self setupSystemHUD];
-   /*
-    UIApplication *application = [UIApplication sharedApplication];
-    [application setStatusBarOrientation:UIInterfaceOrientationPortrait
-                                animated:YES];
-    */
     //reset marquee
-  //  [self.timer invalidate]; _marqueePosition=0; [self firstStartTimer];
+    //[self.timer invalidate]; //invalidating timer that isnt running causes crash?
+    _marqueePosition=0; [self firstStartTimer];
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    
+    _timersRunning=0;
     
     // attach to delegate so launch/exit actions can be called
     ttunesAppDelegate *appDelegate = [[UIApplication sharedApplication] delegate];
@@ -79,22 +92,6 @@ MPMusicPlayerController*        mediaPlayer;
     _edgeViewBG.backgroundColor = [UIColor clearColor];
     _playbackLineView.backgroundColor = [UIColor clearColor];
     _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
-
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    
-    //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *temp;
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
-        temp = themebg;
-        themebg = themecolor;
-        themecolor = temp;
-    }
     
     UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
     [self.view addGestureRecognizer:recognizer];
@@ -152,6 +149,30 @@ MPMusicPlayerController*        mediaPlayer;
                                                  repeats: YES];
 }
 
+
+-(void) nowPlayingItemChanged:(NSNotification *)notification {
+    MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
+    
+    MPMediaItem *song = [mediaPlayer nowPlayingItem];
+    
+    if (song) {
+        [self setupLabels];
+        [self startMarqueeTimer];
+        
+        NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
+        NSString *album = [song valueForProperty:MPMediaItemPropertyAlbumTitle];
+        NSString *artist = [song valueForProperty:MPMediaItemPropertyArtist];
+        NSString *playCount = [song valueForProperty:MPMediaItemPropertyPlayCount];
+        
+        NSLog(@"title: %@", title);
+        NSLog(@"album: %@", album);
+        NSLog(@"artist: %@", artist);
+        NSLog(@"playCount: %@", playCount);
+    }
+}
+
+/*** HUD display setups ********************************************************************************************************************************************/
+
 -(void) updatePlaybackHUD {
     
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -200,15 +221,105 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 
--(UIStatusBarStyle)preferredStatusBarStyle{
-    return UIStatusBarStyleLightContent;
-}
-
-- (void)deviceOrientationDidChangeNotification:(NSNotification*)note
-{
-//    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
-    [self setupLabels];
-    [self setupHUD];
+- (void)setupLabels {
+    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
+    NSMutableDictionary *themedict = [gestureController themes];
+    NSArray *themecolors = [themedict objectForKey:currentTheme];
+    UIColor *temp;
+    UIColor *themebg = [themecolors objectAtIndex:0];
+    UIColor *themecolor = [themecolors objectAtIndex:1];
+    
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
+        temp = themebg;
+        themebg = themecolor;
+        themecolor = temp;
+    }
+    switch ((int)[[defaults objectForKey:@"artistAlignment"] floatValue]) {
+        case 0: _artistTitle.textAlignment = NSTextAlignmentLeft; break;
+        case 1: _artistTitle.textAlignment = NSTextAlignmentCenter;  break;
+        case 2: _artistTitle.textAlignment = NSTextAlignmentRight;  break;
+    }
+    switch ((int)[[defaults objectForKey:@"songAlignment"] floatValue]) {
+        case 0: _songTitle.textAlignment = NSTextAlignmentLeft; break;
+        case 1: _songTitle.textAlignment = NSTextAlignmentCenter;  break;
+        case 2: _songTitle.textAlignment = NSTextAlignmentRight;  break;
+    }
+    switch ((int)[[defaults objectForKey:@"albumAlignment"] floatValue]) {
+        case 0: _albumTitle.textAlignment = NSTextAlignmentLeft; break;
+        case 1: _albumTitle.textAlignment = NSTextAlignmentCenter;  break;
+        case 2: _albumTitle.textAlignment = NSTextAlignmentRight;  break;
+    }
+    int artistFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
+    int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
+    int albumFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
+    //    NSLog(@"orientation is %d",orientation);
+    //wtf is orientation 5??
+    //    if (((orientation==1) | (orientation==2)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
+    NSLog(@"height is %f",self.view.bounds.size.height);
+    if (((self.view.bounds.size.height==480) | (self.view.bounds.size.height==568)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
+        
+        artistFontSize = (int)artistFontSize/2;
+        if (artistFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) artistFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        songFontSize = (int)songFontSize/2;
+        if (songFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) songFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        albumFontSize = (int)albumFontSize/2;
+        if (albumFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) albumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+    }
+    //    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
+    
+    self.view.backgroundColor = themebg;
+    
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
+        _artistTitle.numberOfLines = 1;
+        _artistTitle.text   = @"No music playing.";
+        _artistTitle.font   = [UIFont systemFontOfSize:28];
+        _artistTitle.textColor = themecolor;
+        
+        [_artistTitle setAlpha:0.6f];
+        [_artistTitle sizeToFit];
+        
+        _songTitle.numberOfLines = 1;
+        _songTitle.text   = @"Tap for default playlist.";
+        _songTitle.font   = [UIFont systemFontOfSize:28];
+        _songTitle.textColor = themecolor;
+        
+        [_songTitle sizeToFit];
+        
+        _albumTitle.numberOfLines = 1;
+        _albumTitle.text    = @"Long hold for menu.";
+        _albumTitle.font    =  [UIFont systemFontOfSize:28];
+        _albumTitle.textColor = themecolor;
+        [_albumTitle setAlpha:0.6f];
+    } else {
+        _artistTitle.numberOfLines = 1;
+        _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
+        _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
+        _artistTitle.textColor = themecolor;
+        [_artistTitle setAlpha:0.6f];
+        _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _artistTitle.adjustsFontSizeToFitWidth=YES; else _artistTitle.adjustsFontSizeToFitWidth=NO;
+        
+        _songTitle.numberOfLines = 1;
+        _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+        _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
+        _songTitle.textColor = themecolor;
+        _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
+        _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _songTitle.adjustsFontSizeToFitWidth=YES; else _songTitle.adjustsFontSizeToFitWidth=NO;
+        
+        _albumTitle.numberOfLines = 1;
+        _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
+        _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
+        _albumTitle.textColor = themecolor;
+        [_albumTitle setAlpha:0.6f];
+        _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
+    }
 }
 
 -(void) fadeHUD {
@@ -280,27 +391,6 @@ MPMusicPlayerController*        mediaPlayer;
 
 }
 
--(void) nowPlayingItemChanged:(NSNotification *)notification {
-//    [self.timer invalidate]; _marqueePosition=0; [self firstStartTimer];
-    MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
-    
-    MPMediaItem *song = [mediaPlayer nowPlayingItem];
-    
-    if (song) {
-        [self setupLabels];
-        
-        NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
-        NSString *album = [song valueForProperty:MPMediaItemPropertyAlbumTitle];
-        NSString *artist = [song valueForProperty:MPMediaItemPropertyArtist];
-        NSString *playCount = [song valueForProperty:MPMediaItemPropertyPlayCount];
-        
-        NSLog(@"title: %@", title);
-        NSLog(@"album: %@", album);
-        NSLog(@"artist: %@", artist);
-        NSLog(@"playCount: %@", playCount);
-    }
-}
-
 
 /*** Gesture Actions begin ************************************************************************************************************************/
 
@@ -309,9 +399,7 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     CGPoint translation = [gesture translationInView:self.view];
     NSString *key,*keyContinuous;
-    swipeDirections oldDirection;
 
-    oldDirection = _direction;
     _direction = directionNone;
     
 // this useful debug info is spammy
@@ -335,7 +423,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -353,7 +441,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -371,7 +459,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -388,7 +476,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -551,8 +639,8 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
-    else if ([action isEqual:@"Next"]) { [mediaPlayer skipToNextItem]; }
-    else if ([action isEqual:@"Previous"]) { [mediaPlayer skipToPreviousItem]; }
+    else if ([action isEqual:@"Next"]) { [self next]; }
+    else if ([action isEqual:@"Previous"]) { [self previous]; }
     else if ([action isEqual:@"RestartPrevious"]) { [self restartPrevious]; }
     else if ([action isEqual:@"Restart"]) { [mediaPlayer skipToBeginning]; }
     else if ([action isEqual:@"Rewind"]) [self rewind];
@@ -560,8 +648,19 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeUp"]) [self increaseVolume];
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playAllSongs];
-    else if ([action isEqual:@"SongPicker"]) NSLog(@"Song picker");
+//    else if ([action isEqual:@"SongPicker"]) NSLog(@"Song picker");
+    else if ([action isEqual:@"SongPicker"]) [self scrollingTimerKiller];
     [self setupLabels];
+}
+
+-(void) next {
+    [self scrollingTimerKiller];
+    [mediaPlayer skipToNextItem];
+}
+
+-(void) previous {
+    [self scrollingTimerKiller];
+    [mediaPlayer skipToPreviousItem];
 }
 
 -(void) fastForward {
@@ -605,55 +704,80 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void) restartPrevious {
-    if ([mediaPlayer currentPlaybackTime] < 2.5f) [mediaPlayer skipToPreviousItem]; else [mediaPlayer skipToBeginning];
+    if ([mediaPlayer currentPlaybackTime] < 2.5f) [self previous]; else [mediaPlayer skipToBeginning];
+}
+
+/*** timer functionality ********************************************************************************************************************************************/
+
+
+-(void)scrollingTimerKiller {
+    NSLog(@"scrollingTimerKiller");
+    _marqueePosition=0;
+    if ( [[self scrollingTimer] isValid]){
+        [[self scrollingTimer] invalidate];
+        _timersRunning--; NSLog(@"%d timers running",_timersRunning);
+    }
+}
+
+-(void)marqueeTimerKiller {
+    NSLog(@"marqueeTimerKiller");
+    if ( [[self marqueeTimer] isValid]){
+        [[self marqueeTimer] invalidate];
+    }
 }
 
 // this always scrolls, even if the text fits.
 -(void)scrollSongTitle:(id)parameter{
+//    NSLog(@"%d timers running",_timersRunning);
+    
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
     _marqueePosition=_marqueePosition+3;
     _songTitle.frame=CGRectMake(20-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
     
     if (_marqueePosition>= textWidth+20) {
-        [self.timer invalidate]; _marqueePosition=0;
+        [self scrollingTimerKiller];
+        [self marqueeTimerKiller];
         _songTitle.frame=CGRectMake(20, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
-        [self firstStartTimer];
+        [self startMarqueeTimer];
     }
 }
 
 // this super kludgey fix gives the labels a moment to set up before startTimer grabs the width
 - (void)firstStartTimer {
-    self.timer = [NSTimer scheduledTimerWithTimeInterval: 0.5f
+    self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.5f
                                                   target: self
-                                                selector: @selector(startTimer)
+                                                selector: @selector(startMarqueeTimer)
                                                 userInfo: nil
                                                  repeats: NO];
 }
 
-- (void)startTimer { // wait 4 seconds on title, then scroll it
+- (void)startMarqueeTimer { // wait 4 seconds on title, then scroll it
     // check the size. if the text doesn't fit, scroll it.
-    float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
-    if (textWidth > self.view.bounds.size.width)
-        self.timer = [NSTimer scheduledTimerWithTimeInterval: 4
+        self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 4
                                                       target: self
-                                                    selector: @selector(scrollingTimer)
+                                                    selector: @selector(startScrollingTimer)
                                                     userInfo: nil
                                                      repeats: NO];
     // otherwise the timer will restart itself to check for need due to new orientations
-    else self.timer = [NSTimer scheduledTimerWithTimeInterval: 4
+/*    else self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 4
                                                        target: self
                                                      selector: @selector(startTimer)
                                                      userInfo: nil
                                                       repeats: NO];
-
+*/
 }
 
-- (void)scrollingTimer {
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:   0.05f
+- (void)startScrollingTimer {
+    float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
+    if ((_timersRunning==0) & (textWidth > self.view.bounds.size.width)) {
+        [self scrollingTimerKiller];
+        self.scrollingTimer = [NSTimer scheduledTimerWithTimeInterval:   0.05f
                                                     target: self
                                                   selector: @selector(scrollSongTitle:)
                                                   userInfo: nil
                                                    repeats: YES];
+        _timersRunning++; NSLog(@"%d timers running", _timersRunning);
+    }
 }
 
 /*
@@ -663,107 +787,6 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupHUD];
 }
  */
-
-- (void)setupLabels {
-    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-
-//    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *temp;
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
-        temp = themebg;
-        themebg = themecolor;
-        themecolor = temp;
-    }
-    switch ((int)[[defaults objectForKey:@"artistAlignment"] floatValue]) {
-        case 0: _artistTitle.textAlignment = NSTextAlignmentLeft; break;
-        case 1: _artistTitle.textAlignment = NSTextAlignmentCenter;  break;
-        case 2: _artistTitle.textAlignment = NSTextAlignmentRight;  break;
-    }
-    switch ((int)[[defaults objectForKey:@"songAlignment"] floatValue]) {
-        case 0: _songTitle.textAlignment = NSTextAlignmentLeft; break;
-        case 1: _songTitle.textAlignment = NSTextAlignmentCenter;  break;
-        case 2: _songTitle.textAlignment = NSTextAlignmentRight;  break;
-    }
-    switch ((int)[[defaults objectForKey:@"albumAlignment"] floatValue]) {
-        case 0: _albumTitle.textAlignment = NSTextAlignmentLeft; break;
-        case 1: _albumTitle.textAlignment = NSTextAlignmentCenter;  break;
-        case 2: _albumTitle.textAlignment = NSTextAlignmentRight;  break;
-    }
-    int artistFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
-    int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
-    int albumFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
-//    NSLog(@"orientation is %d",orientation);
-    //wtf is orientation 5??
-//    if (((orientation==1) | (orientation==2)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
-    NSLog(@"height is %f",self.view.bounds.size.height);
-    if (((self.view.bounds.size.height==480) | (self.view.bounds.size.height==568)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
-    
-        artistFontSize = (int)artistFontSize/2;
-        if (artistFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) artistFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        songFontSize = (int)songFontSize/2;
-        if (songFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) songFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        albumFontSize = (int)albumFontSize/2;
-        if (albumFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) albumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-    }
-//    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
-    
-    self.view.backgroundColor = themebg;
-
-    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
-        _artistTitle.numberOfLines = 1;
-        _artistTitle.text   = @"No music playing.";
-        _artistTitle.font   = [UIFont systemFontOfSize:28];
-        _artistTitle.textColor = themecolor;
-        
-        [_artistTitle setAlpha:0.6f];
-        [_artistTitle sizeToFit];
-
-        _songTitle.numberOfLines = 1;
-        _songTitle.text   = @"Tap for default playlist.";
-        _songTitle.font   = [UIFont systemFontOfSize:28];
-        _songTitle.textColor = themecolor;
-        
-        [_songTitle sizeToFit];
-
-        _albumTitle.numberOfLines = 1;
-        _albumTitle.text    = @"Long hold for menu.";
-        _albumTitle.font    =  [UIFont systemFontOfSize:28];
-        _albumTitle.textColor = themecolor;
-        [_albumTitle setAlpha:0.6f];
-    } else {
-        _artistTitle.numberOfLines = 1;
-        _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
-        _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
-        _artistTitle.textColor = themecolor;
-        [_artistTitle setAlpha:0.6f];
-        _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _artistTitle.adjustsFontSizeToFitWidth=YES; else _artistTitle.adjustsFontSizeToFitWidth=NO;
-    
-        _songTitle.numberOfLines = 1;
-        _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-        _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
-        _songTitle.textColor = themecolor;
-        _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
-        _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _songTitle.adjustsFontSizeToFitWidth=YES; else _songTitle.adjustsFontSizeToFitWidth=NO;
-        
-        _albumTitle.numberOfLines = 1;
-        _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
-         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
-        _albumTitle.textColor = themecolor;
-        [_albumTitle setAlpha:0.6f];
-        _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
-    }
-}
 
 - (void)playAllSongs {
     //Create a query that will return all songs by The Beatles grouped by album
