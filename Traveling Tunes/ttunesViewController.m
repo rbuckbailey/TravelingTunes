@@ -871,19 +871,13 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void)startMarqueeTimer { // wait 4 seconds on title, then scroll it
-    // check the size. if the text doesn't fit, scroll it.
-        self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 4
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        if ([[defaults objectForKey:@"TitleScrollLong"] isEqual:@"YES"]) self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 4
                                                       target: self
                                                     selector: @selector(startScrollingTimer)
                                                     userInfo: nil
                                                      repeats: NO];
     // otherwise the timer will restart itself to check for need due to new orientations
-/*    else self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 4
-                                                       target: self
-                                                     selector: @selector(startTimer)
-                                                     userInfo: nil
-                                                      repeats: NO];
-*/
 }
 
 - (void)startScrollingTimer {

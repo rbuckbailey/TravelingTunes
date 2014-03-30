@@ -45,6 +45,8 @@
     [defaults setObject:@"YES" forKey:@"DimAtNight"];
     [defaults setObject:@"17" forKey:@"SunSetHour"];
     [defaults setObject:@"6" forKey:@"SunRiseHour"];
+    [defaults setObject:@"YES" forKey:@"TitleScrollLong"];
+
 
 }
 

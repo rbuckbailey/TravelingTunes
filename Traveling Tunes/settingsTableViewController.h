@@ -63,6 +63,8 @@
 - (IBAction)titleShrinkInPortraitChanged:(id)sender;
 - (IBAction)titleShrinkToFitChanged:(id)sender;
 - (IBAction)titleShrinkMinimumChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *titleScrollLong;
+- (IBAction)titleScrollLongChanged:(id)sender;
 
 @property (weak, nonatomic) IBOutlet UILabel *albumFontSizeLabel;
 @property (weak, nonatomic) IBOutlet UISlider *albumFontSizeSlider;

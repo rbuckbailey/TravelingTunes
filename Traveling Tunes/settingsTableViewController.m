@@ -102,6 +102,7 @@
     if ([[defaults objectForKey:@"DimAtNight"] isEqual:@"YES"]) _dimAtNightSwitch.on = YES; else _dimAtNightSwitch.on = NO;
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _titleShrinkLong.on = YES; else _titleShrinkLong.on = NO;
     if ([[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) _titleShrinkInPortrait.on = YES; else _titleShrinkInPortrait.on = NO;
+    if ([[defaults objectForKey:@"TitleScrollLong"] isEqual:@"YES"]) _titleScrollLong.on = YES; else _titleScrollLong.on = NO;
 
     // to insert Navigation View titles
     //self.navigationItem.title = @"Test";
@@ -812,5 +813,12 @@
     [defaults synchronize];
 }
 
+
+- (IBAction)titleScrollLongChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_titleScrollLong.on) [defaults setObject:@"YES" forKey:@"TitleScrollLong"];
+    else [defaults setObject:@"NO" forKey:@"TitleScrollLong"];
+    [defaults synchronize];
+}
 
 @end
