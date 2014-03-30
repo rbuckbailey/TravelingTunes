@@ -16,7 +16,7 @@ MPMusicPlayerController*        mediaPlayer;
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG;
 @property int timersRunning;
-@property float adjustedSongFontSize;
+@property float adjustedSongFontSize,fadeHUDalpha;
 @end
 
 
@@ -339,9 +339,63 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 
+-(void) fadeHUDloop {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    const CGFloat* components = CGColorGetComponents(_lineView.backgroundColor.CGColor);
+    NSLog(@"Red: %f", components[0]);
+    NSLog(@"Green: %f", components[1]);
+    NSLog(@"Blue: %f", components[2]);
+    NSLog(@"Alpha: %f", CGColorGetAlpha(_lineView.backgroundColor.CGColor));
+    float red=components[0];
+    float green=components[1];
+    float blue=components[2];
+    components = CGColorGetComponents(_edgeViewBG.backgroundColor.CGColor);
+    float edgered=components[0];
+    float edgegreen=components[1];
+    float edgeblue=components[2];
+
+    if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) _edgeViewBG.backgroundColor = [UIColor colorWithRed:edgered green:edgegreen blue:edgeblue alpha:_fadeHUDalpha];
+    else _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:_fadeHUDalpha];
+    _fadeHUDalpha = _fadeHUDalpha-0.05f;
+    if (_fadeHUDalpha <= 0 ) {
+        [self fadeHUDTimerKiller];
+        _lineView.backgroundColor = [UIColor clearColor];
+        _edgeViewBG.backgroundColor = [UIColor clearColor];
+    }
+    NSLog(@"fading alpha is %f",_fadeHUDalpha);
+    
+}
+
 -(void) fadeHUD {
-    _lineView.backgroundColor = [UIColor clearColor];
-    _edgeViewBG.backgroundColor = [UIColor clearColor];
+    self.fadeHUDTimer = [NSTimer scheduledTimerWithTimeInterval: 0.05f
+                                                         target: self
+                                                       selector: @selector(fadeHUDloop)
+                                                       userInfo: nil
+                                                        repeats: YES];
+}
+
+-(void)fadeHUDTimerKiller {
+    NSLog(@"fadeHUDTimerKiller");
+    if ( [[self fadeHUDTimer] isValid]){
+        [[self fadeHUDTimer] invalidate];
+    }
+}
+
+-(void) startFadeHUDTimer {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    if ([[defaults objectForKey:@"VolumeAlwaysOn"] isEqual:@"NO"]) {
+        [self fadeHUDTimerKiller];
+        if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) _fadeHUDalpha = CGColorGetAlpha(_edgeViewBG.backgroundColor.CGColor);
+        else _fadeHUDalpha = CGColorGetAlpha(_lineView.backgroundColor.CGColor);
+
+        self.fadeHUDTimer = [NSTimer scheduledTimerWithTimeInterval: 2.5f
+                                                  target: self
+                                                selector: @selector(fadeHUD)
+                                                userInfo: nil
+                                                 repeats: NO];
+    }
 }
 
 -(void) setupHUD {
@@ -365,7 +419,6 @@ MPMusicPlayerController*        mediaPlayer;
     [themebg getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
     float volumeLevel=self.view.bounds.size.height-(self.view.bounds.size.height*mediaPlayer.volume);
-//    NSLog(@"volume is %f",mediaPlayer.volume);
     
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
@@ -385,14 +438,7 @@ MPMusicPlayerController*        mediaPlayer;
         _edgeViewBG.frame = CGRectMake(self.view.bounds.size.width-15, 0, self.view.bounds.size.width, self.view.bounds.size.height);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
     }
-/*
- self.timer = [NSTimer scheduledTimerWithTimeInterval: 2.5f
-                                                  target: self
-                                                selector: @selector(fadeHUD)
-                                                userInfo: nil
-                                                 repeats: NO];
- */
-//    NSLog(@"Volume level is %f out of %f",volumeLevel,self.view.bounds.size.height);
+    [self startFadeHUDTimer];
 }
 
 -(void)setupSystemHUD {
