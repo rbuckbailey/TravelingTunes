@@ -65,8 +65,8 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupHUD];
     [self setupSystemHUD];
     //reset marquee
-    //[self.timer invalidate]; //invalidating timer that isnt running causes crash?
-    _marqueePosition=0; [self firstStartTimer];
+    [self scrollingTimerKiller];
+    [self firstStartTimer];
 }
 
 - (void)viewDidLoad
