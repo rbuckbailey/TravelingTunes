@@ -753,4 +753,13 @@
 
 
 
+- (IBAction)dimAtNightChanged:(id)sender {
+}
+- (IBAction)sunRiseChanged:(id)sender {
+}
+
+- (IBAction)sunSetChanged:(id)sender {
+}
+- (IBAction)invertAtNightChanged:(id)sender {
+}
 @end

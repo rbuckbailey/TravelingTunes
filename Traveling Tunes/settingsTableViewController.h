@@ -127,6 +127,16 @@
 - (IBAction)showStatusBarChanged:(id)sender;
 - (IBAction)HUDTypeChanged:(id)sender;
 - (IBAction)scrubHUDTypeChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *dimAtNightSwitch;
+- (IBAction)dimAtNightChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UILabel *sunSetLabel;
+@property (weak, nonatomic) IBOutlet UILabel *sunRiseLabel;
+@property (weak, nonatomic) IBOutlet UISlider *sunRiseSlider;
+@property (weak, nonatomic) IBOutlet UISlider *sunSetSlider;
+- (IBAction)sunRiseChanged:(id)sender;
+- (IBAction)sunSetChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *invertAtNight;
+- (IBAction)invertAtNightChanged:(id)sender;
 
 //continuous gesture sensitivity sliders
 @property (weak, nonatomic) IBOutlet UISlider *volumeSensitivitySlider;
