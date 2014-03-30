@@ -286,7 +286,7 @@ MPMusicPlayerController*        mediaPlayer;
             _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0+((theMinute/60)/2)];
         } // or fade in before sunup
         else if (theHour==sunup-1) {
-            _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:1-((theMinute/60)/2)];
+            _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5-((theMinute/60)/2)];
         } // if the middle of the night, go half dark
         else _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5f];
     } else _nightTimeFade.backgroundColor = [UIColor clearColor];
