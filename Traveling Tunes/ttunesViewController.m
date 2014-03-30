@@ -14,7 +14,7 @@
 MPMusicPlayerController*        mediaPlayer;
 
 @interface ttunesViewController ()
-@property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG;
+@property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha;
 @end
@@ -83,16 +83,22 @@ MPMusicPlayerController*        mediaPlayer;
     _lineView = [[UIView alloc] init];
     _edgeViewBG = [[UIView alloc] init];
     _playbackEdgeViewBG = [[UIView alloc] init];
-
     _playbackLineView = [[UIView alloc] init];
+    _nightTimeFade = [[UIView alloc] init];
+    
     [self.view addSubview:_edgeViewBG];
     [self.view addSubview:_playbackEdgeViewBG];
     [self.view addSubview:_lineView];
     [self.view addSubview:_playbackLineView];
+    [self.view addSubview:_nightTimeFade];
+
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
     _playbackLineView.backgroundColor = [UIColor clearColor];
     _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
+    _nightTimeFade.backgroundColor = [UIColor clearColor];
+    
+    _nightTimeFade.frame=CGRectMake(0, 0, 600, 600);
     
     UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
     [self.view addGestureRecognizer:recognizer];
@@ -121,6 +127,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void) orientationChanged:(NSNotification *)note{
+//    _nightTimeFade.frame=CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
     UIDevice * device = [UIDevice currentDevice];
     switch(device.orientation)
     {
@@ -239,12 +246,27 @@ MPMusicPlayerController*        mediaPlayer;
     UIColor *temp;
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
-    
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
         temp = themebg;
         themebg = themecolor;
         themecolor = temp;
     }
+    
+    //setup hour string, configure night-time overlay if necessary
+    NSDate *currentTime = [NSDate date];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"HH"];
+    NSString *resultString = [dateFormatter stringFromDate: currentTime];
+    float theHour = [resultString floatValue];
+    float sundown = 19; float sunup = 6;
+//    NSString *theHourString = [dateFormatter stringFromDate: currentTime];
+    if ((theHour>sundown) | (theHour < sunup)) {
+//        _nightTimeFade.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+        _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5f];
+    } else _nightTimeFade.backgroundColor = [UIColor clearColor];
+    
+    
+    //setup colors and alignment and font sizing
     switch ((int)[[defaults objectForKey:@"artistAlignment"] floatValue]) {
         case 0: _artistTitle.textAlignment = NSTextAlignmentLeft; break;
         case 1: _artistTitle.textAlignment = NSTextAlignmentCenter;  break;
@@ -277,9 +299,9 @@ MPMusicPlayerController*        mediaPlayer;
         if (albumFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) albumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
     }
     //    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
-    
     self.view.backgroundColor = themebg;
     
+    //actually do the drawing
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
@@ -401,6 +423,7 @@ MPMusicPlayerController*        mediaPlayer;
 -(void) setupHUD {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    
     NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
     NSMutableDictionary *themedict = [gestureController themes];
     NSArray *themecolors = [themedict objectForKey:currentTheme];
@@ -414,7 +437,6 @@ MPMusicPlayerController*        mediaPlayer;
     }
     float red, green, blue, alpha;
     float red2, green2, blue2, alpha2;
-
     [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
     [themebg getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
