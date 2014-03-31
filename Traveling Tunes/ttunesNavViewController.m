@@ -38,19 +38,12 @@
 -(NSUInteger)supportedInterfaceOrientations
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-/*
- if ([[defaults objectForKey:@"RotationClockwise"] isEqual:@"YES"]) _rotationClockwise.on = YES; else _rotationClockwise.on = NO;
- if ([[defaults objectForKey:@"RotationAntiClockwise"] isEqual:@"YES"]) _rotationAntiClockwise.on = YES; else _rotationAntiClockwise.on = NO;
- if ([[defaults objectForKey:@"RotationInverted"] isEqual:@"YES"]) _rotationInverted.on = YES; else _rotationInverted.on = NO;
- if ([[defaults objectForKey:@"RotationPortrait"] isEqual:@"YES"])
- */
     NSInteger orientations = 0;
     if ([[defaults objectForKey:@"RotationPortrait"] isEqual:@"YES"]) orientations=orientations|UIInterfaceOrientationMaskPortrait;
     if ([[defaults objectForKey:@"RotationClockwise"] isEqual:@"YES"]) orientations=orientations|UIInterfaceOrientationMaskLandscapeLeft;
     if ([[defaults objectForKey:@"RotationAntiClockwise"] isEqual:@"YES"]) orientations=orientations|UIInterfaceOrientationMaskLandscapeRight;
     if ([[defaults objectForKey:@"RotationInverted"] isEqual:@"YES"]) orientations=orientations|UIInterfaceOrientationMaskPortraitUpsideDown;
     return orientations;
-//    return UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight | UIInterfaceOrientationMaskPortraitUpsideDown;
 }
 
 /*

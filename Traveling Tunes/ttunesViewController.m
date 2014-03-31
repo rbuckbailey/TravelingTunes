@@ -11,6 +11,7 @@
 #import "settingsTableViewController.h"
 #import "ttunesAppDelegate.h"
 
+
 MPMusicPlayerController*        mediaPlayer;
 
 @interface ttunesViewController ()
@@ -18,6 +19,8 @@ MPMusicPlayerController*        mediaPlayer;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha;
 @property int activeOrientation;
+@property (strong, nonatomic) CLLocationManager *locationManager;
+
 @end
 
 
@@ -63,7 +66,20 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (id)init{
 //    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
-    return 0;
+    self = [super init];
+    if (self != nil) {
+        self.gps = [[CLLocationManager alloc] init];
+        self.gps.delegate = self;
+        [self.gps startUpdatingLocation];
+    }
+    return self;
+}
+
+- (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
+{
+    NSLog(@"Speed %f is %f mph", newLocation.speed,newLocation.speed*2.23694);
+    _speedTier = newLocation.speed / 10;
+    _gpsTest.text = [NSString stringWithFormat:@"%d",(int)(newLocation.speed*2.24694)];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -132,6 +148,12 @@ MPMusicPlayerController*        mediaPlayer;
      addObserver:self selector:@selector(orientationChanged:)
      name:UIDeviceOrientationDidChangeNotification
      object:[UIDevice currentDevice]];
+    
+    //init gps
+    self.gps = [[CLLocationManager alloc] init];
+    self.gps.delegate = self;
+    [self.gps startUpdatingLocation];
+    _speedTier = 0;
 }
 
 - (void) orientationChanged:(NSNotification *)note{
@@ -325,6 +347,7 @@ MPMusicPlayerController*        mediaPlayer;
     
     //actually do the drawing
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
+//    if ([mediaPlayer.nowPlayingItem]) { //output "nothing playing screen" if nothing playing
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
         _artistTitle.font   = [UIFont systemFontOfSize:28];

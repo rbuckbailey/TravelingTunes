@@ -41,6 +41,16 @@
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="GPS" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2bk-Hk-crS">
+                                <rect key="frame" x="103" y="348" width="173" height="150"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="173" id="Mmj-v4-y2h"/>
+                                    <constraint firstAttribute="height" constant="150" id="gvL-zc-ap7"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="70"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                         <gestureRecognizers/>
@@ -49,7 +59,9 @@
                             <constraint firstAttribute="trailing" secondItem="tfP-RX-STQ" secondAttribute="trailing" id="LUC-GB-piK"/>
                             <constraint firstItem="OCq-tB-ORW" firstAttribute="leading" secondItem="vDx-3z-0ZX" secondAttribute="leading" id="MZe-KM-fj0"/>
                             <constraint firstItem="OCq-tB-ORW" firstAttribute="top" secondItem="yaM-Y0-XlU" secondAttribute="bottom" constant="14" id="Sb8-Uh-yMc"/>
+                            <constraint firstItem="4pX-ZS-bwc" firstAttribute="top" secondItem="2bk-Hk-crS" secondAttribute="bottom" constant="70" id="a9k-1O-hXN"/>
                             <constraint firstItem="tfP-RX-STQ" firstAttribute="leading" secondItem="vDx-3z-0ZX" secondAttribute="leading" id="eL7-lK-38b"/>
+                            <constraint firstAttribute="trailing" secondItem="2bk-Hk-crS" secondAttribute="trailing" constant="44" id="iNQ-Nn-7vV"/>
                             <constraint firstItem="vDx-3z-0ZX" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" constant="20" id="nlt-jB-E68"/>
                             <constraint firstItem="tfP-RX-STQ" firstAttribute="trailing" secondItem="OCq-tB-ORW" secondAttribute="trailing" id="paV-u6-OLB"/>
                             <constraint firstAttribute="centerY" secondItem="vDx-3z-0ZX" secondAttribute="centerY" constant="-15" id="q00-2O-6E3"/>
@@ -66,6 +78,7 @@
                     <connections>
                         <outlet property="albumTitle" destination="tfP-RX-STQ" id="Mwr-W7-tTS"/>
                         <outlet property="artistTitle" destination="OCq-tB-ORW" id="nQw-EC-yyJ"/>
+                        <outlet property="gpsTest" destination="2bk-Hk-crS" id="eYf-1l-JI2"/>
                         <outlet property="songTitle" destination="vDx-3z-0ZX" id="Tgi-bl-1QJ"/>
                         <segue destination="y2u-JY-5vJ" kind="push" identifier="goToSettings" id="yy2-Cs-wXz"/>
                     </connections>

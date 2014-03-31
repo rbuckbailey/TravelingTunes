@@ -167,6 +167,8 @@
 @property (weak, nonatomic) IBOutlet UISwitch *pauseOnExit;
 - (IBAction)pauseOnExitChanged:(id)sender;
 
+
+
 // passes data from view to view
 @property NSMutableDictionary *passthrough;
 

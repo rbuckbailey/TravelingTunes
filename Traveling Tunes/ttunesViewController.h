@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <MediaPlayer/MediaPlayer.h>
 #import "gestureAssignmentController.h"
+#import <CoreLocation/CoreLocation.h>
 
 CGFloat const gestureMinimumTranslation = 20.0;
 
@@ -20,7 +21,7 @@ typedef enum : NSInteger {
     directionLeft
 } swipeDirections;
 
-@interface ttunesViewController : UIViewController
+@interface ttunesViewController : UIViewController <CLLocationManagerDelegate>
 @property swipeDirections direction;
 @property (weak, nonatomic) IBOutlet UILabel *artistTitle;
 @property (weak, nonatomic) IBOutlet UILabel *songTitle;
@@ -28,7 +29,10 @@ typedef enum : NSInteger {
 @property NSTimer *marqueeTimer,*scrollingTimer,*scrubTimer,*fadeHUDTimer;
 @property MPVolumeView* volume;
 @property NSInteger marqueePosition;
+@property CLLocationManager *gps;
+@property int speedTier,oldSpeedTier;
 
+@property (weak, nonatomic) IBOutlet UILabel *gpsTest;
 
 
 - (IBAction)singleTapDetected:(id)sender;
