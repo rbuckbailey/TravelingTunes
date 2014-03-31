@@ -772,7 +772,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     NSLog(@"Performing action %@",action);
-    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
+    if ([action isEqual:@"Unassigned"]) [self listPlaylists]; //NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
@@ -937,9 +937,19 @@ MPMusicPlayerController*        mediaPlayer;
     [mediaPlayer play];
 }
 
-- (void)playPlaylists {
-    MPMediaQuery* query = [MPMediaQuery playlistsQuery];
-
+- (void)listPlaylists {
+//    MPMediaQuery* query = [MPMediaQuery playlistsQuery];
+/*    MPMediaQuery *playlistsQuery = [MPMediaQuery playlistsQuery];
+    NSArray *playlists = [playlistsQuery collections];
+    NSLog(@"playlists are %@",playlists);
+ */
+    MPMediaQuery *query = [MPMediaQuery playlistsQuery];
+    NSArray *playlists = [query collections];
+    
+    for(int i = 0; i < [playlists count]; i++)
+    {
+        NSLog(@"Playlist : %@", [[playlists objectAtIndex:i] valueForProperty: MPMediaPlaylistPropertyName]);
+    }
 }
 
 -(MPMediaPlaylist*)lookupSavedPlaylist {
@@ -965,6 +975,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void) mediaPicker: (MPMediaPickerController *) mediaPicker didPickMediaItems: (MPMediaItemCollection *) mediaItemCollection
 {
+    
     if (mediaItemCollection) {
         [mediaPlayer setQueueWithItemCollection: mediaItemCollection];
         [mediaPlayer play];
