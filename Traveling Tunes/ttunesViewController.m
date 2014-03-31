@@ -787,7 +787,7 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playAllSongs];
 //    else if ([action isEqual:@"SongPicker"]) NSLog(@"Song picker");
-    else if ([action isEqual:@"SongPicker"]) [self scrollingTimerKiller];
+    else if ([action isEqual:@"SongPicker"]) [self showSongPicker];
     [self setupLabels];
 }
 
@@ -916,20 +916,65 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 
+- (void)playAllByAlbum {
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
+    [query setGroupingType:MPMediaGroupingAlbum];
+    [mediaPlayer setQueueWithQuery:query];
+    [mediaPlayer play];
+}
 
 - (void)playAllSongs {
     //Create a query that will return all songs by The Beatles grouped by album
-    MPMediaQuery* query = [MPMediaQuery songsQuery];
 //    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
 //    [query setGroupingType:MPMediaGroupingAlbum];
     
-    [mediaPlayer setQueueWithQuery: [MPMediaQuery songsQuery]];
-//    plus = @"random";
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
+//    [mediaPlayer setQueueWithQuery: [MPMediaQuery songsQuery]];
     
     //Pass the query to the player
     [mediaPlayer setQueueWithQuery:query];
     //Start playing and set a label text to the name and image to the cover art of the song that is playing
     [mediaPlayer play];
+}
+
+- (void)playPlaylists {
+    MPMediaQuery* query = [MPMediaQuery playlistsQuery];
+
+}
+
+-(MPMediaPlaylist*)lookupSavedPlaylist {
+    return 0;
+}
+
+-(void)playPlaylist {
+    MPMediaPlaylist* playlist = [self lookupSavedPlaylist];
+    [mediaPlayer setQueueWithItemCollection:playlist];
+    mediaPlayer.nowPlayingItem = [playlist.items objectAtIndex:0];
+    [mediaPlayer play];
+}
+
+-(void)showSongPicker {
+    MPMediaPickerController *mediaPicker = [[MPMediaPickerController alloc] initWithMediaTypes: MPMediaTypeAny];
+    
+    mediaPicker.delegate = self;
+    mediaPicker.allowsPickingMultipleItems = YES;
+    mediaPicker.prompt = @"Select songs to play";
+    
+    [self presentViewController:mediaPicker animated:YES completion:nil];
+}
+
+- (void) mediaPicker: (MPMediaPickerController *) mediaPicker didPickMediaItems: (MPMediaItemCollection *) mediaItemCollection
+{
+    if (mediaItemCollection) {
+        [mediaPlayer setQueueWithItemCollection: mediaItemCollection];
+        [mediaPlayer play];
+    }
+    [self dismissViewControllerAnimated: YES completion:nil];
+}
+
+- (void) mediaPickerDidCancel: (MPMediaPickerController *) mediaPicker
+{
+    [self dismissViewControllerAnimated: YES completion:nil];
 }
 
 @end

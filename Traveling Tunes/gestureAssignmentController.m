@@ -144,7 +144,7 @@
     [defaults setObject:@"NO" forKey:@"2SwipeRightContinuous"];
     [defaults setObject:@"NO" forKey:@"2SwipeUpContinuous"];
     [defaults setObject:@"NO" forKey:@"2SwipeDownContinuous"];
-    [defaults setObject:@"Unassigned" forKey:@"21Tap"];
+    [defaults setObject:@"SongPicker" forKey:@"21Tap"];
     [defaults setObject:@"Unassigned" forKey:@"22Tap"];
     [defaults setObject:@"Unassigned" forKey:@"23Tap"];
     [defaults setObject:@"Unassigned" forKey:@"24Tap"];
