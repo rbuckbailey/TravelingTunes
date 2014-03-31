@@ -43,8 +43,8 @@
     [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
     [defaults setObject:@"NO" forKey:@"InvertAtNight"];
     [defaults setObject:@"YES" forKey:@"DimAtNight"];
-    [defaults setObject:@"17" forKey:@"SunSetHour"];
     [defaults setObject:@"6" forKey:@"SunRiseHour"];
+    [defaults setObject:@"19" forKey:@"SunSetHour"];
     [defaults setObject:@"YES" forKey:@"TitleScrollLong"];
 
 
@@ -64,8 +64,8 @@
 
 - (void)initPlaylistSettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:@"1" forKey:@"repeat"];
-    [defaults setObject:@"1" forKey:@"shuffle"];
+    [defaults setObject:@"YES" forKey:@"repeat"];
+    [defaults setObject:@"YES" forKey:@"shuffle"];
     [defaults setObject:@"All Songs by Title" forKey:@"playlist"];
     [defaults synchronize];
 }

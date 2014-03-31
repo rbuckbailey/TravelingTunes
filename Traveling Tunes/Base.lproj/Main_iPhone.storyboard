@@ -239,7 +239,7 @@
                                         </tableViewCellContentView>
                                         <gestureRecognizers/>
                                         <connections>
-                                            <segue destination="G07-ID-Ou0" kind="push" id="25m-OS-isc"/>
+                                            <segue destination="G07-ID-Ou0" kind="push" identifier="quickStartGuide" id="25m-OS-isc"/>
                                         </connections>
                                     </tableViewCell>
                                 </cells>
