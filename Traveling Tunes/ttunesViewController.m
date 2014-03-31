@@ -20,6 +20,7 @@ MPMusicPlayerController*        mediaPlayer;
 @property float adjustedSongFontSize,fadeHUDalpha;
 @property int activeOrientation;
 @property (strong, nonatomic) CLLocationManager *locationManager;
+@property int baseVolume;
 
 @end
 
@@ -77,8 +78,13 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
+    int volumeTenth;
     NSLog(@"Speed %f is %f mph", newLocation.speed,newLocation.speed*2.23694);
-    _speedTier = newLocation.speed / 10;
+    _speedTier = (int)newLocation.speed / 10;
+    volumeTenth = (mediaPlayer.volume/(10+_speedTier));
+    _baseVolume = volumeTenth*10;
+    if (mediaPlayer.volume < _baseVolume) [self increaseVolume];
+    else if (mediaPlayer.volume > _baseVolume) [self decreaseVolume];
     _gpsTest.text = [NSString stringWithFormat:@"%d",(int)(newLocation.speed*2.24694)];
 }
 
@@ -788,6 +794,8 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playDefaultPlaylist];
 //    else if ([action isEqual:@"SongPicker"]) NSLog(@"Song picker");
     else if ([action isEqual:@"SongPicker"]) [self showSongPicker];
+    else if ([action isEqual:@"PlayAllArtist"]) [self playAllByArtist];
+    else if ([action isEqual:@"PlayAlbum"]) [self playAllByAlbum];
     [self setupLabels];
 }
 
@@ -947,6 +955,21 @@ MPMusicPlayerController*        mediaPlayer;
     [mediaPlayer play];
 }
 
+-(void) playAllByArtist {
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
+    NSString *currentSongTitle = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:currentSongTitle forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
+    //[query setGroupingType:MPMediaGroupingAlbum];
+    
+}
+
+-(void) playCurrentAlbum {
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
+    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] forProperty:MPMediaItemPropertyAlbumTitle comparisonType:MPMediaPredicateComparisonEqualTo]];
+    [query setGroupingType:MPMediaGroupingAlbum];
+
+}
+
 -(void)playConcretePlaylist {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     MPMediaQuery *query = [MPMediaQuery playlistsQuery];
@@ -990,5 +1013,7 @@ MPMusicPlayerController*        mediaPlayer;
 {
     [self dismissViewControllerAnimated: YES completion:nil];
 }
+
+
 
 @end
