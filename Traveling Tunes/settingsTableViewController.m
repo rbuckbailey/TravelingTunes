@@ -58,6 +58,7 @@
     else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
     _sunRiseLabel.text = labelText;
 
+    _defaultPlaylistLabel.text = [defaults objectForKey:@"playlist"];
     
     _bgRedSlider.value = (int)[[defaults objectForKey:@"customBGRed"] floatValue];
     _bgGreenSlider.value = (int)[[defaults objectForKey:@"customBGGreen"] floatValue];
@@ -633,23 +634,8 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"SongPicker"]) _songPickerCheck.textColor = [UIColor blackColor];
     }
 }
-/*
- - (IBAction)albumFontSizeSliderChanged:(id)sender {
- NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
- _albumFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_albumFontSizeSlider.value];
- [defaults setObject:[NSNumber numberWithFloat:(int)_albumFontSizeSlider.value] forKey:@"albumFontSize"];
- [defaults synchronize];
- }
- 
- // *** playlist switch actions ********************************************************************
- - (IBAction)playlistShuffleChanged:(id)sender {
- NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
- if (_playlistShuffle.on) [defaults setObject:@"YES" forKey:@"shuffle"];
- else [defaults setObject:@"NO" forKey:@"shuffle"];
- [defaults synchronize];
- NSLog(@"shuffle: %hhd",_playlistShuffle.on);
- }
-*/
+
+
 - (IBAction)titleShrinkInPortraitChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_titleShrinkInPortrait.on) [defaults setObject:@"YES" forKey:@"titleShrinkInPortrait"];

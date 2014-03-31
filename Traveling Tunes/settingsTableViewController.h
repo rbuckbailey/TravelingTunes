@@ -166,6 +166,7 @@
 @property (weak, nonatomic) IBOutlet UISwitch *playOnLaunch;
 @property (weak, nonatomic) IBOutlet UISwitch *pauseOnExit;
 - (IBAction)pauseOnExitChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UILabel *defaultPlaylistLabel;
 
 
 

@@ -7,6 +7,11 @@
 //
 
 #import "playlistTableViewController.h"
+#import "playlistTableViewCell.h"
+#import "gestureAssignmentController.h"
+
+
+MPMusicPlayerController*        mediaPlayer;
 
 @interface playlistTableViewController ()
 
@@ -26,12 +31,18 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
+ /*
+    UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"Done"
+                                                                    style:UIBarButtonItemStyleDone target:self action:@selector(popToRoot)];
+    self.navigationItem.rightBarButtonItem = rightButton;
+*/
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;
     
     // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
     // self.navigationItem.rightBarButtonItem = self.editButtonItem;
+    
+    [self listPlaylists];
 }
 
 - (void)didReceiveMemoryWarning
@@ -51,19 +62,59 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     // Return the number of rows in the section.
-    return 1;
+    return [_playlists count]+2;
 }
 
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"playlistItem" forIndexPath:indexPath];
-    
+    static NSString *CellIdentifier = @"playlist";
+    playlistTableViewCell *cell = [tableView
+                              dequeueReusableCellWithIdentifier:CellIdentifier];
+    if (cell == nil) {
+        cell = [[playlistTableViewCell alloc]
+                initWithStyle:UITableViewCellStyleDefault
+                reuseIdentifier:CellIdentifier];
+    }
     // Configure the cell...
-    
+    switch ([indexPath row]) {
+        case 0: cell.playlistLabel.text = @"All Songs by Title";
+            break;
+        case 1: cell.playlistLabel.text = @"All Songs by Album"; break;
+        default:
+            cell.playlistLabel.text = [[_playlists objectAtIndex:[indexPath row]-2] valueForProperty: MPMediaPlaylistPropertyName];
+            break;
+    }
     return cell;
 }
 
+- (void) listPlaylists {
+    MPMediaQuery *query = [MPMediaQuery playlistsQuery];
+    _playlists = [query collections];
+    
+    for(int i = 0; i < [_playlists count]; i++)
+    {
+        NSLog(@"Playlist : %@", [[_playlists objectAtIndex:i] valueForProperty: MPMediaPlaylistPropertyName]);
+    }
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+        playlistTableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    NSString *cellText = cell.playlistLabel.text;
+
+    NSLog(@"%@",cell.playlistLabel.text);
+
+    switch ([indexPath row]) {
+        case 0: [defaults setObject:@"All Songs by Title" forKey:@"playlist"]; break;
+        case 1: [defaults setObject:@"All Songs by Album" forKey:@"playlist"]; break;
+        default:
+            [defaults setObject:cellText forKey:@"playlist"]; break;
+    }
+    NSLog(@"set playlist to %@",[defaults objectForKey:@"playlist"]);
+    [defaults synchronize];
+}
 
 /*
 // Override to support conditional editing of the table view.

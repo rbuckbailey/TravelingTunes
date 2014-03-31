@@ -24,6 +24,7 @@
 		8E3C8D02189BF785004A90AE /* Traveling_TunesTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E3C8D01189BF785004A90AE /* Traveling_TunesTests.m */; };
 		8E4312DB18CE316B0037688F /* gestureAssignmentController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E4312DA18CE316B0037688F /* gestureAssignmentController.m */; };
 		F41CF5E818E737BB00F7A148 /* ttunesNavViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F41CF5E718E737BB00F7A148 /* ttunesNavViewController.m */; };
+		F41E16E618E9134D004FDB4F /* playlistTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */; };
 		F435F9FE18E229D300C71345 /* playlistTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F435F9FD18E229D300C71345 /* playlistTableViewController.m */; };
 		F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8118D3E54D0083641B /* settingsTableViewController.m */; };
 		F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */; };
@@ -64,6 +65,8 @@
 		8E4312DA18CE316B0037688F /* gestureAssignmentController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = gestureAssignmentController.m; sourceTree = "<group>"; };
 		F41CF5E618E737BB00F7A148 /* ttunesNavViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ttunesNavViewController.h; sourceTree = "<group>"; };
 		F41CF5E718E737BB00F7A148 /* ttunesNavViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ttunesNavViewController.m; sourceTree = "<group>"; };
+		F41E16E418E9134D004FDB4F /* playlistTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playlistTableViewCell.h; sourceTree = "<group>"; };
+		F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = playlistTableViewCell.m; sourceTree = "<group>"; };
 		F435F9FC18E229D300C71345 /* playlistTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playlistTableViewController.h; sourceTree = "<group>"; };
 		F435F9FD18E229D300C71345 /* playlistTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = playlistTableViewController.m; sourceTree = "<group>"; };
 		F4F25E8018D3E54D0083641B /* settingsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewController.h; sourceTree = "<group>"; };
@@ -182,6 +185,8 @@
 				F4F25E8118D3E54D0083641B /* settingsTableViewController.m */,
 				F435F9FC18E229D300C71345 /* playlistTableViewController.h */,
 				F435F9FD18E229D300C71345 /* playlistTableViewController.m */,
+				F41E16E418E9134D004FDB4F /* playlistTableViewCell.h */,
+				F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */,
 				F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */,
 				F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */,
 			);
@@ -296,6 +301,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8E4312DB18CE316B0037688F /* gestureAssignmentController.m in Sources */,
+				F41E16E618E9134D004FDB4F /* playlistTableViewCell.m in Sources */,
 				8E3C8CED189BF785004A90AE /* ttunesViewController.m in Sources */,
 				8E3C8CE0189BF785004A90AE /* main.m in Sources */,
 				F41CF5E818E737BB00F7A148 /* ttunesNavViewController.m in Sources */,

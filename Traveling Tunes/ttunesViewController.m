@@ -772,7 +772,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     NSLog(@"Performing action %@",action);
-    if ([action isEqual:@"Unassigned"]) [self listPlaylists]; //NSLog(@"%@ sent unassigned command",sender);
+    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
@@ -785,7 +785,7 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"FastForward"]) [self fastForward];
     else if ([action isEqual:@"VolumeUp"]) [self increaseVolume];
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
-    else if ([action isEqual:@"StartDefaultPlaylist"]) [self playAllSongs];
+    else if ([action isEqual:@"StartDefaultPlaylist"]) [self playDefaultPlaylist];
 //    else if ([action isEqual:@"SongPicker"]) NSLog(@"Song picker");
     else if ([action isEqual:@"SongPicker"]) [self showSongPicker];
     [self setupLabels];
@@ -827,7 +827,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (void) playOrDefault {
-    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playAllSongs];
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playDefaultPlaylist];
     else [mediaPlayer play];
 }
 
@@ -916,6 +916,16 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 
+- (void)playDefaultPlaylist {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    NSLog(@"Playing %@",[defaults objectForKey:@"playlist"]);
+    
+    if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Title"]) [self playAllByAlbum];
+    else if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Album"]) [self playAllSongs];
+    else [self playConcretePlaylist];
+}
+
 - (void)playAllByAlbum {
     MPMediaQuery* query = [MPMediaQuery songsQuery];
     [query setGroupingType:MPMediaGroupingAlbum];
@@ -937,29 +947,22 @@ MPMusicPlayerController*        mediaPlayer;
     [mediaPlayer play];
 }
 
-- (void)listPlaylists {
-//    MPMediaQuery* query = [MPMediaQuery playlistsQuery];
-/*    MPMediaQuery *playlistsQuery = [MPMediaQuery playlistsQuery];
-    NSArray *playlists = [playlistsQuery collections];
-    NSLog(@"playlists are %@",playlists);
- */
+-(void)playConcretePlaylist {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     MPMediaQuery *query = [MPMediaQuery playlistsQuery];
-    NSArray *playlists = [query collections];
-    
-    for(int i = 0; i < [playlists count]; i++)
+    _playlists = [query collections];
+
+    NSString *selectedPlaylist = [defaults objectForKey:@"playlist"];
+
+    MPMediaPlaylist *thePlaylist;
+    for(int i = 0; i < [_playlists count]; i++)
     {
-        NSLog(@"Playlist : %@", [[playlists objectAtIndex:i] valueForProperty: MPMediaPlaylistPropertyName]);
+        if ([[[_playlists objectAtIndex:i] valueForProperty: MPMediaPlaylistPropertyName] isEqual:selectedPlaylist]) thePlaylist = [_playlists objectAtIndex:i];
     }
-}
 
--(MPMediaPlaylist*)lookupSavedPlaylist {
-    return 0;
-}
-
--(void)playPlaylist {
-    MPMediaPlaylist* playlist = [self lookupSavedPlaylist];
-    [mediaPlayer setQueueWithItemCollection:playlist];
-    mediaPlayer.nowPlayingItem = [playlist.items objectAtIndex:0];
+    [mediaPlayer setQueueWithItemCollection:thePlaylist];
+    
+//    mediaPlayer.nowPlayingItem = [thePlaylist.items objectAtIndex:0];
     [mediaPlayer play];
 }
 

@@ -31,6 +31,7 @@ typedef enum : NSInteger {
 @property NSInteger marqueePosition;
 @property CLLocationManager *gps;
 @property int speedTier,oldSpeedTier;
+@property NSArray* playlists;
 
 @property (weak, nonatomic) IBOutlet UILabel *gpsTest;
 

@@ -7,8 +7,10 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 @interface playlistTableViewController : UITableViewController
 @property NSMutableDictionary *passthrough;
+@property NSArray* playlists;
 
 @end

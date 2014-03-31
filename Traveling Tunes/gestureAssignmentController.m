@@ -66,7 +66,7 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:@"1" forKey:@"repeat"];
     [defaults setObject:@"1" forKey:@"shuffle"];
-    [defaults setObject:@"play all" forKey:@"playlist"];
+    [defaults setObject:@"All Songs by Title" forKey:@"playlist"];
     [defaults synchronize];
 }
 
