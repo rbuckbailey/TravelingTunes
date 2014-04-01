@@ -40,7 +40,7 @@
     [defaults setObject:@"NO" forKey:@"PlayOnLaunch"];
     [defaults setObject:@"NO" forKey:@"PauseOnExit"];
     [defaults setObject:@"YES" forKey:@"titleShrinkInPortrait"];
-    [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
+    [defaults setObject:@"NO" forKey:@"titleShrinkLong"];
     [defaults setObject:@"NO" forKey:@"InvertAtNight"];
     [defaults setObject:@"YES" forKey:@"DimAtNight"];
     [defaults setObject:@"6" forKey:@"SunRiseHour"];
@@ -52,9 +52,9 @@
 
 - (void)initDisplaySettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:@"70" forKey:@"artistFontSize"];
-    [defaults setObject:@"90" forKey:@"songFontSize"];
-    [defaults setObject:@"70" forKey:@"albumFontSize"];
+    [defaults setObject:@"65" forKey:@"artistFontSize"];
+    [defaults setObject:@"70" forKey:@"songFontSize"];
+    [defaults setObject:@"65" forKey:@"albumFontSize"];
     [defaults setObject:@"Left" forKey:@"artistAlignment"];
     [defaults setObject:@"Left" forKey:@"songAlignment"];
     [defaults setObject:@"Left" forKey:@"albumAlignment"];
