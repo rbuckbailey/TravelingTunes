@@ -75,11 +75,38 @@ MPMusicPlayerController*        mediaPlayer;
     return self;
 }
 
+- (void)setupBaseVolume {
+//
+}
+
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    float mph = (newLocation.speed*2.23694);
+
+    // calibrate base volume when not moving; otherwise it is adjusted by [self increase/decreaseVolume]
+    if (mph <= 0) {
+        _volumeBase = mediaPlayer.volume;
+        _volumeTenth = _volumeBase/10;
+    }
+    
+    _speedTier = (int)(mph / 5);
+    _volumeTarget = _volumeBase+(_volumeTenth*_speedTier);
+
+
+    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+
+    _gpsTest.numberOfLines = 2;
+    _gpsTest.text = [NSString stringWithFormat:@"%d\r%d/%d/%d",(int)(newLocation.speed*2.24694),(int)(_volumeBase*100),(int)(mediaPlayer.volume*100),(int)(_volumeTarget*100)];
+    [_gpsTest sizeToFit];
+
+    NSLog(@"***");
+    NSLog(@"base volume:%f",_volumeBase);
+    NSLog(@"real volume:%f",mediaPlayer.volume);
+    NSLog(@"target volume:%f",_volumeTarget);
     NSLog(@"Speed %f is %f mph", newLocation.speed,newLocation.speed*2.23694);
-    _speedTier = newLocation.speed / 10;
-    _gpsTest.text = [NSString stringWithFormat:@"%d",(int)(newLocation.speed*2.24694)];
+
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -190,13 +217,11 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void) nowPlayingItemChanged:(NSNotification *)notification {
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
-    
+
+    [self scrollingTimerKiller]; [self startMarqueeTimer];
+    [self setupLabels];
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
-    
     if (song) {
-        [self setupLabels];
-        [self scrollingTimerKiller]; [self startMarqueeTimer];
-        
         NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
         NSString *album = [song valueForProperty:MPMediaItemPropertyAlbumTitle];
         NSString *artist = [song valueForProperty:MPMediaItemPropertyArtist];
@@ -299,8 +324,8 @@ MPMusicPlayerController*        mediaPlayer;
         themebg = themecolor;
         themecolor = temp;
     }
-    NSLog(@"time is %f:%f sundown is %f and sunup is %f",theHour,theMinute,sundown,sunup);
-    NSLog(@"adjusting overlay by %f",0+((theMinute/60)/2));
+//    NSLog(@"time is %f:%f sundown is %f and sunup is %f",theHour,theMinute,sundown,sunup);
+//    NSLog(@"adjusting overlay by %f",0+((theMinute/60)/2));
     // dim display if it's night and dim-at-night is on
     if (((theHour>=sundown) | (theHour < sunup)) & ([[defaults objectForKey:@"DimAtNight" ] isEqual:@"YES"])) {
         // fade towards half-dark during the hour after sundown
@@ -375,25 +400,17 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.textColor = themecolor;
         [_artistTitle setAlpha:0.6f];
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _artistTitle.adjustsFontSizeToFitWidth=YES; else _artistTitle.adjustsFontSizeToFitWidth=NO;
         
         if (_timersRunning==0) {
+            //if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _artistTitle.adjustsFontSizeToFitWidth=YES; else _artistTitle.adjustsFontSizeToFitWidth=NO;
             _songTitle.numberOfLines = 1;
             _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
             _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
             _songTitle.textColor = themecolor;
             _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
             _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-            _adjustedSongFontSize = _songTitle.font.pointSize;
+//            [self fittedText];
             //NSLog(@"font size %f",_adjustedSongFontSize);
-
-            if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) {
-                _songTitle.adjustsFontSizeToFitWidth=YES;
-                _adjustedSongFontSize = _songTitle.font.pointSize;
-                //NSLog(@"adjusted font size %f",_adjustedSongFontSize);
-
-            }
-            else _songTitle.adjustsFontSizeToFitWidth=NO;
         }
         
         _albumTitle.numberOfLines = 1;
@@ -404,6 +421,27 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
     }
+}
+
+-(void)fittedText {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
+
+    NSString * myText = _songTitle.text;
+    //get size of the text:
+    CGFloat constrainedSize = 265.0f; //or any other size
+    UIFont * myFont = [UIFont systemFontOfSize:songFontSize]; //or any other font that matches what you will use in the UILabel
+    CGSize textSize = [myText sizeWithFont: myFont
+                         constrainedToSize:CGSizeMake(constrainedSize, CGFLOAT_MAX)
+                             lineBreakMode:UILineBreakModeWordWrap];
+    
+    //create a label:
+    CGRect labelFrame = CGRectMake (20, 0, textSize.width, textSize.height);
+    _songTitle.frame = labelFrame;
+    _songTitle.textColor = [UIColor blackColor];
+    _songTitle.text = myText;
+    NSLog(@"text size %f by %f",textSize.width,textSize.height);
 }
 
 -(void) fadeHUDloop {
@@ -430,7 +468,7 @@ MPMusicPlayerController*        mediaPlayer;
         _lineView.backgroundColor = [UIColor clearColor];
         _edgeViewBG.backgroundColor = [UIColor clearColor];
     }
-    NSLog(@"fading alpha is %f",_fadeHUDalpha);
+//    NSLog(@"fading alpha is %f",_fadeHUDalpha);
     
 }
 
@@ -443,7 +481,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void)fadeHUDTimerKiller {
-    NSLog(@"fadeHUDTimerKiller");
+//    NSLog(@"fadeHUDTimerKiller");
     if ( [[self fadeHUDTimer] isValid]){
         [[self fadeHUDTimer] invalidate];
     }
@@ -561,7 +599,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -579,7 +617,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -597,7 +635,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -614,7 +652,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.marqueeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -633,12 +671,14 @@ MPMusicPlayerController*        mediaPlayer;
         NSLog(@"Stop. Mediaplayer state is %ld",(long)[mediaPlayer playbackState]);
         //if ([mediaPlayer playbackState] == MPMusicPlaybackStateSeekingForward | [mediaPlayer playbackState]==MPMusicPlaybackStateSeekingBackward) [mediaPlayer endSeeking];
     }
+    [defaults synchronize];
 }
 
 
 - (void) resetDoNotRepeat {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:@"narf!" forKey:@"doNotRepeat"];
+    [defaults synchronize];
 }
 
 - (swipeDirections)determineSwipeDirectiond:(CGPoint)translation
@@ -815,6 +855,8 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     float volume = mediaPlayer.volume;
     mediaPlayer.volume = volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    _volumeBase = _volumeBase+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    _volumeTenth = _volumeBase/10;
     [self setupHUD];
     NSLog(@"%f",[[defaults objectForKey:@"volumeSensitivity"] floatValue]);
 }
@@ -823,6 +865,8 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     float volume = mediaPlayer.volume;
     mediaPlayer.volume = volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    _volumeBase = _volumeBase-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    _volumeTenth = _volumeBase/10;
     [self setupHUD];
 }
 
@@ -849,17 +893,19 @@ MPMusicPlayerController*        mediaPlayer;
 
 
 -(void)scrollingTimerKiller {
-    NSLog(@"scrollingTimerKiller");
+//    NSLog(@"scrollingTimerKiller");
+    [self marqueeTimerKiller];
     _marqueePosition=0;
     if ( [[self scrollingTimer] isValid]){
         [[self scrollingTimer] invalidate];
-        _timersRunning--; NSLog(@"%d timers running",_timersRunning);
+        _timersRunning--;
+        //NSLog(@"%d timers running",_timersRunning);
     }
 }
 
 -(void)marqueeTimerKiller {
     [self setupLabels]; // also refresh labels every 4 seconds? keeps fading current
-    NSLog(@"marqueeTimerKiller");
+//    NSLog(@"marqueeTimerKiller");
     if ( [[self marqueeTimer] isValid]){
         [[self marqueeTimer] invalidate];
     }
@@ -873,13 +919,14 @@ MPMusicPlayerController*        mediaPlayer;
     _marqueePosition=_marqueePosition+3;
     _adjustedSongFontSize = _songTitle.font.pointSize;
     _songTitle.frame=CGRectMake(20-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
-    [_songTitle setFont:[UIFont systemFontOfSize:_adjustedSongFontSize]];
 //    NSLog(@"scrolling font size %f",_adjustedSongFontSize);
     
     if (_marqueePosition>= textWidth+20) {
         [self scrollingTimerKiller];
         [self marqueeTimerKiller];
         _songTitle.frame=CGRectMake(20, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
+        _songTitle.adjustsFontSizeToFitWidth=YES;
+        _songTitle.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
         [self startMarqueeTimer];
     }
 }
@@ -912,7 +959,8 @@ MPMusicPlayerController*        mediaPlayer;
                                                   selector: @selector(scrollSongTitle:)
                                                   userInfo: nil
                                                    repeats: YES];
-        _timersRunning++; NSLog(@"%d timers running", _timersRunning);
+        _timersRunning++;
+        //NSLog(@"%d timers running", _timersRunning);
     }
 }
 
@@ -931,6 +979,21 @@ MPMusicPlayerController*        mediaPlayer;
     [query setGroupingType:MPMediaGroupingAlbum];
     [mediaPlayer setQueueWithQuery:query];
     [mediaPlayer play];
+}
+
+
+-(void) playAllByArtist {
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
+    NSString *currentSongTitle = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:currentSongTitle forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
+    //[query setGroupingType:MPMediaGroupingAlbum];
+}
+
+
+-(void) playCurrentAlbum {
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
+    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] forProperty:MPMediaItemPropertyAlbumTitle comparisonType:MPMediaPredicateComparisonEqualTo]];
+    [query setGroupingType:MPMediaGroupingAlbum];
 }
 
 - (void)playAllSongs {
