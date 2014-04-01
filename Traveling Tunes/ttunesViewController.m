@@ -82,14 +82,35 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
-    int volumeTenth;
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    float mph = (newLocation.speed*2.23694);
+
+    // calibrate base volume when not moving; otherwise it is adjusted by [self increase/decreaseVolume]
+    if (mph <= 0) {
+//        mediaPlayer.volume = _volumeBase;
+        _volumeBase = mediaPlayer.volume;
+        _volumeTenth = _volumeBase/100;
+    }
+    
+    _speedTier = (int)(mph / 1);
+    _volumeTarget = _volumeBase+(_volumeTenth*_speedTier);
+
+
+    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+
+    _gpsTest.numberOfLines = 2;
+    _gpsTest.text = [NSString stringWithFormat:@"%d\r%d/%d/%d",(int)(newLocation.speed*2.24694),(int)(_volumeBase*100),(int)(mediaPlayer.volume*100),(int)(_volumeTarget*100)];
+    [_gpsTest sizeToFit];
+
+    [self setupHUD];
+    
+    NSLog(@"***");
+    NSLog(@"base volume:%f",_volumeBase);
+    NSLog(@"real volume:%f",mediaPlayer.volume);
+    NSLog(@"target volume:%f",_volumeTarget);
     NSLog(@"Speed %f is %f mph", newLocation.speed,newLocation.speed*2.23694);
-    _speedTier = (int)newLocation.speed / 10;
-    volumeTenth = (mediaPlayer.volume/(10+_speedTier));
-    _baseVolume = volumeTenth*10;
-    if (mediaPlayer.volume < _baseVolume) [self increaseVolume];
-    else if (mediaPlayer.volume > _baseVolume) [self decreaseVolume];
-    _gpsTest.text = [NSString stringWithFormat:@"%d",(int)(newLocation.speed*2.24694)];
+
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -993,21 +1014,6 @@ MPMusicPlayerController*        mediaPlayer;
     [mediaPlayer setQueueWithQuery:query];
     //Start playing and set a label text to the name and image to the cover art of the song that is playing
     [mediaPlayer play];
-}
-
--(void) playAllByArtist {
-    MPMediaQuery* query = [MPMediaQuery songsQuery];
-    NSString *currentSongTitle = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:currentSongTitle forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
-    //[query setGroupingType:MPMediaGroupingAlbum];
-    
-}
-
--(void) playCurrentAlbum {
-    MPMediaQuery* query = [MPMediaQuery songsQuery];
-    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] forProperty:MPMediaItemPropertyAlbumTitle comparisonType:MPMediaPredicateComparisonEqualTo]];
-    [query setGroupingType:MPMediaGroupingAlbum];
-
 }
 
 -(void)playConcretePlaylist {

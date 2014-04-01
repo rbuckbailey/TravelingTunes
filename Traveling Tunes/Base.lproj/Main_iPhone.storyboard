@@ -41,13 +41,9 @@
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="GPS\nfoo" textAlignment="right" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" preferredMaxLayoutWidth="270" translatesAutoresizingMaskIntoConstraints="NO" id="2bk-Hk-crS">
-                                <rect key="frame" x="6" y="243" width="270" height="255"/>
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="GPS\nfoo" textAlignment="right" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" preferredMaxLayoutWidth="245" translatesAutoresizingMaskIntoConstraints="NO" id="2bk-Hk-crS">
+                                <rect key="frame" x="55" y="20" width="245" height="183"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="270" id="Mmj-v4-y2h"/>
-                                    <constraint firstAttribute="height" constant="255" id="gvL-zc-ap7"/>
-                                </constraints>
                                 <fontDescription key="fontDescription" type="system" pointSize="55"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -55,17 +51,17 @@
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                         <gestureRecognizers/>
                         <constraints>
+                            <constraint firstAttribute="trailing" secondItem="2bk-Hk-crS" secondAttribute="trailing" constant="20" id="Im3-oU-8hB"/>
                             <constraint firstItem="tfP-RX-STQ" firstAttribute="trailing" secondItem="vDx-3z-0ZX" secondAttribute="trailing" id="JOv-Nd-qLJ"/>
                             <constraint firstAttribute="trailing" secondItem="tfP-RX-STQ" secondAttribute="trailing" id="LUC-GB-piK"/>
                             <constraint firstItem="OCq-tB-ORW" firstAttribute="leading" secondItem="vDx-3z-0ZX" secondAttribute="leading" id="MZe-KM-fj0"/>
                             <constraint firstItem="OCq-tB-ORW" firstAttribute="top" secondItem="yaM-Y0-XlU" secondAttribute="bottom" constant="14" id="Sb8-Uh-yMc"/>
-                            <constraint firstItem="4pX-ZS-bwc" firstAttribute="top" secondItem="2bk-Hk-crS" secondAttribute="bottom" constant="70" id="a9k-1O-hXN"/>
                             <constraint firstItem="tfP-RX-STQ" firstAttribute="leading" secondItem="vDx-3z-0ZX" secondAttribute="leading" id="eL7-lK-38b"/>
-                            <constraint firstAttribute="trailing" secondItem="2bk-Hk-crS" secondAttribute="trailing" constant="44" id="iNQ-Nn-7vV"/>
                             <constraint firstItem="vDx-3z-0ZX" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" constant="20" id="nlt-jB-E68"/>
                             <constraint firstItem="tfP-RX-STQ" firstAttribute="trailing" secondItem="OCq-tB-ORW" secondAttribute="trailing" id="paV-u6-OLB"/>
                             <constraint firstAttribute="centerY" secondItem="vDx-3z-0ZX" secondAttribute="centerY" constant="-15" id="q00-2O-6E3"/>
                             <constraint firstAttribute="bottom" secondItem="tfP-RX-STQ" secondAttribute="bottom" constant="20" symbolic="YES" id="rGJ-3M-VuD"/>
+                            <constraint firstItem="2bk-Hk-crS" firstAttribute="top" secondItem="yaM-Y0-XlU" secondAttribute="bottom" constant="-44" id="ztc-Tr-lFV"/>
                         </constraints>
                         <connections>
                             <outletCollection property="gestureRecognizers" destination="Xfa-qB-Yyw" appends="YES" id="k5c-Ch-tAs"/>
