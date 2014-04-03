@@ -166,7 +166,12 @@
 @property (weak, nonatomic) IBOutlet UISwitch *playOnLaunch;
 @property (weak, nonatomic) IBOutlet UISwitch *pauseOnExit;
 - (IBAction)pauseOnExitChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISlider *GPSSensitivitySlider;
 @property (weak, nonatomic) IBOutlet UILabel *defaultPlaylistLabel;
+- (IBAction)GPSSensitivityChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *GPSVolumeToggle;
+- (IBAction)GPSVolumeToggleChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UILabel *GPSSensivityLabel;
 
 
 

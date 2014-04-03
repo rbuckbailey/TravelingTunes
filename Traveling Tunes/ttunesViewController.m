@@ -93,7 +93,7 @@ MPMusicPlayerController*        mediaPlayer;
     }
     
     _speedTier = (int)(mph / 1);
-    _volumeTarget = _volumeBase+(_volumeTenth*_speedTier);
+    _volumeTarget = _volumeBase+((_volumeTenth*_speedTier)*[[defaults objectForKey:@"GPSSensivity"] floatValue]);
 
 
     if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];

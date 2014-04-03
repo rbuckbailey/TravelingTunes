@@ -46,7 +46,8 @@
     [defaults setObject:@"6" forKey:@"SunRiseHour"];
     [defaults setObject:@"19" forKey:@"SunSetHour"];
     [defaults setObject:@"YES" forKey:@"TitleScrollLong"];
-
+    [defaults setObject:@"YES" forKey:@"GPSVolume"];
+    [defaults setObject:@"0.5" forKey:@"GPSSensivity"];
 
 }
 

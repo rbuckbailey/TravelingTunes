@@ -39,7 +39,7 @@
     _albumFontSizeLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"albumFontSize"]];
     _albumFontSizeSlider.value = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
     _albumAlignmentControl.selectedSegmentIndex = (int)[[defaults objectForKey:@"albumAlignment"] floatValue];
-
+    
     _titleShrinkMinimumSlider.value = (int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
     _titleShrinkMinimumLabel.text = [NSString stringWithFormat:@"%@",[defaults objectForKey:@"minimumFontSize"]];
     _sunRiseSlider.value = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
@@ -69,10 +69,11 @@
     _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _seekSensitivitySlider.value = [[defaults objectForKey:@"seekSensitivity"] floatValue];
     
+    _GPSSensitivitySlider.value = [[defaults objectForKey:@"GPSSensivity"] floatValue];
+    _GPSSensivityLabel.text = [NSString stringWithFormat:@"%f",[[defaults objectForKey:@"GPSSensivity"] floatValue]];
     // initialized segmented switches
     _HUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"HUDType"] floatValue];
     _ScrubHUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"ScrubHUDType"] floatValue];
-
 
     // initialize theme previews for Display settings
     [self setThemeLabels];
@@ -104,6 +105,7 @@
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _titleShrinkLong.on = YES; else _titleShrinkLong.on = NO;
     if ([[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) _titleShrinkInPortrait.on = YES; else _titleShrinkInPortrait.on = NO;
     if ([[defaults objectForKey:@"TitleScrollLong"] isEqual:@"YES"]) _titleScrollLong.on = YES; else _titleScrollLong.on = NO;
+    if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) _GPSVolumeToggle.on = YES; else _GPSVolumeToggle.on = NO;
 
     // to insert Navigation View titles
     //self.navigationItem.title = @"Test";
@@ -807,4 +809,16 @@
     [defaults synchronize];
 }
 
+- (IBAction)GPSSensitivityChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:_GPSSensitivitySlider.value] forKey:@"GPSSensivity"];
+    _GPSSensivityLabel.text = [NSString stringWithFormat:@"%f",[[defaults objectForKey:@"GPSSensivity"] floatValue]];
+    [defaults synchronize];
+}
+- (IBAction)GPSVolumeToggleChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_GPSVolumeToggle.on) [defaults setObject:@"YES" forKey:@"GPSVolume"];
+    else [defaults setObject:@"NO" forKey:@"GPSVolume"];
+    [defaults synchronize];
+}
 @end
