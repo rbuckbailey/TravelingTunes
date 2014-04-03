@@ -95,8 +95,8 @@ MPMusicPlayerController*        mediaPlayer;
     _volumeTarget = _volumeBase+((_volumeTenth*_speedTier)*[[defaults objectForKey:@"GPSSensivity"] floatValue]);
 
 
-    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
-    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+//    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+//    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
 
     _gpsTest.numberOfLines = 2;
     _gpsTest.text = [NSString stringWithFormat:@"%d\r%d/%d/%d",(int)(newLocation.speed*2.24694),(int)(_volumeBase*100),(int)(mediaPlayer.volume*100),(int)(_volumeTarget*100)];
@@ -241,7 +241,8 @@ MPMusicPlayerController*        mediaPlayer;
 /*** HUD display setups ********************************************************************************************************************************************/
 
 -(void) updatePlaybackHUD {
-    
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL) {
 //    else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
 
@@ -297,6 +298,13 @@ MPMusicPlayerController*        mediaPlayer;
         _playbackEdgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
     }
     }
+    
+    // since this runs 5 times a second, update volume per GPS here
+    mediaPlayer.volume=_volumeTarget;
+//    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+//    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    
+
 }
 
 - (void)setupLabels {
@@ -862,7 +870,8 @@ MPMusicPlayerController*        mediaPlayer;
     float volume = mediaPlayer.volume;
     mediaPlayer.volume = volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _volumeBase = _volumeBase+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
-    _volumeTenth = _volumeBase/10;
+    _volumeTarget = _volumeTarget+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    _volumeTenth = _volumeBase/100;
     [self setupHUD];
     NSLog(@"%f",[[defaults objectForKey:@"volumeSensitivity"] floatValue]);
 }
@@ -872,7 +881,8 @@ MPMusicPlayerController*        mediaPlayer;
     float volume = mediaPlayer.volume;
     mediaPlayer.volume = volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _volumeBase = _volumeBase-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
-    _volumeTenth = _volumeBase/10;
+    _volumeTarget = _volumeTarget-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    _volumeTenth = _volumeBase/100;
     [self setupHUD];
 }
 
