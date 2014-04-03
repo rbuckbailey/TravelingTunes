@@ -192,7 +192,7 @@
     NSLog(@"defaults was %@",[defaults objectForKey:fullGesture]);
     // change the dictionary
     [defaults setObject:action forKey: fullGesture];
-    if ([action isEqual:@"VolumeUp"] | [action isEqual:@"VolumeDown"] | [action isEqual:@"Rewind"] | [action isEqual:@"FastForward" ]) [defaults setObject:@"YES" forKey:fullGestureContinuous];
+    if ([action isEqual:@"VolumeUp"] | [action isEqual:@"VolumeDown"]) [defaults setObject:@"YES" forKey:fullGestureContinuous];
     else [defaults setObject:@"NO" forKey:fullGestureContinuous];
 
 

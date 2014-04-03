@@ -87,7 +87,6 @@ MPMusicPlayerController*        mediaPlayer;
 
     // calibrate base volume when not moving; otherwise it is adjusted by [self increase/decreaseVolume]
     if (mph <= 0) {
-//        mediaPlayer.volume = _volumeBase;
         _volumeBase = mediaPlayer.volume;
         _volumeTenth = _volumeBase/100;
     }
@@ -127,7 +126,8 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
+ 
+    _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
     
     // attach to delegate so launch/exit actions can be called
@@ -603,7 +603,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.2f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -621,7 +621,7 @@ MPMusicPlayerController*        mediaPlayer;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.2f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -634,12 +634,12 @@ MPMusicPlayerController*        mediaPlayer;
             case directionRight:
                key = [NSString stringWithFormat:@"%luSwipeRight",(unsigned long)gesture.numberOfTouches];
                keyContinuous = [NSString stringWithFormat:@"%luSwipeRightContinuous",(unsigned long)gesture.numberOfTouches];
-               if ([[defaults objectForKey:keyContinuous] isEqual:@"YES"]) [self performPlayerAction:[defaults objectForKey:key]:key];
+               if (([[defaults objectForKey:keyContinuous] isEqual:@"YES"]) & ([[defaults objectForKey:@"doNotRepeat"] isEqual:@"narf!"])) [self performPlayerAction:[defaults objectForKey:key]:key];
                else {
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.2f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -651,12 +651,12 @@ MPMusicPlayerController*        mediaPlayer;
             case directionLeft:
                key = [NSString stringWithFormat:@"%luSwipeLeft",(unsigned long)gesture.numberOfTouches];
                keyContinuous = [NSString stringWithFormat:@"%luSwipeLeftContinuous",(unsigned long)gesture.numberOfTouches];
-               if ([[defaults objectForKey:keyContinuous] isEqual:@"YES"]) [self performPlayerAction:[defaults objectForKey:key]:key];
+               if (([[defaults objectForKey:keyContinuous] isEqual:@"YES"]) & ([[defaults objectForKey:@"doNotRepeat"] isEqual:@"narf!"])) [self performPlayerAction:[defaults objectForKey:key]:key];
                else {
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.2f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -849,7 +849,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void) fastForward {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]+[[defaults objectForKey:@"seekSensitivity"] floatValue]];
+    if (mediaPlayer.currentPlaybackTime > 0.1f) [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]+[[defaults objectForKey:@"seekSensitivity"] floatValue]];
 }
 
 -(void)rewind {
