@@ -100,7 +100,7 @@ MPMusicPlayerController*        mediaPlayer;
 
     _gpsTest.numberOfLines = 2;
     _gpsTest.text = [NSString stringWithFormat:@"%d\r%d/%d/%d",(int)(newLocation.speed*2.24694),(int)(_volumeBase*100),(int)(mediaPlayer.volume*100),(int)(_volumeTarget*100)];
-    [_gpsTest sizeToFit];
+  //  [_gpsTest sizeToFit];
 
     [self setupHUD];
     
@@ -121,6 +121,7 @@ MPMusicPlayerController*        mediaPlayer;
     //reset marquee
     [self scrollingTimerKiller];
     [self firstStartTimer];
+    [self startPlaybackWatcher];
 }
 
 - (void)viewDidLoad
@@ -134,7 +135,6 @@ MPMusicPlayerController*        mediaPlayer;
     ttunesAppDelegate *appDelegate = [[UIApplication sharedApplication] delegate];
     appDelegate.ttunes = self;
 
-    [self startPlaybackWatcher];
     _lineView = [[UIView alloc] init];
     _edgeViewBG = [[UIView alloc] init];
     _playbackEdgeViewBG = [[UIView alloc] init];
@@ -825,7 +825,7 @@ MPMusicPlayerController*        mediaPlayer;
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     NSLog(@"Performing action %@",action);
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
-    else if ([action isEqual:@"Menu"]) [self performSegueWithIdentifier: @"goToSettings" sender: self];
+    else if ([action isEqual:@"Menu"]) { [self.scrubTimer invalidate]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
@@ -941,7 +941,7 @@ MPMusicPlayerController*        mediaPlayer;
         [self scrollingTimerKiller];
         [self marqueeTimerKiller];
         _songTitle.frame=CGRectMake(20, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
-        _songTitle.adjustsFontSizeToFitWidth=YES;
+        //_songTitle.adjustsFontSizeToFitWidth=YES;
         _songTitle.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
         [self startMarqueeTimer];
     }
