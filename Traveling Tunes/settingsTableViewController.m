@@ -253,7 +253,7 @@
      SHARE/TWEET/FB SONG ?
      SKIP FORWARD/BACK 5, 10, 20 SECONDS
      */
-    else [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 #pragma mark - Navigation
@@ -633,6 +633,8 @@
         _volumeDownCheck.textColor = [UIColor whiteColor];
         _startDefaultPlaylistCheck.textColor = [UIColor whiteColor];
         _songPickerCheck.textColor = [UIColor whiteColor];
+        _playCurrentArtistCheck.textColor = [UIColor whiteColor];
+        _playCurrentAlbumCheck.textColor = [UIColor whiteColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Play"]) _playCheck.textColor = [UIColor blackColor];
@@ -648,6 +650,8 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"VolumeDown"]) _volumeDownCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"StartDefaultPlaylist"]) _startDefaultPlaylistCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"SongPicker"]) _songPickerCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"PlayCurrentArtist"]) _playCurrentArtistCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"PlayCurrentAlbum"]) _playCurrentAlbumCheck.textColor = [UIColor blackColor];
     }
 }
 
