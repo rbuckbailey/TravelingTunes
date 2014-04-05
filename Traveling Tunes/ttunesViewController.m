@@ -478,7 +478,7 @@ MPMusicPlayerController*        mediaPlayer;
             // so do a second check to see if it has at least 50x50 pixels
             if ([artwork imageWithSize:CGSizeMake(50,50)]) {
                 _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
-                _albumArt.alpha = 0.2f;
+                _albumArt.alpha = 0.3f;
                 _albumArt.contentMode = UIViewContentModeCenter;
 
                 if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
@@ -491,8 +491,9 @@ MPMusicPlayerController*        mediaPlayer;
                     [_songTitle setAlpha:1.0f];
                     [_albumTitle setAlpha:0.7f];
                 }
-            }  else _albumArt.alpha = 0.0f;
-        }
+            } else _albumArt.alpha = 0.0f;
+        
+        } else _albumArt.alpha = 0.0f;
         
     }
 }
