@@ -24,7 +24,7 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     [self.navigationController setNavigationBarHidden:NO];
-    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) {self.canDisplayBannerAds = NO; NSLog(@"foo");}
+    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) self.canDisplayBannerAds = NO; //NSLog(@"foo");}
     else self.canDisplayBannerAds = YES;
     
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
