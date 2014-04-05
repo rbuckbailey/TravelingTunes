@@ -89,7 +89,6 @@
     else {
         _themeInvert.on = NO; }
 
-    NSLog(@"Custom color is fore r %f g %f b %f back %f g %f b %f",_textRedSlider.value,_textGreenSlider.value,_textBlueSlider.value,_bgRedSlider.value,_bgGreenSlider.value,_bgBlueSlider.value);
     [self updateCustomPreviews];
     
     // initialize more switches

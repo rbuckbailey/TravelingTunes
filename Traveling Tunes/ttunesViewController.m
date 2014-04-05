@@ -112,8 +112,8 @@ MPMusicPlayerController*        mediaPlayer;
 
     [self setupHUD];
     
-    NSLog(@"*** gps moved ***");
-/*    NSLog(@"base volume:%f",_volumeBase);
+/*    NSLog(@"*** gps moved ***");
+    NSLog(@"base volume:%f",_volumeBase);
     NSLog(@"real volume:%f",mediaPlayer.volume);
     NSLog(@"target volume:%f",_volumeTarget);
     NSLog(@"Speed %f is %f mph", newLocation.speed,newLocation.speed*2.23694);
