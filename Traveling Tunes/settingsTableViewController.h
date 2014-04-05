@@ -44,6 +44,8 @@
 @property (weak, nonatomic) IBOutlet UILabel *songPickerCheck;
 @property (weak, nonatomic) IBOutlet UILabel *startDefaultPlaylistCheck;
 @property (weak, nonatomic) IBOutlet UILabel *menuCheck;
+@property (weak, nonatomic) IBOutlet UILabel *playCurrentAlbumCheck;
+@property (weak, nonatomic) IBOutlet UILabel *playCurrentArtistCheck;
 
 // display settings outlets
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;

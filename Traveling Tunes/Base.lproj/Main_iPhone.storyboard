@@ -2761,7 +2761,7 @@
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="✓" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Eax-Ee-Wnd">
-                                                    <rect key="frame" x="139" y="11" width="42" height="21"/>
+                                                    <rect key="frame" x="-22" y="11" width="42" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
@@ -2800,7 +2800,9 @@
                         <outlet property="pauseCheck" destination="JwW-Rc-2Lb" id="mIg-Un-GG3"/>
                         <outlet property="playCheck" destination="QlN-Ap-9El" id="LXC-Oo-qtP"/>
                         <outlet property="playCurrentAlbum" destination="OZW-P8-eah" id="7rw-vc-jTl"/>
+                        <outlet property="playCurrentAlbumCheck" destination="kyF-te-Ice" id="7FR-Sg-h2u"/>
                         <outlet property="playCurrentArtist" destination="HWp-Xy-r5d" id="ght-Xb-G8E"/>
+                        <outlet property="playCurrentArtistCheck" destination="V7N-Vq-gRY" id="6TD-kM-vgm"/>
                         <outlet property="playPauseCheck" destination="r6P-rA-TN4" id="8b6-W9-qff"/>
                         <outlet property="previousCheck" destination="QJn-n7-2RQ" id="JcN-u5-8cK"/>
                         <outlet property="restartCheck" destination="fH7-Tc-Lli" id="hml-S3-sfo"/>
