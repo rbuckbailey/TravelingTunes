@@ -292,6 +292,40 @@
                                     </tableViewCell>
                                 </cells>
                             </tableViewSection>
+                            <tableViewSection headerTitle="Advertising" id="AdN-Uq-EMt">
+                                <cells>
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="74j-5P-O34">
+                                        <rect key="frame" x="0.0" y="460" width="320" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="74j-5P-O34" id="hvN-Ke-Tpq">
+                                            <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Disable Ad Banners" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kWX-Sx-bCg">
+                                                    <rect key="frame" x="20" y="11" width="280" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="nTk-0U-C5p">
+                                                    <rect key="frame" x="251" y="6" width="51" height="31"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <connections>
+                                                        <action selector="disableAdBannersChanged:" destination="y2u-JY-5vJ" eventType="valueChanged" id="ggz-cn-Ihg"/>
+                                                    </connections>
+                                                </switch>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstAttribute="trailing" secondItem="nTk-0U-C5p" secondAttribute="trailing" constant="20" symbolic="YES" id="D6O-1B-E1q"/>
+                                                <constraint firstItem="nTk-0U-C5p" firstAttribute="centerY" secondItem="hvN-Ke-Tpq" secondAttribute="centerY" id="Wff-rp-eWy"/>
+                                                <constraint firstItem="kWX-Sx-bCg" firstAttribute="leading" secondItem="hvN-Ke-Tpq" secondAttribute="leading" constant="20" symbolic="YES" id="eS2-v3-z6K"/>
+                                                <constraint firstItem="kWX-Sx-bCg" firstAttribute="trailing" secondItem="nTk-0U-C5p" secondAttribute="trailing" id="nKc-lg-uLf"/>
+                                                <constraint firstItem="kWX-Sx-bCg" firstAttribute="centerY" secondItem="nTk-0U-C5p" secondAttribute="centerY" id="vh1-5r-vSd"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                </cells>
+                            </tableViewSection>
                         </sections>
                         <connections>
                             <outlet property="dataSource" destination="y2u-JY-5vJ" id="sQT-nO-AZR"/>
@@ -300,6 +334,7 @@
                     </tableView>
                     <navigationItem key="navigationItem" id="pYv-gi-koA"/>
                     <connections>
+                        <outlet property="disableAdBanners" destination="nTk-0U-C5p" id="Kg0-kG-QD5"/>
                         <outlet property="resetAllSettings" destination="IvI-xV-sn4" id="Bbm-bx-Cfd"/>
                         <outlet property="themeSelectionPreview" destination="esH-RK-Af1" id="1z4-t7-9oB"/>
                         <outlet property="themeSelectionPreviewLabel" destination="yXb-7I-CrA" id="5ru-V3-eP4"/>

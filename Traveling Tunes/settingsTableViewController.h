@@ -193,6 +193,8 @@
 - (IBAction)GPSVolumeToggleChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UILabel *GPSSensivityLabel;
 
+@property (weak, nonatomic) IBOutlet UISwitch *disableAdBanners;
+- (IBAction)disableAdBannersChanged:(id)sender;
 
 
 // passes data from view to view

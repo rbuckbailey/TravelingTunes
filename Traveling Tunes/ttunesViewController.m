@@ -124,7 +124,10 @@ MPMusicPlayerController*        mediaPlayer;
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self.navigationController setNavigationBarHidden:YES];
+    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) self.canDisplayBannerAds = NO; else self.canDisplayBannerAds = YES;
 
+    NSLog(@"ads are disabled? %@",[defaults objectForKey:@"disableAdBanners"]);
+    
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"NO"]) _albumArt.alpha = 0.0f;
     if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) mediaPlayer.shuffleMode = MPMusicShuffleModeSongs; else mediaPlayer.shuffleMode = MPMusicShuffleModeOff;
     if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) mediaPlayer.repeatMode = MPMusicRepeatModeAll; else mediaPlayer.repeatMode = MPMusicRepeatModeNone;
@@ -147,8 +150,6 @@ MPMusicPlayerController*        mediaPlayer;
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
-    self.canDisplayBannerAds = YES;
-
  
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;

@@ -21,9 +21,12 @@
 
 -(void)viewWillAppear:(BOOL)animated
 {
-    [self.navigationController setNavigationBarHidden:NO];
-    
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    [self.navigationController setNavigationBarHidden:NO];
+    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) {self.canDisplayBannerAds = NO; NSLog(@"foo");}
+    else self.canDisplayBannerAds = YES;
+    
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     //initialize check marks Action Selector view
@@ -111,6 +114,7 @@
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) _showActions.on = YES; else _showActions.on = NO;
     if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) _albumArtColors.on = YES; else _albumArtColors.on = NO;
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
+    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) _disableAdBanners.on = YES; else _disableAdBanners.on = NO;
     
     // to insert Navigation View titles
     //self.navigationItem.title = @"Test";
@@ -122,7 +126,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.canDisplayBannerAds = YES;
     UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"Done"
                                                                     style:UIBarButtonItemStyleDone target:self action:@selector(popToRoot)];
     self.navigationItem.rightBarButtonItem = rightButton;
@@ -894,6 +897,13 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_showAlbumArt.on) [defaults setObject:@"YES" forKey:@"showAlbumArt"];
     else [defaults setObject:@"NO" forKey:@"showAlbumArt"];
+    [defaults synchronize];
+}
+
+- (IBAction)disableAdBannersChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_disableAdBanners.on) [defaults setObject:@"YES" forKey:@"disableAdBanners"];
+    else [defaults setObject:@"NO" forKey:@"disableAdBanners"];
     [defaults synchronize];
 }
 @end

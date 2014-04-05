@@ -151,6 +151,7 @@
 				F41CF5E718E737BB00F7A148 /* ttunesNavViewController.m */,
 				8E3C8CEB189BF785004A90AE /* ttunesViewController.h */,
 				8E3C8CEC189BF785004A90AE /* ttunesViewController.m */,
+				F4EFA9EB18F06CC700173816 /* Playlist Classes */,
 				F41DA66A18D489D600D86912 /* Settings Pane Stuff */,
 				8E3C8CEE189BF785004A90AE /* Images.xcassets */,
 				8E3C8CDA189BF785004A90AE /* Supporting Files */,
@@ -194,10 +195,6 @@
 				8E4312DA18CE316B0037688F /* gestureAssignmentController.m */,
 				F4F25E8018D3E54D0083641B /* settingsTableViewController.h */,
 				F4F25E8118D3E54D0083641B /* settingsTableViewController.m */,
-				F435F9FC18E229D300C71345 /* playlistTableViewController.h */,
-				F435F9FD18E229D300C71345 /* playlistTableViewController.m */,
-				F41E16E418E9134D004FDB4F /* playlistTableViewCell.h */,
-				F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */,
 				F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */,
 				F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */,
 			);
@@ -213,6 +210,17 @@
 				F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */,
 			);
 			name = LEColorPicker;
+			sourceTree = "<group>";
+		};
+		F4EFA9EB18F06CC700173816 /* Playlist Classes */ = {
+			isa = PBXGroup;
+			children = (
+				F41E16E418E9134D004FDB4F /* playlistTableViewCell.h */,
+				F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */,
+				F435F9FC18E229D300C71345 /* playlistTableViewController.h */,
+				F435F9FD18E229D300C71345 /* playlistTableViewController.m */,
+			);
+			name = "Playlist Classes";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

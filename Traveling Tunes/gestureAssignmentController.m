@@ -55,6 +55,7 @@
     [defaults setObject:@"YES" forKey:@"showAlbumArt"];
     [defaults setObject:@"YES" forKey:@"albumArtColors"];
     [defaults setObject:@"YES" forKey:@"showActions"];
+    [defaults setObject:@"NO" forKey:@"disableAdBanners"];
 }
 
 - (void)initDisplaySettings {
