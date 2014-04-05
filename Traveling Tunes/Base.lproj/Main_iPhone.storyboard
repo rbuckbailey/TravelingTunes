@@ -68,6 +68,8 @@
                             <outletCollection property="gestureRecognizers" destination="Zcv-Wk-9xm" appends="YES" id="yAo-VF-y9q"/>
                             <outletCollection property="gestureRecognizers" destination="KpV-sg-Yej" appends="YES" id="m8j-ho-vUZ"/>
                             <outletCollection property="gestureRecognizers" destination="MOB-ej-Jm2" appends="YES" id="y5Z-so-N4I"/>
+                            <outletCollection property="gestureRecognizers" destination="bHq-na-Aex" appends="YES" id="o7o-t6-ewD"/>
+                            <outletCollection property="gestureRecognizers" destination="Emy-5s-can" appends="YES" id="qbt-S9-UoT"/>
                         </connections>
                     </view>
                     <navigationItem key="navigationItem" id="vAC-Uz-lP5"/>
@@ -90,11 +92,6 @@
                         <action selector="twoFingerTap:" destination="vXZ-lx-hvc" id="zNt-wY-gfB"/>
                     </connections>
                 </tapGestureRecognizer>
-                <tapGestureRecognizer cancelsTouchesInView="NO" numberOfTouchesRequired="3" id="bHq-na-Aex" userLabel="3 Tap Gesture Recognizer">
-                    <connections>
-                        <action selector="threeFingerTap:" destination="vXZ-lx-hvc" id="LDc-WI-SDV"/>
-                    </connections>
-                </tapGestureRecognizer>
                 <pongPressGestureRecognizer cancelsTouchesInView="NO" allowableMovement="10" minimumPressDuration="0.99999999999999989" id="Xfa-qB-Yyw" userLabel="1 Long Press Gesture Recognizer">
                     <connections>
                         <action selector="longPressDetected:" destination="vXZ-lx-hvc" id="lN4-w0-kjc"/>
@@ -105,6 +102,11 @@
                         <action selector="longPress2Detected:" destination="vXZ-lx-hvc" id="FDM-ac-p0G"/>
                     </connections>
                 </pongPressGestureRecognizer>
+                <tapGestureRecognizer cancelsTouchesInView="NO" numberOfTouchesRequired="3" id="bHq-na-Aex" userLabel="3 Tap Gesture Recognizer">
+                    <connections>
+                        <action selector="threeFingerTap:" destination="vXZ-lx-hvc" id="LDc-WI-SDV"/>
+                    </connections>
+                </tapGestureRecognizer>
                 <pongPressGestureRecognizer allowableMovement="30" minimumPressDuration="1" numberOfTouchesRequired="3" id="Emy-5s-can" userLabel="3 Long Press Gesture Recognizer">
                     <connections>
                         <action selector="longPress3Detected:" destination="vXZ-lx-hvc" id="T9J-Dy-3B9"/>
@@ -274,7 +276,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="vue-Hw-Mnm" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1586" y="-1513"/>
+            <point key="canvasLocation" x="1586" y="-125"/>
         </scene>
         <!--Settings Table View Controller-->
         <scene sceneID="x9U-YK-CIl">
@@ -1001,7 +1003,7 @@
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="wuA-EJ-HUu" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1586" y="-127"/>
+            <point key="canvasLocation" x="2120" y="539"/>
         </scene>
         <!--Settings Table View Controller - Layout-->
         <scene sceneID="cmH-TU-1FW">
