@@ -15,7 +15,7 @@
 MPMusicPlayerController*        mediaPlayer;
 
 @interface ttunesViewController ()
-@property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade;
+@property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade,*bgView;
 @property UILabel *actionHUD;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
@@ -165,7 +165,9 @@ MPMusicPlayerController*        mediaPlayer;
     _nightTimeFade = [[UIView alloc] init];
     _actionHUD = [[UILabel alloc] init];
     _albumArt = [[UIImageView alloc] init];
+    _bgView = [[UIImageView alloc] init];
 
+    [self.view addSubview:_bgView];
     [self.view addSubview:_albumArt];
     [self.view addSubview:_edgeViewBG];
     [self.view addSubview:_playbackEdgeViewBG];
@@ -186,7 +188,8 @@ MPMusicPlayerController*        mediaPlayer;
     _actionHUD.textColor = [UIColor clearColor];
     _actionHUD.userInteractionEnabled=NO;
     _nightTimeFade.frame=CGRectMake(0, 0, 600, 600);
-    
+    _bgView.frame=CGRectMake(0, 0, 600, 600);
+
     
     UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
     [self.view addGestureRecognizer:recognizer];
@@ -415,7 +418,7 @@ MPMusicPlayerController*        mediaPlayer;
         if (albumFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) albumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
     }
     //    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
-    self.view.backgroundColor = themebg;
+    _bgView.backgroundColor = themebg;
     
     //actually do the drawing
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
@@ -478,12 +481,12 @@ MPMusicPlayerController*        mediaPlayer;
             // so do a second check to see if it has at least 50x50 pixels
             if ([artwork imageWithSize:CGSizeMake(50,50)]) {
                 _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
-                _albumArt.alpha = 0.3f;
+                _albumArt.alpha = 0.25f;
                 _albumArt.contentMode = UIViewContentModeCenter;
 
                 if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
                     LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
-                    self.view.backgroundColor = [colorScheme backgroundColor];
+                    _bgView.backgroundColor = [colorScheme backgroundColor];
                     _artistTitle.textColor = [colorScheme primaryTextColor];
                     _songTitle.textColor = [colorScheme primaryTextColor];
                     _albumTitle.textColor = [colorScheme primaryTextColor];
