@@ -713,6 +713,7 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     CGPoint translation = [gesture translationInView:self.view];
     NSString *key,*keyContinuous;
+    static int lastGestureFingers;
 
     _direction = directionNone;
     
@@ -721,11 +722,12 @@ MPMusicPlayerController*        mediaPlayer;
     if (gesture.state == UIGestureRecognizerStateBegan)
     {
         _direction = directionNone;
+        lastGestureFingers = (unsigned long)gesture.numberOfTouches;
     }
 // this is continuous gesture, bad for some actions, good for others.
 //    else if (gesture.state == UIGestureRecognizerStateChanged)
 // this is trigger-once actions
-    else if (gesture.state == UIGestureRecognizerStateChanged && _direction == directionNone)
+    else if (gesture.state == UIGestureRecognizerStateChanged && _direction == directionNone && (unsigned long)gesture.numberOfTouches==lastGestureFingers)
     {
         _direction = [self determineSwipeDirectiond:translation];
        switch (_direction) {
