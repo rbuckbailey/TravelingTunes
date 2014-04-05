@@ -961,14 +961,17 @@ MPMusicPlayerController*        mediaPlayer;
 
 
 -(void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
-    _fingers = [[event allTouches]count];
+    int newFingers = [[event allTouches]count];
+    // do not count down -- otherwise, two fingers will trigger off three if the dismount is not perfectly even!
+    if (newFingers > _fingers) _fingers=newFingers;
     NSLog(@"currently %d fingers",_fingers);
 }
 
 //(unsigned long)gesture.numberOfTouches)
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
     NSUInteger numTaps = [[touches anyObject] tapCount];
-    _fingers = [[event allTouches]count];
+    int finalFingers = [[event allTouches]count];
+    if (_fingers==0) _fingers=finalFingers;
     NSLog(@"end %d fingers",_fingers);
     float delay = 0.3;
     switch (_fingers) {
@@ -1045,6 +1048,7 @@ MPMusicPlayerController*        mediaPlayer;
             break;
             
     }
+    _fingers=0;
 }
 
 
