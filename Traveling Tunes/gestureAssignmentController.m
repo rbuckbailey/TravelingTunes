@@ -15,14 +15,18 @@
 - (id)init {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (![defaults objectForKey:@"firstRun"]) {
-        [self initGestureAssignments];
-        [self initDisplaySettings];
-        [self initPlaylistSettings];
-        [self initThemes];
-        [self initOtherSettings];
+        [self initAllSettings];
         [defaults setObject:@"Yes!" forKey:@"firstRun"]; [defaults synchronize];
     } else [self loadThemes];
      return self;
+}
+
+- (void) initAllSettings {
+    [self initGestureAssignments];
+    [self initDisplaySettings];
+    [self initPlaylistSettings];
+    [self initThemes];
+    [self initOtherSettings];
 }
 
 - (void)initOtherSettings {

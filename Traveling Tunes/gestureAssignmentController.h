@@ -21,6 +21,7 @@
 - (void)initPlaylistSettings;
 - (void)initThemes;
 - (void)saveThemes;
+- (void)initAllSettings;
 
 @end
 

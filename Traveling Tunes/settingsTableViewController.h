@@ -9,8 +9,12 @@
 #import <UIKit/UIKit.h>
 #import "settingsTableViewCell.h"
 
+
+
 // controls settings outlets
 @interface settingsTableViewController : UITableViewController
+@property (weak, nonatomic) IBOutlet settingsTableViewCell *resetAllSettings;
+
 @property (weak, nonatomic) IBOutlet UITableViewCell *Nothing;
 @property (weak, nonatomic) IBOutlet UITableViewCell *Play;
 @property (weak, nonatomic) IBOutlet UITableViewCell *Pause;

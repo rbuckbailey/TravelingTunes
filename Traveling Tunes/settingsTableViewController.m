@@ -12,9 +12,12 @@
 
 
 @interface settingsTableViewController ()
+@property NSString *resetString;
+
 @end
 
 @implementation settingsTableViewController
+
 
 -(void)viewWillAppear:(BOOL)animated
 {
@@ -109,7 +112,7 @@
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) _showActions.on = YES; else _showActions.on = NO;
     if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) _albumArtColors.on = YES; else _albumArtColors.on = NO;
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
- 
+    
     // to insert Navigation View titles
     //self.navigationItem.title = @"Test";
 }
@@ -230,7 +233,8 @@
     else if (selection == _playCurrentAlbum) [self configure:@"PlayCurrentAlbum"];
     else if (selection == _playCurrentArtist) [self configure:@"PlayCurrentArtist"];
     else if (selection == _Menu) [self configure:@"Menu"];
-    else if (selection == _ResetGestureAssignments) [self initGestures];
+    else if (selection == _ResetGestureAssignments) [self confirmResetGestures];
+    else if (selection == _resetAllSettings) [self confirmResetAllSettings];
     
     // if a theme cell was selected, set current theme
     else if (selection == _themeGreyOnWhite) { [defaults setObject:@"Grey on White" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
@@ -303,14 +307,23 @@
     if(buttonIndex==0)
     {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        [gestureController initGestureAssignments];
+        if ([_resetString isEqual:@"gestures"]) [gestureController initGestureAssignments];
+        else if ([_resetString isEqual:@"all"]) [gestureController initAllSettings];
+
         [defaults synchronize];
     }
     
 }
 
-- (void)initGestures {
+- (void)confirmResetGestures {
     UIAlertView *updateAlert = [[UIAlertView alloc] initWithTitle: @"Confirm Reset" message: @"Are you sure you want to reset to defaults?" delegate: self cancelButtonTitle: @"YES"  otherButtonTitles:@"NO",nil];
+    _resetString = @"gestures";
+    [updateAlert show];
+}
+
+-(void)confirmResetAllSettings {
+    UIAlertView *updateAlert = [[UIAlertView alloc] initWithTitle: @"Confirm Reset" message: @"Are you sure you want to reset to defaults?" delegate: self cancelButtonTitle: @"YES"  otherButtonTitles:@"NO",nil];
+    _resetString = @"all";
     [updateAlert show];
 }
 

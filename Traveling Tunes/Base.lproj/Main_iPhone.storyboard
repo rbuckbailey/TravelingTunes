@@ -217,10 +217,39 @@
                                     </tableViewCell>
                                 </cells>
                             </tableViewSection>
+                            <tableViewSection headerTitle="Reset" id="tcA-6i-p8h">
+                                <cells>
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="submenu" id="IvI-xV-sn4" customClass="settingsTableViewCell">
+                                        <rect key="frame" x="0.0" y="284" width="320" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="IvI-xV-sn4" id="gd2-3z-oxK">
+                                            <rect key="frame" x="0.0" y="0.0" width="287" height="44"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Reset All Settings" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wpo-ZI-kI1">
+                                                    <rect key="frame" x="20" y="11" width="148" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="148" id="CAx-aK-sb9"/>
+                                                    </constraints>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="wpo-ZI-kI1" firstAttribute="top" secondItem="gd2-3z-oxK" secondAttribute="top" constant="11" id="35l-yf-Bab"/>
+                                                <constraint firstItem="wpo-ZI-kI1" firstAttribute="leading" secondItem="gd2-3z-oxK" secondAttribute="leading" constant="20" symbolic="YES" id="KfD-B3-MRy"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                        <gestureRecognizers/>
+                                    </tableViewCell>
+                                </cells>
+                            </tableViewSection>
                             <tableViewSection headerTitle="Quick Start" id="3lY-R6-fxo">
                                 <cells>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="submenu" id="nrR-0v-9xD" customClass="settingsTableViewCell">
-                                        <rect key="frame" x="0.0" y="284" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="350" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="nrR-0v-9xD" id="NEq-Kc-J6g">
                                             <rect key="frame" x="0.0" y="0.0" width="287" height="44"/>
@@ -250,6 +279,7 @@
                     </tableView>
                     <navigationItem key="navigationItem" id="pYv-gi-koA"/>
                     <connections>
+                        <outlet property="resetAllSettings" destination="IvI-xV-sn4" id="Bbm-bx-Cfd"/>
                         <outlet property="themeSelectionPreview" destination="esH-RK-Af1" id="1z4-t7-9oB"/>
                         <outlet property="themeSelectionPreviewLabel" destination="yXb-7I-CrA" id="5ru-V3-eP4"/>
                         <outlet property="themeSelectionPreviewTitle" destination="PpQ-Bp-Mey" id="Qf3-MF-Rwi"/>
@@ -1853,6 +1883,8 @@
                     </tableView>
                     <navigationItem key="navigationItem" id="Ik3-3J-k78"/>
                     <connections>
+                        <outlet property="albumArtColors" destination="Z5Q-sy-Mcp" id="jF7-Sv-Hvj"/>
+                        <outlet property="showAlbumArt" destination="uKh-zh-hFE" id="5Zz-fx-xwf"/>
                         <outlet property="themeBlush" destination="39U-ce-aG1" id="EGk-VU-Cua"/>
                         <outlet property="themeBlushCheck" destination="U4t-lo-kfS" id="gmZ-To-fY5"/>
                         <outlet property="themeBlushLabel" destination="beW-wb-Gt7" id="ekp-jN-XoK"/>
