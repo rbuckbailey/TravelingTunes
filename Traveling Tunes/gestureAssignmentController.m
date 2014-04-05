@@ -48,7 +48,9 @@
     [defaults setObject:@"YES" forKey:@"TitleScrollLong"];
     [defaults setObject:@"YES" forKey:@"GPSVolume"];
     [defaults setObject:@"0.5" forKey:@"GPSSensivity"];
-
+    [defaults setObject:@"YES" forKey:@"showAlbumArt"];
+    [defaults setObject:@"YES" forKey:@"albumArtColors"];
+    [defaults setObject:@"YES" forKey:@"showActions"];
 }
 
 - (void)initDisplaySettings {

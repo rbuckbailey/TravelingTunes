@@ -165,8 +165,11 @@ MPMusicPlayerController*        mediaPlayer;
     _actionHUD.backgroundColor = [UIColor clearColor];
     _actionHUD.textColor = [UIColor clearColor];
     _actionHUD.userInteractionEnabled=NO;
-    
     _nightTimeFade.frame=CGRectMake(0, 0, 600, 600);
+    [self.view bringSubviewToFront:_artistTitle];
+    [self.view bringSubviewToFront:_songTitle];
+    [self.view bringSubviewToFront:_albumTitle];
+    
     
     UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
     [self.view addGestureRecognizer:recognizer];
@@ -452,23 +455,23 @@ MPMusicPlayerController*        mediaPlayer;
         LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
 
-        if (artwork != nil)
+        if ((artwork != nil) & ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"])) {
             if ([artwork imageWithSize:CGSizeMake(50,50)]) {
-                LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
-                self.view.backgroundColor = [colorScheme backgroundColor];
-                _artistTitle.textColor = [colorScheme secondaryTextColor];
-                _songTitle.textColor = [colorScheme primaryTextColor];
-                _albumTitle.textColor = [colorScheme secondaryTextColor];
                 _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
                 _albumArt.alpha = 0.5f;
                 _albumArt.contentMode = UIViewContentModeCenter;
-                [_artistTitle setAlpha:1.0f];
-                [_songTitle setAlpha:1.0f];
-                [_albumTitle setAlpha:1.0f];
-                [self.view bringSubviewToFront:_artistTitle];
-                [self.view bringSubviewToFront:_songTitle];
-                [self.view bringSubviewToFront:_albumTitle];
-            } else _albumArt.alpha = 0.0f;
+
+                if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
+                    LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
+                    self.view.backgroundColor = [colorScheme backgroundColor];
+                    _artistTitle.textColor = [colorScheme secondaryTextColor];
+                    _songTitle.textColor = [colorScheme primaryTextColor];
+                    _albumTitle.textColor = [colorScheme secondaryTextColor];
+                    [_artistTitle setAlpha:1.0f];
+                    [_songTitle setAlpha:1.0f];
+                    [_albumTitle setAlpha:1.0f];
+                }
+            } } else _albumArt.alpha = 0.0f;
         
     }
 }

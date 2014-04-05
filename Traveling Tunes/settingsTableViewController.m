@@ -106,7 +106,10 @@
     if ([[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) _titleShrinkInPortrait.on = YES; else _titleShrinkInPortrait.on = NO;
     if ([[defaults objectForKey:@"TitleScrollLong"] isEqual:@"YES"]) _titleScrollLong.on = YES; else _titleScrollLong.on = NO;
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) _GPSVolumeToggle.on = YES; else _GPSVolumeToggle.on = NO;
-
+    if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) _showActions.on = YES; else _showActions.on = NO;
+    if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) _albumArtColors.on = YES; else _albumArtColors.on = NO;
+    if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
+ 
     // to insert Navigation View titles
     //self.navigationItem.title = @"Test";
 }
@@ -821,11 +824,25 @@
     else [defaults setObject:@"NO" forKey:@"GPSVolume"];
     [defaults synchronize];
 }
-- (IBAction)showActionsChange:(id)sender {
+
+- (IBAction)showActionsChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_showActions.on) [defaults setObject:@"YES" forKey:@"showActions"];
+    else [defaults setObject:@"NO" forKey:@"showActions"];
+    [defaults synchronize];
 }
+
 - (IBAction)albumArtColorsChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_albumArtColors.on) [defaults setObject:@"YES" forKey:@"albumArtColors"];
+    else [defaults setObject:@"NO" forKey:@"albumArtColors"];
+    [defaults synchronize];
 }
 
 - (IBAction)showAlbumArtChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_showAlbumArt.on) [defaults setObject:@"YES" forKey:@"showAlbumArt"];
+    else [defaults setObject:@"NO" forKey:@"showAlbumArt"];
+    [defaults synchronize];
 }
 @end
