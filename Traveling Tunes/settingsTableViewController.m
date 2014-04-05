@@ -821,4 +821,11 @@
     else [defaults setObject:@"NO" forKey:@"GPSVolume"];
     [defaults synchronize];
 }
+- (IBAction)showActionsChange:(id)sender {
+}
+- (IBAction)albumArtColorsChanged:(id)sender {
+}
+
+- (IBAction)showAlbumArtChanged:(id)sender {
+}
 @end

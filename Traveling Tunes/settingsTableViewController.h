@@ -102,6 +102,12 @@
 @property (weak, nonatomic) IBOutlet UILabel *themeLeafCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeHotDogStandCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeCustomCheck;
+@property (weak, nonatomic) IBOutlet UISwitch *showAlbumArt;
+@property (weak, nonatomic) IBOutlet UISwitch *albumArtColors;
+- (IBAction)albumArtColorsChanged:(id)sender;
+- (IBAction)showAlbumArtChanged:(id)sender;
+
+
 
 // display preview cells and labels
 @property (weak, nonatomic) IBOutlet UILabel *themeSelectionPreviewTitle;
@@ -139,6 +145,11 @@
 - (IBAction)sunSetChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISwitch *invertAtNight;
 - (IBAction)invertAtNightChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *showActions;
+- (IBAction)showActionsChanged:(id)sender;
+
+
+
 
 //continuous gesture sensitivity sliders
 @property (weak, nonatomic) IBOutlet UISlider *volumeSensitivitySlider;

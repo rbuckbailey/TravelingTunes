@@ -22,6 +22,7 @@ MPMusicPlayerController*        mediaPlayer;
 @property int activeOrientation;
 @property (strong, nonatomic) CLLocationManager *locationManager;
 @property int baseVolume;
+@property UIImageView *albumArt;
 
 @end
 
@@ -59,6 +60,7 @@ MPMusicPlayerController*        mediaPlayer;
     //clear actionHUD if action
     _actionHUD.backgroundColor = [UIColor clearColor];
     _actionHUD.textColor = [UIColor clearColor];
+    _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height);
     [self setupLabels];
     [self setupHUD];
 }
@@ -145,7 +147,9 @@ MPMusicPlayerController*        mediaPlayer;
     _playbackLineView = [[UIView alloc] init];
     _nightTimeFade = [[UIView alloc] init];
     _actionHUD = [[UILabel alloc] init];
-    
+    _albumArt = [[UIImageView alloc] init];
+
+    [self.view addSubview:_albumArt];
     [self.view addSubview:_edgeViewBG];
     [self.view addSubview:_playbackEdgeViewBG];
     [self.view addSubview:_lineView];
@@ -359,6 +363,7 @@ MPMusicPlayerController*        mediaPlayer;
         else _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5f];
     } else _nightTimeFade.backgroundColor = [UIColor clearColor];
     
+
     
     //setup colors and alignment and font sizing
     switch ((int)[[defaults objectForKey:@"artistAlignment"] floatValue]) {
@@ -441,6 +446,30 @@ MPMusicPlayerController*        mediaPlayer;
         [_albumTitle setAlpha:0.6f];
         _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
+        
+        
+        //LEColorPicker colors
+        LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
+        MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
+
+        if (artwork != nil)
+            if ([artwork imageWithSize:CGSizeMake(50,50)]) {
+                LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
+                self.view.backgroundColor = [colorScheme backgroundColor];
+                _artistTitle.textColor = [colorScheme secondaryTextColor];
+                _songTitle.textColor = [colorScheme primaryTextColor];
+                _albumTitle.textColor = [colorScheme secondaryTextColor];
+                _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
+                _albumArt.alpha = 0.5f;
+                _albumArt.contentMode = UIViewContentModeCenter;
+                [_artistTitle setAlpha:1.0f];
+                [_songTitle setAlpha:1.0f];
+                [_albumTitle setAlpha:1.0f];
+                [self.view bringSubviewToFront:_artistTitle];
+                [self.view bringSubviewToFront:_songTitle];
+                [self.view bringSubviewToFront:_albumTitle];
+            } else _albumArt.alpha = 0.0f;
+        
     }
 }
 
