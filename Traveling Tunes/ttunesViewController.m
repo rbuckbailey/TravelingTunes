@@ -147,6 +147,7 @@ MPMusicPlayerController*        mediaPlayer;
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
+
  
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
