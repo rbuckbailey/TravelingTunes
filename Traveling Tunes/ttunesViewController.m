@@ -120,7 +120,9 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)viewWillAppear:(BOOL)animated
 {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self.navigationController setNavigationBarHidden:YES];
+    if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"NO"]) _albumArt.alpha = 0.0f;
     [self setupLabels];
     [self setupHUD];
     [self setupSystemHUD];
@@ -128,6 +130,7 @@ MPMusicPlayerController*        mediaPlayer;
     [self scrollingTimerKiller];
     [self firstStartTimer];
     [self startPlaybackWatcher];
+    
 }
 
 - (void)viewDidLoad
@@ -154,8 +157,11 @@ MPMusicPlayerController*        mediaPlayer;
     [self.view addSubview:_playbackEdgeViewBG];
     [self.view addSubview:_lineView];
     [self.view addSubview:_playbackLineView];
-    [self.view addSubview:_nightTimeFade];
+    [self.view bringSubviewToFront:_artistTitle];
+    [self.view bringSubviewToFront:_songTitle];
+    [self.view bringSubviewToFront:_albumTitle];
     [self.view addSubview:_actionHUD];
+    [self.view addSubview:_nightTimeFade];
 
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
@@ -166,9 +172,6 @@ MPMusicPlayerController*        mediaPlayer;
     _actionHUD.textColor = [UIColor clearColor];
     _actionHUD.userInteractionEnabled=NO;
     _nightTimeFade.frame=CGRectMake(0, 0, 600, 600);
-    [self.view bringSubviewToFront:_artistTitle];
-    [self.view bringSubviewToFront:_songTitle];
-    [self.view bringSubviewToFront:_albumTitle];
     
     
     UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSwipe:)];
@@ -464,14 +467,15 @@ MPMusicPlayerController*        mediaPlayer;
                 if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
                     LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
                     self.view.backgroundColor = [colorScheme backgroundColor];
-                    _artistTitle.textColor = [colorScheme secondaryTextColor];
-                    _songTitle.textColor = [colorScheme primaryTextColor];
-                    _albumTitle.textColor = [colorScheme secondaryTextColor];
+                    _artistTitle.textColor = [colorScheme primaryTextColor];
+                    _songTitle.textColor = [colorScheme secondaryTextColor];
+                    _albumTitle.textColor = [colorScheme primaryTextColor];
                     [_artistTitle setAlpha:1.0f];
                     [_songTitle setAlpha:1.0f];
                     [_albumTitle setAlpha:1.0f];
                 }
-            } } else _albumArt.alpha = 0.0f;
+            }  else _albumArt.alpha = 0.0f;
+        }
         
     }
 }
