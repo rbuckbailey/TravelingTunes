@@ -22,6 +22,7 @@ MPMusicPlayerController*        mediaPlayer;
 @property int activeOrientation;
 @property (strong, nonatomic) CLLocationManager *locationManager;
 @property int baseVolume;
+@property int fingers;
 @property UIImageView *albumArt;
 
 @end
@@ -907,47 +908,142 @@ MPMusicPlayerController*        mediaPlayer;
 
 
 /*** tappytime ***/
--(void)singleTap{
+-(void)oneFingerSingleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
-    NSLog(@"gesture is %@",[defaults objectForKey:@"11Tap"]);
 }
--(void)doubleTap{
+-(void)oneFingerDoubleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"12Tap"]:@"12Tap"];
 }
--(void)tripleTap{
+-(void)oneFingerTripleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"13Tap"]:@"13Tap"];
 }
--(void)quadrupleTap{
+-(void)oneFingerQuadrupleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"14Tap"]:@"14Tap"];
+}
+
+-(void)twoFingerSingleTap{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"21Tap"]:@"21Tap"];
+}
+-(void)twoFingerDoubleTap{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"22Tap"]:@"22Tap"];
+}
+-(void)twoFingerTripleTap{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"23Tap"]:@"23Tap"];
+}
+-(void)twoFingerQuadrupleTap{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"24Tap"]:@"24Tap"];
+}
+
+-(void)threeFingerSingleTap{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"31Tap"]:@"31Tap"];
+}
+-(void)threeFingerDoubleTap{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"32Tap"]:@"32Tap"];
+}
+-(void)threeFingerTripleTap{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"33Tap"]:@"33Tap"];
+}
+-(void)threeFingerQuadrupleTap{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self performPlayerAction:[defaults objectForKey:@"34Tap"]:@"34Tap"];
+}
+
+
+-(void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
+    _fingers = [[event allTouches]count];
+    NSLog(@"currently %d fingers",_fingers);
 }
 
 //(unsigned long)gesture.numberOfTouches)
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
     NSUInteger numTaps = [[touches anyObject] tapCount];
+    _fingers = [[event allTouches]count];
+    NSLog(@"end %d fingers",_fingers);
     float delay = 0.3;
-    if (numTaps < 2)
-    {
-        [self performSelector:@selector(singleTap) withObject:nil afterDelay:delay ];
-        [self.nextResponder touchesEnded:touches withEvent:event];
-    }
-    else if(numTaps == 2)
-    {
-        [NSObject cancelPreviousPerformRequestsWithTarget:self];
-        [self performSelector:@selector(doubleTap) withObject:nil afterDelay:delay ];
-    }
-    else if(numTaps == 3)
-    {
-        [NSObject cancelPreviousPerformRequestsWithTarget:self];
-        [self performSelector:@selector(tripleTap) withObject:nil afterDelay:delay ];
-    }
-    else if(numTaps == 4)
-    {
-        [NSObject cancelPreviousPerformRequestsWithTarget:self];
-        [self performSelector:@selector(quadrupleTap) withObject:nil afterDelay:delay ];
+    switch (_fingers) {
+        case 1:
+            if (numTaps < 2)
+            {
+                [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
+                [self.nextResponder touchesEnded:touches withEvent:event];
+            }
+            else if(numTaps == 2)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(oneFingerDoubleTap) withObject:nil afterDelay:delay ];
+            }
+            else if(numTaps == 3)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(oneFingerTripleTap) withObject:nil afterDelay:delay ];
+            }
+            else if(numTaps == 4)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(oneFingerQuadrupleTap) withObject:nil afterDelay:delay ];
+            }
+            break;
+            
+        case 2:
+            if (numTaps < 2)
+            {
+                [self performSelector:@selector(twoFingerSingleTap) withObject:nil afterDelay:delay ];
+                [self.nextResponder touchesEnded:touches withEvent:event];
+            }
+            else if(numTaps == 2)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(twoFingerDoubleTap) withObject:nil afterDelay:delay ];
+            }
+            else if(numTaps == 3)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(twoFingerTripleTap) withObject:nil afterDelay:delay ];
+            }
+            else if(numTaps == 4)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(twoFingerQuadrupleTap) withObject:nil afterDelay:delay ];
+            }
+            break;
+            
+        case 3:
+            if (numTaps < 2)
+            {
+                [self performSelector:@selector(threeFingerSingleTap) withObject:nil afterDelay:delay ];
+                [self.nextResponder touchesEnded:touches withEvent:event];
+            }
+            else if(numTaps == 2)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(threeFingerDoubleTap) withObject:nil afterDelay:delay ];
+            }
+            else if(numTaps == 3)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(threeFingerTripleTap) withObject:nil afterDelay:delay ];
+            }
+            else if(numTaps == 4)
+            {
+                [NSObject cancelPreviousPerformRequestsWithTarget:self];
+                [self performSelector:@selector(threeFingerQuadrupleTap) withObject:nil afterDelay:delay ];
+            }
+           break;
+            
+        default:
+            break;
+            
     }
 }
 
@@ -1008,7 +1104,6 @@ MPMusicPlayerController*        mediaPlayer;
     _volumeTarget = _volumeTarget+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _volumeTenth = _volumeBase/100;
     [self setupHUD];
-    NSLog(@"%f",[[defaults objectForKey:@"volumeSensitivity"] floatValue]);
 }
 
 - (void) decreaseVolume {
