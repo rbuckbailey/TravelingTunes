@@ -56,6 +56,9 @@ MPMusicPlayerController*        mediaPlayer;
         }
         _activeOrientation = orientation;
     }
+    //clear actionHUD if action
+    _actionHUD.backgroundColor = [UIColor clearColor];
+    _actionHUD.textColor = [UIColor clearColor];
     [self setupLabels];
     [self setupHUD];
 }
@@ -538,12 +541,10 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void) startActionHUDFadeTimer {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    
         [self fadeActionHUDTimerKiller];
         _fadeActionHUDAlpha = CGColorGetAlpha(_actionHUD.backgroundColor.CGColor);
         
-        self.actionHUDFadeTimer = [NSTimer scheduledTimerWithTimeInterval: 2.5f
+        self.actionHUDFadeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.75f
                                                              target: self
                                                            selector: @selector(fadeActionHUD)
                                                            userInfo: nil
@@ -570,7 +571,7 @@ MPMusicPlayerController*        mediaPlayer;
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
-    if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"])) {
+    if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"]|[action isEqual:@"Unassigned"])) {
         _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
         _actionHUD.textAlignment=NSTextAlignmentCenter;
         _actionHUD.font = [UIFont systemFontOfSize:120];
@@ -579,12 +580,12 @@ MPMusicPlayerController*        mediaPlayer;
         _actionHUD.layer.cornerRadius = 10;
         _actionHUD.lineBreakMode = NSLineBreakByClipping;
 
-        if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u21fd"; //@"\u2190";
+        if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u2190"; //@"\u2190";
         else if ([action isEqual:@"FastForward"]) _actionHUD.text = @"\u2192";
         else if ([action isEqual:@"Play"]) _actionHUD.text = @"|>";
         else if ([action isEqual:@"Pause"]) _actionHUD.text = @"\u220e\u220e";
         else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u220e\u220e";
-        else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u25b8";
+        else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u25b8"; //@"\u2023"; //@"\u25ba";
         else if ([action isEqual:@"VolumeUp"]) _actionHUD.text = @"\u2191";
         else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
         else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
@@ -905,6 +906,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     NSLog(@"Performing action %@",action);
+    if (!([action isEqual:@"FastForward"]|[action isEqual:@"Rewind"])) [self drawActionHUD:action];
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) { [self.scrubTimer invalidate]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
@@ -923,7 +925,6 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"PlayAllArtist"]) [self playAllByArtist];
     else if ([action isEqual:@"PlayAlbum"]) [self playAllByAlbum];
     [self setupLabels];
-    if (!([action isEqual:@"FastForward"]|[action isEqual:@"Rewind"])) [self drawActionHUD:action];
 }
 
 -(void) next {
