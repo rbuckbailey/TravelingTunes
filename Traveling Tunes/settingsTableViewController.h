@@ -26,6 +26,8 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *VolumeUp;
 @property (weak, nonatomic) IBOutlet UITableViewCell *VolumeDown;
 @property (weak, nonatomic) IBOutlet UITableViewCell *startDefaultPlaylist;
+@property (weak, nonatomic) IBOutlet UITableViewCell *playCurrentArtist;
+@property (weak, nonatomic) IBOutlet UITableViewCell *playCurrentAlbum;
 @property (weak, nonatomic) IBOutlet settingsTableViewCell *ResetGestureAssignments;
 @property (weak, nonatomic) IBOutlet UILabel *nothingCheck;
 @property (weak, nonatomic) IBOutlet UILabel *playCheck;

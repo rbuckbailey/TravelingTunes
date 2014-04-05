@@ -227,6 +227,8 @@
     else if (selection == _VolumeUp) [self configure:@"VolumeUp"];
     else if (selection == _VolumeDown) [self configure:@"VolumeDown"];
     else if (selection == _startDefaultPlaylist) [self configure:@"StartDefaultPlaylist"];
+    else if (selection == _playCurrentAlbum) [self configure:@"PlayCurrentAlbum"];
+    else if (selection == _playCurrentArtist) [self configure:@"PlayCurrentArtist"];
     else if (selection == _Menu) [self configure:@"Menu"];
     else if (selection == _ResetGestureAssignments) [self initGestures];
     
@@ -251,7 +253,7 @@
      SHARE/TWEET/FB SONG ?
      SKIP FORWARD/BACK 5, 10, 20 SECONDS
      */
-    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+//    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 #pragma mark - Navigation
@@ -842,7 +844,7 @@
 - (IBAction)GPSSensitivityChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:_GPSSensitivitySlider.value] forKey:@"GPSSensivity"];
-    _GPSSensivityLabel.text = [NSString stringWithFormat:@"%f",[[defaults objectForKey:@"GPSSensivity"] floatValue]];
+    _GPSSensivityLabel.text = [NSString stringWithFormat:@"%f",round([[defaults objectForKey:@"GPSSensivity"] floatValue]*10)/10];
     [defaults synchronize];
 }
 

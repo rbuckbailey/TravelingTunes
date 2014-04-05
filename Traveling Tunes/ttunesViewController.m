@@ -110,12 +110,12 @@ MPMusicPlayerController*        mediaPlayer;
 
     [self setupHUD];
     
-    NSLog(@"***");
+/*    NSLog(@"***");
     NSLog(@"base volume:%f",_volumeBase);
     NSLog(@"real volume:%f",mediaPlayer.volume);
     NSLog(@"target volume:%f",_volumeTarget);
     NSLog(@"Speed %f is %f mph", newLocation.speed,newLocation.speed*2.23694);
-
+*/
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -965,8 +965,8 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playDefaultPlaylist];
     else if ([action isEqual:@"SongPicker"]) [self showSongPicker];
-    else if ([action isEqual:@"PlayAllArtist"]) [self playAllByArtist];
-    else if ([action isEqual:@"PlayAlbum"]) [self playAllByAlbum];
+    else if ([action isEqual:@"PlayCurrentArtist"]) [self playCurrentArtist];
+    else if ([action isEqual:@"PlayCurrentAlbum"]) [self playCurrentAlbum];
     [self setupLabels];
 }
 
@@ -1110,8 +1110,8 @@ MPMusicPlayerController*        mediaPlayer;
     
     NSLog(@"Playing %@",[defaults objectForKey:@"playlist"]);
     
-    if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Title"]) [self playAllByAlbum];
-    else if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Album"]) [self playAllSongs];
+    if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Title"]) [self playAllSongs];
+    else if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Album"]) [self playAllByAlbum];
     else [self playConcretePlaylist];
 }
 
@@ -1123,11 +1123,16 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 
--(void) playAllByArtist {
+-(void) playCurrentArtist {
+    //Create a query that will return all songs by The Beatles grouped by album
+    //    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
+    //    [query setGroupingType:MPMediaGroupingAlbum];
     MPMediaQuery* query = [MPMediaQuery songsQuery];
-    NSString *currentSongTitle = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:currentSongTitle forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
-    //[query setGroupingType:MPMediaGroupingAlbum];
+    NSString *currentArtist = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
+    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:currentArtist forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
+    [query setGroupingType:MPMediaGroupingAlbum];
+    [mediaPlayer setQueueWithQuery:query];
+    [mediaPlayer play];
 }
 
 
@@ -1135,13 +1140,11 @@ MPMusicPlayerController*        mediaPlayer;
     MPMediaQuery* query = [MPMediaQuery songsQuery];
     [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] forProperty:MPMediaItemPropertyAlbumTitle comparisonType:MPMediaPredicateComparisonEqualTo]];
     [query setGroupingType:MPMediaGroupingAlbum];
+    [mediaPlayer setQueueWithQuery:query];
+    [mediaPlayer play];
 }
 
 - (void)playAllSongs {
-    //Create a query that will return all songs by The Beatles grouped by album
-//    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
-//    [query setGroupingType:MPMediaGroupingAlbum];
-    
     MPMediaQuery* query = [MPMediaQuery songsQuery];
     
     //Pass the query to the player
