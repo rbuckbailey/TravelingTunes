@@ -16,8 +16,9 @@ MPMusicPlayerController*        mediaPlayer;
 
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade;
+@property UILabel *actionHUD;
 @property int timersRunning;
-@property float adjustedSongFontSize,fadeHUDalpha;
+@property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
 @property (strong, nonatomic) CLLocationManager *locationManager;
 @property int baseVolume;
@@ -140,18 +141,23 @@ MPMusicPlayerController*        mediaPlayer;
     _playbackEdgeViewBG = [[UIView alloc] init];
     _playbackLineView = [[UIView alloc] init];
     _nightTimeFade = [[UIView alloc] init];
+    _actionHUD = [[UILabel alloc] init];
     
     [self.view addSubview:_edgeViewBG];
     [self.view addSubview:_playbackEdgeViewBG];
     [self.view addSubview:_lineView];
     [self.view addSubview:_playbackLineView];
     [self.view addSubview:_nightTimeFade];
+    [self.view addSubview:_actionHUD];
 
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
     _playbackLineView.backgroundColor = [UIColor clearColor];
     _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
     _nightTimeFade.backgroundColor = [UIColor clearColor];
+    _actionHUD.backgroundColor = [UIColor clearColor];
+    _actionHUD.textColor = [UIColor clearColor];
+    _actionHUD.userInteractionEnabled=NO;
     
     _nightTimeFade.frame=CGRectMake(0, 0, 600, 600);
     
@@ -456,6 +462,36 @@ MPMusicPlayerController*        mediaPlayer;
     NSLog(@"text size %f by %f",textSize.width,textSize.height);
 }
 
+
+-(void) fadeActionHUDloop {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    const CGFloat* components = CGColorGetComponents(_actionHUD.backgroundColor.CGColor);
+    NSLog(@"Red: %f", components[0]);
+    NSLog(@"Green: %f", components[1]);
+    NSLog(@"Blue: %f", components[2]);
+    NSLog(@"Alpha: %f", CGColorGetAlpha(_actionHUD.textColor.CGColor));
+    float red=components[0];
+    float green=components[1];
+    float blue=components[2];
+    components = CGColorGetComponents(_actionHUD.backgroundColor.CGColor);
+    float bgred=components[0];
+    float bggreen=components[1];
+    float bgblue=components[2];
+
+    _actionHUD.backgroundColor = [UIColor colorWithRed:bgred green:bggreen blue:bgblue alpha:_fadeActionHUDAlpha];
+    _actionHUD.textColor = [UIColor colorWithRed:red green:green blue:blue alpha:_fadeActionHUDAlpha];
+    _fadeActionHUDAlpha = _fadeActionHUDAlpha-0.05f;
+    if (_fadeActionHUDAlpha <= 0 ) {
+        [self fadeActionHUDTimerKiller];
+        _actionHUD.backgroundColor = [UIColor clearColor];
+        _actionHUD.textColor = [UIColor clearColor];
+
+    }
+    //    NSLog(@"fading alpha is %f",_fadeHUDalpha);
+    
+}
+
 -(void) fadeHUDloop {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
@@ -492,11 +528,39 @@ MPMusicPlayerController*        mediaPlayer;
                                                         repeats: YES];
 }
 
+-(void) fadeActionHUD {
+    self.actionHUDFadeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.05f
+                                                         target: self
+                                                       selector: @selector(fadeActionHUDloop)
+                                                       userInfo: nil
+                                                        repeats: YES];
+}
+
+-(void)fadeActionHUDTimerKiller {
+    //    NSLog(@"fadeHUDTimerKiller");
+    if ( [[self actionHUDFadeTimer] isValid]){
+        [[self actionHUDFadeTimer] invalidate];
+    }
+}
+
 -(void)fadeHUDTimerKiller {
 //    NSLog(@"fadeHUDTimerKiller");
     if ( [[self fadeHUDTimer] isValid]){
         [[self fadeHUDTimer] invalidate];
     }
+}
+
+-(void) startActionHUDFadeTimer {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+        [self fadeActionHUDTimerKiller];
+        _fadeActionHUDAlpha = CGColorGetAlpha(_actionHUD.backgroundColor.CGColor);
+        
+        self.actionHUDFadeTimer = [NSTimer scheduledTimerWithTimeInterval: 2.5f
+                                                             target: self
+                                                           selector: @selector(fadeActionHUD)
+                                                           userInfo: nil
+                                                            repeats: NO];
 }
 
 -(void) startFadeHUDTimer {
@@ -513,6 +577,21 @@ MPMusicPlayerController*        mediaPlayer;
                                                 userInfo: nil
                                                  repeats: NO];
     }
+}
+
+-(void) drawActionHUD {
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+//    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+
+    _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
+    _actionHUD.text = @"T";
+    _actionHUD.textAlignment=NSTextAlignmentCenter;
+    _actionHUD.font = [UIFont systemFontOfSize:120];
+    _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.75f];
+    _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75f];
+    _actionHUD.layer.cornerRadius = 10;
+    
+    [self startActionHUDFadeTimer];
 }
 
 -(void) setupHUD {
@@ -838,11 +917,11 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"VolumeUp"]) [self increaseVolume];
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playDefaultPlaylist];
-//    else if ([action isEqual:@"SongPicker"]) NSLog(@"Song picker");
     else if ([action isEqual:@"SongPicker"]) [self showSongPicker];
     else if ([action isEqual:@"PlayAllArtist"]) [self playAllByArtist];
     else if ([action isEqual:@"PlayAlbum"]) [self playAllByAlbum];
     [self setupLabels];
+    [self drawActionHUD];
 }
 
 -(void) next {

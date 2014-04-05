@@ -26,7 +26,7 @@ typedef enum : NSInteger {
 @property (weak, nonatomic) IBOutlet UILabel *artistTitle;
 @property (weak, nonatomic) IBOutlet UILabel *songTitle;
 @property (weak, nonatomic) IBOutlet UILabel *albumTitle;
-@property NSTimer *marqueeTimer,*scrollingTimer,*scrubTimer,*fadeHUDTimer,*DNRTimer;
+@property NSTimer *marqueeTimer,*scrollingTimer,*scrubTimer,*fadeHUDTimer,*actionHUDFadeTimer,*DNRTimer;
 @property MPVolumeView* volume;
 @property NSInteger marqueePosition;
 @property CLLocationManager *gps;
