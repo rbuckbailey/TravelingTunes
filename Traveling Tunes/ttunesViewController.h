@@ -10,6 +10,7 @@
 #import <MediaPlayer/MediaPlayer.h>
 #import "gestureAssignmentController.h"
 #import <CoreLocation/CoreLocation.h>
+#import "LEColorPicker.h"
 
 CGFloat const gestureMinimumTranslation = 20.0;
 

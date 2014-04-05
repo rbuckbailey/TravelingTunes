@@ -26,6 +26,8 @@
 		F41CF5E818E737BB00F7A148 /* ttunesNavViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F41CF5E718E737BB00F7A148 /* ttunesNavViewController.m */; };
 		F41E16E618E9134D004FDB4F /* playlistTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */; };
 		F435F9FE18E229D300C71345 /* playlistTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F435F9FD18E229D300C71345 /* playlistTableViewController.m */; };
+		F4B7DA9818EF9857008170BF /* LEColorPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9718EF9857008170BF /* LEColorPicker.m */; };
+		F4B7DA9B18EF98D0008170BF /* UIColor+YUVSpace.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */; };
 		F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8118D3E54D0083641B /* settingsTableViewController.m */; };
 		F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */; };
 /* End PBXBuildFile section */
@@ -69,6 +71,10 @@
 		F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = playlistTableViewCell.m; sourceTree = "<group>"; };
 		F435F9FC18E229D300C71345 /* playlistTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playlistTableViewController.h; sourceTree = "<group>"; };
 		F435F9FD18E229D300C71345 /* playlistTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = playlistTableViewController.m; sourceTree = "<group>"; };
+		F4B7DA9618EF9844008170BF /* LEColorPicker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LEColorPicker.h; sourceTree = "<group>"; };
+		F4B7DA9718EF9857008170BF /* LEColorPicker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LEColorPicker.m; sourceTree = "<group>"; };
+		F4B7DA9918EF989F008170BF /* UIColor+YUVSpace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "UIColor+YUVSpace.h"; path = "../UIColor+YUVSpace.h"; sourceTree = "<group>"; };
+		F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIColor+YUVSpace.m"; sourceTree = "<group>"; };
 		F4F25E8018D3E54D0083641B /* settingsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewController.h; sourceTree = "<group>"; };
 		F4F25E8118D3E54D0083641B /* settingsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settingsTableViewController.m; sourceTree = "<group>"; };
 		F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewCell.h; sourceTree = "<group>"; };
@@ -140,6 +146,10 @@
 				F41CF5E718E737BB00F7A148 /* ttunesNavViewController.m */,
 				8E3C8CEB189BF785004A90AE /* ttunesViewController.h */,
 				8E3C8CEC189BF785004A90AE /* ttunesViewController.m */,
+				F4B7DA9618EF9844008170BF /* LEColorPicker.h */,
+				F4B7DA9718EF9857008170BF /* LEColorPicker.m */,
+				F4B7DA9918EF989F008170BF /* UIColor+YUVSpace.h */,
+				F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */,
 				F41DA66A18D489D600D86912 /* Settings Pane Stuff */,
 				8E3C8CEE189BF785004A90AE /* Images.xcassets */,
 				8E3C8CDA189BF785004A90AE /* Supporting Files */,
@@ -302,9 +312,11 @@
 			files = (
 				8E4312DB18CE316B0037688F /* gestureAssignmentController.m in Sources */,
 				F41E16E618E9134D004FDB4F /* playlistTableViewCell.m in Sources */,
+				F4B7DA9818EF9857008170BF /* LEColorPicker.m in Sources */,
 				8E3C8CED189BF785004A90AE /* ttunesViewController.m in Sources */,
 				8E3C8CE0189BF785004A90AE /* main.m in Sources */,
 				F41CF5E818E737BB00F7A148 /* ttunesNavViewController.m in Sources */,
+				F4B7DA9B18EF98D0008170BF /* UIColor+YUVSpace.m in Sources */,
 				F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */,
 				F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */,
 				F435F9FE18E229D300C71345 /* playlistTableViewController.m in Sources */,
