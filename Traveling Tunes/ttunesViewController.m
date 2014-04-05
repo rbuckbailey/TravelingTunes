@@ -464,23 +464,10 @@ MPMusicPlayerController*        mediaPlayer;
 
 
 -(void) fadeActionHUDloop {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    
-    const CGFloat* components = CGColorGetComponents(_actionHUD.backgroundColor.CGColor);
-    NSLog(@"Red: %f", components[0]);
-    NSLog(@"Green: %f", components[1]);
-    NSLog(@"Blue: %f", components[2]);
-    NSLog(@"Alpha: %f", CGColorGetAlpha(_actionHUD.textColor.CGColor));
-    float red=components[0];
-    float green=components[1];
-    float blue=components[2];
-    components = CGColorGetComponents(_actionHUD.backgroundColor.CGColor);
-    float bgred=components[0];
-    float bggreen=components[1];
-    float bgblue=components[2];
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    _actionHUD.backgroundColor = [UIColor colorWithRed:bgred green:bggreen blue:bgblue alpha:_fadeActionHUDAlpha];
-    _actionHUD.textColor = [UIColor colorWithRed:red green:green blue:blue alpha:_fadeActionHUDAlpha];
+    _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:_fadeActionHUDAlpha];
+    _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:_fadeActionHUDAlpha];
     _fadeActionHUDAlpha = _fadeActionHUDAlpha-0.05f;
     if (_fadeActionHUDAlpha <= 0 ) {
         [self fadeActionHUDTimerKiller];
