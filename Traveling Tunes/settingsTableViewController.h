@@ -8,6 +8,7 @@
 
 #import <UIKit/UIKit.h>
 #import "settingsTableViewCell.h"
+#import <iAd/iAd.h>
 
 
 

@@ -28,6 +28,7 @@
 		F435F9FE18E229D300C71345 /* playlistTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F435F9FD18E229D300C71345 /* playlistTableViewController.m */; };
 		F4B7DA9818EF9857008170BF /* LEColorPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9718EF9857008170BF /* LEColorPicker.m */; };
 		F4B7DA9B18EF98D0008170BF /* UIColor+YUVSpace.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */; };
+		F4EFA9EA18F068F200173816 /* iAd.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4EFA9E918F068F200173816 /* iAd.framework */; };
 		F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8118D3E54D0083641B /* settingsTableViewController.m */; };
 		F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */; };
 /* End PBXBuildFile section */
@@ -75,6 +76,7 @@
 		F4B7DA9718EF9857008170BF /* LEColorPicker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LEColorPicker.m; sourceTree = "<group>"; };
 		F4B7DA9918EF989F008170BF /* UIColor+YUVSpace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "UIColor+YUVSpace.h"; path = "../UIColor+YUVSpace.h"; sourceTree = "<group>"; };
 		F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIColor+YUVSpace.m"; sourceTree = "<group>"; };
+		F4EFA9E918F068F200173816 /* iAd.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = iAd.framework; path = System/Library/Frameworks/iAd.framework; sourceTree = SDKROOT; };
 		F4F25E8018D3E54D0083641B /* settingsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewController.h; sourceTree = "<group>"; };
 		F4F25E8118D3E54D0083641B /* settingsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settingsTableViewController.m; sourceTree = "<group>"; };
 		F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewCell.h; sourceTree = "<group>"; };
@@ -86,6 +88,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4EFA9EA18F068F200173816 /* iAd.framework in Frameworks */,
 				8E3C8CD6189BF785004A90AE /* CoreGraphics.framework in Frameworks */,
 				8E3C8CD8189BF785004A90AE /* UIKit.framework in Frameworks */,
 				8E3C8CD4189BF785004A90AE /* Foundation.framework in Frameworks */,
@@ -127,6 +130,7 @@
 		8E3C8CD2189BF785004A90AE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				F4EFA9E918F068F200173816 /* iAd.framework */,
 				8E3C8CD3189BF785004A90AE /* Foundation.framework */,
 				8E3C8CD5189BF785004A90AE /* CoreGraphics.framework */,
 				8E3C8CD7189BF785004A90AE /* UIKit.framework */,

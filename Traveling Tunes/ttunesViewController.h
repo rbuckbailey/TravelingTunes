@@ -11,6 +11,7 @@
 #import "gestureAssignmentController.h"
 #import <CoreLocation/CoreLocation.h>
 #import "LEColorPicker.h"
+#import <iAd/iAd.h>
 
 CGFloat const gestureMinimumTranslation = 20.0;
 

@@ -147,6 +147,7 @@ MPMusicPlayerController*        mediaPlayer;
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
+    self.canDisplayBannerAds = YES;
 
  
     _volumeTarget = mediaPlayer.volume;

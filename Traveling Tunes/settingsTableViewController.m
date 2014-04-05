@@ -122,6 +122,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.canDisplayBannerAds = YES;
     UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"Done"
                                                                     style:UIBarButtonItemStyleDone target:self action:@selector(popToRoot)];
     self.navigationItem.rightBarButtonItem = rightButton;
