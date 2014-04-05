@@ -80,7 +80,6 @@ MPMusicPlayerController*        mediaPlayer;
     if (self != nil) {
         self.gps = [[CLLocationManager alloc] init];
         self.gps.delegate = self;
-        [self.gps startUpdatingLocation];
     }
     return self;
 }
@@ -113,8 +112,8 @@ MPMusicPlayerController*        mediaPlayer;
 
     [self setupHUD];
     
-/*    NSLog(@"***");
-    NSLog(@"base volume:%f",_volumeBase);
+    NSLog(@"*** gps moved ***");
+/*    NSLog(@"base volume:%f",_volumeBase);
     NSLog(@"real volume:%f",mediaPlayer.volume);
     NSLog(@"target volume:%f",_volumeTarget);
     NSLog(@"Speed %f is %f mph", newLocation.speed,newLocation.speed*2.23694);
@@ -138,6 +137,10 @@ MPMusicPlayerController*        mediaPlayer;
     //reset marquee
     [self scrollingTimerKiller];
     [self firstStartTimer];
+    
+    //start gps if enabled
+    if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"])[self.gps startUpdatingLocation];
+    else [self.gps stopUpdatingLocation];
 }
 
 - (void)viewDidLoad
