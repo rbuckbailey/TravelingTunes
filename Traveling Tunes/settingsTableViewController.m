@@ -370,6 +370,7 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)albumFontSizeSliderChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     _albumFontSizeLabel.text = [NSString stringWithFormat:@"%i",(int)_albumFontSizeSlider.value];
@@ -377,28 +378,27 @@
     [defaults synchronize];
 }
 
+
 // *** playlist switch actions ********************************************************************
 - (IBAction)playlistShuffleChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_playlistShuffle.on) [defaults setObject:@"YES" forKey:@"shuffle"];
     else [defaults setObject:@"NO" forKey:@"shuffle"];
     [defaults synchronize];
-    NSLog(@"shuffle: %hhd",_playlistShuffle.on);
 }
+
 
 - (IBAction)playlistRepeatChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_playlistRepeat.on) [defaults setObject:@"YES" forKey:@"repeat"];
     else [defaults setObject:@"NO" forKey:@"repeat"];
-    NSLog(@"repeat: %hhd",_playlistRepeat.on);
     [defaults synchronize];
 }
+
 
 - (void) setThemeLabels {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-
-//    NSLog(@"Invert is %@",[defaults objectForKey:@"themeInvert"]);
     
     NSArray *themecolors;
     UIColor *temp;
@@ -468,6 +468,7 @@
     
 }
 
+
 - (IBAction)themeInvertChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_themeInvert.on) [defaults setObject:@"YES" forKey:@"themeInvert"];
@@ -478,6 +479,7 @@
     NSLog(@"themeInvertChanged: %hhd",_themeInvert.on);
     [defaults synchronize];
 }
+
 
 - (void)updateCustomPreviews {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -530,12 +532,14 @@
     [gestureController saveThemes];
 }
 
+
 - (IBAction)textRedChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:(int)_textRedSlider.value] forKey:@"customTextRed"];
     [defaults synchronize];
     [self updateCustomPreviews];
 }
+
 
 - (IBAction)textGreenChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -544,12 +548,14 @@
     [self updateCustomPreviews];
 }
 
+
 - (IBAction)textBlueChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:(int)_textBlueSlider.value] forKey:@"customTextBlue"];
     [defaults synchronize];
     [self updateCustomPreviews];
 }
+
 
 - (IBAction)bgRedChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -558,6 +564,7 @@
     [self updateCustomPreviews];
 }
 
+
 - (IBAction)bgGreenChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:(int)_bgGreenSlider.value] forKey:@"customBGGreen"];    
@@ -565,12 +572,14 @@
     [self updateCustomPreviews];
 }
 
+
 - (IBAction)bgBlueChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:(int)_bgBlueSlider.value] forKey:@"customBGBlue"];
     [defaults synchronize];
     [self updateCustomPreviews];
 }
+
 
 - (void)setUpThemeChecks {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -648,12 +657,14 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)titleShrinkToFitChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_titleShrinkLong.on) [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
     else [defaults setObject:@"NO" forKey:@"titleShrinkLong"];
     [defaults synchronize];
 }
+
 
 - (IBAction)titleShrinkMinimumChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -662,17 +673,20 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)volumeSensitivityChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:_volumeSensitivitySlider.value] forKey:@"volumeSensitivity"];
     [defaults synchronize];
 }
 
+
 - (IBAction)seekSensitivityChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:_seekSensitivitySlider.value] forKey:@"seekSensitivity"];
     [defaults synchronize];
 }
+
 
 - (IBAction)rotationPortraitChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -681,12 +695,14 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)rotationClockwiseChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_rotationClockwise.on) [defaults setObject:@"YES" forKey:@"RotationClockwise"];
     else [defaults setObject:@"NO" forKey:@"RotationClockwise"];
     [defaults synchronize];
 }
+
 
 - (IBAction)rotationAntiClockwiseChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -695,6 +711,7 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)rotationInvertedChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_rotationInverted.on) [defaults setObject:@"YES" forKey:@"RotationInverted"];
@@ -702,12 +719,14 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)showStatusBarChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_showStatusBar.on) [defaults setObject:@"YES" forKey:@"ShowStatusBar"];
     else [defaults setObject:@"NO" forKey:@"ShowStatusBar"];
     [defaults synchronize];
 }
+
 
 - (IBAction)HUDTypeChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -726,6 +745,7 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)scrubHUDTypeChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
@@ -741,13 +761,14 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)volumeAlwaysOnChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_volumeAlwaysOn.on) [defaults setObject:@"YES" forKey:@"VolumeAlwaysOn"];
     else [defaults setObject:@"NO" forKey:@"VolumeAlwaysOn"];
     [defaults synchronize];
-
 }
+
 
 - (IBAction)playOnLaunchChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -756,12 +777,14 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)pauseOnExitChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_pauseOnExit.on) [defaults setObject:@"YES" forKey:@"PauseOnExit"];
     else [defaults setObject:@"NO" forKey:@"PauseOnExit"];
     [defaults synchronize];
 }
+
 
 - (IBAction)invertAtNightChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -770,12 +793,14 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)dimAtNightChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_dimAtNightSwitch.on) [defaults setObject:@"YES" forKey:@"DimAtNight"];
     else [defaults setObject:@"NO" forKey:@"DimAtNight"];
     [defaults synchronize];
 }
+
 
 - (IBAction)sunRiseChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -789,6 +814,7 @@
     _sunRiseLabel.text = labelText;
     [defaults synchronize];
 }
+
 
 - (IBAction)sunSetChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -812,18 +838,22 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)GPSSensitivityChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:_GPSSensitivitySlider.value] forKey:@"GPSSensivity"];
     _GPSSensivityLabel.text = [NSString stringWithFormat:@"%f",[[defaults objectForKey:@"GPSSensivity"] floatValue]];
     [defaults synchronize];
 }
+
+
 - (IBAction)GPSVolumeToggleChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_GPSVolumeToggle.on) [defaults setObject:@"YES" forKey:@"GPSVolume"];
     else [defaults setObject:@"NO" forKey:@"GPSVolume"];
     [defaults synchronize];
 }
+
 
 - (IBAction)showActionsChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -832,12 +862,14 @@
     [defaults synchronize];
 }
 
+
 - (IBAction)albumArtColorsChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_albumArtColors.on) [defaults setObject:@"YES" forKey:@"albumArtColors"];
     else [defaults setObject:@"NO" forKey:@"albumArtColors"];
     [defaults synchronize];
 }
+
 
 - (IBAction)showAlbumArtChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];

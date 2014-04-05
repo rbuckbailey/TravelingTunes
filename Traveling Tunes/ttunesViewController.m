@@ -122,19 +122,24 @@ MPMusicPlayerController*        mediaPlayer;
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self.navigationController setNavigationBarHidden:YES];
+
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"NO"]) _albumArt.alpha = 0.0f;
+    if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) mediaPlayer.shuffleMode = MPMusicShuffleModeSongs; else mediaPlayer.shuffleMode = MPMusicShuffleModeOff;
+    if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) mediaPlayer.repeatMode = MPMusicRepeatModeAll; else mediaPlayer.repeatMode = MPMusicRepeatModeNone;
+    
+    [self startPlaybackWatcher];
     [self setupLabels];
     [self setupHUD];
     [self setupSystemHUD];
+    
     //reset marquee
     [self scrollingTimerKiller];
     [self firstStartTimer];
-    [self startPlaybackWatcher];
-    
 }
 
 - (void)viewDidLoad
 {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
  
     _volumeTarget = mediaPlayer.volume;
@@ -198,7 +203,7 @@ MPMusicPlayerController*        mediaPlayer;
      addObserver:self selector:@selector(orientationChanged:)
      name:UIDeviceOrientationDidChangeNotification
      object:[UIDevice currentDevice]];
-    
+
     //init gps
     self.gps = [[CLLocationManager alloc] init];
     self.gps.delegate = self;
@@ -461,7 +466,7 @@ MPMusicPlayerController*        mediaPlayer;
         if ((artwork != nil) & ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"])) {
             if ([artwork imageWithSize:CGSizeMake(50,50)]) {
                 _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
-                _albumArt.alpha = 0.5f;
+                _albumArt.alpha = 0.4f;
                 _albumArt.contentMode = UIViewContentModeCenter;
 
                 if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
@@ -604,32 +609,34 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void) drawActionHUD:(NSString*)action {
-//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
-    if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"]|[action isEqual:@"Unassigned"])) {
-        _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
-        _actionHUD.textAlignment=NSTextAlignmentCenter;
-        _actionHUD.font = [UIFont systemFontOfSize:120];
-        _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.75f];
-        _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75f];
-        _actionHUD.layer.cornerRadius = 10;
-        _actionHUD.lineBreakMode = NSLineBreakByClipping;
+    if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) {
+        if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"]|[action isEqual:@"Unassigned"])) {
+            _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
+            _actionHUD.textAlignment=NSTextAlignmentCenter;
+            _actionHUD.font = [UIFont systemFontOfSize:120];
+            _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.75f];
+            _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75f];
+            _actionHUD.layer.cornerRadius = 10;
+            _actionHUD.lineBreakMode = NSLineBreakByClipping;
+            
+            if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u2190"; //@"\u2190";
+            else if ([action isEqual:@"FastForward"]) _actionHUD.text = @"\u2192";
+            else if ([action isEqual:@"Play"]) _actionHUD.text = @"|>";
+            else if ([action isEqual:@"Pause"]) _actionHUD.text = @"\u220e\u220e";
+            else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u220e\u220e";
+            else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u25b8"; //@"\u2023"; //@"\u25ba";
+            else if ([action isEqual:@"VolumeUp"]) _actionHUD.text = @"\u2191";
+            else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
+            else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
+            else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
+            else if ([action isEqual:@"StartDefaultPlaylist"]|[action isEqual:@"PlayAllArtit"]|[action isEqual:@"PlayAlbum"]) _actionHUD.text = @"...";
+            else _actionHUD.text = @"?";
 
-        if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u2190"; //@"\u2190";
-        else if ([action isEqual:@"FastForward"]) _actionHUD.text = @"\u2192";
-        else if ([action isEqual:@"Play"]) _actionHUD.text = @"|>";
-        else if ([action isEqual:@"Pause"]) _actionHUD.text = @"\u220e\u220e";
-        else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u220e\u220e";
-        else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u25b8"; //@"\u2023"; //@"\u25ba";
-        else if ([action isEqual:@"VolumeUp"]) _actionHUD.text = @"\u2191";
-        else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
-        else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
-        else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
-        else if ([action isEqual:@"StartDefaultPlaylist"]|[action isEqual:@"PlayAllArtit"]|[action isEqual:@"PlayAlbum"]) _actionHUD.text = @"...";
-        else _actionHUD.text = @"?";
-
-        [self startActionHUDFadeTimer];
+            [self startActionHUDFadeTimer];
+        }
     }
 }
 
@@ -1136,7 +1143,6 @@ MPMusicPlayerController*        mediaPlayer;
 //    [query setGroupingType:MPMediaGroupingAlbum];
     
     MPMediaQuery* query = [MPMediaQuery songsQuery];
-//    [mediaPlayer setQueueWithQuery: [MPMediaQuery songsQuery]];
     
     //Pass the query to the player
     [mediaPlayer setQueueWithQuery:query];
