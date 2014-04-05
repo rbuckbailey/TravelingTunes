@@ -67,9 +67,10 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (IBAction)singleTapDetected:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+/*    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
     NSLog(@"gesture is %@",[defaults objectForKey:@"11Tap"]);
+ */
 }
 
 - (id)init{
@@ -465,21 +466,23 @@ MPMusicPlayerController*        mediaPlayer;
         LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
 
+        // artwork never returns nil, appearently, even without artwork
         if ((artwork != nil) & ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"])) {
+            // so do a second check to see if it has at least 50x50 pixels
             if ([artwork imageWithSize:CGSizeMake(50,50)]) {
                 _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
-                _albumArt.alpha = 0.4f;
+                _albumArt.alpha = 0.2f;
                 _albumArt.contentMode = UIViewContentModeCenter;
 
                 if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
                     LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
                     self.view.backgroundColor = [colorScheme backgroundColor];
                     _artistTitle.textColor = [colorScheme primaryTextColor];
-                    _songTitle.textColor = [colorScheme secondaryTextColor];
+                    _songTitle.textColor = [colorScheme primaryTextColor];
                     _albumTitle.textColor = [colorScheme primaryTextColor];
-                    [_artistTitle setAlpha:1.0f];
+                    [_artistTitle setAlpha:0.7f];
                     [_songTitle setAlpha:1.0f];
-                    [_albumTitle setAlpha:1.0f];
+                    [_albumTitle setAlpha:0.7f];
                 }
             }  else _albumArt.alpha = 0.0f;
         }
@@ -870,13 +873,15 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (IBAction)twoFingerTap:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+/*    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"21Tap"]:@"21Tap"];
+ */
 }
 
 - (IBAction)threeFingerTap:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+/*    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"31Tap"]:@"31Tap"];
+ */
 }
 
 - (IBAction)longPressDetected:(UIGestureRecognizer *)sender {
@@ -901,7 +906,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 
-/*
+/*** tappytime ***/
 -(void)singleTap{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self performPlayerAction:[defaults objectForKey:@"11Tap"]:@"11Tap"];
@@ -920,10 +925,10 @@ MPMusicPlayerController*        mediaPlayer;
     [self performPlayerAction:[defaults objectForKey:@"14Tap"]:@"14Tap"];
 }
 
-
--(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+//(unsigned long)gesture.numberOfTouches)
+-(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
     NSUInteger numTaps = [[touches anyObject] tapCount];
-    float delay = 0.2;
+    float delay = 0.3;
     if (numTaps < 2)
     {
         [self performSelector:@selector(singleTap) withObject:nil afterDelay:delay ];
@@ -945,7 +950,7 @@ MPMusicPlayerController*        mediaPlayer;
         [self performSelector:@selector(quadrupleTap) withObject:nil afterDelay:delay ];
     }
 }
-*/
+
 
 /****** Gesture Actions end *********************************************************************************************************************************/
 /****** Player Actions begin *********************************************************************************************************************************/

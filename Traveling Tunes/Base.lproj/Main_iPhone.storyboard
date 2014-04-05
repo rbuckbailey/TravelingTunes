@@ -289,7 +289,7 @@
             </objects>
             <point key="canvasLocation" x="971" y="437"/>
         </scene>
-        <!--View Controller-->
+        <!--View Controller - Quick Start Guide-->
         <scene sceneID="IoY-GS-5We">
             <objects>
                 <viewController id="G07-ID-Ou0" sceneMemberID="viewController">
@@ -300,13 +300,31 @@
                     <view key="view" contentMode="scaleToFill" id="uGb-Q3-ryA">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <subviews>
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Label" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="28h-0S-LPH">
+                                <rect key="frame" x="20" y="20" width="280" height="528"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                     </view>
-                    <navigationItem key="navigationItem" id="VSo-iA-vlA"/>
+                    <navigationItem key="navigationItem" title="Quick Start Guide" id="VSo-iA-vlA">
+                        <barButtonItem key="backBarButtonItem" title="Done" id="a8r-Lu-1bA"/>
+                    </navigationItem>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="vue-Hw-Mnm" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1586" y="-125"/>
+        </scene>
+        <!--Page View Controller-->
+        <scene sceneID="HCc-KY-to8">
+            <objects>
+                <pageViewController autoresizesArchivedViewToFullSize="NO" transitionStyle="pageCurl" navigationOrientation="horizontal" spineLocation="min" id="sba-IX-6ZN" sceneMemberID="viewController"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="wVQ-4R-KTN" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1894" y="-129"/>
         </scene>
         <!--Settings Table View Controller-->
         <scene sceneID="x9U-YK-CIl">

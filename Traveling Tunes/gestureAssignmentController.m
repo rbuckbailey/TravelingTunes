@@ -138,8 +138,8 @@
     [defaults setObject:@"YES" forKey:@"1SwipeUpContinuous"];
     [defaults setObject:@"YES" forKey:@"1SwipeDownContinuous"];
     [defaults setObject:@"PlayPause" forKey:@"11Tap"];
-    [defaults setObject:@"Unassigned" forKey:@"12Tap"];
-    [defaults setObject:@"Unassigned" forKey:@"13Tap"];
+    [defaults setObject:@"Next" forKey:@"12Tap"];
+    [defaults setObject:@"Previous" forKey:@"13Tap"];
     [defaults setObject:@"Unassigned" forKey:@"14Tap"];
     [defaults setObject:@"Menu" forKey:@"1LongPress"];
 
