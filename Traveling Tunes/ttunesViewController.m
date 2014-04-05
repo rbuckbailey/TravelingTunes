@@ -235,6 +235,7 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 -(void) startPlaybackWatcher {
+    if ([self.scrubTimer isValid]) [self.scrubTimer invalidate];
     self.scrubTimer = [NSTimer scheduledTimerWithTimeInterval:   0.2f
                                                   target: self
                                                 selector: @selector(updatePlaybackHUD)
@@ -951,7 +952,7 @@ MPMusicPlayerController*        mediaPlayer;
     NSLog(@"Performing action %@",action);
     if (!([action isEqual:@"FastForward"]|[action isEqual:@"Rewind"])) [self drawActionHUD:action];
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
-    else if ([action isEqual:@"Menu"]) { [self.scrubTimer invalidate]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
+    else if ([action isEqual:@"Menu"]) { if ([self.scrubTimer isValid]) { [self.scrubTimer invalidate]; } [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];

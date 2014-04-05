@@ -253,7 +253,7 @@
      SHARE/TWEET/FB SONG ?
      SKIP FORWARD/BACK 5, 10, 20 SECONDS
      */
-//    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 #pragma mark - Navigation
