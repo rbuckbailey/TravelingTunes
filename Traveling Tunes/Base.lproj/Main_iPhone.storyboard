@@ -1518,70 +1518,74 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <sections>
-                            <tableViewSection headerTitle="Themes" id="KP6-cr-n6g">
+                            <tableViewSection headerTitle="Art" id="zex-lS-ZY7">
                                 <cells>
-                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="FSM-8t-maS">
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="E2i-4h-S9x">
                                         <rect key="frame" x="0.0" y="86" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="FSM-8t-maS" id="Y6J-P2-ijc">
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="E2i-4h-S9x" id="Lqg-Al-7xA">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Show Album Art" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3zr-rI-Yks">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Show Album Art" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="PSp-tz-mho">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="FNk-RT-lg4">
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="uKh-zh-hFE">
                                                     <rect key="frame" x="251" y="6" width="51" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <connections>
-                                                        <action selector="showAlbumArtChanged:" destination="2X2-CN-VUX" eventType="valueChanged" id="J7F-fS-Gg9"/>
+                                                        <action selector="showAlbumArtChanged:" destination="2X2-CN-VUX" eventType="valueChanged" id="3u1-vm-zNU"/>
                                                     </connections>
                                                 </switch>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstItem="FNk-RT-lg4" firstAttribute="centerY" secondItem="Y6J-P2-ijc" secondAttribute="centerY" id="1vf-fH-15j"/>
-                                                <constraint firstItem="3zr-rI-Yks" firstAttribute="trailing" secondItem="FNk-RT-lg4" secondAttribute="trailing" id="Zkb-Po-pfP"/>
-                                                <constraint firstItem="3zr-rI-Yks" firstAttribute="leading" secondItem="Y6J-P2-ijc" secondAttribute="leading" constant="20" symbolic="YES" id="dpF-XW-Zaw"/>
-                                                <constraint firstAttribute="trailing" secondItem="FNk-RT-lg4" secondAttribute="trailing" constant="20" symbolic="YES" id="h9h-O4-Lws"/>
-                                                <constraint firstItem="3zr-rI-Yks" firstAttribute="centerY" secondItem="FNk-RT-lg4" secondAttribute="centerY" id="x3J-6u-ElT"/>
+                                                <constraint firstAttribute="trailing" secondItem="uKh-zh-hFE" secondAttribute="trailing" constant="20" symbolic="YES" id="7RX-po-5Kd"/>
+                                                <constraint firstItem="PSp-tz-mho" firstAttribute="trailing" secondItem="uKh-zh-hFE" secondAttribute="trailing" id="e8p-ve-UGW"/>
+                                                <constraint firstItem="PSp-tz-mho" firstAttribute="leading" secondItem="Lqg-Al-7xA" secondAttribute="leading" constant="20" symbolic="YES" id="hCp-wU-keT"/>
+                                                <constraint firstItem="PSp-tz-mho" firstAttribute="centerY" secondItem="uKh-zh-hFE" secondAttribute="centerY" id="kfe-Ea-4qJ"/>
+                                                <constraint firstItem="uKh-zh-hFE" firstAttribute="centerY" secondItem="Lqg-Al-7xA" secondAttribute="centerY" id="tG2-ib-C32"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
-                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="NtZ-QD-ae1">
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="xxl-pb-wGS">
                                         <rect key="frame" x="0.0" y="130" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="NtZ-QD-ae1" id="XGX-SP-9NN">
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="xxl-pb-wGS" id="fzA-9V-WBV">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Pick Colors from Art" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="e96-8O-2N0">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Pick Colors from Art" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="k9a-rQ-JHb">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="aps-4c-oZ2">
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="Z5Q-sy-Mcp">
                                                     <rect key="frame" x="251" y="6" width="51" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <connections>
-                                                        <action selector="albumArtColorsChanged:" destination="2X2-CN-VUX" eventType="valueChanged" id="1u4-sO-VBX"/>
+                                                        <action selector="albumArtColorsChanged:" destination="2X2-CN-VUX" eventType="valueChanged" id="xaQ-Id-WpL"/>
                                                     </connections>
                                                 </switch>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstItem="e96-8O-2N0" firstAttribute="trailing" secondItem="aps-4c-oZ2" secondAttribute="trailing" id="KpW-lp-k2Z"/>
-                                                <constraint firstItem="e96-8O-2N0" firstAttribute="centerY" secondItem="aps-4c-oZ2" secondAttribute="centerY" id="Nl4-Kn-eUo"/>
-                                                <constraint firstItem="e96-8O-2N0" firstAttribute="leading" secondItem="XGX-SP-9NN" secondAttribute="leading" constant="20" symbolic="YES" id="TV8-wh-Uuo"/>
-                                                <constraint firstItem="aps-4c-oZ2" firstAttribute="centerY" secondItem="XGX-SP-9NN" secondAttribute="centerY" id="hre-09-3XC"/>
-                                                <constraint firstAttribute="trailing" secondItem="aps-4c-oZ2" secondAttribute="trailing" constant="20" symbolic="YES" id="ujI-L2-Hdv"/>
+                                                <constraint firstItem="k9a-rQ-JHb" firstAttribute="trailing" secondItem="Z5Q-sy-Mcp" secondAttribute="trailing" id="Apf-IW-6qZ"/>
+                                                <constraint firstItem="k9a-rQ-JHb" firstAttribute="leading" secondItem="fzA-9V-WBV" secondAttribute="leading" constant="20" symbolic="YES" id="At0-27-H4o"/>
+                                                <constraint firstItem="Z5Q-sy-Mcp" firstAttribute="centerY" secondItem="fzA-9V-WBV" secondAttribute="centerY" id="bbk-Og-hG9"/>
+                                                <constraint firstItem="k9a-rQ-JHb" firstAttribute="centerY" secondItem="Z5Q-sy-Mcp" secondAttribute="centerY" id="lEH-Qg-QVP"/>
+                                                <constraint firstAttribute="trailing" secondItem="Z5Q-sy-Mcp" secondAttribute="trailing" constant="20" symbolic="YES" id="yWM-u7-pj4"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
+                                </cells>
+                            </tableViewSection>
+                            <tableViewSection headerTitle="Themes" id="KP6-cr-n6g">
+                                <cells>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="xwB-V9-Gaa">
-                                        <rect key="frame" x="0.0" y="174" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="196" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="xwB-V9-Gaa" id="wP0-r4-L9h">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1611,7 +1615,7 @@
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="4gH-oZ-L6C">
-                                        <rect key="frame" x="0.0" y="218" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="240" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="4gH-oZ-L6C" id="cUV-Ok-A0i">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1635,7 +1639,7 @@
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="xsA-zV-DUw">
-                                        <rect key="frame" x="0.0" y="262" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="284" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="xsA-zV-DUw" id="kPx-sh-YQH">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1660,7 +1664,7 @@
                                         <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="OcN-fL-GR5">
-                                        <rect key="frame" x="0.0" y="306" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="328" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="OcN-fL-GR5" id="iCt-9u-abX">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1685,7 +1689,7 @@
                                         <color key="backgroundColor" red="0.94509803921568625" green="0.76470588235294112" blue="0.5725490196078431" alpha="1" colorSpace="calibratedRGB"/>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="39U-ce-aG1">
-                                        <rect key="frame" x="0.0" y="350" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="372" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="39U-ce-aG1" id="BgL-YI-Vg5">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1710,7 +1714,7 @@
                                         <color key="backgroundColor" red="1" green="0.73810859959999997" blue="0.77359533110000001" alpha="1" colorSpace="calibratedRGB"/>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="Z0p-hc-l9J">
-                                        <rect key="frame" x="0.0" y="394" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="416" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Z0p-hc-l9J" id="bXy-WQ-xoR">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1735,7 +1739,7 @@
                                         <color key="backgroundColor" red="0.76577166740000002" green="0.75154800249999998" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="ndn-T8-Hfa">
-                                        <rect key="frame" x="0.0" y="438" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="460" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="ndn-T8-Hfa" id="hZZ-pv-EmK">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1760,7 +1764,7 @@
                                         <color key="backgroundColor" red="0.60706591450000003" green="0.69696248780000003" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="Vyh-Cm-7hE">
-                                        <rect key="frame" x="0.0" y="482" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="504" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Vyh-Cm-7hE" id="hQj-ac-bwu">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1785,7 +1789,7 @@
                                         <color key="backgroundColor" red="0.80287128819999998" green="0.9456521739" blue="0.021946581480000001" alpha="1" colorSpace="calibratedRGB"/>
                                     </tableViewCell>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="DmW-tk-FnG">
-                                        <rect key="frame" x="0.0" y="526" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="548" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="DmW-tk-FnG" id="rCy-IG-JlI">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1814,7 +1818,7 @@
                             <tableViewSection headerTitle="Custom" id="Zmr-eH-5K5">
                                 <cells>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="blue" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="2cX-dY-1s1">
-                                        <rect key="frame" x="0.0" y="592" width="320" height="44"/>
+                                        <rect key="frame" x="0.0" y="614" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="2cX-dY-1s1" id="krY-n1-ySL">
                                             <rect key="frame" x="0.0" y="0.0" width="287" height="43"/>
@@ -1849,8 +1853,6 @@
                     </tableView>
                     <navigationItem key="navigationItem" id="Ik3-3J-k78"/>
                     <connections>
-                        <outlet property="albumArtColors" destination="aps-4c-oZ2" id="ocH-HM-OAA"/>
-                        <outlet property="showAlbumArt" destination="FNk-RT-lg4" id="LV8-Ok-6BJ"/>
                         <outlet property="themeBlush" destination="39U-ce-aG1" id="EGk-VU-Cua"/>
                         <outlet property="themeBlushCheck" destination="U4t-lo-kfS" id="gmZ-To-fY5"/>
                         <outlet property="themeBlushLabel" destination="beW-wb-Gt7" id="ekp-jN-XoK"/>
