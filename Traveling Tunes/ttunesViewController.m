@@ -60,6 +60,7 @@ MPMusicPlayerController*        mediaPlayer;
     //clear actionHUD if action
     _actionHUD.backgroundColor = [UIColor clearColor];
     _actionHUD.textColor = [UIColor clearColor];
+    [self.actionHUDFadeTimer invalidate];
     _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height);
     [self setupLabels];
     [self setupHUD];
@@ -1121,8 +1122,8 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)playAllByAlbum {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    MPMediaQuery* query = [MPMediaQuery songsQuery];
     mediaPlayer.shuffleMode = MPMusicShuffleModeAlbums;
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
     [defaults setObject:@"YES" forKey:@"shuffle"];
     [query setGroupingType:MPMediaGroupingAlbum];
     [mediaPlayer setQueueWithQuery:query];
@@ -1132,15 +1133,20 @@ MPMusicPlayerController*        mediaPlayer;
 
 
 -(void) playCurrentArtist {
+    
     //Create a query that will return all songs by The Beatles grouped by album
     //    [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@"The Beatles" forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
     //    [query setGroupingType:MPMediaGroupingAlbum];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    mediaPlayer.shuffleMode = MPMusicShuffleModeAlbums;
+    [defaults setObject:@"YES" forKey:@"shuffle"];
     MPMediaQuery* query = [MPMediaQuery songsQuery];
     NSString *currentArtist = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
     [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:currentArtist forProperty:MPMediaItemPropertyArtist comparisonType:MPMediaPredicateComparisonEqualTo]];
     [query setGroupingType:MPMediaGroupingAlbum];
     [mediaPlayer setQueueWithQuery:query];
     [mediaPlayer play];
+    [defaults synchronize];
 }
 
 
