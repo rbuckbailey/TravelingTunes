@@ -78,7 +78,7 @@ MPMusicPlayerController*        mediaPlayer;
     }
     // Configure the cell...
     switch ([indexPath row]) {
-        case 0: cell.playlistLabel.text = @"All Songs by Title";
+        case 0: cell.playlistLabel.text = @"All Songs, Shuffled";
             break;
         case 1: cell.playlistLabel.text = @"All Songs by Album"; break;
         default:
@@ -107,13 +107,14 @@ MPMusicPlayerController*        mediaPlayer;
     NSLog(@"%@",cell.playlistLabel.text);
 
     switch ([indexPath row]) {
-        case 0: [defaults setObject:@"All Songs by Title" forKey:@"playlist"]; break;
+        case 0: [defaults setObject:@"All Songs, Shuffled" forKey:@"playlist"]; break;
         case 1: [defaults setObject:@"All Songs by Album" forKey:@"playlist"]; break;
         default:
             [defaults setObject:cellText forKey:@"playlist"]; break;
     }
     NSLog(@"set playlist to %@",[defaults objectForKey:@"playlist"]);
     [defaults synchronize];
+    [self.navigationController popViewControllerAnimated:YES];
 }
 
 /*

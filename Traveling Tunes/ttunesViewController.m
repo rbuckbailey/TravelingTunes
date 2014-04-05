@@ -952,7 +952,8 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     NSLog(@"Performing action %@",action);
-    if (!([action isEqual:@"FastForward"]|[action isEqual:@"Rewind"])) [self drawActionHUD:action];
+//    if (!([action isEqual:@"FastForward"]|[action isEqual:@"Rewind"]))
+        [self drawActionHUD:action];
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) { if ([self.scrubTimer isValid]) { [self.scrubTimer invalidate]; } [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
@@ -962,8 +963,8 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"Previous"]) { [self previous]; }
     else if ([action isEqual:@"RestartPrevious"]) { [self restartPrevious]; }
     else if ([action isEqual:@"Restart"]) { [mediaPlayer skipToBeginning]; }
-    else if ([action isEqual:@"Rewind"]) {if (mediaPlayer.currentPlaybackTime > 0.1f) { [self rewind]; [self drawActionHUD:action]; }}
-    else if ([action isEqual:@"FastForward"]) {if (mediaPlayer.currentPlaybackTime > 0.1f) { [self fastForward]; [self drawActionHUD:action]; }}
+    else if ([action isEqual:@"Rewind"]) [self rewind];
+    else if ([action isEqual:@"FastForward"]) [self fastForward];
     else if ([action isEqual:@"VolumeUp"]) [self increaseVolume];
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playDefaultPlaylist];
@@ -1113,16 +1114,20 @@ MPMusicPlayerController*        mediaPlayer;
     
     NSLog(@"Playing %@",[defaults objectForKey:@"playlist"]);
     
-    if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Title"]) [self playAllSongs];
+    if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs, Shuffled"]) [self playAllSongs];
     else if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Album"]) [self playAllByAlbum];
     else [self playConcretePlaylist];
 }
 
 - (void)playAllByAlbum {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     MPMediaQuery* query = [MPMediaQuery songsQuery];
+    mediaPlayer.shuffleMode = MPMusicShuffleModeAlbums;
+    [defaults setObject:@"YES" forKey:@"shuffle"];
     [query setGroupingType:MPMediaGroupingAlbum];
     [mediaPlayer setQueueWithQuery:query];
     [mediaPlayer play];
+    [defaults synchronize];
 }
 
 
@@ -1140,20 +1145,27 @@ MPMusicPlayerController*        mediaPlayer;
 
 
 -(void) playCurrentAlbum {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    mediaPlayer.shuffleMode = MPMusicShuffleModeOff;
+    [defaults setObject:@"NO" forKey:@"shuffle"];
     MPMediaQuery* query = [MPMediaQuery songsQuery];
     [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] forProperty:MPMediaItemPropertyAlbumTitle comparisonType:MPMediaPredicateComparisonEqualTo]];
     [query setGroupingType:MPMediaGroupingAlbum];
     [mediaPlayer setQueueWithQuery:query];
     [mediaPlayer play];
+    [defaults synchronize];
 }
 
 - (void)playAllSongs {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     MPMediaQuery* query = [MPMediaQuery songsQuery];
-    
+    mediaPlayer.shuffleMode = MPMusicShuffleModeSongs;
+    [defaults setObject:@"YES" forKey:@"shuffle"];
     //Pass the query to the player
     [mediaPlayer setQueueWithQuery:query];
     //Start playing and set a label text to the name and image to the cover art of the song that is playing
     [mediaPlayer play];
+    [defaults synchronize];
 }
 
 -(void)playConcretePlaylist {
