@@ -566,19 +566,34 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 
--(void) drawActionHUD {
+-(void) drawActionHUD:(NSString*)action {
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
-    _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
-    _actionHUD.text = @"T";
-    _actionHUD.textAlignment=NSTextAlignmentCenter;
-    _actionHUD.font = [UIFont systemFontOfSize:120];
-    _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.75f];
-    _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75f];
-    _actionHUD.layer.cornerRadius = 10;
-    
-    [self startActionHUDFadeTimer];
+    if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"])) {
+        _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
+        _actionHUD.textAlignment=NSTextAlignmentCenter;
+        _actionHUD.font = [UIFont systemFontOfSize:120];
+        _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.75f];
+        _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75f];
+        _actionHUD.layer.cornerRadius = 10;
+        _actionHUD.lineBreakMode = NSLineBreakByClipping;
+
+        if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u21fd"; //@"\u2190";
+        else if ([action isEqual:@"FastForward"]) _actionHUD.text = @"\u2192";
+        else if ([action isEqual:@"Play"]) _actionHUD.text = @"|>";
+        else if ([action isEqual:@"Pause"]) _actionHUD.text = @"\u220e\u220e";
+        else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u220e\u220e";
+        else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u25b8";
+        else if ([action isEqual:@"VolumeUp"]) _actionHUD.text = @"\u2191";
+        else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
+        else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
+        else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
+        else if ([action isEqual:@"StartDefaultPlaylist"]|[action isEqual:@"PlayAllArtit"]|[action isEqual:@"PlayAlbum"]) _actionHUD.text = @"...";
+        else _actionHUD.text = @"?";
+
+        [self startActionHUDFadeTimer];
+    }
 }
 
 -(void) setupHUD {
@@ -899,8 +914,8 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"Previous"]) { [self previous]; }
     else if ([action isEqual:@"RestartPrevious"]) { [self restartPrevious]; }
     else if ([action isEqual:@"Restart"]) { [mediaPlayer skipToBeginning]; }
-    else if ([action isEqual:@"Rewind"]) [self rewind];
-    else if ([action isEqual:@"FastForward"]) [self fastForward];
+    else if ([action isEqual:@"Rewind"]) {if (mediaPlayer.currentPlaybackTime > 0.1f) { [self rewind]; [self drawActionHUD:action]; }}
+    else if ([action isEqual:@"FastForward"]) {if (mediaPlayer.currentPlaybackTime > 0.1f) { [self fastForward]; [self drawActionHUD:action]; }}
     else if ([action isEqual:@"VolumeUp"]) [self increaseVolume];
     else if ([action isEqual:@"VolumeDown"]) [self decreaseVolume];
     else if ([action isEqual:@"StartDefaultPlaylist"]) [self playDefaultPlaylist];
@@ -908,7 +923,7 @@ MPMusicPlayerController*        mediaPlayer;
     else if ([action isEqual:@"PlayAllArtist"]) [self playAllByArtist];
     else if ([action isEqual:@"PlayAlbum"]) [self playAllByAlbum];
     [self setupLabels];
-    [self drawActionHUD];
+    if (!([action isEqual:@"FastForward"]|[action isEqual:@"Rewind"])) [self drawActionHUD:action];
 }
 
 -(void) next {
@@ -923,7 +938,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void) fastForward {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if (mediaPlayer.currentPlaybackTime > 0.1f) [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]+[[defaults objectForKey:@"seekSensitivity"] floatValue]];
+    [mediaPlayer setCurrentPlaybackTime:[mediaPlayer currentPlaybackTime]+[[defaults objectForKey:@"seekSensitivity"] floatValue]];
 }
 
 -(void)rewind {
