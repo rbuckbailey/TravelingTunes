@@ -1755,7 +1755,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Grey on White" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6rq-wX-qzn">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="White on Grey" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6rq-wX-qzn">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -1998,9 +1998,6 @@
                         <outlet property="themeGreyOnBlack" destination="xsA-zV-DUw" id="598-Bp-UXV"/>
                         <outlet property="themeGreyOnBlackCheck" destination="zPT-sg-LuO" id="uzA-5H-hmi"/>
                         <outlet property="themeGreyOnBlackLabel" destination="6DV-dz-7FX" id="ad8-zi-mOb"/>
-                        <outlet property="themeGreyOnWhite" destination="4gH-oZ-L6C" id="hpz-2m-gFP"/>
-                        <outlet property="themeGreyOnWhiteCheck" destination="612-B1-JcE" id="FXy-vF-tC9"/>
-                        <outlet property="themeGreyOnWhiteLabel" destination="6rq-wX-qzn" id="9jt-hc-5QX"/>
                         <outlet property="themeHotDogStand" destination="DmW-tk-FnG" id="6Ah-yS-8et"/>
                         <outlet property="themeHotDogStandCheck" destination="tjF-El-ovX" id="LYN-PM-7Aa"/>
                         <outlet property="themeHotDogStandLabel" destination="iA0-dN-OxS" id="D3t-PR-cAk"/>
@@ -2017,6 +2014,9 @@
                         <outlet property="themePeriwinkleBlue" destination="ndn-T8-Hfa" id="f9X-KJ-fMn"/>
                         <outlet property="themePeriwinkleBlueCheck" destination="saK-bZ-FOq" id="xqC-Gk-kwC"/>
                         <outlet property="themePeriwinkleBlueLabel" destination="KUN-Wi-9Mp" id="Qhu-7d-8UA"/>
+                        <outlet property="themeWhiteOnGrey" destination="4gH-oZ-L6C" id="6Sz-87-Mqv"/>
+                        <outlet property="themeWhiteOnGreyCheck" destination="612-B1-JcE" id="Maw-qK-kh7"/>
+                        <outlet property="themeWhiteOnGreyLabel" destination="6rq-wX-qzn" id="hmS-Un-jw7"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="5fT-be-4g5" userLabel="First Responder" sceneMemberID="firstResponder"/>

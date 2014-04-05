@@ -84,8 +84,8 @@
 //display theme cell outlets
 @property (strong, nonatomic) IBOutlet UISwitch *themeInvert;
 - (IBAction)themeInvertChanged:(id)sender;
-@property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnWhite;
-@property (weak, nonatomic) IBOutlet UILabel *themeGreyOnWhiteLabel;
+@property (weak, nonatomic) IBOutlet UITableViewCell *themeWhiteOnGrey;
+@property (weak, nonatomic) IBOutlet UILabel *themeWhiteOnGreyLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeGreyOnBlack;
 @property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeLeaf;
@@ -102,7 +102,7 @@
 @property (weak, nonatomic) IBOutlet UILabel *themeHotDogStandLabel;
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeCustom;
 @property (weak, nonatomic) IBOutlet UILabel *themeCustomLabel;
-@property (weak, nonatomic) IBOutlet UILabel *themeGreyOnWhiteCheck;
+@property (weak, nonatomic) IBOutlet UILabel *themeWhiteOnGreyCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeGreyOnBlackCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeLavenderCheck;
 @property (weak, nonatomic) IBOutlet UILabel *themeBlushCheck;

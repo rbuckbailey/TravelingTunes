@@ -85,8 +85,8 @@
     
     [defaults synchronize];
     self.themes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f alpha:1],
-                                                [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f alpha:1],nil],@"Grey on White",
+                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 170/255.f green: 170/255.f blue:170/255.f alpha:1],
+                                                [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255/255.f alpha:1],nil],@"White on Grey",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 0   green: 0   blue:0   alpha:1],
                                                 [UIColor colorWithRed: 190/255.f green: 190/255.f blue:190/255.f alpha:1],nil],@"Grey on Black",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 205/255.f   green: 241/255.f   blue:5/255.f   alpha:1],
@@ -185,10 +185,10 @@
     NSMutableDictionary *temp = [[NSMutableDictionary alloc] init];
 
 //    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:themecolors];
-//    [temp setObject:data forKey:@"Grey on White"];
+//    [temp setObject:data forKey:@"White on Grey"];
 
-    themecolors = [_themes objectForKey:@"Grey on White"];
-    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Grey on White"];
+    themecolors = [_themes objectForKey:@"White on Grey"];
+    [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"White on Grey"];
     themecolors = [_themes objectForKey:@"Grey on Black"];
     [temp setObject:[NSKeyedArchiver archivedDataWithRootObject:themecolors] forKey:@"Grey on Black"];
     themecolors = [_themes objectForKey:@"Lavender"];
@@ -220,7 +220,7 @@
 
     temp = [[NSMutableDictionary alloc] initWithContentsOfFile:fileAndPath];
     
-    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on White"]] forKey:@"Grey on White"];
+    [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"White on Grey"]] forKey:@"White on Grey"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Grey on Black"]] forKey:@"Grey on Black"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Lavender"]] forKey:@"Lavender"];
     [_themes setObject:[NSKeyedUnarchiver unarchiveObjectWithData:[temp objectForKey:@"Leaf"]] forKey:@"Leaf"];

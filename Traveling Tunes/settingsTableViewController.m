@@ -240,7 +240,7 @@
     else if (selection == _resetAllSettings) [self confirmResetAllSettings];
     
     // if a theme cell was selected, set current theme
-    else if (selection == _themeGreyOnWhite) { [defaults setObject:@"Grey on White" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
+    else if (selection == _themeWhiteOnGrey) { [defaults setObject:@"White on Grey" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themeGreyOnBlack) { [defaults setObject:@"Grey on Black" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themeLeaf) { [defaults setObject:@"Leaf" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themeOldWest) { [defaults setObject:@"Old West" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
@@ -430,11 +430,11 @@
     _themeSelectionPreviewLabel.textColor = themecolor;
     _themeSelectionPreviewTitle.textColor = themecolor;
     
-    themecolors = [[gestureController themes] objectForKey:@"Grey on White"];
+    themecolors = [[gestureController themes] objectForKey:@"White on Grey"];
     themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) { temp=themecolor; themecolor=themebg; themebg=temp; }
-    _themeGreyOnWhite.backgroundColor = themebg;
-    _themeGreyOnWhiteLabel.textColor = themecolor;
+    _themeWhiteOnGrey.backgroundColor = themebg;
+    _themeWhiteOnGreyLabel.textColor = themecolor;
     
     themecolors = [[gestureController themes] objectForKey:@"Grey on Black"];
     themebg = [themecolors objectAtIndex:0]; themecolor = [themecolors objectAtIndex:1];
@@ -604,7 +604,7 @@
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     int index = 0;
-    _themeGreyOnWhiteCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on White"] objectAtIndex:index];
+    _themeWhiteOnGreyCheck.textColor = [[[gestureController themes] objectForKey:@"White on Grey"] objectAtIndex:index];
     _themeGreyOnBlackCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on Black"] objectAtIndex:index];
     _themeLavenderCheck.textColor = [[[gestureController themes] objectForKey:@"Lavender"] objectAtIndex:index];
     _themeBlushCheck.textColor = [[[gestureController themes] objectForKey:@"Blush"] objectAtIndex:index];
@@ -616,7 +616,7 @@
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
         index = 0;
     } else index = 1;
-    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Grey on White"]) _themeGreyOnWhiteCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on White"] objectAtIndex:index];
+    if ([[defaults objectForKey:@"currentTheme"] isEqual: @"White on Grey"]) _themeWhiteOnGreyCheck.textColor = [[[gestureController themes] objectForKey:@"White on Grey"] objectAtIndex:index];
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Grey on Black"]) _themeGreyOnBlackCheck.textColor = [[[gestureController themes] objectForKey:@"Grey on Black"] objectAtIndex:index];
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Lavender"]) _themeLavenderCheck.textColor = [[[gestureController themes] objectForKey:@"Lavender"] objectAtIndex:index];
     if ([[defaults objectForKey:@"currentTheme"] isEqual: @"Blush"]) _themeBlushCheck.textColor = [[[gestureController themes] objectForKey:@"Blush"] objectAtIndex:index];
