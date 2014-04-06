@@ -319,7 +319,11 @@ MPMusicPlayerController*        mediaPlayer;
 //    NSLog(@"%f of %ld yields %f",[mediaPlayer currentPlaybackTime],totalPlaybackTime,playbackPosition);
     _playbackLineView.backgroundColor = [UIColor clearColor];
     _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
-
+        long height;
+        if ([[defaults objectForKey:@"disableBannerAds"] isEqual:@"YES"]) height = self.view.bounds.size.height;
+        else if (self.view.bounds.size.height==320) height = self.view.bounds.size.height-32; //reduce height for landscape ad banner
+        else height=self.view.bounds.size.height-50; // reduce height for portrait iAd banner
+        
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"0"]) {
         _playbackLineView.frame=CGRectMake(playbackPosition, 0,  self.view.bounds.size.width, self.view.bounds.size.height);
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
@@ -329,9 +333,9 @@ MPMusicPlayerController*        mediaPlayer;
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
         _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
     } else if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) {
-        _playbackLineView.frame = CGRectMake(playbackPosition, self.view.bounds.size.height-15, 15, self.view.bounds.size.height);
+        _playbackLineView.frame = CGRectMake(playbackPosition, height-15, 15, 15);
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.f];
-        _playbackEdgeViewBG.frame = CGRectMake(0, self.view.bounds.size.height-15, self.view.bounds.size.width, 15);
+        _playbackEdgeViewBG.frame = CGRectMake(0, height-15, self.view.bounds.size.width, 15);
         _playbackEdgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
     }
     }
@@ -684,7 +688,13 @@ MPMusicPlayerController*        mediaPlayer;
     [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
     [themebg getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
-    float volumeLevel=self.view.bounds.size.height-(self.view.bounds.size.height*mediaPlayer.volume);
+    //adjust volume range for iAds
+    long height;
+    if ([[defaults objectForKey:@"disableBannerAds"] isEqual:@"YES"]) height = self.view.bounds.size.height;
+    else if (self.view.bounds.size.height==320) height = self.view.bounds.size.height-32; //reduce height for landscape ad banner
+    else height=self.view.bounds.size.height-50; // reduce height for portrait iAd banner
+    
+    float volumeLevel=height-(height*mediaPlayer.volume);
     
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
