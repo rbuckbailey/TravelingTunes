@@ -333,9 +333,9 @@ MPMusicPlayerController*        mediaPlayer;
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
         _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
     } else if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) {
-        _playbackLineView.frame = CGRectMake(playbackPosition, height-15, 15, 15);
+        _playbackLineView.frame = CGRectMake(playbackPosition, height-15, 15, 80);
         _playbackLineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.f];
-        _playbackEdgeViewBG.frame = CGRectMake(0, height-15, self.view.bounds.size.width, 15);
+        _playbackEdgeViewBG.frame = CGRectMake(0, height-15, self.view.bounds.size.width, 80);
         _playbackEdgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
     }
     }
@@ -833,6 +833,7 @@ MPMusicPlayerController*        mediaPlayer;
         
     }
     else if (gesture.state == UIGestureRecognizerStateEnded) {
+        _fingers=0;
         NSLog(@"Stop. Mediaplayer state is %ld",(long)[mediaPlayer playbackState]);
         //if ([mediaPlayer playbackState] == MPMusicPlaybackStateSeekingForward | [mediaPlayer playbackState]==MPMusicPlaybackStateSeekingBackward) [mediaPlayer endSeeking];
     }
