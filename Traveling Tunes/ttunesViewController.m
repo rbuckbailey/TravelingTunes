@@ -120,12 +120,56 @@ MPMusicPlayerController*        mediaPlayer;
 */
 }
 
+- (int)getBannerHeight:(UIDeviceOrientation)orientation {
+    if (UIInterfaceOrientationIsLandscape(orientation)) {
+        return 32;
+    } else {
+        return 50;
+    }
+}
+
+- (int)getBannerHeight {
+    return [self getBannerHeight:[UIDevice currentDevice].orientation];
+}
+
+#pragma mark ADBannerViewDelegate
+
+@synthesize bannerIsVisible;
+
+
+- (BOOL)bannerViewActionShouldBegin:(ADBannerView *)banner willLeaveApplication:(BOOL)willLeave
+{
+    NSLog(@"Banner view is beginning an ad action");
+    /*BOOL shouldExecuteAction = [self allowActionToRun]; // your app implements this method
+    if (!willLeave && shouldExecuteAction)
+    {
+        // insert code here to suspend any services that might conflict with the advertisement
+    }
+    return shouldExecuteAction;*/
+    return YES;
+}
+
+-(void)bannerViewDidLoadAd:(ADBannerView *)banner
+{
+    if (!self.bannerIsVisible) {
+        [UIView beginAnimations:@"animateAdBannerOn" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, -banner.frame.size.height);
+        [UIView commitAnimations]; self.bannerIsVisible = YES; }
+}
+
+//Hide banner if can't load ad.
+-(void)bannerView:(ADBannerView *)banner didFailToReceiveAdWithError:(NSError *)error
+{
+    if (self.bannerIsVisible) {
+        [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, banner.frame.size.height);
+        [UIView commitAnimations]; self.bannerIsVisible = NO; }
+}
+
 - (void)viewWillAppear:(BOOL)animated
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self.navigationController setNavigationBarHidden:YES];
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) self.canDisplayBannerAds = NO; else self.canDisplayBannerAds = YES;
-
+    
     NSLog(@"ads are disabled? %@",[defaults objectForKey:@"disableAdBanners"]);
     
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"NO"]) _albumArt.alpha = 0.0f;
@@ -319,8 +363,9 @@ MPMusicPlayerController*        mediaPlayer;
 //    NSLog(@"%f of %ld yields %f",[mediaPlayer currentPlaybackTime],totalPlaybackTime,playbackPosition);
     _playbackLineView.backgroundColor = [UIColor clearColor];
     _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
+        
         long height;
-        if ([[defaults objectForKey:@"disableBannerAds"] isEqual:@"YES"]) height = self.view.bounds.size.height;
+        if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) height = self.view.bounds.size.height;
         else if (self.view.bounds.size.height==320) height = self.view.bounds.size.height-32; //reduce height for landscape ad banner
         else height=self.view.bounds.size.height-50; // reduce height for portrait iAd banner
         
@@ -1342,7 +1387,6 @@ MPMusicPlayerController*        mediaPlayer;
 {
     [self dismissViewControllerAnimated: YES completion:nil];
 }
-
 
 
 @end

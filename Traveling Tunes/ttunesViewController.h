@@ -23,7 +23,18 @@ typedef enum : NSInteger {
     directionLeft
 } swipeDirections;
 
-@interface ttunesViewController : UIViewController <CLLocationManagerDelegate>
+//id _adBannerView;
+//BOOL _adBannerViewIsVisible;
+ADBannerView *aBanner;
+BOOL bannerIsVisible;
+
+@interface ttunesViewController : UIViewController <CLLocationManagerDelegate, ADBannerViewDelegate>
+
+//@property (nonatomic, retain) id adBannerView;
+//@property (nonatomic) BOOL adBannerViewIsVisible;
+@property (nonatomic, retain) IBOutlet ADBannerView *aBanner;
+@property (nonatomic, assign) BOOL bannerIsVisible;
+
 @property swipeDirections direction;
 @property (weak, nonatomic) IBOutlet UILabel *artistTitle;
 @property (weak, nonatomic) IBOutlet UILabel *songTitle;
