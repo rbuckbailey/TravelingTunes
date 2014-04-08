@@ -532,16 +532,19 @@ MPMusicPlayerController*        mediaPlayer;
                 _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
                 _albumArt.alpha = 0.25f;
                 _albumArt.contentMode = UIViewContentModeCenter;
+//                _albumArt.contentMode = UIViewContentModeCenter;
 
                 if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
                     LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
+                    
                     _bgView.backgroundColor = [colorScheme backgroundColor];
-                    _artistTitle.textColor = [colorScheme primaryTextColor];
+                    _artistTitle.textColor = [colorScheme secondaryTextColor];
                     _songTitle.textColor = [colorScheme primaryTextColor];
-                    _albumTitle.textColor = [colorScheme primaryTextColor];
+                    _albumTitle.textColor = [colorScheme secondaryTextColor];
                     [_artistTitle setAlpha:0.7f];
                     [_songTitle setAlpha:1.0f];
-                    [_albumTitle setAlpha:0.7f];
+                    [_albumTitle setAlpha:0.7f]; 
+
                 }
             } else _albumArt.alpha = 0.0f;
         
@@ -648,7 +651,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void) startActionHUDFadeTimer {
         [self fadeActionHUDTimerKiller];
-        _fadeActionHUDAlpha = CGColorGetAlpha(_actionHUD.backgroundColor.CGColor);
+    _fadeActionHUDAlpha = 0.75f; //CGColorGetAlpha(_actionHUD.backgroundColor.CGColor);
         
         self.actionHUDFadeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.75f
                                                              target: self
@@ -697,7 +700,7 @@ MPMusicPlayerController*        mediaPlayer;
             else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
             else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
             else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
-            else if ([action isEqual:@"StartDefaultPlaylist"]|[action isEqual:@"PlayAllArtit"]|[action isEqual:@"PlayAlbum"]) _actionHUD.text = @"...";
+            else if ([action isEqual:@"StartDefaultPlaylist"]|[action isEqual:@"PlayAllArtist"]|[action isEqual:@"PlayAlbum"]) _actionHUD.text = @"...";
             else _actionHUD.text = @"?";
 
             [self startActionHUDFadeTimer];
@@ -1122,10 +1125,11 @@ MPMusicPlayerController*        mediaPlayer;
 /****** Player Actions begin *********************************************************************************************************************************/
 
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
+    [self drawActionHUD:action];
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+
     NSLog(@"Performing action %@",action);
-//    if (!([action isEqual:@"FastForward"]|[action isEqual:@"Rewind"]))
-        [self drawActionHUD:action];
+
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) { if ([self.scrubTimer isValid]) { [self.scrubTimer invalidate]; } [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
@@ -1337,9 +1341,7 @@ MPMusicPlayerController*        mediaPlayer;
     MPMediaQuery* query = [MPMediaQuery songsQuery];
     mediaPlayer.shuffleMode = MPMusicShuffleModeSongs;
     [defaults setObject:@"YES" forKey:@"shuffle"];
-    //Pass the query to the player
     [mediaPlayer setQueueWithQuery:query];
-    //Start playing and set a label text to the name and image to the cover art of the song that is playing
     [mediaPlayer play];
     [defaults synchronize];
 }
