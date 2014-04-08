@@ -555,15 +555,13 @@ MPMusicPlayerController*        mediaPlayer;
 -(void)drawFittedText {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
     int minFontSize = (int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-
-    NSString * myText = _songTitle.text;
     
-    NSDictionary *attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     // NSString class method: boundingRectWithSize:options:attributes:context is
     // available only on ios7.0 sdk.
 
+    int songFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
+    NSDictionary *attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     long textHeight = [[_songTitle font] fontWithSize:songFontSize];
 	while( textHeight > minFontSize )
 	{
@@ -572,7 +570,9 @@ MPMusicPlayerController*        mediaPlayer;
 		textHeight = [_artistTitle.text sizeWithFont:[_artistTitle font]].height;
 	}
     NSLog(@"artist title size %ld",textHeight);
-    
+ 
+    songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
+    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     textHeight = [[_songTitle font] fontWithSize:songFontSize];
 	while( textHeight > minFontSize )
 	{
@@ -582,6 +582,8 @@ MPMusicPlayerController*        mediaPlayer;
 	}
     NSLog(@"song title size %ld",textHeight);
     
+    songFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
+    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     textHeight = [[_albumTitle font] fontWithSize:songFontSize];
 	while( textHeight > minFontSize )
 	{
