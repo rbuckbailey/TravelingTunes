@@ -520,9 +520,6 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
         
-        
-        //LEColorPicker colors
-        LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
 
         // artwork never returns nil, appearently, even without artwork
@@ -535,6 +532,7 @@ MPMusicPlayerController*        mediaPlayer;
 //                _albumArt.contentMode = UIViewContentModeCenter;
 
                 if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
+                    LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
                     LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
                     
                     _bgView.backgroundColor = [colorScheme backgroundColor];
@@ -551,27 +549,47 @@ MPMusicPlayerController*        mediaPlayer;
         } else _albumArt.alpha = 0.0f;
         
     }
+    if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) [self drawFittedText];
 }
 
--(void)fittedText {
+-(void)drawFittedText {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
+    int minFontSize = (int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
 
     NSString * myText = _songTitle.text;
-    //get size of the text:
-    CGFloat constrainedSize = 265.0f; //or any other size
-    UIFont * myFont = [UIFont systemFontOfSize:songFontSize]; //or any other font that matches what you will use in the UILabel
-    CGSize textSize = [myText sizeWithFont: myFont
-                         constrainedToSize:CGSizeMake(constrainedSize, CGFLOAT_MAX)
-                             lineBreakMode:UILineBreakModeWordWrap];
     
-    //create a label:
-    CGRect labelFrame = CGRectMake (20, 0, textSize.width, textSize.height);
-    _songTitle.frame = labelFrame;
-    _songTitle.textColor = [UIColor blackColor];
-    _songTitle.text = myText;
-    NSLog(@"text size %f by %f",textSize.width,textSize.height);
+    NSDictionary *attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
+    // NSString class method: boundingRectWithSize:options:attributes:context is
+    // available only on ios7.0 sdk.
+
+    long textHeight = [[_songTitle font] fontWithSize:songFontSize];
+	while( textHeight > minFontSize )
+	{
+        if ([_artistTitle.text sizeWithFont:[_artistTitle font]].width<self.view.bounds.size.width-40) break;
+		[_artistTitle setFont:[[_artistTitle font] fontWithSize:--songFontSize]];
+		textHeight = [_artistTitle.text sizeWithFont:[_artistTitle font]].height;
+	}
+    NSLog(@"artist title size %ld",textHeight);
+    
+    textHeight = [[_songTitle font] fontWithSize:songFontSize];
+	while( textHeight > minFontSize )
+	{
+        if ([_songTitle.text sizeWithFont:[_songTitle font]].width<self.view.bounds.size.width-40) break;
+		[_songTitle setFont:[[_songTitle font] fontWithSize:--songFontSize]];
+		textHeight = [_songTitle.text sizeWithFont:[_songTitle font]].height;
+	}
+    NSLog(@"song title size %ld",textHeight);
+    
+    textHeight = [[_albumTitle font] fontWithSize:songFontSize];
+	while( textHeight > minFontSize )
+	{
+        if ([_albumTitle.text sizeWithFont:[_albumTitle font]].width<self.view.bounds.size.width-40) break;
+		[_albumTitle setFont:[[_albumTitle font] fontWithSize:--songFontSize]];
+		textHeight = [_albumTitle.text sizeWithFont:[_albumTitle font]].height;
+	}
+    NSLog(@"album title size %ld",textHeight);
 }
 
 

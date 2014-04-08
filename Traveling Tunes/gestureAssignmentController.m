@@ -60,13 +60,13 @@
 
 - (void)initDisplaySettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:@"65" forKey:@"artistFontSize"];
+    [defaults setObject:@"50" forKey:@"artistFontSize"];
     [defaults setObject:@"70" forKey:@"songFontSize"];
-    [defaults setObject:@"65" forKey:@"albumFontSize"];
+    [defaults setObject:@"50" forKey:@"albumFontSize"];
     [defaults setObject:@"Left" forKey:@"artistAlignment"];
     [defaults setObject:@"Left" forKey:@"songAlignment"];
     [defaults setObject:@"Left" forKey:@"albumAlignment"];
-    [defaults setObject:@"40" forKey:@"minimumFontSize"];
+    [defaults setObject:@"35" forKey:@"minimumFontSize"];
     [defaults synchronize];
 }
 
