@@ -134,7 +134,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 #pragma mark ADBannerViewDelegate
 
-@synthesize bannerIsVisible;
+@synthesize bannerIsVisible,adBanner;
 
 
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView *)banner willLeaveApplication:(BOOL)willLeave
@@ -195,6 +195,8 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
  
+    adBanner.delegate = self;
+
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
     
@@ -539,13 +541,19 @@ MPMusicPlayerController*        mediaPlayer;
                     float pred=components[0];
                     float pgreen=components[1];
                     float pblue=components[2];
-                    float palpha=components[3];
 
-                    components = CGColorGetComponents([colorScheme secondaryTextColor].CGColor);
-                    float sred=components[0];
-                    float sgreen=components[1];
-                    float sblue=components[2];
-                    float salpha=components[3];
+                    float sred,sgreen,sblue;
+                    // If it can't find a good secondary color, LEColorPicker returns UIColors which can't be averaged, so substitute RGB black or white; else grab the color for averaging
+                    if ([[colorScheme secondaryTextColor] isEqual:[UIColor blackColor]]) {
+                        sred=0; sgreen=0; sblue=0; }
+                    else if ([[colorScheme secondaryTextColor] isEqual:[UIColor whiteColor]]) {
+                        sred=1; sgreen=1; sblue=1; }
+                    else {
+                        components = CGColorGetComponents([colorScheme secondaryTextColor].CGColor);
+                        sred=components[0];
+                        sgreen=components[1];
+                        sblue=components[2];
+                    }
   
                     _bgView.backgroundColor = [colorScheme backgroundColor];
                     _artistTitle.textColor = [colorScheme primaryTextColor];
@@ -672,6 +680,10 @@ MPMusicPlayerController*        mediaPlayer;
     if ( [[self fadeHUDTimer] isValid]){
         [[self fadeHUDTimer] invalidate];
     }
+}
+
+- (void) scrubTimerKiller {
+     if ([self.scrubTimer isValid]) { [self.scrubTimer invalidate]; }
 }
 
 -(void) startActionHUDFadeTimer {
@@ -1156,7 +1168,7 @@ MPMusicPlayerController*        mediaPlayer;
     NSLog(@"Performing action %@",action);
 
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
-    else if ([action isEqual:@"Menu"]) { if ([self.scrubTimer isValid]) { [self.scrubTimer invalidate]; } [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
+    else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
@@ -1392,11 +1404,11 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void)showSongPicker {
     MPMediaPickerController *mediaPicker = [[MPMediaPickerController alloc] initWithMediaTypes: MPMediaTypeAny];
+    [self scrubTimerKiller];
     
     mediaPicker.delegate = self;
     mediaPicker.allowsPickingMultipleItems = YES;
     mediaPicker.prompt = @"Select songs to play";
-    
     [self presentViewController:mediaPicker animated:YES completion:nil];
 }
 
