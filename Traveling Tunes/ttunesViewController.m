@@ -534,14 +534,31 @@ MPMusicPlayerController*        mediaPlayer;
                 if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
                     LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
                     LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
-                    
+
+                    const CGFloat* components = CGColorGetComponents([colorScheme primaryTextColor].CGColor);
+                    float pred=components[0];
+                    float pgreen=components[1];
+                    float pblue=components[2];
+                    float palpha=components[3];
+
+                    components = CGColorGetComponents([colorScheme secondaryTextColor].CGColor);
+                    float sred=components[0];
+                    float sgreen=components[1];
+                    float sblue=components[2];
+                    float salpha=components[3];
+  
                     _bgView.backgroundColor = [colorScheme backgroundColor];
-                    _artistTitle.textColor = [colorScheme secondaryTextColor];
-                    _songTitle.textColor = [colorScheme primaryTextColor];
+                    _artistTitle.textColor = [colorScheme primaryTextColor];
+                    _songTitle.textColor = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:(palpha+salpha)/2];
                     _albumTitle.textColor = [colorScheme secondaryTextColor];
+                    
+/*                    _artistTitle.textColor = [colorScheme primaryTextColor];
+                    _songTitle.textColor = [colorScheme primaryTextColor];
+                    _albumTitle.textColor = [colorScheme primaryTextColor];
                     [_artistTitle setAlpha:0.7f];
                     [_songTitle setAlpha:1.0f];
                     [_albumTitle setAlpha:0.7f]; 
+ */
 
                 }
             } else _albumArt.alpha = 0.0f;
@@ -569,7 +586,6 @@ MPMusicPlayerController*        mediaPlayer;
 		[_artistTitle setFont:[[_artistTitle font] fontWithSize:--songFontSize]];
 		textHeight = [_artistTitle.text sizeWithFont:[_artistTitle font]].height;
 	}
-    NSLog(@"artist title size %ld",textHeight);
  
     songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
     attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
@@ -580,7 +596,6 @@ MPMusicPlayerController*        mediaPlayer;
 		[_songTitle setFont:[[_songTitle font] fontWithSize:--songFontSize]];
 		textHeight = [_songTitle.text sizeWithFont:[_songTitle font]].height;
 	}
-    NSLog(@"song title size %ld",textHeight);
     
     songFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
     attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
@@ -591,7 +606,6 @@ MPMusicPlayerController*        mediaPlayer;
 		[_albumTitle setFont:[[_albumTitle font] fontWithSize:--songFontSize]];
 		textHeight = [_albumTitle.text sizeWithFont:[_albumTitle font]].height;
 	}
-    NSLog(@"album title size %ld",textHeight);
 }
 
 
