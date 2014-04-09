@@ -549,17 +549,8 @@ MPMusicPlayerController*        mediaPlayer;
   
                     _bgView.backgroundColor = [colorScheme backgroundColor];
                     _artistTitle.textColor = [colorScheme primaryTextColor];
-                    _songTitle.textColor = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:(palpha+salpha)/2];
+                    _songTitle.textColor = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:1];
                     _albumTitle.textColor = [colorScheme secondaryTextColor];
-                    
-/*                    _artistTitle.textColor = [colorScheme primaryTextColor];
-                    _songTitle.textColor = [colorScheme primaryTextColor];
-                    _albumTitle.textColor = [colorScheme primaryTextColor];
-                    [_artistTitle setAlpha:0.7f];
-                    [_songTitle setAlpha:1.0f];
-                    [_albumTitle setAlpha:0.7f]; 
- */
-
                 }
             } else _albumArt.alpha = 0.0f;
         
