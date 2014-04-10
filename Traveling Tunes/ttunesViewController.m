@@ -142,9 +142,6 @@ MPMusicPlayerController*        mediaPlayer;
 
 #pragma mark ADBannerViewDelegate
 
-@synthesize bannerIsVisible,adBanner;
-
-
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView *)banner willLeaveApplication:(BOOL)willLeave
 {
     NSLog(@"Banner view is beginning an ad action");
@@ -159,17 +156,17 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void)bannerViewDidLoadAd:(ADBannerView *)banner
 {
-    if (!self.bannerIsVisible) {
+  //  if (!self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOn" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, -banner.frame.size.height);
-        [UIView commitAnimations]; self.bannerIsVisible = YES; }
+        [UIView commitAnimations]; self.bannerIsVisible = YES; //}
 }
 
 //Hide banner if can't load ad.
 -(void)bannerView:(ADBannerView *)banner didFailToReceiveAdWithError:(NSError *)error
 {
-    if (self.bannerIsVisible) {
-        [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, banner.frame.size.height);
-        [UIView commitAnimations]; self.bannerIsVisible = NO; }
+ //   if (self.bannerIsVisible) {
+        [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, +banner.frame.size.height);
+        [UIView commitAnimations]; self.bannerIsVisible = NO; //}
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -179,7 +176,7 @@ MPMusicPlayerController*        mediaPlayer;
 
     
     [self.navigationController setNavigationBarHidden:YES];
-    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) self.canDisplayBannerAds = NO; else self.canDisplayBannerAds = YES;
+//    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) self.canDisplayBannerAds = NO; else self.canDisplayBannerAds = YES;
     
     NSLog(@"ads are disabled? %@",[defaults objectForKey:@"disableAdBanners"]);
     
@@ -277,10 +274,25 @@ MPMusicPlayerController*        mediaPlayer;
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) {
         [self startGPSVolume];
     }
-    //self.gps = [[CLLocationManager alloc] init];
-    //self.gps.delegate = self;
-    //[self.gps startUpdatingLocation];
+    
+    
+    adBanner = [[ADBannerView alloc] initWithFrame:CGRectMake(0,self.view.bounds.size.height,1000,1000)];
+    adBanner.delegate = self;
+    adBanner.requiredContentSizeIdentifiers = [NSSet setWithObjects: ADBannerContentSizeIdentifierPortrait, ADBannerContentSizeIdentifierLandscape, nil];
+    [self.view addSubview:adBanner];
     _speedTier = 0;
+}
+
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+
+{
+    if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
+        adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierLandscape;
+    else
+        adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierPortrait;
+    adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],1000,1000);
+    NSLog(@"orientation is %@",adBanner.currentContentSizeIdentifier);
+    
 }
 
 - (void) orientationChanged:(NSNotification *)note{
@@ -472,7 +484,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 - (void)setupLabels {
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+//    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
@@ -767,14 +779,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void) setupHUD {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    
-    NSDate *currentTime = [NSDate date];
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    [dateFormatter setDateFormat:@"HH"];
-    NSString *resultString = [dateFormatter stringFromDate: currentTime];
-    float theHour = [resultString floatValue];
-    float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
+//    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     float red, green, blue, alpha;
     float red2, green2, blue2, alpha2;

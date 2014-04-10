@@ -30,7 +30,6 @@ BOOL bannerIsVisible;
 
 //@property (nonatomic, retain) id adBannerView;
 //@property (nonatomic) BOOL adBannerViewIsVisible;
-@property (nonatomic, retain) IBOutlet ADBannerView *adBanner;
 @property (nonatomic, assign) BOOL bannerIsVisible;
 
 @property swipeDirections direction;
