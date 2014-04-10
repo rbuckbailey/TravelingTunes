@@ -143,6 +143,7 @@ int songTitleY = 0;
         return 50;
     } else return sdf
  */
+    if (!self.bannerIsVisible) return 0;
     if (orientation==5) {
         if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
             return 32;
@@ -618,9 +619,9 @@ int songTitleY = 0;
             _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         }
         
-        int albumOffset = _albumTitle.frame.origin.y; if (self.bannerIsVisible) albumOffset=self.view.bounds.size.height-_albumTitle.frame.size.height-[self getBannerHeight];
-        _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width,100);
-//        _albumTitle.frame=CGRectMake(leftMargin,self.view.bounds.size.height-_albumTitle.frame.size.height-[self getBannerHeight],self.view.bounds.size.width,100);
+        int albumOffset = _albumTitle.frame.origin.y; if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-_albumTitle.frame.size.height)-[self getBannerHeight];
+        _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width,_albumTitle.frame.size.height);
+//        NSLog(@"album offset is %d frame height is %f",albumOffset,_albumTitle.frame.size.height);
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
