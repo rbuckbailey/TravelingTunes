@@ -777,29 +777,18 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *temp;
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-    
     NSDate *currentTime = [NSDate date];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"HH"];
     NSString *resultString = [dateFormatter stringFromDate: currentTime];
     float theHour = [resultString floatValue];
     float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
-    
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
-        temp = themebg;
-        themebg = themecolor;
-        themecolor = temp;
-    }
+
     float red, green, blue, alpha;
     float red2, green2, blue2, alpha2;
-    [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
-    [themebg getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
+    
+    [_themeColorArtist getRed:&red green:&green blue:&blue alpha:&alpha];
+    [_themeBG getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
     //adjust volume range for iAds
     long height;
