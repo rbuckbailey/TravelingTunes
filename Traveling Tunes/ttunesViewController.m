@@ -422,21 +422,11 @@ MPMusicPlayerController*        mediaPlayer;
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL) {
 //    else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
 
-    
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *temp;
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-
     float red, green, blue, alpha;
     float red2, green2, blue2, alpha2;
 
-    [themecolor getRed:&red green:&green blue:&blue alpha:&alpha];
-    [themebg getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
+    [_themeColorArtist getRed:&red green:&green blue:&blue alpha:&alpha];
+    [_themeBG getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
 //    MPMediaItem *playingItem=[mediaPlayer nowPlayingItem];
     long totalPlaybackTime = [[[mediaPlayer nowPlayingItem] valueForProperty: @"playbackDuration"] longValue];
