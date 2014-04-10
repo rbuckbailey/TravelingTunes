@@ -162,6 +162,10 @@ int leftMargin = 20;
 
 #pragma mark ADBannerViewDelegate
 
+- (void) killAdBanner {
+    if (adBanner!=NULL) [adBanner removeFromSuperview];
+}
+
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView *)banner willLeaveApplication:(BOOL)willLeave
 {
     NSLog(@"Banner view is beginning an ad action");
@@ -210,7 +214,7 @@ int leftMargin = 20;
 
     
     [self.navigationController setNavigationBarHidden:YES];
-    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [adBanner removeFromSuperview];
+    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [self killAdBanner];
     //if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self initAdBanner];
     
     
@@ -1204,7 +1208,7 @@ int leftMargin = 20;
     NSLog(@"Performing action %@",action);
 
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
-    else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [adBanner removeFromSuperview]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
+    else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self killAdBanner]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
