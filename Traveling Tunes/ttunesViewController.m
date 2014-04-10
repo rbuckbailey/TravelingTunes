@@ -68,7 +68,8 @@ MPMusicPlayerController*        mediaPlayer;
     [self setupHUD];
 //    if (ad is visible) {
         
-    adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width-40,[self getBannerHeight]);
+    if (self.bannerIsVisible) adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
+    else adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight]);
 
 }
 
@@ -133,11 +134,24 @@ MPMusicPlayerController*        mediaPlayer;
 }
 
 - (int)getBannerHeight:(UIDeviceOrientation)orientation {
-    if (UIInterfaceOrientationIsLandscape(orientation)) {
+/*    if (UIInterfaceOrientationIsLandscape(orientation)) {
         return 32;
-    } else {
+    } else if (UIInterfaceOrientationIsPortrait(orientation)) {
         return 50;
-    }
+    } else return sdf
+ */
+    if (orientation==5) {
+        if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
+            return 32;
+        } else if (UIInterfaceOrientationIsPortrait(_activeOrientation)) {
+            return 50;
+        }
+    } else if (UIInterfaceOrientationIsLandscape(orientation)) {
+            return 32;
+        } else if (UIInterfaceOrientationIsPortrait(orientation)) {
+            return 50;
+        }
+        return 50;
 }
 
 - (int)getBannerHeight {
@@ -172,6 +186,7 @@ MPMusicPlayerController*        mediaPlayer;
     if (self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, +banner.frame.size.height);
         [UIView commitAnimations]; self.bannerIsVisible = NO; }
+    NSLog(@"Ad loading error");
 }
 
 - (void)viewWillAppear:(BOOL)animated
