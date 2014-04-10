@@ -177,7 +177,11 @@ MPMusicPlayerController*        mediaPlayer;
 {
     if (!self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOn" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, -banner.frame.size.height);
+                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, -(banner.frame.size.height/2));
+                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -banner.frame.size.height);
         [UIView commitAnimations]; self.bannerIsVisible = YES; }
+    //        if (self.bannerIsVisible) _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -_albumTitle.frame.size.height);
+
 }
 
 //Hide banner if can't load ad.
@@ -185,6 +189,8 @@ MPMusicPlayerController*        mediaPlayer;
 {
     if (self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, +banner.frame.size.height);
+                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, +(banner.frame.size.height/2));
+                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, +banner.frame.size.height);
         [UIView commitAnimations]; self.bannerIsVisible = NO; }
     NSLog(@"Ad loading error");
 }
@@ -603,7 +609,6 @@ MPMusicPlayerController*        mediaPlayer;
             _songTitle.textColor = _themeColorSong;
             _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
             _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-//            [self fittedText];
             //NSLog(@"font size %f",_adjustedSongFontSize);
         }
         
@@ -613,7 +618,6 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.textColor = _themeColorAlbum;
         [_albumTitle setAlpha:0.8f];
         _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-//        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
     }
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) [self drawFittedText];
 }
