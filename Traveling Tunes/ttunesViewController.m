@@ -308,7 +308,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 -(void) startPlaybackWatcher {
     if ([self.scrubTimer isValid]) [self.scrubTimer invalidate];
-    self.scrubTimer = [NSTimer scheduledTimerWithTimeInterval:   0.2f
+    self.scrubTimer = [NSTimer scheduledTimerWithTimeInterval:   0.05f
                                                   target: self
                                                 selector: @selector(updatePlaybackHUD)
                                                 userInfo: nil
@@ -319,8 +319,10 @@ MPMusicPlayerController*        mediaPlayer;
 -(void) nowPlayingItemChanged:(NSNotification *)notification {
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
 
+    [self setGlobalColors];
     [self scrollingTimerKiller]; [self startMarqueeTimer];
     [self setupLabels];
+    [self setupHUD];
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
     if (song) {
         NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
@@ -387,7 +389,7 @@ MPMusicPlayerController*        mediaPlayer;
  */
                 _themeBG = [colorScheme backgroundColor];
                 _themeColorArtist = [colorScheme primaryTextColor];
-                _themeColorSong = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:1];
+                _themeColorSong = [UIColor colorWithRed: (sred+(pred*3))/4   green: (sgreen+(pgreen*3))/4   blue:(sblue+(pblue*3))/4   alpha:1];
                 _themeColorAlbum = [colorScheme secondaryTextColor];
             }
         } else _albumArt.alpha = 0.0f;
@@ -560,7 +562,7 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
         _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
         _artistTitle.textColor = _themeColorArtist;
-        [_artistTitle setAlpha:0.6f];
+        [_artistTitle setAlpha:0.8f];
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
         if (_timersRunning==0) {
@@ -579,7 +581,7 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
         _albumTitle.textColor = _themeColorAlbum;
-        [_albumTitle setAlpha:0.6f];
+        [_albumTitle setAlpha:0.8f];
         _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
 //        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
     }
