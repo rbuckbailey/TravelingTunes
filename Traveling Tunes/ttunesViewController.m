@@ -66,6 +66,10 @@ MPMusicPlayerController*        mediaPlayer;
     _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height);
     [self setupLabels];
     [self setupHUD];
+//    if (ad is visible) {
+        
+    adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width-40,[self getBannerHeight]);
+
 }
 
 - (IBAction)singleTapDetected:(id)sender {
@@ -151,22 +155,23 @@ MPMusicPlayerController*        mediaPlayer;
         // insert code here to suspend any services that might conflict with the advertisement
     }
     return shouldExecuteAction;*/
+    [self scrubTimerKiller];
     return YES;
 }
 
 -(void)bannerViewDidLoadAd:(ADBannerView *)banner
 {
-  //  if (!self.bannerIsVisible) {
+    if (!self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOn" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, -banner.frame.size.height);
-        [UIView commitAnimations]; self.bannerIsVisible = YES; //}
+        [UIView commitAnimations]; self.bannerIsVisible = YES; }
 }
 
 //Hide banner if can't load ad.
 -(void)bannerView:(ADBannerView *)banner didFailToReceiveAdWithError:(NSError *)error
 {
- //   if (self.bannerIsVisible) {
+    if (self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, +banner.frame.size.height);
-        [UIView commitAnimations]; self.bannerIsVisible = NO; //}
+        [UIView commitAnimations]; self.bannerIsVisible = NO; }
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -203,8 +208,6 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
  
-    adBanner.delegate = self;
-
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
     
@@ -276,9 +279,9 @@ MPMusicPlayerController*        mediaPlayer;
     }
     
     
-    adBanner = [[ADBannerView alloc] initWithFrame:CGRectMake(0,self.view.bounds.size.height,1000,1000)];
+    adBanner = [[ADBannerView alloc] initWithFrame:CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight])];
     adBanner.delegate = self;
-    adBanner.requiredContentSizeIdentifiers = [NSSet setWithObjects: ADBannerContentSizeIdentifierPortrait, ADBannerContentSizeIdentifierLandscape, nil];
+    self.bannerIsVisible = NO;
     [self.view addSubview:adBanner];
     _speedTier = 0;
 }
@@ -286,13 +289,13 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 
 {
-    if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
+/*    if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
         adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierLandscape;
     else
         adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierPortrait;
-    adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],1000,1000);
+    adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
     NSLog(@"orientation is %@",adBanner.currentContentSizeIdentifier);
-    
+  */
 }
 
 - (void) orientationChanged:(NSNotification *)note{
