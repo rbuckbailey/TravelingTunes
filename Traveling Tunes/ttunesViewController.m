@@ -1280,7 +1280,7 @@ MPMusicPlayerController*        mediaPlayer;
 //    NSLog(@"%d timers running",_timersRunning);
     
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
-    _marqueePosition=_marqueePosition+3;
+    _marqueePosition=_marqueePosition+2;
     _adjustedSongFontSize = _songTitle.font.pointSize;
     _songTitle.frame=CGRectMake(20-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
 //    NSLog(@"scrolling font size %f",_adjustedSongFontSize);
@@ -1318,7 +1318,7 @@ MPMusicPlayerController*        mediaPlayer;
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
     if ((_timersRunning==0) & (textWidth > self.view.bounds.size.width)) {
         [self scrollingTimerKiller];
-        self.scrollingTimer = [NSTimer scheduledTimerWithTimeInterval:   0.05f
+        self.scrollingTimer = [NSTimer scheduledTimerWithTimeInterval:   0.025f
                                                     target: self
                                                   selector: @selector(scrollSongTitle:)
                                                   userInfo: nil

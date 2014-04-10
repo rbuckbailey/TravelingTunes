@@ -49,7 +49,7 @@
     [defaults setObject:@"YES" forKey:@"DimAtNight"];
     [defaults setObject:@"6" forKey:@"SunRiseHour"];
     [defaults setObject:@"19" forKey:@"SunSetHour"];
-    [defaults setObject:@"YES" forKey:@"TitleScrollLong"];
+    [defaults setObject:@"NO" forKey:@"TitleScrollLong"];
     [defaults setObject:@"NO" forKey:@"GPSVolume"];
     [defaults setObject:@"0.5" forKey:@"GPSSensivity"];
     [defaults setObject:@"YES" forKey:@"showAlbumArt"];
