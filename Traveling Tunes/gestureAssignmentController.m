@@ -50,7 +50,7 @@
     [defaults setObject:@"6" forKey:@"SunRiseHour"];
     [defaults setObject:@"19" forKey:@"SunSetHour"];
     [defaults setObject:@"YES" forKey:@"TitleScrollLong"];
-    [defaults setObject:@"YES" forKey:@"GPSVolume"];
+    [defaults setObject:@"NO" forKey:@"GPSVolume"];
     [defaults setObject:@"0.5" forKey:@"GPSSensivity"];
     [defaults setObject:@"YES" forKey:@"showAlbumArt"];
     [defaults setObject:@"YES" forKey:@"albumArtColors"];
@@ -81,7 +81,7 @@
 - (void)initThemes {
     //bg, artist, song, album
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:@"Old West" forKey:@"currentTheme"];
+    [defaults setObject:@"Lavender" forKey:@"currentTheme"];
     
     [defaults synchronize];
     self.themes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
@@ -91,14 +91,10 @@
                                                 [UIColor colorWithRed: 190/255.f green: 190/255.f blue:190/255.f alpha:1],nil],@"Grey on Black",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 205/255.f   green: 241/255.f   blue:5/255.f   alpha:1],
                                                 [UIColor colorWithRed: 98/255.f green: 128/255.f blue:29/255.f alpha:1],nil],@"Leaf",
-//                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 98/255.f green: 128/255.f blue:29/255.f alpha:1],
-//                                                [UIColor colorWithRed: 205/255.f   green: 241/255.f   blue:5/255.f   alpha:1],nil],@"Leaf",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 241/255.f   green: 195/255.f   blue:146/255.f   alpha:1],
                                                 [UIColor colorWithRed: 119/255.f green: 68/255.f blue:39/255.f alpha:1],nil],@"Old West",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 98/255.f green: 91/255.f blue:255 alpha:1],
                                                 [UIColor colorWithRed: 155/255.f   green: 178/255.f   blue:255/255.f   alpha:1],nil],@"Periwinkle Blue",
-//                   [NSArray arrayWithObjects:   [UIColor colorWithRed: 155/255.f   green: 178/255.f   blue:255/255.f   alpha:1],
-//                                                [UIColor colorWithRed: 98/255.f green: 91/255.f blue:255 alpha:1],nil],@"Periwinkle Blue",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 195/255.f   green: 192/255.f   blue:255/255.f   alpha:1],
                                                 [UIColor colorWithRed: 255/255.f green: 255/255.f blue:255 alpha:1],nil],@"Lavender",
                    [NSArray arrayWithObjects:   [UIColor colorWithRed: 255/255.f   green: 188/255.f   blue:196/255.f   alpha:1],
@@ -160,13 +156,13 @@
 
     [defaults setObject:@"Unassigned" forKey:@"3SwipeLeft"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeRight"];
-    [defaults setObject:@"Unassigned" forKey:@"3SwipeUp"];
-    [defaults setObject:@"Unassigned" forKey:@"3SwipeDown"];
+    [defaults setObject:@"PlayAllArtist" forKey:@"3SwipeUp"];
+    [defaults setObject:@"PlayAlbum" forKey:@"3SwipeDown"];
     [defaults setObject:@"NO" forKey:@"3SwipeLeftContinuous"];
     [defaults setObject:@"NO" forKey:@"3SwipeRightContinuous"];
     [defaults setObject:@"NO" forKey:@"3SwipeUpContinuous"];
     [defaults setObject:@"NO" forKey:@"3SwipeDownContinuous"];
-    [defaults setObject:@"Unassigned" forKey:@"31Tap"];
+    [defaults setObject:@"StartDefaultPlaylist" forKey:@"31Tap"];
     [defaults setObject:@"Unassigned" forKey:@"32Tap"];
     [defaults setObject:@"Unassigned" forKey:@"33Tap"];
     [defaults setObject:@"Unassigned" forKey:@"34Tap"];

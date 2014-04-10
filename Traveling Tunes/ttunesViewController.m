@@ -74,13 +74,19 @@ MPMusicPlayerController*        mediaPlayer;
  */
 }
 
-- (id)init{
-//    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
-    self = [super init];
+-(void)startGPSVolume {
     if (self != nil) {
         self.gps = [[CLLocationManager alloc] init];
         self.gps.delegate = self;
+        [self.gps startUpdatingLocation];
     }
+}
+
+- (id)init{
+//    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+    self = [super init];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) [self startGPSVolume];
     return self;
 }
 
@@ -91,6 +97,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     float mph = (newLocation.speed*2.23694);
 
     // calibrate base volume when not moving; otherwise it is adjusted by [self increase/decreaseVolume]
@@ -167,6 +174,9 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)viewWillAppear:(BOOL)animated
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) [self startGPSVolume];
+
+    
     [self.navigationController setNavigationBarHidden:YES];
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) self.canDisplayBannerAds = NO; else self.canDisplayBannerAds = YES;
     
@@ -263,9 +273,12 @@ MPMusicPlayerController*        mediaPlayer;
      object:[UIDevice currentDevice]];
 
     //init gps
-    self.gps = [[CLLocationManager alloc] init];
-    self.gps.delegate = self;
-    [self.gps startUpdatingLocation];
+    if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) {
+        [self startGPSVolume];
+    }
+    //self.gps = [[CLLocationManager alloc] init];
+    //self.gps.delegate = self;
+    //[self.gps startUpdatingLocation];
     _speedTier = 0;
 }
 
@@ -1410,6 +1423,7 @@ MPMusicPlayerController*        mediaPlayer;
     mediaPicker.allowsPickingMultipleItems = YES;
     mediaPicker.prompt = @"Select songs to play";
     [self presentViewController:mediaPicker animated:YES completion:nil];
+    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
 }
 
 - (void) mediaPicker: (MPMediaPickerController *) mediaPicker didPickMediaItems: (MPMediaItemCollection *) mediaItemCollection
