@@ -44,7 +44,7 @@
     [defaults setObject:@"NO" forKey:@"PlayOnLaunch"];
     [defaults setObject:@"NO" forKey:@"PauseOnExit"];
     [defaults setObject:@"YES" forKey:@"titleShrinkInPortrait"];
-    [defaults setObject:@"NO" forKey:@"titleShrinkLong"];
+    [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
     [defaults setObject:@"NO" forKey:@"InvertAtNight"];
     [defaults setObject:@"YES" forKey:@"DimAtNight"];
     [defaults setObject:@"6" forKey:@"SunRiseHour"];

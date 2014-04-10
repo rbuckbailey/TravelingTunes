@@ -15,6 +15,8 @@
 MPMusicPlayerController*        mediaPlayer;
 
 int leftMargin = 20;
+int albumTitleY = 0;
+int songTitleY = 0;
 
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade,*bgView;
@@ -72,7 +74,6 @@ int leftMargin = 20;
 
     if (self.bannerIsVisible) adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
     else adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight]);
-
 }
 
 - (IBAction)singleTapDetected:(id)sender {
@@ -189,8 +190,8 @@ int leftMargin = 20;
 {
     if (!self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOn" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, -banner.frame.size.height);
-                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, -(banner.frame.size.height/2));
-                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -banner.frame.size.height);
+//                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, -(banner.frame.size.height/2));
+//                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -banner.frame.size.height);
         [UIView commitAnimations]; self.bannerIsVisible = YES; }
     //        if (self.bannerIsVisible) _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -_albumTitle.frame.size.height);
 
@@ -201,8 +202,8 @@ int leftMargin = 20;
 {
     if (self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, +banner.frame.size.height);
-                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, +(banner.frame.size.height/2));
-                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, +banner.frame.size.height);
+//                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, +(banner.frame.size.height/2));
+//                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, +banner.frame.size.height);
         [UIView commitAnimations]; self.bannerIsVisible = NO; }
     NSLog(@"Ad loading error");
 }
@@ -236,6 +237,9 @@ int leftMargin = 20;
     //start gps if enabled
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"])[self.gps startUpdatingLocation];
     else [self.gps stopUpdatingLocation];
+    
+    songTitleY = _songTitle.frame.origin.y;
+    albumTitleY = _albumTitle.frame.origin.y;
 }
 
 - (void)viewDidLoad
@@ -508,7 +512,7 @@ int leftMargin = 20;
 //    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
 //    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     
-
+    [self setupLabels];
 }
 
 - (void)setupLabels {
@@ -602,17 +606,21 @@ int leftMargin = 20;
         [_artistTitle setAlpha:0.8f];
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
+        int songOffset = _songTitle.frame.origin.y; if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2)-([self getBannerHeight]/2);
         // do not replace song title label if the scrolling marquee is handling that right now
         if (_timersRunning==0) {
             _songTitle.numberOfLines = 1;
             _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
             _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
             _songTitle.textColor = _themeColorSong;
-            _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
+//            _songTitle.frame=CGRectMake(20-_marqueePosition, (self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2)-([self getBannerHeight]/2), self.view.bounds.size.width, _songTitle.frame.size.height);
+            _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset, self.view.bounds.size.width, _songTitle.frame.size.height);
             _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         }
         
-        _albumTitle.frame=CGRectMake(leftMargin,self.view.bounds.size.height-150,self.view.bounds.size.width,100);
+        int albumOffset = _albumTitle.frame.origin.y; if (self.bannerIsVisible) albumOffset=self.view.bounds.size.height-_albumTitle.frame.size.height-[self getBannerHeight];
+        _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width,100);
+//        _albumTitle.frame=CGRectMake(leftMargin,self.view.bounds.size.height-_albumTitle.frame.size.height-[self getBannerHeight],self.view.bounds.size.width,100);
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
