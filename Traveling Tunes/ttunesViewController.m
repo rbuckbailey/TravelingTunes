@@ -23,6 +23,7 @@ MPMusicPlayerController*        mediaPlayer;
 @property (strong, nonatomic) CLLocationManager *locationManager;
 @property int baseVolume;
 @property int fingers;
+@property UIColor *themeBG, *themeColorArtist,*themeColorSong,*themeColorAlbum;
 @property UIImageView *albumArt;
 
 @end
@@ -334,6 +335,85 @@ MPMusicPlayerController*        mediaPlayer;
     }
 }
 
+- (void) setGlobalColors {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    
+    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
+    NSMutableDictionary *themedict = [gestureController themes];
+    NSArray *themecolors = [themedict objectForKey:currentTheme];
+    _themeBG = [themecolors objectAtIndex:0];
+    _themeColorArtist = [themecolors objectAtIndex:1];
+    _themeColorSong = [themecolors objectAtIndex:1];
+    _themeColorAlbum = [themecolors objectAtIndex:1];
+    [self invertColorsIfNecessary];
+    
+    MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
+    if ((artwork != nil) & ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"])) {
+        // so do a second check to see if it has at least 50x50 pixels
+        if ([artwork imageWithSize:CGSizeMake(50,50)]) {
+            _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
+            _albumArt.alpha = 0.25f;
+            _albumArt.contentMode = UIViewContentModeCenter;
+            //                _albumArt.contentMode = UIViewContentModeCenter;
+            
+            if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
+                LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
+                LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
+                
+                const CGFloat* components = CGColorGetComponents([colorScheme primaryTextColor].CGColor);
+                float pred=components[0];
+                float pgreen=components[1];
+                float pblue=components[2];
+                
+                float sred,sgreen,sblue;
+                // If it can't find a good secondary color, LEColorPicker returns UIColors which can't be averaged, so substitute RGB black or white; else grab the color for averaging
+                if ([[colorScheme secondaryTextColor] isEqual:[UIColor blackColor]]) {
+                    sred=0; sgreen=0; sblue=0; }
+                else if ([[colorScheme secondaryTextColor] isEqual:[UIColor whiteColor]]) {
+                    sred=1; sgreen=1; sblue=1; }
+                else {
+                    components = CGColorGetComponents([colorScheme secondaryTextColor].CGColor);
+                    sred=components[0];
+                    sgreen=components[1];
+                    sblue=components[2];
+                }
+                
+/*
+                  _bgView.backgroundColor = [colorScheme backgroundColor];
+                _artistTitle.textColor = [colorScheme primaryTextColor];
+                _songTitle.textColor = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:1];
+                _albumTitle.textColor = [colorScheme secondaryTextColor];
+ */
+                _themeBG = [colorScheme backgroundColor];
+                _themeColorArtist = [colorScheme primaryTextColor];
+                _themeColorSong = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:1];
+                _themeColorAlbum = [colorScheme secondaryTextColor];
+            }
+        } else _albumArt.alpha = 0.0f;
+        
+    } else _albumArt.alpha = 0.0f;
+}
+
+- (void) invertColorsIfNecessary {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSDate *currentTime = [NSDate date];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"HH"];
+    NSString *resultString = [dateFormatter stringFromDate: currentTime];
+    
+    UIColor *temp;
+    float theHour = [resultString floatValue];
+    float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
+    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
+        temp = _themeBG;
+        _themeBG = _themeColorSong;
+        _themeColorArtist = temp;
+        _themeColorSong = temp;
+        _themeColorAlbum = temp;
+    }
+}
+
 /*** HUD display setups ********************************************************************************************************************************************/
 
 -(void) updatePlaybackHUD {
@@ -351,17 +431,7 @@ MPMusicPlayerController*        mediaPlayer;
     UIColor *temp;
     UIColor *themebg = [themecolors objectAtIndex:0];
     UIColor *themecolor = [themecolors objectAtIndex:1];
-        NSDate *currentTime = [NSDate date];
-        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-        [dateFormatter setDateFormat:@"HH"];
-        NSString *resultString = [dateFormatter stringFromDate: currentTime];
-        float theHour = [resultString floatValue];
-        float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
-        temp = themebg;
-        themebg = themecolor;
-        themecolor = temp;
-    }
+
     float red, green, blue, alpha;
     float red2, green2, blue2, alpha2;
 
@@ -414,13 +484,11 @@ MPMusicPlayerController*        mediaPlayer;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
-    NSString *currentTheme = [defaults objectForKey:@"currentTheme"];
-    NSMutableDictionary *themedict = [gestureController themes];
-    NSArray *themecolors = [themedict objectForKey:currentTheme];
-    UIColor *temp;
-    UIColor *themebg = [themecolors objectAtIndex:0];
-    UIColor *themecolor = [themecolors objectAtIndex:1];
-    //setup hour string, configure night-time overlay if necessary
+    [self setGlobalColors];
+    
+//    NSLog(@"time is %f:%f sundown is %f and sunup is %f",theHour,theMinute,sundown,sunup);
+//    NSLog(@"adjusting overlay by %f",0+((theMinute/60)/2));
+    // dim display if it's night and dim-at-night is on
     NSDate *currentTime = [NSDate date];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"HH"];
@@ -430,16 +498,6 @@ MPMusicPlayerController*        mediaPlayer;
     resultString = [dateFormatter stringFromDate: currentTime];
     float theMinute = [resultString floatValue];
     float sundown = (int)[[defaults objectForKey:@"SunSetHour"] floatValue]; float sunup = (int)[[defaults objectForKey:@"SunRiseHour"] floatValue];
-    
-    // invert themes if "invert" is on, or if "invert at night" is on and also it is night
-    if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"] | ([[defaults objectForKey:@"InvertAtNight"] isEqual:@"YES"] & ((theHour>sundown) | (theHour < sunup)))) {
-        temp = themebg;
-        themebg = themecolor;
-        themecolor = temp;
-    }
-//    NSLog(@"time is %f:%f sundown is %f and sunup is %f",theHour,theMinute,sundown,sunup);
-//    NSLog(@"adjusting overlay by %f",0+((theMinute/60)/2));
-    // dim display if it's night and dim-at-night is on
     if (((theHour>=sundown) | (theHour < sunup)) & ([[defaults objectForKey:@"DimAtNight" ] isEqual:@"YES"])) {
         // fade towards half-dark during the hour after sundown
         if (theHour==sundown) {
@@ -482,7 +540,7 @@ MPMusicPlayerController*        mediaPlayer;
         if (albumFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) albumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
     }
     //    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
-    _bgView.backgroundColor = themebg;
+    _bgView.backgroundColor = _themeBG;
     
     //actually do the drawing
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
@@ -490,7 +548,7 @@ MPMusicPlayerController*        mediaPlayer;
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
         _artistTitle.font   = [UIFont systemFontOfSize:28];
-        _artistTitle.textColor = themecolor;
+        _artistTitle.textColor = _themeColorArtist;
         
         [_artistTitle setAlpha:0.6f];
         [_artistTitle sizeToFit];
@@ -498,20 +556,20 @@ MPMusicPlayerController*        mediaPlayer;
         _songTitle.numberOfLines = 1;
         _songTitle.text   = @"Tap for default playlist.";
         _songTitle.font   = [UIFont systemFontOfSize:28];
-        _songTitle.textColor = themecolor;
+        _songTitle.textColor = _themeColorSong;
         
         [_songTitle sizeToFit];
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.text    = @"Long hold for menu.";
         _albumTitle.font    =  [UIFont systemFontOfSize:28];
-        _albumTitle.textColor = themecolor;
+        _albumTitle.textColor = _themeColorAlbum;
         [_albumTitle setAlpha:0.6f];
     } else {
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
         _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
-        _artistTitle.textColor = themecolor;
+        _artistTitle.textColor = _themeColorArtist;
         [_artistTitle setAlpha:0.6f];
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
@@ -520,7 +578,7 @@ MPMusicPlayerController*        mediaPlayer;
             _songTitle.numberOfLines = 1;
             _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
             _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
-            _songTitle.textColor = themecolor;
+            _songTitle.textColor = _themeColorSong;
             _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
             _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
 //            [self fittedText];
@@ -530,53 +588,10 @@ MPMusicPlayerController*        mediaPlayer;
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
-        _albumTitle.textColor = themecolor;
+        _albumTitle.textColor = _themeColorAlbum;
         [_albumTitle setAlpha:0.6f];
         _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
-        
-        MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
-
-        // artwork never returns nil, appearently, even without artwork
-        if ((artwork != nil) & ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"])) {
-            // so do a second check to see if it has at least 50x50 pixels
-            if ([artwork imageWithSize:CGSizeMake(50,50)]) {
-                _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
-                _albumArt.alpha = 0.25f;
-                _albumArt.contentMode = UIViewContentModeCenter;
-//                _albumArt.contentMode = UIViewContentModeCenter;
-
-                if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
-                    LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
-                    LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
-
-                    const CGFloat* components = CGColorGetComponents([colorScheme primaryTextColor].CGColor);
-                    float pred=components[0];
-                    float pgreen=components[1];
-                    float pblue=components[2];
-
-                    float sred,sgreen,sblue;
-                    // If it can't find a good secondary color, LEColorPicker returns UIColors which can't be averaged, so substitute RGB black or white; else grab the color for averaging
-                    if ([[colorScheme secondaryTextColor] isEqual:[UIColor blackColor]]) {
-                        sred=0; sgreen=0; sblue=0; }
-                    else if ([[colorScheme secondaryTextColor] isEqual:[UIColor whiteColor]]) {
-                        sred=1; sgreen=1; sblue=1; }
-                    else {
-                        components = CGColorGetComponents([colorScheme secondaryTextColor].CGColor);
-                        sred=components[0];
-                        sgreen=components[1];
-                        sblue=components[2];
-                    }
-  
-                    _bgView.backgroundColor = [colorScheme backgroundColor];
-                    _artistTitle.textColor = [colorScheme primaryTextColor];
-                    _songTitle.textColor = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:1];
-                    _albumTitle.textColor = [colorScheme secondaryTextColor];
-                }
-            } else _albumArt.alpha = 0.0f;
-        
-        } else _albumArt.alpha = 0.0f;
-        
+//        if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _albumTitle.adjustsFontSizeToFitWidth=YES; else _albumTitle.adjustsFontSizeToFitWidth=NO;
     }
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) [self drawFittedText];
 }
