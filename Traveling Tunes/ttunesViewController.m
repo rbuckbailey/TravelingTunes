@@ -210,7 +210,9 @@ int leftMargin = 20;
 
     
     [self.navigationController setNavigationBarHidden:YES];
-//    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) self.canDisplayBannerAds = NO; else self.canDisplayBannerAds = YES;
+    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [adBanner removeFromSuperview];
+    //if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self initAdBanner];
+    
     
     NSLog(@"ads are disabled? %@",[defaults objectForKey:@"disableAdBanners"]);
     
@@ -307,12 +309,15 @@ int leftMargin = 20;
         [self startGPSVolume];
     }
     
-    
-    adBanner = [[ADBannerView alloc] initWithFrame:CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight])];
-    adBanner.delegate = self;
-    self.bannerIsVisible = NO;
-    [self.view addSubview:adBanner];
+    [self initAdBanner];
     _speedTier = 0;
+}
+
+- (void) initAdBanner {
+    adBanner = [[ADBannerView alloc] initWithFrame:CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight])];
+    self.bannerIsVisible = NO;
+    adBanner.delegate = self;
+    [self.view addSubview:adBanner];
 }
 
 - (void) orientationChanged:(NSNotification *)note{
@@ -1191,13 +1196,15 @@ int leftMargin = 20;
 /****** Player Actions begin *********************************************************************************************************************************/
 
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     [self drawActionHUD:action];
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
 
     NSLog(@"Performing action %@",action);
 
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
-    else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
+    else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [adBanner removeFromSuperview]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
     else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
