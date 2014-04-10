@@ -14,6 +14,8 @@
 
 MPMusicPlayerController*        mediaPlayer;
 
+int leftMargin = 20;
+
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade,*bgView;
 @property UILabel *actionHUD;
@@ -63,11 +65,11 @@ MPMusicPlayerController*        mediaPlayer;
     _actionHUD.backgroundColor = [UIColor clearColor];
     _actionHUD.textColor = [UIColor clearColor];
     [self.actionHUDFadeTimer invalidate];
+    
     _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height);
     [self setupLabels];
     [self setupHUD];
-//    if (ad is visible) {
-        
+
     if (self.bannerIsVisible) adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
     else adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight]);
 
@@ -171,6 +173,12 @@ MPMusicPlayerController*        mediaPlayer;
     return shouldExecuteAction;*/
     [self scrubTimerKiller];
     return YES;
+}
+
+- (void) bannerViewActionDidFinish:(ADBannerView *)banner
+{
+    if (self.bannerIsVisible) adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
+    else adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight]);
 }
 
 -(void)bannerViewDidLoadAd:(ADBannerView *)banner
@@ -305,18 +313,6 @@ MPMusicPlayerController*        mediaPlayer;
     self.bannerIsVisible = NO;
     [self.view addSubview:adBanner];
     _speedTier = 0;
-}
-
-- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
-
-{
-/*    if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
-        adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierLandscape;
-    else
-        adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierPortrait;
-    adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
-    NSLog(@"orientation is %@",adBanner.currentContentSizeIdentifier);
-  */
 }
 
 - (void) orientationChanged:(NSNotification *)note{
@@ -514,8 +510,7 @@ MPMusicPlayerController*        mediaPlayer;
     //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
     [self setGlobalColors];
     
-//    NSLog(@"time is %f:%f sundown is %f and sunup is %f",theHour,theMinute,sundown,sunup);
-//    NSLog(@"adjusting overlay by %f",0+((theMinute/60)/2));
+
     // dim display if it's night and dim-at-night is on
     NSDate *currentTime = [NSDate date];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
@@ -537,8 +532,6 @@ MPMusicPlayerController*        mediaPlayer;
         else _nightTimeFade.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5f];
     } else _nightTimeFade.backgroundColor = [UIColor clearColor];
     
-
-    
     //setup colors and alignment and font sizing
     switch ((int)[[defaults objectForKey:@"artistAlignment"] floatValue]) {
         case 0: _artistTitle.textAlignment = NSTextAlignmentLeft; break;
@@ -559,6 +552,7 @@ MPMusicPlayerController*        mediaPlayer;
     int songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
     int albumFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
 
+    // halve text height in portrait if set to do so
     if (((self.view.bounds.size.height==480) | (self.view.bounds.size.height==568)) & [[defaults objectForKey:@"titleShrinkInPortrait"] isEqual:@"YES"]) {
         artistFontSize = (int)artistFontSize/2;
         if (artistFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) artistFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
@@ -567,32 +561,30 @@ MPMusicPlayerController*        mediaPlayer;
         albumFontSize = (int)albumFontSize/2;
         if (albumFontSize<(int)[[defaults objectForKey:@"minimumFontSize"] floatValue]) albumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
     }
-    //    NSLog(@"invert is %@",[defaults objectForKey:@"themeInvert"]);
-    _bgView.backgroundColor = _themeBG;
+
     
     //actually do the drawing
+    _bgView.backgroundColor = _themeBG;
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
 //    if ([mediaPlayer.nowPlayingItem]) { //output "nothing playing screen" if nothing playing
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = @"No music playing.";
         _artistTitle.font   = [UIFont systemFontOfSize:28];
         _artistTitle.textColor = _themeColorArtist;
-        
-        [_artistTitle setAlpha:0.6f];
+        [_artistTitle setAlpha:0.8f];
         [_artistTitle sizeToFit];
         
         _songTitle.numberOfLines = 1;
         _songTitle.text   = @"Tap for default playlist.";
         _songTitle.font   = [UIFont systemFontOfSize:28];
         _songTitle.textColor = _themeColorSong;
-        
         [_songTitle sizeToFit];
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.text    = @"Long hold for menu.";
         _albumTitle.font    =  [UIFont systemFontOfSize:28];
         _albumTitle.textColor = _themeColorAlbum;
-        [_albumTitle setAlpha:0.6f];
+        [_albumTitle setAlpha:0.8f];
     } else {
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
@@ -601,23 +593,24 @@ MPMusicPlayerController*        mediaPlayer;
         [_artistTitle setAlpha:0.8f];
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
+        // do not replace song title label if the scrolling marquee is handling that right now
         if (_timersRunning==0) {
-            //if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) _artistTitle.adjustsFontSizeToFitWidth=YES; else _artistTitle.adjustsFontSizeToFitWidth=NO;
             _songTitle.numberOfLines = 1;
             _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
             _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
             _songTitle.textColor = _themeColorSong;
             _songTitle.frame=CGRectMake(20-_marqueePosition, _songTitle.frame.origin.y, self.view.bounds.size.width, _songTitle.frame.size.height);
             _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-            //NSLog(@"font size %f",_adjustedSongFontSize);
         }
         
+        _albumTitle.frame=CGRectMake(leftMargin,self.view.bounds.size.height-150,self.view.bounds.size.width,100);
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
         _albumTitle.textColor = _themeColorAlbum;
         [_albumTitle setAlpha:0.8f];
         _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+//        if (self.bannerIsVisible) _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -[self getBannerHeight]);
     }
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) [self drawFittedText];
 }
@@ -1317,7 +1310,7 @@ MPMusicPlayerController*        mediaPlayer;
     if (_marqueePosition>= textWidth+20) {
         [self scrollingTimerKiller];
         [self marqueeTimerKiller];
-        _songTitle.frame=CGRectMake(20, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
+        _songTitle.frame=CGRectMake(leftMargin, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
         //_songTitle.adjustsFontSizeToFitWidth=YES;
         _songTitle.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
         [self startMarqueeTimer];
