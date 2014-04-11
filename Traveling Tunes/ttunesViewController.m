@@ -218,7 +218,7 @@ int songTitleY = 0;
     
     [self.navigationController setNavigationBarHidden:YES];
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [self killAdBanner];
-    //if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self initAdBanner];
+    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self initAdBanner];
     
     
     NSLog(@"ads are disabled? %@",[defaults objectForKey:@"disableAdBanners"]);
@@ -240,8 +240,7 @@ int songTitleY = 0;
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"])[self.gps startUpdatingLocation];
     else [self.gps stopUpdatingLocation];
     
-    songTitleY = _songTitle.frame.origin.y;
-    albumTitleY = _albumTitle.frame.origin.y;
+//    [self initAdBanner];
 }
 
 - (void)viewDidLoad
@@ -324,10 +323,16 @@ int songTitleY = 0;
 }
 
 - (void) initAdBanner {
-    adBanner = [[ADBannerView alloc] initWithFrame:CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight])];
-    self.bannerIsVisible = NO;
-    adBanner.delegate = self;
-    [self.view addSubview:adBanner];
+    if (!adBanner) {
+        adBanner = [[ADBannerView alloc] initWithFrame:CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight])];
+        self.bannerIsVisible = NO;
+        adBanner.delegate = self;
+        [self.view addSubview:adBanner];
+    }
+    if (![adBanner isDescendantOfView:self]) {
+        NSLog(@"adding banner view");
+        [self.view addSubview:adBanner];
+    }
 }
 
 - (void) orientationChanged:(NSNotification *)note{
