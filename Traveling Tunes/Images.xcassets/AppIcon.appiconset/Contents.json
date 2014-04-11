@@ -1,21 +1,19 @@
 {
   "images" : [
     {
-      "size" : "29x29",
       "idiom" : "iphone",
-      "filename" : "tt-58.png",
+      "size" : "29x29",
       "scale" : "2x"
     },
     {
-      "size" : "40x40",
       "idiom" : "iphone",
-      "filename" : "tt-80.png",
+      "size" : "40x40",
       "scale" : "2x"
     },
     {
       "size" : "60x60",
       "idiom" : "iphone",
-      "filename" : "tt-120.png",
+      "filename" : "TT icon v3 120.png",
       "scale" : "2x"
     },
     {
@@ -41,13 +39,13 @@
     {
       "size" : "76x76",
       "idiom" : "ipad",
-      "filename" : "tt-76.png",
+      "filename" : "TT icon v3 76.png",
       "scale" : "1x"
     },
     {
       "size" : "76x76",
       "idiom" : "ipad",
-      "filename" : "tt-152.png",
+      "filename" : "TT icon v3 152.png",
       "scale" : "2x"
     }
   ],

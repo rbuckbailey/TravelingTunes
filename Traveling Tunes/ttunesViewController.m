@@ -489,9 +489,12 @@ int songTitleY = 0;
     _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
         
         long height;
+        height = self.view.bounds.size.height-[self getBannerHeight];
+/*
         if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) height = self.view.bounds.size.height;
         else if (self.view.bounds.size.height==320) height = self.view.bounds.size.height-32; //reduce height for landscape ad banner
         else height=self.view.bounds.size.height-50; // reduce height for portrait iAd banner
+ */
         
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"0"]) {
         _playbackLineView.frame=CGRectMake(playbackPosition, 0,  self.view.bounds.size.width, self.view.bounds.size.height);
@@ -823,9 +826,11 @@ int songTitleY = 0;
 
     //adjust volume range for iAds
     long height;
-    if ([[defaults objectForKey:@"disableBannerAds"] isEqual:@"YES"]) height = self.view.bounds.size.height;
+    height = self.view.bounds.size.height-[self getBannerHeight];
+/*    if ([[defaults objectForKey:@"disableBannerAds"] isEqual:@"YES"]) height = self.view.bounds.size.height;
     else if (self.view.bounds.size.height==320) height = self.view.bounds.size.height-32; //reduce height for landscape ad banner
     else height=self.view.bounds.size.height-50; // reduce height for portrait iAd banner
+ */
     
     float volumeLevel=height-(height*mediaPlayer.volume);
     
