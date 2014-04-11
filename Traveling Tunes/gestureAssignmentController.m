@@ -156,8 +156,8 @@
 
     [defaults setObject:@"Unassigned" forKey:@"3SwipeLeft"];
     [defaults setObject:@"Unassigned" forKey:@"3SwipeRight"];
-    [defaults setObject:@"PlayAllArtist" forKey:@"3SwipeUp"];
-    [defaults setObject:@"PlayAlbum" forKey:@"3SwipeDown"];
+    [defaults setObject:@"PlayCurrentArtist" forKey:@"3SwipeUp"];
+    [defaults setObject:@"PlayCurrentAlbum" forKey:@"3SwipeDown"];
     [defaults setObject:@"NO" forKey:@"3SwipeLeftContinuous"];
     [defaults setObject:@"NO" forKey:@"3SwipeRightContinuous"];
     [defaults setObject:@"NO" forKey:@"3SwipeUpContinuous"];

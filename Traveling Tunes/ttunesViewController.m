@@ -16,6 +16,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 int leftMargin = 20;
 int rightMargin = 20;
+int bottomMargin = 20;
 int albumTitleY = 0;
 int songTitleY = 0;
 
@@ -119,14 +120,6 @@ int songTitleY = 0;
     _speedTier = (int)(mph / 1);
     _volumeTarget = _volumeBase+((_volumeTenth*_speedTier)*[[defaults objectForKey:@"GPSSensivity"] floatValue]);
 
-
-//    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
-//    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
-
-    _gpsTest.numberOfLines = 2;
-    _gpsTest.text = [NSString stringWithFormat:@"%d\r%d/%d/%d",(int)(newLocation.speed*2.24694),(int)(_volumeBase*100),(int)(mediaPlayer.volume*100),(int)(_volumeTarget*100)];
-  //  [_gpsTest sizeToFit];
-
     [self setupHUD];
     
 /*    NSLog(@"*** gps moved ***");
@@ -138,12 +131,6 @@ int songTitleY = 0;
 }
 
 - (int)getBannerHeight:(UIDeviceOrientation)orientation {
-/*    if (UIInterfaceOrientationIsLandscape(orientation)) {
-        return 32;
-    } else if (UIInterfaceOrientationIsPortrait(orientation)) {
-        return 50;
-    } else return sdf
- */
     if (!self.bannerIsVisible) return 0;
     if (orientation==5) {
         if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
@@ -213,8 +200,10 @@ int songTitleY = 0;
 - (void)viewWillAppear:(BOOL)animated
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) bottomMargin = 20; else bottomMargin = 0;
+    
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) [self startGPSVolume];
-
     
     [self.navigationController setNavigationBarHidden:YES];
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [self killAdBanner];
@@ -617,7 +606,7 @@ int songTitleY = 0;
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
         int songOffset = _songTitle.frame.origin.y;
-        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
+        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2)-([self getBannerHeight]/2);
         // do not replace song title label if the scrolling marquee is handling that right now
         if (_timersRunning==0) {
             _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset, self.view.bounds.size.width-rightMargin*2, _songTitle.frame.size.height);
@@ -629,7 +618,7 @@ int songTitleY = 0;
         }
         
         int albumOffset = _albumTitle.frame.origin.y;
-        if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-_albumTitle.frame.size.height)-[self getBannerHeight];
+        if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-_albumTitle.frame.size.height)-[self getBannerHeight]-bottomMargin; //20 is bottom margin
         _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,_albumTitle.frame.size.height);
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];

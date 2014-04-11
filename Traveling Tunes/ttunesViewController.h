@@ -44,9 +44,6 @@ BOOL bannerIsVisible;
 @property NSArray* playlists;
 @property float volumeBase,volumeTenth,volumeTarget;
 
-@property (weak, nonatomic) IBOutlet UILabel *gpsTest;
-
-
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;
 - (void)performPlayerAction:(NSString *)action :(NSString*)sender;
