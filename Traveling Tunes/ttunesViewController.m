@@ -592,12 +592,15 @@ int songTitleY = 0;
         _songTitle.font   = [UIFont systemFontOfSize:28];
         _songTitle.textColor = _themeColorSong;
         [_songTitle sizeToFit];
+        _songTitle.frame = CGRectMake(leftMargin,(self.view.bounds.size.height/2)-[self getBannerHeight],self.view.bounds.size.width,30);
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.text    = @"Long hold for menu.";
         _albumTitle.font    =  [UIFont systemFontOfSize:28];
         _albumTitle.textColor = _themeColorAlbum;
         [_albumTitle setAlpha:0.8f];
+        _albumTitle.frame = CGRectMake(leftMargin,self.view.bounds.size.height-40-[self getBannerHeight],self.view.bounds.size.width,30);
+
     } else {
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
@@ -605,6 +608,7 @@ int songTitleY = 0;
         _artistTitle.textColor = _themeColorArtist;
         [_artistTitle setAlpha:0.8f];
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        
         
         int songOffset = _songTitle.frame.origin.y;
         if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
