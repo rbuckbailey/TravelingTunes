@@ -13,7 +13,7 @@
     {
       "size" : "60x60",
       "idiom" : "iphone",
-      "filename" : "TT icon v3 120.png",
+      "filename" : "icon 120.png",
       "scale" : "2x"
     },
     {
@@ -39,13 +39,13 @@
     {
       "size" : "76x76",
       "idiom" : "ipad",
-      "filename" : "TT icon v3 76.png",
+      "filename" : "icon 76.png",
       "scale" : "1x"
     },
     {
       "size" : "76x76",
       "idiom" : "ipad",
-      "filename" : "TT icon v3 152.png",
+      "filename" : "icon 152.png",
       "scale" : "2x"
     }
   ],

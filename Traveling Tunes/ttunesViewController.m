@@ -644,7 +644,7 @@ int songTitleY = 0;
     long textHeight = [[_songTitle font] fontWithSize:songFontSize];
 	while( textHeight > minFontSize )
 	{
-        if ([_artistTitle.text sizeWithFont:[_artistTitle font]].width<self.view.bounds.size.width-40) break;
+        if ([_artistTitle.text sizeWithFont:[_artistTitle font]].width<self.view.bounds.size.width-(leftMargin+rightMargin)) break;
 		[_artistTitle setFont:[[_artistTitle font] fontWithSize:--songFontSize]];
 		textHeight = [_artistTitle.text sizeWithFont:[_artistTitle font]].height;
 	}
@@ -654,7 +654,7 @@ int songTitleY = 0;
     textHeight = [[_songTitle font] fontWithSize:songFontSize];
 	while( textHeight > minFontSize )
 	{
-        if ([_songTitle.text sizeWithFont:[_songTitle font]].width<self.view.bounds.size.width-40) break;
+        if ([_songTitle.text sizeWithFont:[_songTitle font]].width<self.view.bounds.size.width-(leftMargin+rightMargin)) break;
 		[_songTitle setFont:[[_songTitle font] fontWithSize:--songFontSize]];
 		textHeight = [_songTitle.text sizeWithFont:[_songTitle font]].height;
 	}

@@ -28,6 +28,10 @@
 		F42406DB18F07E37006C836E /* iAd.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F42406DA18F07E37006C836E /* iAd.framework */; };
 		F435F9FE18E229D300C71345 /* playlistTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F435F9FD18E229D300C71345 /* playlistTableViewController.m */; };
 		F475CEA118F7739B00D92CDE /* quickstartViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F475CEA018F7739B00D92CDE /* quickstartViewController.m */; };
+		F4B3B3C018F9815D0079C334 /* quick start 3p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BC18F9815D0079C334 /* quick start 3p.png */; };
+		F4B3B3C118F9815D0079C334 /* quick start 2p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BD18F9815D0079C334 /* quick start 2p.png */; };
+		F4B3B3C218F9815D0079C334 /* quick start 1p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BE18F9815D0079C334 /* quick start 1p.png */; };
+		F4B3B3C318F9815D0079C334 /* quick start 4p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BF18F9815D0079C334 /* quick start 4p.png */; };
 		F4B7DA9818EF9857008170BF /* LEColorPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9718EF9857008170BF /* LEColorPicker.m */; };
 		F4B7DA9B18EF98D0008170BF /* UIColor+YUVSpace.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */; };
 		F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8118D3E54D0083641B /* settingsTableViewController.m */; };
@@ -76,6 +80,10 @@
 		F435F9FD18E229D300C71345 /* playlistTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = playlistTableViewController.m; sourceTree = "<group>"; };
 		F475CE9F18F7739B00D92CDE /* quickstartViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = quickstartViewController.h; sourceTree = "<group>"; };
 		F475CEA018F7739B00D92CDE /* quickstartViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = quickstartViewController.m; sourceTree = "<group>"; };
+		F4B3B3BC18F9815D0079C334 /* quick start 3p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 3p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 3p.png"; sourceTree = "<group>"; };
+		F4B3B3BD18F9815D0079C334 /* quick start 2p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 2p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 2p.png"; sourceTree = "<group>"; };
+		F4B3B3BE18F9815D0079C334 /* quick start 1p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 1p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 1p.png"; sourceTree = "<group>"; };
+		F4B3B3BF18F9815D0079C334 /* quick start 4p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 4p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 4p.png"; sourceTree = "<group>"; };
 		F4B7DA9618EF9844008170BF /* LEColorPicker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LEColorPicker.h; sourceTree = "<group>"; };
 		F4B7DA9718EF9857008170BF /* LEColorPicker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LEColorPicker.m; sourceTree = "<group>"; };
 		F4B7DA9918EF989F008170BF /* UIColor+YUVSpace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "UIColor+YUVSpace.h"; path = "../UIColor+YUVSpace.h"; sourceTree = "<group>"; };
@@ -145,6 +153,10 @@
 		8E3C8CD9189BF785004A90AE /* Traveling Tunes */ = {
 			isa = PBXGroup;
 			children = (
+				F4B3B3BC18F9815D0079C334 /* quick start 3p.png */,
+				F4B3B3BD18F9815D0079C334 /* quick start 2p.png */,
+				F4B3B3BE18F9815D0079C334 /* quick start 1p.png */,
+				F4B3B3BF18F9815D0079C334 /* quick start 4p.png */,
 				F4B7DA9C18EF9967008170BF /* LEColorPicker */,
 				8E3C8CE5189BF785004A90AE /* Main_iPhone.storyboard */,
 				8E3C8CE8189BF785004A90AE /* Main_iPad.storyboard */,
@@ -305,9 +317,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4B3B3C018F9815D0079C334 /* quick start 3p.png in Resources */,
 				8E3C8CEA189BF785004A90AE /* Main_iPad.storyboard in Resources */,
 				8E3C8CEF189BF785004A90AE /* Images.xcassets in Resources */,
 				8E3C8CE7189BF785004A90AE /* Main_iPhone.storyboard in Resources */,
+				F4B3B3C318F9815D0079C334 /* quick start 4p.png in Resources */,
+				F4B3B3C218F9815D0079C334 /* quick start 1p.png in Resources */,
+				F4B3B3C118F9815D0079C334 /* quick start 2p.png in Resources */,
 				8E3C8CDE189BF785004A90AE /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

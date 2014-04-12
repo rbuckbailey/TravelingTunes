@@ -8,13 +8,19 @@
 
 #import <UIKit/UIKit.h>
 #import "settingsTableViewCell.h"
+#import "quickstartViewController.h"
 #import <iAd/iAd.h>
 
 
 
 // controls settings outlets
 @interface settingsTableViewController : UITableViewController
+<UIPageViewControllerDataSource>
+
+@property (strong, nonatomic) UIPageViewController *pageController;
+
 @property (weak, nonatomic) IBOutlet settingsTableViewCell *resetAllSettings;
+@property (weak, nonatomic) IBOutlet settingsTableViewCell *instructions;
 
 @property (weak, nonatomic) IBOutlet UITableViewCell *Nothing;
 @property (weak, nonatomic) IBOutlet UITableViewCell *Play;

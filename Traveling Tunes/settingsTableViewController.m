@@ -18,6 +18,71 @@
 
 @implementation settingsTableViewController
 
+- (UIViewController *)pageViewController:(UIPageViewController *)pageViewController viewControllerBeforeViewController:(UIViewController *)viewController {
+    
+    NSUInteger index = [(quickstartViewController *)viewController index];
+    
+    if (index == 0) {
+        return nil;
+    }
+    
+    index--;
+    
+    return [self viewControllerAtIndex:index];
+    
+}
+
+- (UIViewController *)pageViewController:(UIPageViewController *)pageViewController viewControllerAfterViewController:(UIViewController *)viewController {
+    
+    NSUInteger index = [(quickstartViewController *)viewController index];
+    
+    
+    index++;
+    
+    if (index == 5) {
+        return nil;
+    }
+    
+    return [self viewControllerAtIndex:index];
+    
+}
+
+- (quickstartViewController *)viewControllerAtIndex:(NSUInteger)index {
+    
+    quickstartViewController *childViewController = [[quickstartViewController alloc] init ];    childViewController.index = index;
+    
+    return childViewController;
+    
+}
+
+- (NSInteger)presentationCountForPageViewController:(UIPageViewController *)pageViewController {
+    // The number of items reflected in the page indicator.
+    return 4;
+}
+
+- (NSInteger)presentationIndexForPageViewController:(UIPageViewController *)pageViewController {
+    // The selected item reflected in the page indicator.
+    return 0;
+}
+
+- (void) showInstructions {
+    self.pageController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:nil];
+    
+    self.pageController.dataSource = self;
+    [[self.pageController view] setFrame:[[self view] bounds]];
+    
+    quickstartViewController *initialViewController = [self viewControllerAtIndex:0];
+    
+    NSArray *viewControllers = [NSArray arrayWithObject:initialViewController];
+    
+    [self.pageController setViewControllers:viewControllers direction:UIPageViewControllerNavigationDirectionForward animated:NO completion:nil];
+    
+    [self addChildViewController:self.pageController];
+    [[self view] addSubview:[self.pageController view]];
+    [self.pageController didMoveToParentViewController:self];
+
+}
+
 
 -(void)viewWillAppear:(BOOL)animated
 {
@@ -129,6 +194,7 @@
     UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"Done"
                                                                     style:UIBarButtonItemStyleDone target:self action:@selector(popToRoot)];
     self.navigationItem.rightBarButtonItem = rightButton;
+
 }
 
 
@@ -238,6 +304,7 @@
     else if (selection == _Menu) [self configure:@"Menu"];
     else if (selection == _ResetGestureAssignments) [self confirmResetGestures];
     else if (selection == _resetAllSettings) [self confirmResetAllSettings];
+    else if (selection == _instructions) [self showInstructions];
     
     // if a theme cell was selected, set current theme
     else if (selection == _themeWhiteOnGrey) { [defaults setObject:@"White on Grey" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
@@ -906,4 +973,5 @@
     else [defaults setObject:@"NO" forKey:@"disableAdBanners"];
     [defaults synchronize];
 }
+
 @end
