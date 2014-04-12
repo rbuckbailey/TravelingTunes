@@ -592,7 +592,7 @@ int songTitleY = 0;
         _songTitle.font   = [UIFont systemFontOfSize:28];
         _songTitle.textColor = _themeColorSong;
         [_songTitle sizeToFit];
-        _songTitle.frame = CGRectMake(leftMargin,(self.view.bounds.size.height/2)-[self getBannerHeight],self.view.bounds.size.width,30);
+        _songTitle.frame = CGRectMake(leftMargin,(self.view.bounds.size.height/2)-([self getBannerHeight]/2),self.view.bounds.size.width,30);
         
         _albumTitle.numberOfLines = 1;
         _albumTitle.text    = @"Long hold for menu.";
