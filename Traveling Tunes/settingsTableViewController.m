@@ -18,6 +18,12 @@
 
 @implementation settingsTableViewController
 
+- (BOOL)prefersStatusBarHidden {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"ShowStatusBar"] isEqual:@"NO"]) return YES;
+    else return NO;
+}
+
 - (UIViewController *)pageViewController:(UIPageViewController *)pageViewController viewControllerBeforeViewController:(UIViewController *)viewController {
     NSUInteger index = [(quickstartViewController *)viewController index];
     if (index == 0) {
