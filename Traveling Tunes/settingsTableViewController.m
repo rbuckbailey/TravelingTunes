@@ -19,40 +19,26 @@
 @implementation settingsTableViewController
 
 - (UIViewController *)pageViewController:(UIPageViewController *)pageViewController viewControllerBeforeViewController:(UIViewController *)viewController {
-    
     NSUInteger index = [(quickstartViewController *)viewController index];
-    
     if (index == 0) {
         index = 4;
     }
-    
     index--;
-    
     return [self viewControllerAtIndex:index];
-    
 }
 
 - (UIViewController *)pageViewController:(UIPageViewController *)pageViewController viewControllerAfterViewController:(UIViewController *)viewController {
-    
     NSUInteger index = [(quickstartViewController *)viewController index];
-    
-    
     index++;
-    
-    if (index == 5) {
+    if (index == 4) {
         index=0;
     }
-    
     return [self viewControllerAtIndex:index];
-    
 }
 
 - (quickstartViewController *)viewControllerAtIndex:(NSUInteger)index {
-    
     quickstartViewController *childViewController = [[quickstartViewController alloc] init ];    childViewController.index = index;
-    
     return childViewController;
-    
 }
 
 - (NSInteger)presentationCountForPageViewController:(UIPageViewController *)pageViewController {
@@ -66,6 +52,9 @@
 }
 
 - (void) showInstructions {
+    [self.navigationController setNavigationBarHidden:YES];
+
+    
     self.pageController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:nil];
     
     self.pageController.dataSource = self;
@@ -80,7 +69,7 @@
     [self addChildViewController:self.pageController];
     [[self view] addSubview:[self.pageController view]];
     [self.pageController didMoveToParentViewController:self];
-
+   
 }
 
 
@@ -186,7 +175,9 @@
 }
 
 - (void) popToRoot {
-    [self.navigationController popToRootViewControllerAnimated:YES]; //requires iOS 7+
+//    [self.navigationController popToRootViewControllerAnimated:YES]; //requires iOS 7+
+    [self.navigationController popViewControllerAnimated:YES];
+
 }
 
 - (void)viewDidLoad {

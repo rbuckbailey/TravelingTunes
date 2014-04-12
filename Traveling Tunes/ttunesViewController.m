@@ -295,12 +295,13 @@ int songTitleY = 0;
      name:UIDeviceOrientationDidChangeNotification
      object:nil];
     
-    //notifier for orientation changes
+/*    //notifier for orientation changes
     [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
     [[NSNotificationCenter defaultCenter]
      addObserver:self selector:@selector(orientationChanged:)
      name:UIDeviceOrientationDidChangeNotification
      object:[UIDevice currentDevice]];
+ */
 
     //init gps
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) {
@@ -323,7 +324,7 @@ int songTitleY = 0;
         [self.view addSubview:adBanner];
     }
 }
-
+/*
 - (void) orientationChanged:(NSNotification *)note{
 //    _nightTimeFade.frame=CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
     UIDevice * device = [UIDevice currentDevice];
@@ -346,7 +347,7 @@ int songTitleY = 0;
             break;
     };
 }
-
+*/
 -(void) startPlaybackWatcher {
     if ([self.scrubTimer isValid]) [self.scrubTimer invalidate];
     self.scrubTimer = [NSTimer scheduledTimerWithTimeInterval:   0.05f
