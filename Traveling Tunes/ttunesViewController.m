@@ -606,7 +606,7 @@ int songTitleY = 0;
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
         int songOffset = _songTitle.frame.origin.y;
-        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2)-([self getBannerHeight]/2);
+        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
         // do not replace song title label if the scrolling marquee is handling that right now
         if (_timersRunning==0) {
             _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset, self.view.bounds.size.width-rightMargin*2, _songTitle.frame.size.height);
