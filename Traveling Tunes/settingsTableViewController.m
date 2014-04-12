@@ -23,7 +23,7 @@
     NSUInteger index = [(quickstartViewController *)viewController index];
     
     if (index == 0) {
-        return nil;
+        index = 4;
     }
     
     index--;
@@ -40,7 +40,7 @@
     index++;
     
     if (index == 5) {
-        return nil;
+        index=0;
     }
     
     return [self viewControllerAtIndex:index];

@@ -334,50 +334,6 @@
             </objects>
             <point key="canvasLocation" x="1003" y="437"/>
         </scene>
-        <!--Quickstart View Controller - Quick Start Guide-->
-        <scene sceneID="IoY-GS-5We">
-            <objects>
-                <viewController storyboardIdentifier="contentView" id="G07-ID-Ou0" customClass="quickstartViewController" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="3Yy-sN-fti"/>
-                        <viewControllerLayoutGuide type="bottom" id="TIB-Ob-09O"/>
-                    </layoutGuides>
-                    <view key="view" contentMode="scaleToFill" id="uGb-Q3-ryA">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                        <subviews>
-                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="28h-0S-LPH">
-                                <rect key="frame" x="20" y="518" width="280" height="30"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="A93-Ss-1ug">
-                                <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                            </imageView>
-                        </subviews>
-                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
-                        <constraints>
-                            <constraint firstItem="28h-0S-LPH" firstAttribute="top" secondItem="3Yy-sN-fti" secondAttribute="bottom" constant="454" id="ORu-HV-jgj"/>
-                            <constraint firstAttribute="bottom" secondItem="28h-0S-LPH" secondAttribute="bottom" constant="20" symbolic="YES" id="c2h-cd-Rpr"/>
-                            <constraint firstItem="28h-0S-LPH" firstAttribute="leading" secondItem="uGb-Q3-ryA" secondAttribute="leading" constant="20" symbolic="YES" id="dTX-0y-vkK"/>
-                            <constraint firstAttribute="trailing" secondItem="28h-0S-LPH" secondAttribute="trailing" constant="20" symbolic="YES" id="fJz-e5-A0O"/>
-                        </constraints>
-                    </view>
-                    <navigationItem key="navigationItem" title="Quick Start Guide" id="VSo-iA-vlA">
-                        <barButtonItem key="backBarButtonItem" title="Done" id="a8r-Lu-1bA"/>
-                    </navigationItem>
-                    <connections>
-                        <outlet property="backgroundImageView" destination="A93-Ss-1ug" id="ant-1K-1Dy"/>
-                        <outlet property="instructions" destination="28h-0S-LPH" id="eQl-6y-taf"/>
-                        <outlet property="titleLabel" destination="28h-0S-LPH" id="oRH-QD-WpI"/>
-                    </connections>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="vue-Hw-Mnm" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="1586" y="-1451"/>
-        </scene>
         <!--Settings Table View Controller-->
         <scene sceneID="x9U-YK-CIl">
             <objects>
@@ -2950,14 +2906,6 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="bnP-ec-qly" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="2698" y="-789"/>
-        </scene>
-        <!--Page View Controller-->
-        <scene sceneID="KOA-kh-sT4">
-            <objects>
-                <pageViewController storyboardIdentifier="PageViewController" autoresizesArchivedViewToFullSize="NO" transitionStyle="pageCurl" navigationOrientation="horizontal" spineLocation="min" id="CBg-LY-Tot" sceneMemberID="viewController"/>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="kEX-Te-Lrb" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="1122" y="-876"/>
         </scene>
         <!--Settings Table View Controller-->
         <scene sceneID="VKF-FY-YGd">
