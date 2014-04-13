@@ -12,6 +12,8 @@
 #import "ttunesAppDelegate.h"
 
 
+
+
 MPMusicPlayerController*        mediaPlayer;
 
 int leftMargin = 20;
@@ -284,8 +286,6 @@ int songTitleY = 0;
     //start gps if enabled
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"])[self.gps startUpdatingLocation];
     else [self.gps stopUpdatingLocation];
-    
-//    [self initAdBanner];
 }
 
 - (void)viewDidLoad
@@ -374,6 +374,8 @@ int songTitleY = 0;
         [defaults synchronize];
         [self showInstructions];
     }
+    
+    [self setupLabels];
 }
 
 - (void) initAdBanner {

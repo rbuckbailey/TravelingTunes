@@ -322,6 +322,7 @@
                     </tableView>
                     <navigationItem key="navigationItem" id="pYv-gi-koA"/>
                     <connections>
+                        <outlet property="adBannerCell" destination="74j-5P-O34" id="nX9-Jm-c7C"/>
                         <outlet property="disableAdBanners" destination="nTk-0U-C5p" id="Kg0-kG-QD5"/>
                         <outlet property="instructions" destination="nrR-0v-9xD" id="b3f-mr-U06"/>
                         <outlet property="resetAllSettings" destination="IvI-xV-sn4" id="Bbm-bx-Cfd"/>

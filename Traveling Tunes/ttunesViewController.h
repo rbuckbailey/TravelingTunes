@@ -25,6 +25,7 @@ typedef enum : NSInteger {
 
 ADBannerView *adBanner;
 BOOL bannerIsVisible;
+BOOL areAdsRemoved;
 
 @interface ttunesViewController : UIViewController <CLLocationManagerDelegate, ADBannerViewDelegate, UIPageViewControllerDataSource>
 

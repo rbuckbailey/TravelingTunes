@@ -10,7 +10,9 @@
 #import "settingsTableViewCell.h"
 #import "quickstartViewController.h"
 #import <iAd/iAd.h>
+#import <StoreKit/StoreKit.h>
 
+#define kRemoveAdsProductIdentifier @"com.hgwt.tt.noAds"
 
 
 // controls settings outlets
@@ -18,6 +20,11 @@
 <UIPageViewControllerDataSource>
 
 - (void) closeInstructions;
+
+- (void)purchase;
+- (void)restore;
+- (void)tapsRemoveAdsButton;
+@property (weak, nonatomic) IBOutlet UITableViewCell *adBannerCell;
 
 @property (strong, nonatomic) UIPageViewController *pageController;
 
