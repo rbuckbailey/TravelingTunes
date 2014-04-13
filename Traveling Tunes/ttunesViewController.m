@@ -265,11 +265,13 @@ int songTitleY = 0;
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) [self startGPSVolume];
     
     [self.navigationController setNavigationBarHidden:YES];
+    
+#ifdef FREE
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [self killAdBanner];
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self initAdBanner];
     
-    
     NSLog(@"ads are disabled? %@",[defaults objectForKey:@"disableAdBanners"]);
+#endif
     
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"NO"]) _albumArt.alpha = 0.0f;
     if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) mediaPlayer.shuffleMode = MPMusicShuffleModeSongs; else mediaPlayer.shuffleMode = MPMusicShuffleModeOff;

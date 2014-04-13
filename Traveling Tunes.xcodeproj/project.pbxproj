@@ -36,9 +36,36 @@
 		F4B3B3C918F9AA040079C334 /* quick start 3.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3C518F9AA040079C334 /* quick start 3.png */; };
 		F4B3B3CA18F9AA040079C334 /* quick start 1.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3C618F9AA040079C334 /* quick start 1.png */; };
 		F4B3B3CB18F9AA040079C334 /* quick start 2.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3C718F9AA040079C334 /* quick start 2.png */; };
-		F4B3B3CE18FAC9B10079C334 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4B3B3CD18FAC9B10079C334 /* StoreKit.framework */; };
 		F4B7DA9818EF9857008170BF /* LEColorPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9718EF9857008170BF /* LEColorPicker.m */; };
 		F4B7DA9B18EF98D0008170BF /* UIColor+YUVSpace.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */; };
+		F4DA1FC318FAEF4400C018EC /* gestureAssignmentController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E4312DA18CE316B0037688F /* gestureAssignmentController.m */; };
+		F4DA1FC418FAEF4400C018EC /* playlistTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */; };
+		F4DA1FC518FAEF4400C018EC /* LEColorPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9718EF9857008170BF /* LEColorPicker.m */; };
+		F4DA1FC618FAEF4400C018EC /* ttunesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E3C8CEC189BF785004A90AE /* ttunesViewController.m */; };
+		F4DA1FC718FAEF4400C018EC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E3C8CDF189BF785004A90AE /* main.m */; };
+		F4DA1FC818FAEF4400C018EC /* ttunesNavViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F41CF5E718E737BB00F7A148 /* ttunesNavViewController.m */; };
+		F4DA1FC918FAEF4400C018EC /* UIColor+YUVSpace.m in Sources */ = {isa = PBXBuildFile; fileRef = F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */; };
+		F4DA1FCA18FAEF4400C018EC /* settingsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8118D3E54D0083641B /* settingsTableViewController.m */; };
+		F4DA1FCB18FAEF4400C018EC /* settingsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */; };
+		F4DA1FCC18FAEF4400C018EC /* playlistTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F435F9FD18E229D300C71345 /* playlistTableViewController.m */; };
+		F4DA1FCD18FAEF4400C018EC /* ttunesAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E3C8CE3189BF785004A90AE /* ttunesAppDelegate.m */; };
+		F4DA1FCE18FAEF4400C018EC /* quickstartViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F475CEA018F7739B00D92CDE /* quickstartViewController.m */; };
+		F4DA1FD018FAEF4400C018EC /* iAd.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F42406DA18F07E37006C836E /* iAd.framework */; };
+		F4DA1FD118FAEF4400C018EC /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3C8CD5189BF785004A90AE /* CoreGraphics.framework */; };
+		F4DA1FD318FAEF4400C018EC /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3C8CD7189BF785004A90AE /* UIKit.framework */; };
+		F4DA1FD418FAEF4400C018EC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3C8CD3189BF785004A90AE /* Foundation.framework */; };
+		F4DA1FD618FAEF4400C018EC /* quick start 3.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3C518F9AA040079C334 /* quick start 3.png */; };
+		F4DA1FD718FAEF4400C018EC /* quick start 2.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3C718F9AA040079C334 /* quick start 2.png */; };
+		F4DA1FD818FAEF4400C018EC /* quick start 3p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BC18F9815D0079C334 /* quick start 3p.png */; };
+		F4DA1FD918FAEF4400C018EC /* quick start 4.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3C418F9AA040079C334 /* quick start 4.png */; };
+		F4DA1FDA18FAEF4400C018EC /* Main_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8E3C8CE8189BF785004A90AE /* Main_iPad.storyboard */; };
+		F4DA1FDB18FAEF4400C018EC /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8E3C8CEE189BF785004A90AE /* Images.xcassets */; };
+		F4DA1FDC18FAEF4400C018EC /* Main_iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8E3C8CE5189BF785004A90AE /* Main_iPhone.storyboard */; };
+		F4DA1FDD18FAEF4400C018EC /* quick start 4p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BF18F9815D0079C334 /* quick start 4p.png */; };
+		F4DA1FDE18FAEF4400C018EC /* quick start 1p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BE18F9815D0079C334 /* quick start 1p.png */; };
+		F4DA1FDF18FAEF4400C018EC /* quick start 2p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BD18F9815D0079C334 /* quick start 2p.png */; };
+		F4DA1FE018FAEF4400C018EC /* quick start 1.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3C618F9AA040079C334 /* quick start 1.png */; };
+		F4DA1FE118FAEF4400C018EC /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8E3C8CDC189BF785004A90AE /* InfoPlist.strings */; };
 		F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8118D3E54D0083641B /* settingsTableViewController.m */; };
 		F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */; };
 /* End PBXBuildFile section */
@@ -54,7 +81,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		8E3C8CD0189BF785004A90AE /* Traveling Tunes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traveling Tunes.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E3C8CD0189BF785004A90AE /* Traveling Tunes Free.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traveling Tunes Free.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E3C8CD3189BF785004A90AE /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		8E3C8CD5189BF785004A90AE /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		8E3C8CD7189BF785004A90AE /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -93,11 +120,12 @@
 		F4B3B3C518F9AA040079C334 /* quick start 3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 3.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 3.png"; sourceTree = "<group>"; };
 		F4B3B3C618F9AA040079C334 /* quick start 1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 1.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 1.png"; sourceTree = "<group>"; };
 		F4B3B3C718F9AA040079C334 /* quick start 2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 2.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 2.png"; sourceTree = "<group>"; };
-		F4B3B3CD18FAC9B10079C334 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		F4B7DA9618EF9844008170BF /* LEColorPicker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LEColorPicker.h; sourceTree = "<group>"; };
 		F4B7DA9718EF9857008170BF /* LEColorPicker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LEColorPicker.m; sourceTree = "<group>"; };
 		F4B7DA9918EF989F008170BF /* UIColor+YUVSpace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "UIColor+YUVSpace.h"; path = "../UIColor+YUVSpace.h"; sourceTree = "<group>"; };
 		F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIColor+YUVSpace.m"; sourceTree = "<group>"; };
+		F4DA1FE518FAEF4400C018EC /* Traveling Tunes copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traveling Tunes copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F4DA1FE618FAEF4400C018EC /* Traveling Tunes copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Traveling Tunes copy-Info.plist"; path = "/Users/home/Code/TravelingTunes/Traveling Tunes copy-Info.plist"; sourceTree = "<absolute>"; };
 		F4F25E8018D3E54D0083641B /* settingsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewController.h; sourceTree = "<group>"; };
 		F4F25E8118D3E54D0083641B /* settingsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settingsTableViewController.m; sourceTree = "<group>"; };
 		F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewCell.h; sourceTree = "<group>"; };
@@ -111,7 +139,6 @@
 			files = (
 				F42406DB18F07E37006C836E /* iAd.framework in Frameworks */,
 				8E3C8CD6189BF785004A90AE /* CoreGraphics.framework in Frameworks */,
-				F4B3B3CE18FAC9B10079C334 /* StoreKit.framework in Frameworks */,
 				8E3C8CD8189BF785004A90AE /* UIKit.framework in Frameworks */,
 				8E3C8CD4189BF785004A90AE /* Foundation.framework in Frameworks */,
 			);
@@ -127,6 +154,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F4DA1FCF18FAEF4400C018EC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4DA1FD018FAEF4400C018EC /* iAd.framework in Frameworks */,
+				F4DA1FD118FAEF4400C018EC /* CoreGraphics.framework in Frameworks */,
+				F4DA1FD318FAEF4400C018EC /* UIKit.framework in Frameworks */,
+				F4DA1FD418FAEF4400C018EC /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -137,14 +175,16 @@
 				8E3C8CFB189BF785004A90AE /* Traveling TunesTests */,
 				8E3C8CD2189BF785004A90AE /* Frameworks */,
 				8E3C8CD1189BF785004A90AE /* Products */,
+				F4DA1FE618FAEF4400C018EC /* Traveling Tunes copy-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
 		8E3C8CD1189BF785004A90AE /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8E3C8CD0189BF785004A90AE /* Traveling Tunes.app */,
+				8E3C8CD0189BF785004A90AE /* Traveling Tunes Free.app */,
 				8E3C8CF4189BF785004A90AE /* Traveling TunesTests.xctest */,
+				F4DA1FE518FAEF4400C018EC /* Traveling Tunes copy.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -152,7 +192,6 @@
 		8E3C8CD2189BF785004A90AE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				F4B3B3CD18FAC9B10079C334 /* StoreKit.framework */,
 				F42406DA18F07E37006C836E /* iAd.framework */,
 				8E3C8CD3189BF785004A90AE /* Foundation.framework */,
 				8E3C8CD5189BF785004A90AE /* CoreGraphics.framework */,
@@ -259,9 +298,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8E3C8CCF189BF785004A90AE /* Traveling Tunes */ = {
+		8E3C8CCF189BF785004A90AE /* Traveling Tunes Free */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8E3C8D05189BF785004A90AE /* Build configuration list for PBXNativeTarget "Traveling Tunes" */;
+			buildConfigurationList = 8E3C8D05189BF785004A90AE /* Build configuration list for PBXNativeTarget "Traveling Tunes Free" */;
 			buildPhases = (
 				8E3C8CCC189BF785004A90AE /* Sources */,
 				8E3C8CCD189BF785004A90AE /* Frameworks */,
@@ -271,9 +310,9 @@
 			);
 			dependencies = (
 			);
-			name = "Traveling Tunes";
+			name = "Traveling Tunes Free";
 			productName = "Traveling Tunes";
-			productReference = 8E3C8CD0189BF785004A90AE /* Traveling Tunes.app */;
+			productReference = 8E3C8CD0189BF785004A90AE /* Traveling Tunes Free.app */;
 			productType = "com.apple.product-type.application";
 		};
 		8E3C8CF3189BF785004A90AE /* Traveling TunesTests */ = {
@@ -293,6 +332,23 @@
 			productName = "Traveling TunesTests";
 			productReference = 8E3C8CF4189BF785004A90AE /* Traveling TunesTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		F4DA1FC118FAEF4400C018EC /* Traveling Tunes */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F4DA1FE218FAEF4400C018EC /* Build configuration list for PBXNativeTarget "Traveling Tunes" */;
+			buildPhases = (
+				F4DA1FC218FAEF4400C018EC /* Sources */,
+				F4DA1FCF18FAEF4400C018EC /* Frameworks */,
+				F4DA1FD518FAEF4400C018EC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Traveling Tunes";
+			productName = "Traveling Tunes";
+			productReference = F4DA1FE518FAEF4400C018EC /* Traveling Tunes copy.app */;
+			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
@@ -315,6 +371,14 @@
 					8E3C8CF3189BF785004A90AE = {
 						TestTargetID = 8E3C8CCF189BF785004A90AE;
 					};
+					F4DA1FC118FAEF4400C018EC = {
+						DevelopmentTeam = 69HKE3UF64;
+						SystemCapabilities = {
+							com.apple.InAppPurchase = {
+								enabled = 0;
+							};
+						};
+					};
 				};
 			};
 			buildConfigurationList = 8E3C8CCB189BF784004A90AE /* Build configuration list for PBXProject "Traveling Tunes" */;
@@ -330,7 +394,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8E3C8CCF189BF785004A90AE /* Traveling Tunes */,
+				8E3C8CCF189BF785004A90AE /* Traveling Tunes Free */,
+				F4DA1FC118FAEF4400C018EC /* Traveling Tunes */,
 				8E3C8CF3189BF785004A90AE /* Traveling TunesTests */,
 			);
 		};
@@ -364,6 +429,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F4DA1FD518FAEF4400C018EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4DA1FD618FAEF4400C018EC /* quick start 3.png in Resources */,
+				F4DA1FD718FAEF4400C018EC /* quick start 2.png in Resources */,
+				F4DA1FD818FAEF4400C018EC /* quick start 3p.png in Resources */,
+				F4DA1FD918FAEF4400C018EC /* quick start 4.png in Resources */,
+				F4DA1FDA18FAEF4400C018EC /* Main_iPad.storyboard in Resources */,
+				F4DA1FDB18FAEF4400C018EC /* Images.xcassets in Resources */,
+				F4DA1FDC18FAEF4400C018EC /* Main_iPhone.storyboard in Resources */,
+				F4DA1FDD18FAEF4400C018EC /* quick start 4p.png in Resources */,
+				F4DA1FDE18FAEF4400C018EC /* quick start 1p.png in Resources */,
+				F4DA1FDF18FAEF4400C018EC /* quick start 2p.png in Resources */,
+				F4DA1FE018FAEF4400C018EC /* quick start 1.png in Resources */,
+				F4DA1FE118FAEF4400C018EC /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -394,12 +478,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F4DA1FC218FAEF4400C018EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4DA1FC318FAEF4400C018EC /* gestureAssignmentController.m in Sources */,
+				F4DA1FC418FAEF4400C018EC /* playlistTableViewCell.m in Sources */,
+				F4DA1FC518FAEF4400C018EC /* LEColorPicker.m in Sources */,
+				F4DA1FC618FAEF4400C018EC /* ttunesViewController.m in Sources */,
+				F4DA1FC718FAEF4400C018EC /* main.m in Sources */,
+				F4DA1FC818FAEF4400C018EC /* ttunesNavViewController.m in Sources */,
+				F4DA1FC918FAEF4400C018EC /* UIColor+YUVSpace.m in Sources */,
+				F4DA1FCA18FAEF4400C018EC /* settingsTableViewController.m in Sources */,
+				F4DA1FCB18FAEF4400C018EC /* settingsTableViewCell.m in Sources */,
+				F4DA1FCC18FAEF4400C018EC /* playlistTableViewController.m in Sources */,
+				F4DA1FCD18FAEF4400C018EC /* ttunesAppDelegate.m in Sources */,
+				F4DA1FCE18FAEF4400C018EC /* quickstartViewController.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		8E3C8CFA189BF785004A90AE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 8E3C8CCF189BF785004A90AE /* Traveling Tunes */;
+			target = 8E3C8CCF189BF785004A90AE /* Traveling Tunes Free */;
 			targetProxy = 8E3C8CF9189BF785004A90AE /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -521,6 +624,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Traveling Tunes/Traveling Tunes-Prefix.pch";
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = "FREE=1";
 				INFOPLIST_FILE = "Traveling Tunes/Traveling Tunes-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -539,6 +643,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Traveling Tunes/Traveling Tunes-Prefix.pch";
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = "FREE=1";
 				INFOPLIST_FILE = "Traveling Tunes/Traveling Tunes-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -588,6 +693,42 @@
 			};
 			name = Release;
 		};
+		F4DA1FE318FAEF4400C018EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Traveling Tunes/Traveling Tunes-Prefix.pch";
+				INFOPLIST_FILE = "Traveling Tunes copy-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				PRODUCT_NAME = "Traveling Tunes copy";
+				PROVISIONING_PROFILE = "";
+				TARGETED_DEVICE_FAMILY = 1;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		F4DA1FE418FAEF4400C018EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Traveling Tunes/Traveling Tunes-Prefix.pch";
+				INFOPLIST_FILE = "Traveling Tunes copy-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				PRODUCT_NAME = "Traveling Tunes copy";
+				PROVISIONING_PROFILE = "";
+				TARGETED_DEVICE_FAMILY = 1;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -600,7 +741,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8E3C8D05189BF785004A90AE /* Build configuration list for PBXNativeTarget "Traveling Tunes" */ = {
+		8E3C8D05189BF785004A90AE /* Build configuration list for PBXNativeTarget "Traveling Tunes Free" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8E3C8D06189BF785004A90AE /* Debug */,
@@ -614,6 +755,15 @@
 			buildConfigurations = (
 				8E3C8D09189BF785004A90AE /* Debug */,
 				8E3C8D0A189BF785004A90AE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F4DA1FE218FAEF4400C018EC /* Build configuration list for PBXNativeTarget "Traveling Tunes" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4DA1FE318FAEF4400C018EC /* Debug */,
+				F4DA1FE418FAEF4400C018EC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

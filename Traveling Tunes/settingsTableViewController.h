@@ -21,10 +21,13 @@
 
 - (void) closeInstructions;
 
+#ifdef FREE
 - (void)purchase;
 - (void)restore;
 - (void)tapsRemoveAdsButton;
 - (IBAction)tapsRestoreButton:(id)sender;
+#endif
+
 @property (weak, nonatomic) IBOutlet UITableViewCell *adBannerCell;
 
 @property (strong, nonatomic) UIPageViewController *pageController;

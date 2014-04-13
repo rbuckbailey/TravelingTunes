@@ -19,8 +19,7 @@
 @implementation settingsTableViewController
 
 
-
-
+#ifdef FREE
 - (void)tapsRemoveAds{
     NSLog(@"User requests to remove ads");
     
@@ -123,6 +122,7 @@
     [alert show];
 //    [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
 }
+#endif
 
 - (BOOL)prefersStatusBarHidden {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -196,8 +196,10 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     [self.navigationController setNavigationBarHidden:NO];
+#ifdef FREE
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) self.canDisplayBannerAds = NO; //NSLog(@"foo");}
     else self.canDisplayBannerAds = YES;
+#endif
     
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
@@ -286,11 +288,11 @@
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) _showActions.on = YES; else _showActions.on = NO;
     if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) _albumArtColors.on = YES; else _albumArtColors.on = NO;
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
+#ifdef FREE
 //    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [self.adBannerCell setHidden:YES]; else _disableAdBanners.on = NO;
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) _disableAdBanners.on = YES; else _disableAdBanners.on = NO;
+#endif
     
-    // to insert Navigation View titles
-    //self.navigationItem.title = @"Test";
 }
 
 - (void) popToRoot {
@@ -300,30 +302,40 @@
 
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+#ifdef FREE
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if ( (section == 3) & [[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"] ) {
         // Hide this section
             return 0;
     } else
         return [super tableView:self.tableView numberOfRowsInSection:section];
+#else
+    if (section == 3) return 0;
+    else return [super tableView:self.tableView numberOfRowsInSection:section];
+#endif
 }
- 
+
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+#ifdef FREE
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-
     NSString *sectionTitle = @"";
-
     if ( (section == 3) & [[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"] ) {
         sectionTitle = @"";
         return sectionTitle;
 
     } else return [super tableView:self.tableView  titleForHeaderInSection:section];
+#else
+    if (section == 3) return 0;
+    else return [super tableView:self.tableView  titleForHeaderInSection:section];
+#endif
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+#ifdef FREE
     [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
+#endif
 
     UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"Done"
                                                                     style:UIBarButtonItemStyleDone target:self action:@selector(popToRoot)];
@@ -439,7 +451,9 @@
     else if (selection == _ResetGestureAssignments) [self confirmResetGestures];
     else if (selection == _resetAllSettings) [self confirmResetAllSettings];
     else if (selection == _instructions) [self showInstructions];
+#ifdef FREE
     else if (selection == _adBannerCell) [self tapsRemoveAds];
+#endif
 
     // if a theme cell was selected, set current theme
     else if (selection == _themeWhiteOnGrey) { [defaults setObject:@"White on Grey" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
@@ -1102,6 +1116,7 @@
     [defaults synchronize];
 }
 
+#ifdef FREE
 - (IBAction)disableAdBannersChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_disableAdBanners.on) {
@@ -1115,4 +1130,6 @@
     NSLog(@"restoring purchases");
     [self restorePurchases];
 }
+#endif
+
 @end
