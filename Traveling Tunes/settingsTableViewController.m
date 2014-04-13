@@ -75,7 +75,13 @@
     [self addChildViewController:self.pageController];
     [[self view] addSubview:[self.pageController view]];
     [self.pageController didMoveToParentViewController:self];
-   
+    
+}
+
+- (void) closeInstructions {
+    [self.pageController didMoveToParentViewController:nil];
+    [self.pageController.view removeFromSuperview];
+    [self.pageController removeFromParentViewController];
 }
 
 

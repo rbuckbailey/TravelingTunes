@@ -17,6 +17,8 @@
 @interface settingsTableViewController : UITableViewController
 <UIPageViewControllerDataSource>
 
+- (void) closeInstructions;
+
 @property (strong, nonatomic) UIPageViewController *pageController;
 
 @property (weak, nonatomic) IBOutlet settingsTableViewCell *resetAllSettings;

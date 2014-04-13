@@ -16,7 +16,7 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (![defaults objectForKey:@"firstRun"]) {
         [self initAllSettings];
-        [defaults setObject:@"Yes!" forKey:@"firstRun"]; [defaults synchronize];
+        [defaults setObject:@"QS" forKey:@"firstRun"]; [defaults synchronize];
     } else [self loadThemes];
      return self;
 }

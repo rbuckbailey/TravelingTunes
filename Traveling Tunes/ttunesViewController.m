@@ -55,6 +55,61 @@ int songTitleY = 0;
     return UIStatusBarStyleLightContent;
 }
 
+
+- (UIViewController *)pageViewController:(UIPageViewController *)pageViewController viewControllerBeforeViewController:(UIViewController *)viewController {
+    NSUInteger index = [(quickstartViewController *)viewController index];
+    if (index == 0) {
+        index = 4;
+    }
+    index--;
+    return [self viewControllerAtIndex:index];
+}
+
+- (UIViewController *)pageViewController:(UIPageViewController *)pageViewController viewControllerAfterViewController:(UIViewController *)viewController {
+    NSUInteger index = [(quickstartViewController *)viewController index];
+    index++;
+    if (index == 4) {
+        index=0;
+    }
+    return [self viewControllerAtIndex:index];
+}
+
+- (quickstartViewController *)viewControllerAtIndex:(NSUInteger)index {
+    quickstartViewController *childViewController = [[quickstartViewController alloc] init ];    childViewController.index = index;
+    return childViewController;
+}
+
+- (NSInteger)presentationCountForPageViewController:(UIPageViewController *)pageViewController {
+    // The number of items reflected in the page indicator.
+    return 4;
+}
+
+- (NSInteger)presentationIndexForPageViewController:(UIPageViewController *)pageViewController {
+    // The selected item reflected in the page indicator.
+    return 0;
+}
+
+- (void) showInstructions {
+    [self.navigationController setNavigationBarHidden:YES];
+    
+    
+    self.pageController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:nil];
+    
+    self.pageController.dataSource = self;
+    [[self.pageController view] setFrame:[[self view] bounds]];
+    
+    quickstartViewController *initialViewController = [self viewControllerAtIndex:0];
+    
+    NSArray *viewControllers = [NSArray arrayWithObject:initialViewController];
+    
+    [self.pageController setViewControllers:viewControllers direction:UIPageViewControllerNavigationDirectionForward animated:NO completion:nil];
+    
+    [self addChildViewController:self.pageController];
+    [[self view] addSubview:[self.pageController view]];
+    [self.pageController didMoveToParentViewController:self];
+    
+}
+
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
 {
     UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
@@ -236,7 +291,9 @@ int songTitleY = 0;
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
- 
+    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+
+    
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
     
@@ -310,6 +367,12 @@ int songTitleY = 0;
     
     [self initAdBanner];
     _speedTier = 0;
+    
+    if ([[defaults objectForKey:@"firstRun"] isEqual:@"QS"]) {
+        [defaults setObject:@"done" forKey:@"firstRun"];
+        [defaults synchronize];
+        [self showInstructions];
+    }
 }
 
 - (void) initAdBanner {
@@ -319,10 +382,11 @@ int songTitleY = 0;
         adBanner.delegate = self;
         [self.view addSubview:adBanner];
     }
+    /*
     if (![adBanner isDescendantOfView:self]) {
         NSLog(@"adding banner view");
         [self.view addSubview:adBanner];
-    }
+    }*/
 }
 /*
 - (void) orientationChanged:(NSNotification *)note{
@@ -521,7 +585,7 @@ int songTitleY = 0;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
-    [self setGlobalColors];
+//    [self setGlobalColors];
     
 
     // dim display if it's night and dim-at-night is on
