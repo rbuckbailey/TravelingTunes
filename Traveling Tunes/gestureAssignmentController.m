@@ -81,7 +81,7 @@
 - (void)initThemes {
     //bg, artist, song, album
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:@"Lavender" forKey:@"currentTheme"];
+    [defaults setObject:@"White on Grey" forKey:@"currentTheme"];
     
     [defaults synchronize];
     self.themes = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
