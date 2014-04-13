@@ -258,7 +258,8 @@ int songTitleY = 0;
 - (void)viewWillAppear:(BOOL)animated
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    
+    _volumeTarget = mediaPlayer.volume;
+
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) bottomMargin = 20; else bottomMargin = 0;
     
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) [self startGPSVolume];
@@ -580,7 +581,7 @@ int songTitleY = 0;
 //    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
 //    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     
-//    [self setupLabels];
+    [self setupLabels];
 }
 
 - (void)setupLabels {
