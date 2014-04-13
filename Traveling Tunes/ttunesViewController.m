@@ -366,7 +366,7 @@ int songTitleY = 0;
         [self startGPSVolume];
     }
     
-    [self initAdBanner];
+    self.bannerIsVisible = NO;
     _speedTier = 0;
     
     if ([[defaults objectForKey:@"firstRun"] isEqual:@"QS"]) {
