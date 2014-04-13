@@ -372,7 +372,7 @@ int songTitleY = 0;
     if ([[defaults objectForKey:@"firstRun"] isEqual:@"QS"]) {
         [defaults setObject:@"done" forKey:@"firstRun"];
         [defaults synchronize];
-        [self showInstructions];
+//        [self showInstructions];
     }
     
     [self setupLabels];

@@ -295,20 +295,26 @@
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="nTk-0U-C5p">
-                                                    <rect key="frame" x="251" y="6" width="51" height="31"/>
+                                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="right" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Et3-SZ-d7q">
+                                                    <rect key="frame" x="215" y="7" width="85" height="30"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="85" id="CLK-uK-VeN"/>
+                                                    </constraints>
+                                                    <state key="normal" title="Restore">
+                                                        <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                                    </state>
                                                     <connections>
-                                                        <action selector="disableAdBannersChanged:" destination="y2u-JY-5vJ" eventType="valueChanged" id="ggz-cn-Ihg"/>
+                                                        <action selector="tapsRestoreButton:" destination="y2u-JY-5vJ" eventType="touchUpInside" id="McI-9B-cjH"/>
                                                     </connections>
-                                                </switch>
+                                                </button>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstAttribute="trailing" secondItem="nTk-0U-C5p" secondAttribute="trailing" constant="20" symbolic="YES" id="D6O-1B-E1q"/>
-                                                <constraint firstItem="nTk-0U-C5p" firstAttribute="centerY" secondItem="hvN-Ke-Tpq" secondAttribute="centerY" id="Wff-rp-eWy"/>
+                                                <constraint firstItem="Et3-SZ-d7q" firstAttribute="trailing" secondItem="kWX-Sx-bCg" secondAttribute="trailing" id="TBd-Zv-RMs"/>
                                                 <constraint firstItem="kWX-Sx-bCg" firstAttribute="leading" secondItem="hvN-Ke-Tpq" secondAttribute="leading" constant="20" symbolic="YES" id="eS2-v3-z6K"/>
-                                                <constraint firstItem="kWX-Sx-bCg" firstAttribute="trailing" secondItem="nTk-0U-C5p" secondAttribute="trailing" id="nKc-lg-uLf"/>
-                                                <constraint firstItem="kWX-Sx-bCg" firstAttribute="centerY" secondItem="nTk-0U-C5p" secondAttribute="centerY" id="vh1-5r-vSd"/>
+                                                <constraint firstItem="Et3-SZ-d7q" firstAttribute="baseline" secondItem="kWX-Sx-bCg" secondAttribute="baseline" id="fYo-q6-o91"/>
+                                                <constraint firstAttribute="trailing" secondItem="Et3-SZ-d7q" secondAttribute="trailing" constant="20" symbolic="YES" id="hEQ-YR-HUP"/>
+                                                <constraint firstItem="Et3-SZ-d7q" firstAttribute="centerY" secondItem="hvN-Ke-Tpq" secondAttribute="centerY" id="twn-JU-TFs"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -323,7 +329,6 @@
                     <navigationItem key="navigationItem" id="pYv-gi-koA"/>
                     <connections>
                         <outlet property="adBannerCell" destination="74j-5P-O34" id="nX9-Jm-c7C"/>
-                        <outlet property="disableAdBanners" destination="nTk-0U-C5p" id="Kg0-kG-QD5"/>
                         <outlet property="instructions" destination="nrR-0v-9xD" id="b3f-mr-U06"/>
                         <outlet property="resetAllSettings" destination="IvI-xV-sn4" id="Bbm-bx-Cfd"/>
                         <outlet property="themeSelectionPreview" destination="esH-RK-Af1" id="1z4-t7-9oB"/>

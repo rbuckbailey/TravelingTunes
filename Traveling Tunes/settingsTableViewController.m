@@ -1,4 +1,4 @@
-//
+    //
 //  settingsTableViewController.m
 //  Traveling Tunes
 //
@@ -58,7 +58,7 @@
     [[SKPaymentQueue defaultQueue] addPayment:payment];
 }
 
-- (void) restore {
+- (void) restorePurchases {
     //this is called when the user restores purchases, you should hook this up to a button
     [[SKPaymentQueue defaultQueue] restoreCompletedTransactions];
 }
@@ -82,7 +82,6 @@
     
 }
 
-
 - (void)paymentQueue:(SKPaymentQueue *)queue updatedTransactions:(NSArray *)transactions{
     for(SKPaymentTransaction *transaction in transactions){
         switch (transaction.transactionState){
@@ -97,6 +96,7 @@
                 break;
             case SKPaymentTransactionStateRestored:
                 NSLog(@"Transaction state -> Restored");
+                [self removeAds];
                 //add the same code as you did from SKPaymentTransactionStatePurchased here
                 [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
                 break;
@@ -105,8 +105,9 @@
                 if(transaction.error.code != SKErrorPaymentCancelled){
                     NSLog(@"Transaction state -> Cancelled");
                     //the user cancelled the payment ;(
-                }
+                } else NSLog(@"some other failure");
                 [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
+//                [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
                 break;
         }
     }
@@ -116,6 +117,10 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:@"YES" forKey:@"disableAdBanners"];
     [defaults synchronize];
+    self.canDisplayBannerAds = NO;
+    UIAlertView* alert;
+    alert = [[UIAlertView alloc] initWithTitle:@"Ads disabled" message:@"Thank you for supporting the development of Traveling Tunes!" delegate:nil cancelButtonTitle:@"You're welcome!" otherButtonTitles: nil];
+    [alert show];
 //    [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
 }
 
@@ -435,7 +440,8 @@
     else if (selection == _ResetGestureAssignments) [self confirmResetGestures];
     else if (selection == _resetAllSettings) [self confirmResetAllSettings];
     else if (selection == _instructions) [self showInstructions];
-    
+    else if (selection == _adBannerCell) [self tapsRemoveAds];
+
     // if a theme cell was selected, set current theme
     else if (selection == _themeWhiteOnGrey) { [defaults setObject:@"White on Grey" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
     else if (selection == _themeGreyOnBlack) { [defaults setObject:@"Grey on Black" forKey:@"currentTheme"]; [self setUpThemeChecks]; }
@@ -1106,4 +1112,8 @@
     [defaults synchronize];
 }
 
+- (IBAction)tapsRestoreButton:(id)sender {
+    NSLog(@"restoring purchases");
+    [self restorePurchases];
+}
 @end

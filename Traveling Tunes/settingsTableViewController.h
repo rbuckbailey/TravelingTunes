@@ -24,6 +24,7 @@
 - (void)purchase;
 - (void)restore;
 - (void)tapsRemoveAdsButton;
+- (IBAction)tapsRestoreButton:(id)sender;
 @property (weak, nonatomic) IBOutlet UITableViewCell *adBannerCell;
 
 @property (strong, nonatomic) UIPageViewController *pageController;
