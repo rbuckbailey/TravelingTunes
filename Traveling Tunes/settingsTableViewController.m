@@ -294,9 +294,8 @@
 }
 
 - (void) popToRoot {
-//    [self.navigationController popToRootViewControllerAnimated:YES]; //requires iOS 7+
-    [self.navigationController popViewControllerAnimated:YES];
-
+    [self.navigationController popToRootViewControllerAnimated:YES]; //requires iOS 7+
+//    [self.navigationController popViewControllerAnimated:YES];
 }
 
 
