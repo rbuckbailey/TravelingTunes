@@ -429,8 +429,8 @@ int songTitleY = 0;
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
 
     [self setGlobalColors];
-    [self scrollingTimerKiller]; [self startMarqueeTimer];
     [self setupLabels];
+    [self scrollingTimerKiller]; [self startMarqueeTimer];
     [self setupHUD];
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
     if (song) {
@@ -580,7 +580,7 @@ int songTitleY = 0;
 //    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
 //    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     
-    [self setupLabels];
+//    [self setupLabels];
 }
 
 - (void)setupLabels {
