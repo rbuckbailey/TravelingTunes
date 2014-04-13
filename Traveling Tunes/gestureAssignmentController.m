@@ -130,8 +130,8 @@
 //    [defaults setObject:@"Next" forKey:@"1SwipeRight"];
     [defaults setObject:@"VolumeUp" forKey:@"1SwipeUp"];
     [defaults setObject:@"VolumeDown" forKey:@"1SwipeDown"];
-    [defaults setObject:@"YES" forKey:@"1SwipeLeftContinuous"];
-    [defaults setObject:@"YES" forKey:@"1SwipeRightContinuous"];
+    [defaults setObject:@"NO" forKey:@"1SwipeLeftContinuous"];
+    [defaults setObject:@"NO" forKey:@"1SwipeRightContinuous"];
     [defaults setObject:@"YES" forKey:@"1SwipeUpContinuous"];
     [defaults setObject:@"YES" forKey:@"1SwipeDownContinuous"];
     [defaults setObject:@"PlayPause" forKey:@"11Tap"];
