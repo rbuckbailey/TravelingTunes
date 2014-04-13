@@ -186,7 +186,8 @@ int songTitleY = 0;
 }
 
 - (int)getBannerHeight:(UIDeviceOrientation)orientation {
-    if (!self.bannerIsVisible) return 0;
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ((!self.bannerIsVisible)|[[defaults objectForKey:@"disableAdBanners" ]  isEqual:@"YES"]) return 0;
     if (orientation==5) {
         if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
             return 32;
@@ -549,6 +550,7 @@ int songTitleY = 0;
         
         long height;
         height = self.view.bounds.size.height-[self getBannerHeight];
+//        NSLog(@"edge at %ld",height);
 /*
         if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) height = self.view.bounds.size.height;
         else if (self.view.bounds.size.height==320) height = self.view.bounds.size.height-32; //reduce height for landscape ad banner
@@ -569,7 +571,7 @@ int songTitleY = 0;
         _playbackEdgeViewBG.frame = CGRectMake(0, height-15, self.view.bounds.size.width, 80);
         _playbackEdgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
     }
-    }
+}
     
     // since this runs 5 times a second, update volume per GPS here
     mediaPlayer.volume=_volumeTarget;
