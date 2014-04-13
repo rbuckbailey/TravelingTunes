@@ -293,6 +293,7 @@ int songTitleY = 0;
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
+    //initialized and not used for a good reason that I don't rememeber now
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     
@@ -714,7 +715,7 @@ int songTitleY = 0;
     // available only on ios7.0 sdk.
 
     int songFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
-    NSDictionary *attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
+//    NSDictionary *attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     long textHeight = [[_songTitle font] fontWithSize:songFontSize];
 	while( textHeight > minFontSize )
 	{
@@ -724,7 +725,7 @@ int songTitleY = 0;
 	}
  
     songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
-    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
+//    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     textHeight = [[_songTitle font] fontWithSize:songFontSize];
 	while( textHeight > minFontSize )
 	{
@@ -734,7 +735,7 @@ int songTitleY = 0;
 	}
     
     songFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
-    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
+//    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     textHeight = [[_albumTitle font] fontWithSize:songFontSize];
 	while( textHeight > minFontSize )
 	{
