@@ -533,6 +533,7 @@ int songTitleY = 0;
 
 -(void) updatePlaybackHUD {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self setGlobalColors];
 
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL) {
 //    else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
@@ -583,7 +584,7 @@ int songTitleY = 0;
     mediaPlayer.volume=_volumeTarget;
 //    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
 //    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
-    
+
     [self setupLabels];
 }
 
@@ -1310,7 +1311,7 @@ int songTitleY = 0;
     else if ([action isEqual:@"SongPicker"]) [self showSongPicker];
     else if ([action isEqual:@"PlayCurrentArtist"]) [self playCurrentArtist];
     else if ([action isEqual:@"PlayCurrentAlbum"]) [self playCurrentAlbum];
-    [self setupLabels];
+//    [self setupLabels];
 }
 
 -(void) next {
@@ -1387,7 +1388,7 @@ int songTitleY = 0;
 }
 
 -(void)marqueeTimerKiller {
-    [self setupLabels]; // also refresh labels every 4 seconds? keeps fading current
+//    [self setupLabels]; // also refresh labels every 4 seconds? keeps fading current
 //    NSLog(@"marqueeTimerKiller");
     if ( [[self marqueeTimer] isValid]){
         [[self marqueeTimer] invalidate];

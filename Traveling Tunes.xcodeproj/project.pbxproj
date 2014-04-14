@@ -124,8 +124,8 @@
 		F4B7DA9718EF9857008170BF /* LEColorPicker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LEColorPicker.m; sourceTree = "<group>"; };
 		F4B7DA9918EF989F008170BF /* UIColor+YUVSpace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "UIColor+YUVSpace.h"; path = "../UIColor+YUVSpace.h"; sourceTree = "<group>"; };
 		F4B7DA9A18EF98D0008170BF /* UIColor+YUVSpace.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIColor+YUVSpace.m"; sourceTree = "<group>"; };
-		F4DA1FE518FAEF4400C018EC /* Traveling Tunes copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traveling Tunes copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		F4DA1FE618FAEF4400C018EC /* Traveling Tunes copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Traveling Tunes copy-Info.plist"; path = "/Users/home/Code/TravelingTunes/Traveling Tunes copy-Info.plist"; sourceTree = "<absolute>"; };
+		F4DA1FE518FAEF4400C018EC /* Traveling Tunes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traveling Tunes.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F4DA1FE618FAEF4400C018EC /* Traveling Tunes-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Traveling Tunes-Info.plist"; path = "/Users/home/Code/TravelingTunes/Traveling Tunes-Info.plist"; sourceTree = "<absolute>"; };
 		F4F25E8018D3E54D0083641B /* settingsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewController.h; sourceTree = "<group>"; };
 		F4F25E8118D3E54D0083641B /* settingsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settingsTableViewController.m; sourceTree = "<group>"; };
 		F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewCell.h; sourceTree = "<group>"; };
@@ -175,7 +175,7 @@
 				8E3C8CFB189BF785004A90AE /* Traveling TunesTests */,
 				8E3C8CD2189BF785004A90AE /* Frameworks */,
 				8E3C8CD1189BF785004A90AE /* Products */,
-				F4DA1FE618FAEF4400C018EC /* Traveling Tunes copy-Info.plist */,
+				F4DA1FE618FAEF4400C018EC /* Traveling Tunes-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -184,7 +184,7 @@
 			children = (
 				8E3C8CD0189BF785004A90AE /* Traveling Tunes Free.app */,
 				8E3C8CF4189BF785004A90AE /* Traveling TunesTests.xctest */,
-				F4DA1FE518FAEF4400C018EC /* Traveling Tunes copy.app */,
+				F4DA1FE518FAEF4400C018EC /* Traveling Tunes.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -347,7 +347,7 @@
 			);
 			name = "Traveling Tunes";
 			productName = "Traveling Tunes";
-			productReference = F4DA1FE518FAEF4400C018EC /* Traveling Tunes copy.app */;
+			productReference = F4DA1FE518FAEF4400C018EC /* Traveling Tunes.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -702,9 +702,9 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Traveling Tunes/Traveling Tunes-Prefix.pch";
-				INFOPLIST_FILE = "Traveling Tunes copy-Info.plist";
+				INFOPLIST_FILE = "Traveling Tunes-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
-				PRODUCT_NAME = "Traveling Tunes copy";
+				PRODUCT_NAME = "Traveling Tunes";
 				PROVISIONING_PROFILE = "";
 				TARGETED_DEVICE_FAMILY = 1;
 				WRAPPER_EXTENSION = app;
@@ -720,9 +720,9 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Traveling Tunes/Traveling Tunes-Prefix.pch";
-				INFOPLIST_FILE = "Traveling Tunes copy-Info.plist";
+				INFOPLIST_FILE = "Traveling Tunes-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
-				PRODUCT_NAME = "Traveling Tunes copy";
+				PRODUCT_NAME = "Traveling Tunes";
 				PROVISIONING_PROFILE = "";
 				TARGETED_DEVICE_FAMILY = 1;
 				WRAPPER_EXTENSION = app;

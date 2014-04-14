@@ -12,7 +12,7 @@
 #import <iAd/iAd.h>
 #import <StoreKit/StoreKit.h>
 
-#define kRemoveAdsProductIdentifier @"com.hgwt.tt.noAds"
+#define kRemoveAdsProductIdentifier @"com.hgwt.ttfree.noAds"
 
 
 // controls settings outlets
