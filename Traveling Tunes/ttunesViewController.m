@@ -905,6 +905,7 @@ int songTitleY = 0;
  */
     
     float volumeLevel=height-(height*mediaPlayer.volume);
+    float targetVolumeLevel=height-(height*_volumeTarget);
     
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
@@ -913,11 +914,15 @@ int songTitleY = 0;
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) {
         _lineView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
-        _edgeViewBG.backgroundColor = [UIColor clearColor];
+        _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
+        _edgeViewBG.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:0.5f];
+//        _edgeViewBG.backgroundColor = [UIColor clearColor];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) {
         _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 15);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
-        _edgeViewBG.backgroundColor = [UIColor clearColor];
+//        _edgeViewBG.backgroundColor = [UIColor clearColor];
+        _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, 15);
+        _edgeViewBG.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:0.5f];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) {
         _lineView.frame = CGRectMake(self.view.bounds.size.width-15, volumeLevel, self.view.bounds.size.width, 15);
         _lineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.f];
