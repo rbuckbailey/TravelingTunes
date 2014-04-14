@@ -177,7 +177,7 @@ int songTitleY = 0;
     _speedTier = (int)(mph / 1);
     _volumeTarget = _volumeBase+((_volumeTenth*_speedTier)*[[defaults objectForKey:@"GPSSensivity"] floatValue]);
 
-    [self setupHUD];
+//    [self setupHUD];
     
 /*    NSLog(@"*** gps moved ***");
     NSLog(@"base volume:%f",_volumeBase);
@@ -584,7 +584,7 @@ int songTitleY = 0;
     mediaPlayer.volume=_volumeTarget;
 //    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
 //    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
-
+    [self setupHUD];
     [self setupLabels];
 }
 
