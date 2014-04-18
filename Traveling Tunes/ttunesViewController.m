@@ -379,7 +379,7 @@ int songTitleY = 0;
 //        [self showInstructions];
     }
     
-    [self setupLabels];
+//    [self setupLabels];
 }
 
 - (void) initAdBanner {
@@ -476,23 +476,25 @@ int songTitleY = 0;
                 LEColorPicker *colorPicker = [[LEColorPicker alloc] init];
                 LEColorScheme *colorScheme = [colorPicker colorSchemeFromImage:[artwork imageWithSize:CGSizeMake(40,40)]];
                 
-                const CGFloat* components = CGColorGetComponents([colorScheme primaryTextColor].CGColor);
-                float pred=components[0];
-                float pgreen=components[1];
-                float pblue=components[2];
+                if (colorScheme!=nil) {
+                    const CGFloat* components = CGColorGetComponents([colorScheme primaryTextColor].CGColor);
+                    float pred=components[0];
+                    float pgreen=components[1];
+                    float pblue=components[2];
                 
-                float sred,sgreen,sblue;
+                    float sred,sgreen,sblue;
                 // If it can't find a good secondary color, LEColorPicker returns UIColors which can't be averaged, so substitute RGB black or white; else grab the color for averaging
-                if ([[colorScheme secondaryTextColor] isEqual:[UIColor blackColor]]) {
-                    sred=0; sgreen=0; sblue=0; }
-                else if ([[colorScheme secondaryTextColor] isEqual:[UIColor whiteColor]]) {
-                    sred=1; sgreen=1; sblue=1; }
-                else {
-                    components = CGColorGetComponents([colorScheme secondaryTextColor].CGColor);
-                    sred=components[0];
-                    sgreen=components[1];
-                    sblue=components[2];
-                }
+                    if ([[colorScheme secondaryTextColor] isEqual:[UIColor blackColor]]) {
+                        sred=0; sgreen=0; sblue=0; }
+                    else if ([[colorScheme secondaryTextColor] isEqual:[UIColor whiteColor]]) {
+                        sred=1; sgreen=1; sblue=1; }
+                    else {
+                        components = CGColorGetComponents([colorScheme secondaryTextColor].CGColor);
+                        sred=components[0];
+                        sgreen=components[1];
+                        sblue=components[2];
+                    }
+                
                 
 /*
                   _bgView.backgroundColor = [colorScheme backgroundColor];
@@ -500,10 +502,11 @@ int songTitleY = 0;
                 _songTitle.textColor = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:1];
                 _albumTitle.textColor = [colorScheme secondaryTextColor];
  */
-                _themeBG = [colorScheme backgroundColor];
-                _themeColorArtist = [colorScheme primaryTextColor];
-                _themeColorSong = [UIColor colorWithRed: (sred+(pred*3))/4   green: (sgreen+(pgreen*3))/4   blue:(sblue+(pblue*3))/4   alpha:1];
-                _themeColorAlbum = [colorScheme secondaryTextColor];
+                    _themeBG = [colorScheme backgroundColor];
+                    _themeColorArtist = [colorScheme primaryTextColor];
+                    _themeColorSong = [UIColor colorWithRed: (sred+(pred*3))/4   green: (sgreen+(pgreen*3))/4   blue:(sblue+(pblue*3))/4   alpha:1];
+                    _themeColorAlbum = [colorScheme secondaryTextColor];
+                }
             }
         } else _albumArt.alpha = 0.0f;
         
@@ -533,10 +536,11 @@ int songTitleY = 0;
 
 -(void) updatePlaybackHUD {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [self setGlobalColors];
 
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL) {
-//    else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
+        [self setGlobalColors];
+
+        //    else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
 
     float red, green, blue, alpha;
     float red2, green2, blue2, alpha2;
@@ -594,8 +598,6 @@ int songTitleY = 0;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
-//    [self setGlobalColors];
-    
 
     // dim display if it's night and dim-at-night is on
     NSDate *currentTime = [NSDate date];
@@ -904,7 +906,8 @@ int songTitleY = 0;
     else height=self.view.bounds.size.height-50; // reduce height for portrait iAd banner
  */
     
-    float volumeLevel=height-(height*mediaPlayer.volume);
+    // should be using "if GPS volume is on, then..."
+    float volumeLevel=height-(height*_volumeBase);
     float targetVolumeLevel=height-(height*_volumeTarget);
     
     _lineView.backgroundColor = [UIColor clearColor];
