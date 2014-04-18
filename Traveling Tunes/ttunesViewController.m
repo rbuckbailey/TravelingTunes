@@ -450,7 +450,8 @@ int songTitleY = 0;
     }
 }
 
-- (void) setGlobalColors {
+
+- (void) setThemeColors {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     
@@ -462,6 +463,10 @@ int songTitleY = 0;
     _themeColorSong = [themecolors objectAtIndex:1];
     _themeColorAlbum = [themecolors objectAtIndex:1];
     [self invertColorsIfNecessary];
+}
+
+- (void) setGlobalColors {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
     if ((artwork != nil) & ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"])) {
@@ -508,9 +513,9 @@ int songTitleY = 0;
                     _themeColorAlbum = [colorScheme secondaryTextColor];
                 }
             }
-        } else _albumArt.alpha = 0.0f;
+        } else { _albumArt.alpha = 0.0f; [self setThemeColors]; }
         
-    } else _albumArt.alpha = 0.0f;
+    }  else { _albumArt.alpha = 0.0f; [self setThemeColors]; }
 }
 
 - (void) invertColorsIfNecessary {
