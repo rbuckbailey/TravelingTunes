@@ -647,6 +647,7 @@ int songTitleY = 0;
         _albumTitle.frame = CGRectMake(leftMargin,self.view.bounds.size.height-40-[self getBannerHeight],self.view.bounds.size.width,30);
 
     } else {
+        _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),_artistTitle.frame.size.height);
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
         _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
@@ -688,7 +689,7 @@ int songTitleY = 0;
 
     topMargin = 20;
     bottomMargin = 20;
-    if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Nothing"]) {
+    if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) {
         _topLeftRegion.text = [defaults objectForKey:@"TopLeft"];
         _topLeftRegion.font = [UIFont systemFontOfSize:30];
         _topLeftRegion.frame = CGRectMake(0,0,150,50);
@@ -696,8 +697,8 @@ int songTitleY = 0;
         _topLeftRegion.numberOfLines=1;
         _topLeftRegion.lineBreakMode=NSLineBreakByClipping;
         topMargin = 40;
-    }
-    if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Nothing"]) {
+    } else _topLeftRegion.text = @"";
+    if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) {
         _topCenterRegion.text = [defaults objectForKey:@"TopCenter"];
         _topCenterRegion.font = [UIFont systemFontOfSize:30];
         _topCenterRegion.frame = CGRectMake(100,0,self.view.bounds.size.width-200,50);
@@ -706,8 +707,8 @@ int songTitleY = 0;
         _topCenterRegion.lineBreakMode=NSLineBreakByClipping;
         _topCenterRegion.textAlignment = NSTextAlignmentCenter;
         topMargin = 40;
-    }
-    if (![[defaults objectForKey:@"TopRight"] isEqual:@"Nothing"]) {
+    } else _topCenterRegion.text = @"";
+    if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) {
         _topRightRegion.text = [defaults objectForKey:@"TopRight"];
         _topRightRegion.font = [UIFont systemFontOfSize:30];
         _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-150,0,150,50);
@@ -716,7 +717,7 @@ int songTitleY = 0;
         _topRightRegion.lineBreakMode=NSLineBreakByClipping;
         _topRightRegion.textAlignment = NSTextAlignmentRight;
         topMargin = 40;
-    }
+    } else _topRightRegion.text = @"";
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
         _bottomLeftRegion.text = [defaults objectForKey:@"BottomLeft"];
         _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
@@ -725,7 +726,7 @@ int songTitleY = 0;
         _bottomLeftRegion.numberOfLines=1;
         _bottomLeftRegion.lineBreakMode=NSLineBreakByClipping;
         bottomMargin = 40;
-    }
+    } else _bottomLeftRegion.text = @"";
     if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) {
         _bottomCenterRegion.text = [defaults objectForKey:@"BottomCenter"];
         _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
@@ -735,7 +736,7 @@ int songTitleY = 0;
         _bottomCenterRegion.lineBreakMode=NSLineBreakByClipping;
         _bottomCenterRegion.textAlignment = NSTextAlignmentCenter;
         bottomMargin = 40;
-    }
+    } else _bottomCenterRegion.text = @"";
     if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
         _bottomRightRegion.text = [defaults objectForKey:@"BottomRight"];
         _bottomRightRegion.font = [UIFont systemFontOfSize:30];
@@ -745,7 +746,7 @@ int songTitleY = 0;
         _bottomRightRegion.lineBreakMode=NSLineBreakByClipping;
         _bottomRightRegion.textAlignment = NSTextAlignmentRight;
         bottomMargin = 40;
-    }
+    } else _bottomRightRegion.text = @"";
 }
 
 -(void)drawFittedText {
