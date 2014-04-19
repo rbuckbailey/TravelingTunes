@@ -1258,7 +1258,7 @@ int songTitleY = 0;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     NSUInteger numTaps = [[touches anyObject] tapCount];
-    int finalFingers = [[event allTouches] count];
+    int finalFingers = (int)[[event allTouches] count];
     if (_fingers==0) _fingers=finalFingers;
     NSLog(@"end %d fingers",_fingers);
 
@@ -1276,10 +1276,10 @@ int songTitleY = 0;
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else { if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
                 }
-                else if (location.y>280) { // bottom bar region
-                    if (location.x<100) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
-                    else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
-                    else { if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
+                else if (location.y>self.view.bounds.size.width-100) { // bottom bar region
+                    if (location.x<100) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
+                    else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
+                    else { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
                 }
                 else {
                     [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
