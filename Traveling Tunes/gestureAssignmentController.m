@@ -31,6 +31,9 @@
 
 - (void)initOtherSettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+#ifdef free
+    [defaults setObject:@"NO" forKey:@"disableAdBanners"];
+#endif
     [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
     [defaults setObject:@"5" forKey:@"seekSensitivity"];
     [defaults setObject:@"NO" forKey:@"ShowStatusBar"];
@@ -55,7 +58,7 @@
     [defaults setObject:@"YES" forKey:@"showAlbumArt"];
     [defaults setObject:@"YES" forKey:@"albumArtColors"];
     [defaults setObject:@"YES" forKey:@"showActions"];
-    [defaults setObject:@"NO" forKey:@"disableAdBanners"];
+    [defaults setObject:@"2" forKey:@"AlbumArtScale"];
 }
 
 - (void)initDisplaySettings {

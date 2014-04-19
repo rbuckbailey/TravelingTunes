@@ -251,9 +251,11 @@
     
     _GPSSensitivitySlider.value = [[defaults objectForKey:@"GPSSensivity"] floatValue];
     _GPSSensivityLabel.text = [NSString stringWithFormat:@"%f",[[defaults objectForKey:@"GPSSensivity"] floatValue]];
+
     // initialized segmented switches
     _HUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"HUDType"] floatValue];
     _ScrubHUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"ScrubHUDType"] floatValue];
+    _albumArtScale.selectedSegmentIndex = (int)[[defaults objectForKey:@"AlbumArtScale"] floatValue];
 
     // initialize theme previews for Display settings
     [self setThemeLabels];
@@ -1149,4 +1151,15 @@
 }
 #endif
 
+- (IBAction)albumArtScaleChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_albumArtScale.selectedSegmentIndex == 0) {
+        [defaults setObject:@"0" forKey:@"AlbumArtScale"];
+    } else if(_albumArtScale.selectedSegmentIndex == 1) {
+        [defaults setObject:@"1" forKey:@"AlbumArtScale"];
+    } else if(_albumArtScale.selectedSegmentIndex == 2) {
+        [defaults setObject:@"2" forKey:@"AlbumArtScale"];
+    }
+    [defaults synchronize];
+}
 @end

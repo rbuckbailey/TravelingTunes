@@ -140,6 +140,8 @@
 @property (weak, nonatomic) IBOutlet UISwitch *albumArtColors;
 - (IBAction)albumArtColorsChanged:(id)sender;
 - (IBAction)showAlbumArtChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *albumArtScale;
+- (IBAction)albumArtScaleChanged:(id)sender;
 
 
 

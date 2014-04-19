@@ -474,8 +474,9 @@ int songTitleY = 0;
         if ([artwork imageWithSize:CGSizeMake(50,50)]) {
             _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
             _albumArt.alpha = 0.25f;
-            _albumArt.contentMode = UIViewContentModeScaleAspectFit;
-//            _albumArt.contentMode = UIViewContentModeCenter;
+            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]) _albumArt.contentMode = UIViewContentModeCenter;
+            else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"1"]) _albumArt.contentMode = UIViewContentModeScaleAspectFill;
+            else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"2"]) _albumArt.contentMode = UIViewContentModeScaleAspectFit;
             //                _albumArt.contentMode = UIViewContentModeCenter;
             
             if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
