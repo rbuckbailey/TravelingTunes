@@ -410,25 +410,31 @@
 {
     // load gesture controller and set up
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
-    NSString *fullGestureContinuous = [fullGesture stringByAppendingString:@"Continuous"];
     
-    NSLog(@"defaults was %@",[defaults objectForKey:fullGesture]);
-    // change the dictionary
-    [defaults setObject:action forKey: fullGesture];
-    if ([action isEqual:@"VolumeUp"] | [action isEqual:@"VolumeDown"]) [defaults setObject:@"YES" forKey:fullGestureContinuous];
-    else [defaults setObject:@"NO" forKey:fullGestureContinuous];
-
-
-    NSLog(@"defaults is %@",[defaults objectForKey:fullGesture]);
-
-    // save the dictionary
-    [defaults synchronize];
-    
-    [self setUpActionChecks];
+    if ([[_passthrough objectForKey:@"Fingers"] isEqual:@"Corner"]) {
 #ifdef DEBUG
-    NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
+        NSLog(@"Configuring corner %@ to action %@",[_passthrough objectForKey:@"Gesture"],action);
+        [defaults setObject:action forKey:[_passthrough objectForKey:@"Gesture"]];
 #endif
+    } else { // we're on a fingers menu, so do finger setting things
+        NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
+        NSString *fullGestureContinuous = [fullGesture stringByAppendingString:@"Continuous"];
+    
+        NSLog(@"defaults was %@",[defaults objectForKey:fullGesture]);
+        // change the dictionary
+        [defaults setObject:action forKey: fullGesture];
+        if ([action isEqual:@"VolumeUp"] | [action isEqual:@"VolumeDown"]) [defaults setObject:@"YES" forKey:fullGestureContinuous];
+        else [defaults setObject:@"NO" forKey:fullGestureContinuous];
+
+        NSLog(@"defaults is %@",[defaults objectForKey:fullGesture]);
+
+        // save the dictionary
+#ifdef DEBUG
+        NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
+#endif
+    }
+    [defaults synchronize];
+    [self setUpActionChecks];
 }
 
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
@@ -525,8 +531,17 @@
     else if ([[segue identifier] isEqual:@"4Tap"]) [passthrough setObject: @"4Tap" forKey: @"Gesture"];
     else if ([[segue identifier] isEqual:@"LongPress"]) [passthrough setObject: @"LongPress" forKey: @"Gesture"];
 
+    // check for Corner Region segues
+    else if ([[segue identifier] isEqual:@"CornerMenu"]) [passthrough setObject: @"Corner" forKey: @"Fingers"];
+    else if ([[segue identifier] isEqual:@"TopLeftRegion"]) [passthrough setObject: @"TopLeft" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"TopCenterRegion"]) [passthrough setObject: @"TopCenter" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"TopRightRegion"]) [passthrough setObject: @"TopRight" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"TopLeftRegion"]) [passthrough setObject: @"BottomLeft" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"TopCenterRegion"]) [passthrough setObject: @"BottomCenter" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"TopRightRegion"]) [passthrough setObject: @"BottomRight" forKey: @"Gesture"];
+    
     // if a segue is not coded here you get a crash on the passthrough. so if we don't need to pass data, fill in "X"
-    if ([[segue identifier] isEqual:@"quickStartGuide"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
+    else if ([[segue identifier] isEqual:@"quickStartGuide"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
     else if ([[segue identifier] isEqual:@"themeSettings"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
     else if ([[segue identifier] isEqual:@"RotationMenu"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
 
