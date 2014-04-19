@@ -874,6 +874,7 @@ int songTitleY = 0;
             _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75f];
             _actionHUD.layer.cornerRadius = 10;
             _actionHUD.lineBreakMode = NSLineBreakByClipping;
+            _actionHUD.numberOfLines = 1;
             
             if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u2190"; //@"\u2190";
             else if ([action isEqual:@"FastForward"]) _actionHUD.text = @"\u2192";
@@ -885,7 +886,7 @@ int songTitleY = 0;
             else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
             else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
             else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
-            else if ([action isEqual:@"StartDefaultPlaylist"]|[action isEqual:@"PlayAllArtist"]|[action isEqual:@"PlayAlbum"]) _actionHUD.text = @"...";
+            else if ([action isEqual:@"StartDefaultPlaylist"]|[action isEqual:@"PlayAllArtist"]|[action isEqual:@"PlayAlbum"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
             else _actionHUD.text = @"?";
 
             [self startActionHUDFadeTimer];
