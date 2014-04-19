@@ -1183,7 +1183,7 @@ int songTitleY = 0;
     if (sender.state == UIGestureRecognizerStateBegan) {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         [self performPlayerAction:[defaults objectForKey:@"2LongPress"]:@"2LongPress"];
-    } // else, UIGestureRecognizerState[Changed / Ended]
+    } // else, UIGestureRecognizerState[Changed / Ended]7
 }
 
 - (IBAction)longPress3Detected:(UIGestureRecognizer *)sender {
@@ -1254,19 +1254,37 @@ int songTitleY = 0;
     NSLog(@"currently %d fingers",_fingers);
 }
 
-//(unsigned long)gesture.numberOfTouches)
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     NSUInteger numTaps = [[touches anyObject] tapCount];
-    int finalFingers = [[event allTouches]count];
+    int finalFingers = [[event allTouches] count];
     if (_fingers==0) _fingers=finalFingers;
     NSLog(@"end %d fingers",_fingers);
+
     float delay = 0.3;
     switch (_fingers) {
         case 1:
             if (numTaps < 2)
             {
-                [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
-                [self.nextResponder touchesEnded:touches withEvent:event];
+                // check single-tap position here vs on-screen regions
+                UITouch *touch = [[event allTouches] anyObject];
+                CGPoint location = [touch locationInView:touch.view];
+
+                if (location.y<26) { // top bar region
+                    if (location.x<100) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
+                    else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
+                    else { if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
+                }
+                else if (location.y>280) { // bottom bar region
+                    if (location.x<100) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
+                    else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
+                    else { if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
+                }
+                else {
+                    [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
+                    [self.nextResponder touchesEnded:touches withEvent:event];
+                }
             }
             else if(numTaps == 2)
             {
