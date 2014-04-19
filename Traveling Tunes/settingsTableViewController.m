@@ -248,7 +248,8 @@
     _textBlueSlider.value = (int)[[defaults objectForKey:@"customTextBlue"] floatValue];
     _volumeSensitivitySlider.value = [[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _seekSensitivitySlider.value = [[defaults objectForKey:@"seekSensitivity"] floatValue];
-    
+    _albumArtFade.value = [[defaults objectForKey:@"AlbumArtFade"] floatValue];
+
     _GPSSensitivitySlider.value = [[defaults objectForKey:@"GPSSensivity"] floatValue];
     _GPSSensivityLabel.text = [NSString stringWithFormat:@"%f",[[defaults objectForKey:@"GPSSensivity"] floatValue]];
 
@@ -1162,4 +1163,9 @@
     }
     [defaults synchronize];
 }
+
+- (IBAction)albumArtFadeChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[NSNumber numberWithFloat:_albumArtFade.value] forKey:@"AlbumArtFade"];
+    [defaults synchronize];}
 @end

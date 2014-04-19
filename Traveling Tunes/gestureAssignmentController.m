@@ -35,6 +35,7 @@
     [defaults setObject:@"NO" forKey:@"disableAdBanners"];
 #endif
     [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
+    [defaults setObject:@"0.35" forKey:@"AlbumArtFade"];
     [defaults setObject:@"5" forKey:@"seekSensitivity"];
     [defaults setObject:@"NO" forKey:@"ShowStatusBar"];
     [defaults setObject:@"YES" forKey:@"VolumeAlwaysOn"];
@@ -58,7 +59,7 @@
     [defaults setObject:@"YES" forKey:@"showAlbumArt"];
     [defaults setObject:@"YES" forKey:@"albumArtColors"];
     [defaults setObject:@"YES" forKey:@"showActions"];
-    [defaults setObject:@"2" forKey:@"AlbumArtScale"];
+    [defaults setObject:@"1" forKey:@"AlbumArtScale"];
 }
 
 - (void)initDisplaySettings {
@@ -67,8 +68,8 @@
     [defaults setObject:@"70" forKey:@"songFontSize"];
     [defaults setObject:@"55" forKey:@"albumFontSize"];
     [defaults setObject:@"Left" forKey:@"artistAlignment"];
-    [defaults setObject:@"Left" forKey:@"songAlignment"];
-    [defaults setObject:@"Left" forKey:@"albumAlignment"];
+    [defaults setObject:@"Center" forKey:@"songAlignment"];
+    [defaults setObject:@"Right" forKey:@"albumAlignment"];
     [defaults setObject:@"35" forKey:@"minimumFontSize"];
     [defaults synchronize];
 }

@@ -142,6 +142,8 @@
 - (IBAction)showAlbumArtChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *albumArtScale;
 - (IBAction)albumArtScaleChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISlider *albumArtFade;
+- (IBAction)albumArtFadeChanged:(id)sender;
 
 
 
