@@ -18,6 +18,7 @@ MPMusicPlayerController*        mediaPlayer;
 
 int leftMargin = 20;
 int rightMargin = 20;
+int topMargin = 20;
 int bottomMargin = 20;
 int albumTitleY = 0;
 int songTitleY = 0;
@@ -1578,5 +1579,23 @@ int songTitleY = 0;
     [self dismissViewControllerAnimated: YES completion:nil];
 }
 
+-(void) setRating:(int)newRating {
+    MPMediaItem *song = [mediaPlayer nowPlayingItem];
+    [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
+}
+
+-(void) increaseRating {
+    MPMediaItem *song = [mediaPlayer nowPlayingItem];
+    int newRating = (int)[[song valueForKey:@"rating"] floatValue];
+    if (newRating<5) newRating++;
+    [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
+}
+
+-(void) decreaseRating {
+    MPMediaItem *song = [mediaPlayer nowPlayingItem];
+    int newRating = (int)[[song valueForKey:@"rating"] floatValue];
+    if (newRating>0) newRating--;
+    [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
+}
 
 @end
