@@ -685,23 +685,59 @@ int songTitleY = 0;
 - (void) drawCornerRegions {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    if (![[defaults objectForKey:@"TopLeftRegion"] isEqual:@"Nothing"]) {
-        //draw the label
+    if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Nothing"]) {
+        _topLeftRegion.text = [defaults objectForKey:@"TopLeft"];
+        _topLeftRegion.font = [UIFont systemFontOfSize:30];
+        _topLeftRegion.frame = CGRectMake(0,0,150,50);
+        _topLeftRegion.textColor = _themeColorAlbum;
+        _topLeftRegion.numberOfLines=1;
+        _topLeftRegion.lineBreakMode=NSLineBreakByClipping;
+
     }
-    if (![[defaults objectForKey:@"TopCenterRegion"] isEqual:@"Nothing"]) {
-        //draw the label
+    if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Nothing"]) {
+        _topCenterRegion.text = [defaults objectForKey:@"TopCenter"];
+        _topCenterRegion.font = [UIFont systemFontOfSize:30];
+        _topCenterRegion.frame = CGRectMake(100,0,self.view.bounds.size.width-200,50);
+        _topCenterRegion.textColor = _themeColorAlbum;
+        _topCenterRegion.numberOfLines=1;
+        _topCenterRegion.lineBreakMode=NSLineBreakByClipping;
+        _topCenterRegion.textAlignment = NSTextAlignmentCenter;
     }
-    if (![[defaults objectForKey:@"TopRightRegion"] isEqual:@"Nothing"]) {
-        //draw the label
+    if (![[defaults objectForKey:@"TopRight"] isEqual:@"Nothing"]) {
+        _topRightRegion.text = [defaults objectForKey:@"TopRight"];
+        _topRightRegion.font = [UIFont systemFontOfSize:30];
+        _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-150,0,150,50);
+        _topRightRegion.textColor = _themeColorAlbum;
+        _topRightRegion.numberOfLines=1;
+        _topRightRegion.lineBreakMode=NSLineBreakByClipping;
+        _topRightRegion.textAlignment = NSTextAlignmentRight;
     }
-    if (![[defaults objectForKey:@"BottomLeftRegion"] isEqual:@"Nothing"]) {
-        //draw the label
+    if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Nothing"]) {
+        _bottomLeftRegion.text = [defaults objectForKey:@"BottomLeft"];
+        _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
+        _bottomLeftRegion.frame = CGRectMake(0,self.view.bounds.size.height-50,150,50);
+        _bottomLeftRegion.textColor = _themeColorAlbum;
+        _bottomLeftRegion.numberOfLines=1;
+        _bottomLeftRegion.lineBreakMode=NSLineBreakByClipping;
+        
     }
-    if (![[defaults objectForKey:@"BottomCenterRegion"] isEqual:@"Nothing"]) {
-        //draw the label
+    if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Nothing"]) {
+        _bottomCenterRegion.text = [defaults objectForKey:@"BottomCenter"];
+        _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
+        _bottomCenterRegion.frame = CGRectMake(100,self.view.bounds.size.height-50,self.view.bounds.size.width-200,50);
+        _bottomCenterRegion.textColor = _themeColorAlbum;
+        _bottomCenterRegion.numberOfLines=1;
+        _bottomCenterRegion.lineBreakMode=NSLineBreakByClipping;
+        _bottomCenterRegion.textAlignment = NSTextAlignmentCenter;
     }
-    if (![[defaults objectForKey:@"BottomRightRegion"] isEqual:@"Nothing"]) {
-        //draw the label
+    if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Nothing"]) {
+        _bottomRightRegion.text = [defaults objectForKey:@"BottomRight"];
+        _bottomRightRegion.font = [UIFont systemFontOfSize:30];
+        _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-150,self.view.bounds.size.height-50,150,50);
+        _bottomRightRegion.textColor = _themeColorAlbum;
+        _bottomRightRegion.numberOfLines=1;
+        _bottomRightRegion.lineBreakMode=NSLineBreakByClipping;
+        _bottomRightRegion.textAlignment = NSTextAlignmentRight;
     }
 }
 
