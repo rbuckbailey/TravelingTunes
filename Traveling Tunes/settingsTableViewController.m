@@ -536,9 +536,9 @@
     else if ([[segue identifier] isEqual:@"TopLeftRegion"]) [passthrough setObject: @"TopLeft" forKey: @"Gesture"];
     else if ([[segue identifier] isEqual:@"TopCenterRegion"]) [passthrough setObject: @"TopCenter" forKey: @"Gesture"];
     else if ([[segue identifier] isEqual:@"TopRightRegion"]) [passthrough setObject: @"TopRight" forKey: @"Gesture"];
-    else if ([[segue identifier] isEqual:@"TopLeftRegion"]) [passthrough setObject: @"BottomLeft" forKey: @"Gesture"];
-    else if ([[segue identifier] isEqual:@"TopCenterRegion"]) [passthrough setObject: @"BottomCenter" forKey: @"Gesture"];
-    else if ([[segue identifier] isEqual:@"TopRightRegion"]) [passthrough setObject: @"BottomRight" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"BottomLeftRegion"]) [passthrough setObject: @"BottomLeft" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"BottomCenterRegion"]) [passthrough setObject: @"BottomCenter" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"BottomRightRegion"]) [passthrough setObject: @"BottomRight" forKey: @"Gesture"];
     
     // if a segue is not coded here you get a crash on the passthrough. so if we don't need to pass data, fill in "X"
     else if ([[segue identifier] isEqual:@"quickStartGuide"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
@@ -857,9 +857,11 @@
 
 - (void)setUpActionChecks {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSLog(@"fingers %@ gesture is %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"]);
     if (([_passthrough objectForKey:@"Fingers"]!=NULL) & ([_passthrough objectForKey:@"Gesture"]!=NULL)) {
-        NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
-        NSLog(@"fullGesture is %@",[defaults objectForKey:fullGesture]);
+        NSString *fullGesture = @"";
+        if ([[_passthrough objectForKey:@"Fingers"] isEqual:@"Corner"]) fullGesture = [_passthrough objectForKey:@"Gesture"];
+        else fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
         _nothingCheck.textColor = [UIColor whiteColor];
         _menuCheck.textColor = [UIColor whiteColor];
         _playCheck.textColor = [UIColor whiteColor];
@@ -882,9 +884,6 @@
         _increaseRatingCheck.textColor = [UIColor whiteColor];
         _decreaseRatingCheck.textColor = [UIColor whiteColor];
 
-        /*
-         @property (weak, nonatomic) IBOutlet UITableViewCell *toggleRepeat;
-         @property (weak, nonatomic) IBOutlet UITableViewCell *toggleShuffle;*/
         if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Play"]) _playCheck.textColor = [UIColor blackColor];
