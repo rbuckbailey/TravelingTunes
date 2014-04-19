@@ -1315,10 +1315,10 @@ int songTitleY = 0;
     else if ([action isEqual:@"SongPicker"]) [self showSongPicker];
     else if ([action isEqual:@"PlayCurrentArtist"]) [self playCurrentArtist];
     else if ([action isEqual:@"PlayCurrentAlbum"]) [self playCurrentAlbum];
-    else if ([action isEqual:@"ToggleShuffle"]) [self decreaseRating]; //[self toggleShuffle];
-    else if ([action isEqual:@"ToggleRepeat"]) [self increaseRating]; //[self toggleRepeat];
-    else if ([action isEqual:@"DecreaseRating"]) [self decreaseRating]; //[self toggleShuffle];
-    else if ([action isEqual:@"IncreaseRating"]) [self increaseRating]; //[self toggleRepeat];
+    else if ([action isEqual:@"ToggleShuffle"]) [self toggleShuffle];
+    else if ([action isEqual:@"ToggleRepeat"]) [self toggleRepeat];
+    else if ([action isEqual:@"DecreaseRating"]) [self decreaseRating];
+    else if ([action isEqual:@"IncreaseRating"]) [self increaseRating];
 }
 
 -(void) toggleShuffle {
