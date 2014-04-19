@@ -975,7 +975,7 @@ int songTitleY = 0;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.2f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.5f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -993,7 +993,7 @@ int songTitleY = 0;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.2f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.5f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -1011,7 +1011,7 @@ int songTitleY = 0;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.2f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.5f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
@@ -1028,7 +1028,7 @@ int songTitleY = 0;
                    if (![[defaults objectForKey:@"doNotRepeat"] isEqual:key]) {
                        [self performPlayerAction:[defaults objectForKey:key]:key];
                        [defaults setObject:key forKey:@"doNotRepeat"];
-                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.2f
+                       self.DNRTimer = [NSTimer scheduledTimerWithTimeInterval: 0.5f
                                                                      target: self
                                                                    selector: @selector(resetDoNotRepeat)
                                                                    userInfo: nil
