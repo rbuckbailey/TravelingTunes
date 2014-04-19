@@ -915,19 +915,19 @@ int songTitleY = 0;
     //setup for rectangle drawing display
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) {
         _lineView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
-        _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+        _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.10f];
         _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.25f];
 //        _edgeViewBG.backgroundColor = [UIColor clearColor];
-    } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) {
+    } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) { // setup line display
         _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 15);
-        _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+        _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.10f];
 //        _edgeViewBG.backgroundColor = [UIColor clearColor];
         _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, 15);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.25f];
-    } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) {
+    } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) { // setup edge display
         _lineView.frame = CGRectMake(self.view.bounds.size.width-15, volumeLevel, self.view.bounds.size.width, 15);
-        _lineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.f];
+        _lineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.0f];
         _edgeViewBG.frame = CGRectMake(self.view.bounds.size.width-15, 0, self.view.bounds.size.width, self.view.bounds.size.height);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
     }
