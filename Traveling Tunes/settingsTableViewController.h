@@ -55,6 +55,8 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *playCurrentAlbum;
 @property (weak, nonatomic) IBOutlet UITableViewCell *toggleRepeat;
 @property (weak, nonatomic) IBOutlet UITableViewCell *toggleShuffle;
+@property (weak, nonatomic) IBOutlet UITableViewCell *increaseRating;
+@property (weak, nonatomic) IBOutlet UITableViewCell *decreaseRating;
 
 
 @property (weak, nonatomic) IBOutlet UILabel *nothingCheck;
@@ -76,6 +78,8 @@
 @property (weak, nonatomic) IBOutlet UILabel *playCurrentArtistCheck;
 @property (weak, nonatomic) IBOutlet UILabel *toggleShuffleCheck;
 @property (weak, nonatomic) IBOutlet UILabel *toggleRepeatCheck;
+@property (weak, nonatomic) IBOutlet UILabel *increaseRatingCheck;
+@property (weak, nonatomic) IBOutlet UILabel *decreaseRatingCheck;
 
 // display settings outlets
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;
@@ -153,8 +157,6 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *themeSelectionPreview;
 @property (weak, nonatomic) IBOutlet UILabel *customColorPreviewLabel2;
 @property (weak, nonatomic) IBOutlet UITableViewCell *customColorPreview2;
-@property (weak, nonatomic) IBOutlet UILabel *customColorPreviewLabel;
-@property (weak, nonatomic) IBOutlet UITableViewCell *customColorPreview;
 
 // custom color picker slider outlets
 @property (weak, nonatomic) IBOutlet UISlider *textRedSlider;

@@ -867,9 +867,8 @@ int songTitleY = 0;
             else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
             else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
             else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
-            else if ([action isEqual:@"DecreaseVolume"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==0) rating=1; _actionHUD.text=@""; for (int i = 0; i<rating-1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];} }
-            else if ([action isEqual:@"IncreaseVolume"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text=@""; for (int i = 0; i<rating+1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];}}
-//            else if ([action isEqual:@"IncreaseVolume"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text=[NSString stringWithFormat:@"%d",rating+1]; }
+            else if ([action isEqual:@"DecreaseRating"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==0) rating=1; _actionHUD.text=@""; for (int i = 0; i<rating-1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];} }
+            else if ([action isEqual:@"IncreaseRating"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text=@""; for (int i = 0; i<rating+1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];}}
             else if ([action isEqual:@"ToggleShuffle"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"Shuffle Off"; else _actionHUD.text=@"Shuffle On"; }
             else if ([action isEqual:@"ToggleRepeat"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _actionHUD.text = @"Repeat Off"; else _actionHUD.text=@"Repeat On"; }
             else if ([action isEqual:@"PlayCurrentArtist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
@@ -881,8 +880,6 @@ int songTitleY = 0;
             else _actionHUD.text = @"?";
             
             [self startActionHUDFadeTimer];
-
-            MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; NSLog(@"rating is %d before change",rating);
         }
     }
 }

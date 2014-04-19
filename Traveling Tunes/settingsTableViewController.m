@@ -455,6 +455,8 @@
     else if (selection == _playCurrentArtist) [self configure:@"PlayCurrentArtist"];
     else if (selection == _toggleRepeat) [self configure:@"ToggleRepeat"];
     else if (selection == _toggleShuffle) [self configure:@"ToggleShuffle"];
+    else if (selection == _increaseRating) [self configure:@"IncreaseRating"];
+    else if (selection == _decreaseRating) [self configure:@"DecreaseRating"];
     else if (selection == _Menu) [self configure:@"Menu"];
 
     // "reset" buttons
@@ -730,25 +732,6 @@
 - (void)updateCustomPreviews {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-    
-        if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
-                _customColorPreview.backgroundColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
-                _customColorPreviewLabel.textColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
-        else {
-                _customColorPreviewLabel.textColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customTextRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customTextGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customTextBlue"] floatValue]/255.f alpha:1];
-                _customColorPreview.backgroundColor =
-                [UIColor colorWithRed: (int)[[defaults objectForKey:@"customBGRed"] floatValue]/255.f
-                                 green: (int)[[defaults objectForKey:@"customBGGreen"] floatValue]/255.f
-                                  blue: (int)[[defaults objectForKey:@"customBGBlue"] floatValue]/255.f alpha:1]; }
 
         if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
                 _customColorPreview2.backgroundColor =
@@ -881,6 +864,8 @@
         _playCurrentAlbumCheck.textColor = [UIColor whiteColor];
         _toggleRepeatCheck.textColor = [UIColor whiteColor];
         _toggleShuffleCheck.textColor = [UIColor whiteColor];
+        _increaseRatingCheck.textColor = [UIColor whiteColor];
+        _decreaseRatingCheck.textColor = [UIColor whiteColor];
 
         /*
          @property (weak, nonatomic) IBOutlet UITableViewCell *toggleRepeat;
@@ -904,7 +889,8 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"PlayCurrentAlbum"]) _playCurrentAlbumCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"ToggleRepeat"]) _toggleRepeatCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"ToggleShuffle"]) _toggleShuffleCheck.textColor = [UIColor blackColor];
-    }
+        if ([[defaults objectForKey:fullGesture] isEqual: @"IncreaseRating"]) _increaseRatingCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"DecreaseRating"]) _decreaseRatingCheck.textColor = [UIColor blackColor];    }
 }
 
 
