@@ -706,7 +706,7 @@ int songTitleY = 0;
 
     int songFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
 //    NSDictionary *attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
-    long textHeight = [[_songTitle font] fontWithSize:songFontSize];
+    long textHeight = [_artistTitle.text sizeWithFont:[_artistTitle font]].height;
 	while( textHeight > minFontSize )
 	{
         if ([_artistTitle.text sizeWithFont:[_artistTitle font]].width<self.view.bounds.size.width-(leftMargin+rightMargin)) break;
@@ -716,7 +716,7 @@ int songTitleY = 0;
  
     songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
 //    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
-    textHeight = [[_songTitle font] fontWithSize:songFontSize];
+    textHeight = [_songTitle.text sizeWithFont:[_songTitle font]].height;
 	while( textHeight > minFontSize )
 	{
         if ([_songTitle.text sizeWithFont:[_songTitle font]].width<self.view.bounds.size.width-(leftMargin+rightMargin)) break;
@@ -726,7 +726,7 @@ int songTitleY = 0;
     
     songFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
 //    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
-    textHeight = [[_albumTitle font] fontWithSize:songFontSize];
+    textHeight = [_albumTitle.text sizeWithFont:[_albumTitle font]].height;
 	while( textHeight > minFontSize )
 	{
         if ([_albumTitle.text sizeWithFont:[_albumTitle font]].width<self.view.bounds.size.width-(leftMargin+rightMargin)) break;
