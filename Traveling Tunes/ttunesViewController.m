@@ -473,7 +473,7 @@ int songTitleY = 0;
         // so do a second check to see if it has at least 50x50 pixels
         if ([artwork imageWithSize:CGSizeMake(50,50)]) {
             _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
-            _albumArt.alpha = 0.25f;
+            _albumArt.alpha = [[defaults objectForKey:@"AlbumArtFade"] floatValue];
             if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]) _albumArt.contentMode = UIViewContentModeCenter;
             else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"1"]) _albumArt.contentMode = UIViewContentModeScaleAspectFill;
             else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"2"]) _albumArt.contentMode = UIViewContentModeScaleAspectFit;
