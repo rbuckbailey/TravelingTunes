@@ -35,6 +35,7 @@
 @property (weak, nonatomic) IBOutlet settingsTableViewCell *resetAllSettings;
 @property (weak, nonatomic) IBOutlet settingsTableViewCell *instructions;
 
+@property (weak, nonatomic) IBOutlet settingsTableViewCell *ResetGestureAssignments;
 @property (weak, nonatomic) IBOutlet UITableViewCell *Nothing;
 @property (weak, nonatomic) IBOutlet UITableViewCell *Play;
 @property (weak, nonatomic) IBOutlet UITableViewCell *Pause;
@@ -52,7 +53,10 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *startDefaultPlaylist;
 @property (weak, nonatomic) IBOutlet UITableViewCell *playCurrentArtist;
 @property (weak, nonatomic) IBOutlet UITableViewCell *playCurrentAlbum;
-@property (weak, nonatomic) IBOutlet settingsTableViewCell *ResetGestureAssignments;
+@property (weak, nonatomic) IBOutlet UITableViewCell *toggleRepeat;
+@property (weak, nonatomic) IBOutlet UITableViewCell *toggleShuffle;
+
+
 @property (weak, nonatomic) IBOutlet UILabel *nothingCheck;
 @property (weak, nonatomic) IBOutlet UILabel *playCheck;
 @property (weak, nonatomic) IBOutlet UILabel *pauseCheck;
@@ -70,6 +74,8 @@
 @property (weak, nonatomic) IBOutlet UILabel *menuCheck;
 @property (weak, nonatomic) IBOutlet UILabel *playCurrentAlbumCheck;
 @property (weak, nonatomic) IBOutlet UILabel *playCurrentArtistCheck;
+@property (weak, nonatomic) IBOutlet UILabel *toggleShuffleCheck;
+@property (weak, nonatomic) IBOutlet UILabel *toggleRepeatCheck;
 
 // display settings outlets
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;

@@ -867,6 +867,12 @@
         _songPickerCheck.textColor = [UIColor whiteColor];
         _playCurrentArtistCheck.textColor = [UIColor whiteColor];
         _playCurrentAlbumCheck.textColor = [UIColor whiteColor];
+        _toggleRepeatCheck.textColor = [UIColor whiteColor];
+        _toggleShuffleCheck.textColor = [UIColor whiteColor];
+
+        /*
+         @property (weak, nonatomic) IBOutlet UITableViewCell *toggleRepeat;
+         @property (weak, nonatomic) IBOutlet UITableViewCell *toggleShuffle;*/
         if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Play"]) _playCheck.textColor = [UIColor blackColor];
@@ -884,6 +890,8 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"SongPicker"]) _songPickerCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"PlayCurrentArtist"]) _playCurrentArtistCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"PlayCurrentAlbum"]) _playCurrentAlbumCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"repeat"]) _toggleRepeatCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"shuffle"]) _toggleShuffleCheck.textColor = [UIColor blackColor];
     }
 }
 
