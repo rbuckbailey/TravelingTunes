@@ -503,7 +503,6 @@ int songTitleY = 0;
                     }
                     _themeBG = [colorScheme backgroundColor];
                     _themeColorArtist = [colorScheme primaryTextColor];
-//                    _themeColorSong = [UIColor colorWithRed: (sred+(pred*3))/4   green: (sgreen+(pgreen*3))/4   blue:(sblue+(pblue*3))/4   alpha:1];
                     _themeColorSong = [UIColor colorWithRed: (sred+(pred*2))/3   green: (sgreen+(pgreen*2))/3   blue:(sblue+(pblue*2))/3   alpha:1];
                     _themeColorAlbum = [colorScheme secondaryTextColor];
                 }
@@ -540,33 +539,23 @@ int songTitleY = 0;
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL) {
         [self setGlobalColors];
 
-        //    else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
-
     float red, green, blue, alpha;
     float red2, green2, blue2, alpha2;
 
     [_themeColorArtist getRed:&red green:&green blue:&blue alpha:&alpha];
     [_themeBG getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
-//    MPMediaItem *playingItem=[mediaPlayer nowPlayingItem];
     long totalPlaybackTime = [[[mediaPlayer nowPlayingItem] valueForProperty: @"playbackDuration"] longValue];
 
     float playbackPosition=(self.view.bounds.size.width*([mediaPlayer currentPlaybackTime]/totalPlaybackTime));
 
     
     
-//    NSLog(@"%f of %ld yields %f",[mediaPlayer currentPlaybackTime],totalPlaybackTime,playbackPosition);
     _playbackLineView.backgroundColor = [UIColor clearColor];
     _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
         
         long height;
         height = self.view.bounds.size.height-[self getBannerHeight];
-//        NSLog(@"edge at %ld",height);
-/*
-        if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) height = self.view.bounds.size.height;
-        else if (self.view.bounds.size.height==320) height = self.view.bounds.size.height-32; //reduce height for landscape ad banner
-        else height=self.view.bounds.size.height-50; // reduce height for portrait iAd banner
- */
         
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"0"]) {
         _playbackLineView.frame=CGRectMake(playbackPosition, 0,  self.view.bounds.size.width, self.view.bounds.size.height);
@@ -586,8 +575,6 @@ int songTitleY = 0;
     
     // since this runs 5 times a second, update volume per GPS here
     mediaPlayer.volume=_volumeTarget;
-//    if (mediaPlayer.volume < _volumeTarget) mediaPlayer.volume=mediaPlayer.volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
-//    else if (mediaPlayer.volume > _volumeTarget) mediaPlayer.volume=_volumeTarget; //  mediaPlayer.volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     [self setupHUD];
     [self setupLabels];
 }
@@ -597,8 +584,6 @@ int songTitleY = 0;
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
-    //    NSLog(@"Current theme should be %@",[defaults objectForKey:@"currentTheme"]);
-
     // dim display if it's night and dim-at-night is on
     NSDate *currentTime = [NSDate date];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
