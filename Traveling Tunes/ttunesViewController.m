@@ -26,6 +26,7 @@ int songTitleY = 0;
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade,*bgView;
 @property UILabel *actionHUD;
+@property UILabel *topLeftRegion,*topCenterRegion,*topRightRegion,*bottomLeftRegion,*bottomCenterRegion,*bottomRightRegion;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
@@ -316,12 +317,25 @@ int songTitleY = 0;
     _albumArt = [[UIImageView alloc] init];
     _bgView = [[UIImageView alloc] init];
 
+    _topLeftRegion = [[UILabel alloc] init];
+    _topCenterRegion = [[UILabel alloc] init];
+    _topRightRegion = [[UILabel alloc] init];
+    _bottomLeftRegion = [[UILabel alloc] init];
+    _bottomCenterRegion = [[UILabel alloc] init];
+    _bottomRightRegion = [[UILabel alloc] init];
+    
     [self.view addSubview:_bgView];
     [self.view addSubview:_albumArt];
     [self.view addSubview:_edgeViewBG];
     [self.view addSubview:_playbackEdgeViewBG];
     [self.view addSubview:_lineView];
     [self.view addSubview:_playbackLineView];
+    [self.view addSubview:_topLeftRegion];
+    [self.view addSubview:_topCenterRegion];
+    [self.view addSubview:_topRightRegion];
+    [self.view addSubview:_bottomLeftRegion];
+    [self.view addSubview:_bottomCenterRegion];
+    [self.view addSubview:_bottomRightRegion];
     [self.view bringSubviewToFront:_artistTitle];
     [self.view bringSubviewToFront:_songTitle];
     [self.view bringSubviewToFront:_albumTitle];
@@ -379,8 +393,6 @@ int songTitleY = 0;
         [defaults synchronize];
 //        [self showInstructions];
     }
-    
-//    [self setupLabels];
 }
 
 - (void) initAdBanner {
@@ -390,36 +402,8 @@ int songTitleY = 0;
         adBanner.delegate = self;
         [self.view addSubview:adBanner];
     }
-    /*
-    if (![adBanner isDescendantOfView:self]) {
-        NSLog(@"adding banner view");
-        [self.view addSubview:adBanner];
-    }*/
 }
-/*
-- (void) orientationChanged:(NSNotification *)note{
-//    _nightTimeFade.frame=CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
-    UIDevice * device = [UIDevice currentDevice];
-    switch(device.orientation)
-    {
-        case UIDeviceOrientationPortrait:
-            
-            break;
-        case UIDeviceOrientationPortraitUpsideDown:
-            
-            break;
-        case UIDeviceOrientationLandscapeLeft:
-            
-            break;
-        case UIDeviceOrientationLandscapeRight:
-            
-            break;
-            
-        default:
-            break;
-    };
-}
-*/
+
 -(void) startPlaybackWatcher {
     if ([self.scrubTimer isValid]) [self.scrubTimer invalidate];
     self.scrubTimer = [NSTimer scheduledTimerWithTimeInterval:   0.05f
@@ -695,6 +679,30 @@ int songTitleY = 0;
 //        if (self.bannerIsVisible) _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -[self getBannerHeight]);
     }
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) [self drawFittedText];
+    [self drawCornerRegions];
+}
+
+- (void) drawCornerRegions {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    if (![[defaults objectForKey:@"TopLeftRegion"] isEqual:@"Nothing"]) {
+        //draw the label
+    }
+    if (![[defaults objectForKey:@"TopCenterRegion"] isEqual:@"Nothing"]) {
+        //draw the label
+    }
+    if (![[defaults objectForKey:@"TopRightRegion"] isEqual:@"Nothing"]) {
+        //draw the label
+    }
+    if (![[defaults objectForKey:@"BottomLeftRegion"] isEqual:@"Nothing"]) {
+        //draw the label
+    }
+    if (![[defaults objectForKey:@"BottomCenterRegion"] isEqual:@"Nothing"]) {
+        //draw the label
+    }
+    if (![[defaults objectForKey:@"BottomRightRegion"] isEqual:@"Nothing"]) {
+        //draw the label
+    }
 }
 
 -(void)drawFittedText {
@@ -1406,39 +1414,29 @@ int songTitleY = 0;
 
 
 -(void)scrollingTimerKiller {
-//    NSLog(@"scrollingTimerKiller");
     [self marqueeTimerKiller];
     _marqueePosition=0;
     if ( [[self scrollingTimer] isValid]){
         [[self scrollingTimer] invalidate];
         _timersRunning--;
-        //NSLog(@"%d timers running",_timersRunning);
     }
 }
 
 -(void)marqueeTimerKiller {
-//    [self setupLabels]; // also refresh labels every 4 seconds? keeps fading current
-//    NSLog(@"marqueeTimerKiller");
     if ( [[self marqueeTimer] isValid]){
         [[self marqueeTimer] invalidate];
     }
 }
 
-// this always scrolls, even if the text fits.
 -(void)scrollSongTitle:(id)parameter{
-//    NSLog(@"%d timers running",_timersRunning);
-    
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
     _marqueePosition=_marqueePosition+2;
     _adjustedSongFontSize = _songTitle.font.pointSize;
     _songTitle.frame=CGRectMake(20-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
-//    NSLog(@"scrolling font size %f",_adjustedSongFontSize);
-    
     if (_marqueePosition>= textWidth+20) {
         [self scrollingTimerKiller];
         [self marqueeTimerKiller];
         _songTitle.frame=CGRectMake(leftMargin, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
-        //_songTitle.adjustsFontSizeToFitWidth=YES;
         _songTitle.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
         [self startMarqueeTimer];
     }
