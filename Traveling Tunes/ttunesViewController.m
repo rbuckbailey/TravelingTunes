@@ -474,7 +474,8 @@ int songTitleY = 0;
         if ([artwork imageWithSize:CGSizeMake(50,50)]) {
             _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
             _albumArt.alpha = 0.25f;
-            _albumArt.contentMode = UIViewContentModeCenter;
+            _albumArt.contentMode = UIViewContentModeScaleAspectFit;
+//            _albumArt.contentMode = UIViewContentModeCenter;
             //                _albumArt.contentMode = UIViewContentModeCenter;
             
             if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
@@ -499,17 +500,10 @@ int songTitleY = 0;
                         sgreen=components[1];
                         sblue=components[2];
                     }
-                
-                
-/*
-                  _bgView.backgroundColor = [colorScheme backgroundColor];
-                _artistTitle.textColor = [colorScheme primaryTextColor];
-                _songTitle.textColor = [UIColor colorWithRed: (pred+sred)/2   green: (pgreen+sgreen)/2   blue:(pblue+sblue)/2   alpha:1];
-                _albumTitle.textColor = [colorScheme secondaryTextColor];
- */
                     _themeBG = [colorScheme backgroundColor];
                     _themeColorArtist = [colorScheme primaryTextColor];
-                    _themeColorSong = [UIColor colorWithRed: (sred+(pred*3))/4   green: (sgreen+(pgreen*3))/4   blue:(sblue+(pblue*3))/4   alpha:1];
+//                    _themeColorSong = [UIColor colorWithRed: (sred+(pred*3))/4   green: (sgreen+(pgreen*3))/4   blue:(sblue+(pblue*3))/4   alpha:1];
+                    _themeColorSong = [UIColor colorWithRed: (sred+(pred*2))/3   green: (sgreen+(pgreen*2))/3   blue:(sblue+(pblue*2))/3   alpha:1];
                     _themeColorAlbum = [colorScheme secondaryTextColor];
                 }
             }
