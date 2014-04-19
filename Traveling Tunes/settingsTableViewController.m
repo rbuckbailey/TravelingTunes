@@ -423,7 +423,9 @@
     [defaults synchronize];
     
     [self setUpActionChecks];
+#ifdef DEBUG
     NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
+#endif
 }
 
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
@@ -718,7 +720,6 @@
     [self setThemeLabels];
     [self setUpThemeChecks];
     [self updateCustomPreviews];
-    NSLog(@"themeInvertChanged: %hhd",_themeInvert.on);
     [defaults synchronize];
 }
 
@@ -898,8 +899,8 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"SongPicker"]) _songPickerCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"PlayCurrentArtist"]) _playCurrentArtistCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"PlayCurrentAlbum"]) _playCurrentAlbumCheck.textColor = [UIColor blackColor];
-        if ([[defaults objectForKey:fullGesture] isEqual: @"repeat"]) _toggleRepeatCheck.textColor = [UIColor blackColor];
-        if ([[defaults objectForKey:fullGesture] isEqual: @"shuffle"]) _toggleShuffleCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"ToggleRepeat"]) _toggleRepeatCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"ToggleShuffle"]) _toggleShuffleCheck.textColor = [UIColor blackColor];
     }
 }
 

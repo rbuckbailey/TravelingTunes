@@ -870,27 +870,25 @@ int songTitleY = 0;
             _actionHUD.lineBreakMode = NSLineBreakByClipping;
             _actionHUD.numberOfLines = 1;
             
-            if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u2190"; //@"\u2190";
+            if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u2190";
             else if ([action isEqual:@"FastForward"]) _actionHUD.text = @"\u2192";
             else if ([action isEqual:@"Play"]) _actionHUD.text = @"|>";
             else if ([action isEqual:@"Pause"]) _actionHUD.text = @"\u220e\u220e";
             else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u220e\u220e";
-            else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u25b8"; //@"\u2023"; //@"\u25ba";
+            else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u25b8";
             else if ([action isEqual:@"VolumeUp"]) _actionHUD.text = @"\u2191";
             else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
             else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
             else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
-            else if ([action isEqual:@"ToggleShuffle"]) { if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"Shuffle Off"; else _actionHUD.text=@"Shuffle On"; }
-            else if ([action isEqual:@"ToggleRepeat"])  { if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _actionHUD.text = @"Repeat Off"; else _actionHUD.text=@"Repeat On"; }
+            else if ([action isEqual:@"ToggleShuffle"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"Shuffle Off"; else _actionHUD.text=@"Shuffle On"; }
+            else if ([action isEqual:@"ToggleRepeat"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _actionHUD.text = @"Repeat Off"; else _actionHUD.text=@"Repeat On"; }
             else if ([action isEqual:@"PlayCurrentArtist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
             else if ([action isEqual:@"PlayCurrentAlbum"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle]
 ]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
             else if ([action isEqual:@"StartDefaultPlaylist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
 
+            // action not identified, so I failed to code it.
             else _actionHUD.text = @"?";
-
-            if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) {
-
             
             [self startActionHUDFadeTimer];
         }
@@ -927,14 +925,14 @@ int songTitleY = 0;
         _lineView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
         _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
-        _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.2f];
+        _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.25f];
 //        _edgeViewBG.backgroundColor = [UIColor clearColor];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) {
         _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 15);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
 //        _edgeViewBG.backgroundColor = [UIColor clearColor];
         _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, 15);
-        _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.2f];
+        _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.25f];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) {
         _lineView.frame = CGRectMake(self.view.bounds.size.width-15, volumeLevel, self.view.bounds.size.width, 15);
         _lineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.f];
