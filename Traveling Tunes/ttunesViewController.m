@@ -880,12 +880,18 @@ int songTitleY = 0;
             else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
             else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
             else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
+            else if ([action isEqual:@"ToggleShuffle"]) { if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"Shuffle Off"; else _actionHUD.text=@"Shuffle On"; }
+            else if ([action isEqual:@"ToggleRepeat"])  { if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _actionHUD.text = @"Repeat Off"; else _actionHUD.text=@"Repeat On"; }
             else if ([action isEqual:@"PlayCurrentArtist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
             else if ([action isEqual:@"PlayCurrentAlbum"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle]
 ]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
             else if ([action isEqual:@"StartDefaultPlaylist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
+
             else _actionHUD.text = @"?";
 
+            if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) {
+
+            
             [self startActionHUDFadeTimer];
         }
     }
@@ -1322,7 +1328,30 @@ int songTitleY = 0;
     else if ([action isEqual:@"SongPicker"]) [self showSongPicker];
     else if ([action isEqual:@"PlayCurrentArtist"]) [self playCurrentArtist];
     else if ([action isEqual:@"PlayCurrentAlbum"]) [self playCurrentAlbum];
-//    [self setupLabels];
+    else if ([action isEqual:@"ToggleShuffle"]) [self toggleShuffle];
+    else if ([action isEqual:@"ToggleRepeat"]) [self toggleRepeat];
+}
+
+-(void) toggleShuffle {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) {
+        mediaPlayer.shuffleMode = MPMusicShuffleModeOff;
+        [defaults setObject:@"NO" forKey:@"shuffle"];
+    } else {
+        mediaPlayer.shuffleMode = MPMusicShuffleModeSongs;
+        [defaults setObject:@"YES" forKey:@"shuffle"];
+    }
+}
+
+-(void) toggleRepeat {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) {
+        mediaPlayer.repeatMode = MPMusicRepeatModeNone;
+        [defaults setObject:@"NO" forKey:@"repeat"];
+    } else {
+        mediaPlayer.repeatMode = MPMusicRepeatModeAll;
+        [defaults setObject:@"YES" forKey:@"repeat"];
+    }
 }
 
 -(void) next {
@@ -1472,8 +1501,8 @@ int songTitleY = 0;
 - (void)playAllByAlbum {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     mediaPlayer.shuffleMode = MPMusicShuffleModeAlbums;
-    MPMediaQuery* query = [MPMediaQuery songsQuery];
     [defaults setObject:@"YES" forKey:@"shuffle"];
+    MPMediaQuery* query = [MPMediaQuery songsQuery];
     [query setGroupingType:MPMediaGroupingAlbum];
     [mediaPlayer setQueueWithQuery:query];
     [mediaPlayer play];
