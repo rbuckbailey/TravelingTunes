@@ -429,8 +429,9 @@
 -(void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
+    
+    // actions on gesture configuration pages
     if (selection == _Nothing) [self configure:@"Unassigned"];
     else if (selection == _Play) [self configure:@"Play"];
     else if (selection == _Pause) [self configure:@"Pause"];
@@ -447,9 +448,16 @@
     else if (selection == _startDefaultPlaylist) [self configure:@"StartDefaultPlaylist"];
     else if (selection == _playCurrentAlbum) [self configure:@"PlayCurrentAlbum"];
     else if (selection == _playCurrentArtist) [self configure:@"PlayCurrentArtist"];
+    else if (selection == _toggleRepeat) [self configure:@"ToggleRepeat"];
+    else if (selection == _toggleShuffle) [self configure:@"ToggleShuffle"];
     else if (selection == _Menu) [self configure:@"Menu"];
+
+    // "reset" buttons
     else if (selection == _ResetGestureAssignments) [self confirmResetGestures];
     else if (selection == _resetAllSettings) [self confirmResetAllSettings];
+
+    
+    // quickstart selected on main menu
     else if (selection == _instructions) [self showInstructions];
 #ifdef FREE
     else if (selection == _adBannerCell) [self tapsRemoveAds];
