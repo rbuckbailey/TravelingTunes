@@ -886,7 +886,10 @@ int songTitleY = 0;
             else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
             else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
             else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
-            else if ([action isEqual:@"StartDefaultPlaylist"]|[action isEqual:@"PlayAllArtist"]|[action isEqual:@"PlayAlbum"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
+            else if ([action isEqual:@"PlayCurrentArtist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
+            else if ([action isEqual:@"PlayCurrentAlbum"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle]
+]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
+            else if ([action isEqual:@"StartDefaultPlaylist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
             else _actionHUD.text = @"?";
 
             [self startActionHUDFadeTimer];
@@ -1500,7 +1503,6 @@ int songTitleY = 0;
     [mediaPlayer play];
     [defaults synchronize];
 }
-
 
 -(void) playCurrentAlbum {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
