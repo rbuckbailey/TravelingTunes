@@ -262,7 +262,7 @@ int songTitleY = 0;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     _volumeTarget = mediaPlayer.volume;
 
-    if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) bottomMargin = 20; else bottomMargin = 0;
+//    if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) bottomMargin = 40; else bottomMargin = 20;
     
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) [self startGPSVolume];
     
@@ -655,8 +655,9 @@ int songTitleY = 0;
         _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
         
-        int songOffset = _songTitle.frame.origin.y;
-        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
+//        int songOffset = _songTitle.frame.origin.y;
+        int songOffset = (self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);
+//        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
         // do not replace song title label if the scrolling marquee is handling that right now
         if (_timersRunning==0) {
             _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset, self.view.bounds.size.width-rightMargin*2, _songTitle.frame.size.height);
@@ -667,7 +668,7 @@ int songTitleY = 0;
             _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         }
         
-        int albumOffset = _albumTitle.frame.origin.y;
+        int albumOffset = self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height; //_albumTitle.frame.origin.y;
         if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-_albumTitle.frame.size.height)-[self getBannerHeight]-bottomMargin; //20 is bottom margin
         _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,_albumTitle.frame.size.height);
         _albumTitle.numberOfLines = 1;
@@ -685,59 +686,65 @@ int songTitleY = 0;
 - (void) drawCornerRegions {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
+    topMargin = 20;
+    bottomMargin = 20;
     if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Nothing"]) {
         _topLeftRegion.text = [defaults objectForKey:@"TopLeft"];
         _topLeftRegion.font = [UIFont systemFontOfSize:30];
         _topLeftRegion.frame = CGRectMake(0,0,150,50);
-        _topLeftRegion.textColor = _themeColorAlbum;
+        _topLeftRegion.textColor = _themeColorArtist;
         _topLeftRegion.numberOfLines=1;
         _topLeftRegion.lineBreakMode=NSLineBreakByClipping;
-
+        topMargin = 40;
     }
     if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Nothing"]) {
         _topCenterRegion.text = [defaults objectForKey:@"TopCenter"];
         _topCenterRegion.font = [UIFont systemFontOfSize:30];
         _topCenterRegion.frame = CGRectMake(100,0,self.view.bounds.size.width-200,50);
-        _topCenterRegion.textColor = _themeColorAlbum;
+        _topCenterRegion.textColor = _themeColorArtist;
         _topCenterRegion.numberOfLines=1;
         _topCenterRegion.lineBreakMode=NSLineBreakByClipping;
         _topCenterRegion.textAlignment = NSTextAlignmentCenter;
+        topMargin = 40;
     }
     if (![[defaults objectForKey:@"TopRight"] isEqual:@"Nothing"]) {
         _topRightRegion.text = [defaults objectForKey:@"TopRight"];
         _topRightRegion.font = [UIFont systemFontOfSize:30];
         _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-150,0,150,50);
-        _topRightRegion.textColor = _themeColorAlbum;
+        _topRightRegion.textColor = _themeColorArtist;
         _topRightRegion.numberOfLines=1;
         _topRightRegion.lineBreakMode=NSLineBreakByClipping;
         _topRightRegion.textAlignment = NSTextAlignmentRight;
+        topMargin = 40;
     }
-    if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Nothing"]) {
+    if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
         _bottomLeftRegion.text = [defaults objectForKey:@"BottomLeft"];
         _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
         _bottomLeftRegion.frame = CGRectMake(0,self.view.bounds.size.height-50,150,50);
-        _bottomLeftRegion.textColor = _themeColorAlbum;
+        _bottomLeftRegion.textColor = _themeColorArtist;
         _bottomLeftRegion.numberOfLines=1;
         _bottomLeftRegion.lineBreakMode=NSLineBreakByClipping;
-        
+        bottomMargin = 40;
     }
-    if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Nothing"]) {
+    if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) {
         _bottomCenterRegion.text = [defaults objectForKey:@"BottomCenter"];
         _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
         _bottomCenterRegion.frame = CGRectMake(100,self.view.bounds.size.height-50,self.view.bounds.size.width-200,50);
-        _bottomCenterRegion.textColor = _themeColorAlbum;
+        _bottomCenterRegion.textColor = _themeColorArtist;
         _bottomCenterRegion.numberOfLines=1;
         _bottomCenterRegion.lineBreakMode=NSLineBreakByClipping;
         _bottomCenterRegion.textAlignment = NSTextAlignmentCenter;
+        bottomMargin = 40;
     }
-    if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Nothing"]) {
+    if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
         _bottomRightRegion.text = [defaults objectForKey:@"BottomRight"];
         _bottomRightRegion.font = [UIFont systemFontOfSize:30];
         _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-150,self.view.bounds.size.height-50,150,50);
-        _bottomRightRegion.textColor = _themeColorAlbum;
+        _bottomRightRegion.textColor = _themeColorArtist;
         _bottomRightRegion.numberOfLines=1;
         _bottomRightRegion.lineBreakMode=NSLineBreakByClipping;
         _bottomRightRegion.textAlignment = NSTextAlignmentRight;
+        bottomMargin = 40;
     }
 }
 
