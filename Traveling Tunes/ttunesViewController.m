@@ -724,7 +724,6 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
         _bottomLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomLeft"] ];
         _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
-//        _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin,150,50);
         _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomLeftRegion.textColor = _themeColorArtist;
         _bottomLeftRegion.numberOfLines=1;
@@ -790,12 +789,8 @@ int songTitleY = 0;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     int minFontSize = (int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-    
-    // NSString class method: boundingRectWithSize:options:attributes:context is
-    // available only on ios7.0 sdk.
 
     int songFontSize = (int)[[defaults objectForKey:@"artistFontSize"] floatValue];
-//    NSDictionary *attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     long textHeight = [_artistTitle.text sizeWithFont:[_artistTitle font]].height;
 	while( textHeight > minFontSize )
 	{
@@ -805,7 +800,6 @@ int songTitleY = 0;
 	}
  
     songFontSize = (int)[[defaults objectForKey:@"songFontSize"] floatValue];
-//    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     textHeight = [_songTitle.text sizeWithFont:[_songTitle font]].height;
 	while( textHeight > minFontSize )
 	{
@@ -815,7 +809,6 @@ int songTitleY = 0;
 	}
     
     songFontSize = (int)[[defaults objectForKey:@"albumFontSize"] floatValue];
-//    attributes = @{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:songFontSize]};
     textHeight = [_albumTitle.text sizeWithFont:[_albumTitle font]].height;
 	while( textHeight > minFontSize )
 	{
@@ -887,14 +880,12 @@ int songTitleY = 0;
 }
 
 -(void)fadeActionHUDTimerKiller {
-    //    NSLog(@"fadeHUDTimerKiller");
     if ( [[self actionHUDFadeTimer] isValid]){
         [[self actionHUDFadeTimer] invalidate];
     }
 }
 
 -(void)fadeHUDTimerKiller {
-//    NSLog(@"fadeHUDTimerKiller");
     if ( [[self fadeHUDTimer] isValid]){
         [[self fadeHUDTimer] invalidate];
     }
