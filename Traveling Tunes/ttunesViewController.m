@@ -773,26 +773,18 @@ int songTitleY = 0;
     else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"NO"]) return @"\u223e";
     else if ([action isEqual:@"StartDefaultPlaylist"]) return [NSString stringWithFormat:@"Play %@",[defaults objectForKey:@"playlist"] ];
     else if ([action isEqual:@"PlayCurrentAlbum"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] ];
-    else if ([action isEqual:@"PlayCurrentArtist"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist] ];;
-   
-    
-    // if play default, return playlist name
-    // if play artist/album, return artist/album titles?
-    // ratings buttons will show current state
-    
-/*
- else if ([action isEqual:@"DecreaseRating"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==0) rating=1; _actionHUD.text=@""; for (int i = 0; i<rating-1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];} }
-    else if ([action isEqual:@"IncreaseRating"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text=@""; for (int i = 0; i<rating+1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];}}
-    else if ([action isEqual:@"ToggleShuffle"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"Shuffle Off"; else _actionHUD.text=@"Shuffle On"; }
-    else if ([action isEqual:@"ToggleRepeat"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _actionHUD.text = @"Repeat Off"; else _actionHUD.text=@"Repeat On"; }
-    else if ([action isEqual:@"PlayCurrentArtist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
-    else if ([action isEqual:@"PlayCurrentAlbum"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle]
-                                                                                                    ]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
-    else if ([action isEqual:@"StartDefaultPlaylist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
- */
+    else if ([action isEqual:@"PlayCurrentArtist"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist] ];
+    else if ([action isEqual:@"IncreaseRating"]|[action isEqual:@"DecreaseRating"]) { MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; return [self ratingStars:rating]; }
+
     return action;
 }
 
+-(NSString*)ratingStars:(int)rating {
+    NSString *starString = @"";
+    for (int i = 0; i<rating; i++) { starString=[starString stringByAppendingString:@"\u2605"];}
+    return starString;
+}
+                                                                                                                        
 -(void)drawFittedText {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
