@@ -136,6 +136,7 @@ int songTitleY = 0;
 
     if (self.bannerIsVisible) adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
     else adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight]);
+    NSLog(@"banner is %hhd visible",self.bannerIsVisible);
 }
 
 - (IBAction)singleTapDetected:(id)sender {
@@ -214,7 +215,7 @@ int songTitleY = 0;
 #pragma mark ADBannerViewDelegate
 
 - (void) killAdBanner {
-    if (adBanner!=NULL) [adBanner removeFromSuperview];
+    if (adBanner!=NULL) { [adBanner removeFromSuperview]; adBanner=NULL; }
 }
 
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView *)banner willLeaveApplication:(BOOL)willLeave
