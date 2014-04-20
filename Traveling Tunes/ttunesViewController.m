@@ -27,6 +27,7 @@ int songTitleY = 0;
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade,*bgView;
 @property UILabel *actionHUD;
 @property UILabel *topLeftRegion,*topCenterRegion,*topRightRegion,*bottomLeftRegion,*bottomCenterRegion,*bottomRightRegion;
+@property UILabel *artTitle;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
@@ -316,6 +317,8 @@ int songTitleY = 0;
     _actionHUD = [[UILabel alloc] init];
     _albumArt = [[UIImageView alloc] init];
     _bgView = [[UIImageView alloc] init];
+    
+    _artTitle = [[UILabel alloc] init];
 
     _topLeftRegion = [[UILabel alloc] init];
     _topCenterRegion = [[UILabel alloc] init];
@@ -339,6 +342,9 @@ int songTitleY = 0;
     [self.view bringSubviewToFront:_artistTitle];
     [self.view bringSubviewToFront:_songTitle];
     [self.view bringSubviewToFront:_albumTitle];
+    
+    [self.view addSubview:_artTitle];
+    
     [self.view addSubview:_actionHUD];
     [self.view addSubview:_nightTimeFade];
 
@@ -417,10 +423,7 @@ int songTitleY = 0;
 -(void) nowPlayingItemChanged:(NSNotification *)notification {
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
 
-    [self setGlobalColors];
-    [self setupLabels];
     [self scrollingTimerKiller]; [self startMarqueeTimer];
-    [self setupHUD];
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
     if (song) {
         NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
@@ -598,9 +601,9 @@ int songTitleY = 0;
     
     //setup colors and alignment and font sizing
     switch ((int)[[defaults objectForKey:@"artistAlignment"] floatValue]) {
-        case 0: _artistTitle.textAlignment = NSTextAlignmentLeft; break;
-        case 1: _artistTitle.textAlignment = NSTextAlignmentCenter;  break;
-        case 2: _artistTitle.textAlignment = NSTextAlignmentRight;  break;
+        case 0: _artTitle.textAlignment = NSTextAlignmentLeft; break;
+        case 1: _artTitle.textAlignment = NSTextAlignmentCenter;  break;
+        case 2: _artTitle.textAlignment = NSTextAlignmentRight;  break;
     }
     switch ((int)[[defaults objectForKey:@"songAlignment"] floatValue]) {
         case 0: _songTitle.textAlignment = NSTextAlignmentLeft; break;
@@ -631,12 +634,12 @@ int songTitleY = 0;
     _bgView.backgroundColor = _themeBG;
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
 //    if ([mediaPlayer.nowPlayingItem]) { //output "nothing playing screen" if nothing playing
-        _artistTitle.numberOfLines = 1;
-        _artistTitle.text   = @"No music playing.";
-        _artistTitle.font   = [UIFont systemFontOfSize:28];
-        _artistTitle.textColor = _themeColorArtist;
-        [_artistTitle setAlpha:0.8f];
-        [_artistTitle sizeToFit];
+        _artTitle.numberOfLines = 1;
+        _artTitle.text   = @"No music playing.";
+        _artTitle.font   = [UIFont systemFontOfSize:28];
+        _artTitle.textColor = _themeColorArtist;
+        [_artTitle setAlpha:0.8f];
+        [_artTitle sizeToFit];
         
         _songTitle.numberOfLines = 1;
         _songTitle.text   = @"Tap for default playlist.";
@@ -653,13 +656,13 @@ int songTitleY = 0;
         _albumTitle.frame = CGRectMake(leftMargin,self.view.bounds.size.height-40-[self getBannerHeight],self.view.bounds.size.width,30);
 
     } else {
-        _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),_artistTitle.frame.size.height);
-        _artistTitle.numberOfLines = 1;
-        _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
-        _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
-        _artistTitle.textColor = _themeColorArtist;
-        [_artistTitle setAlpha:0.8f];
-        _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        _artTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]); //_artistTitle.frame.size.height);
+        _artTitle.numberOfLines = 1;
+        _artTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
+        _artTitle.font   = [UIFont systemFontOfSize:artistFontSize];
+        _artTitle.textColor = _themeColorArtist;
+        [_artTitle setAlpha:0.8f];
+        _artTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
         
 //        int songOffset = _songTitle.frame.origin.y;

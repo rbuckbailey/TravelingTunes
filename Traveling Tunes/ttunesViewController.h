@@ -12,7 +12,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "LEColorPicker.h"
 #import <iAd/iAd.h>
-#import <AVFoundation/AVFoundation.h>
+//#import <AVFoundation/AVFoundation.h>
 
 CGFloat const gestureMinimumTranslation = 20.0;
 

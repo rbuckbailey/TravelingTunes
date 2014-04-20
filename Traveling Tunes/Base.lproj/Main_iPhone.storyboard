@@ -27,7 +27,7 @@
                                 <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Artist" lineBreakMode="clip" baselineAdjustment="alignBaselines" adjustsLetterSpacingToFitWidth="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="OCq-tB-ORW">
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Artist" lineBreakMode="clip" baselineAdjustment="alignBaselines" adjustsLetterSpacingToFitWidth="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="OCq-tB-ORW">
                                 <rect key="frame" x="20" y="78" width="300" height="120"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="100"/>
@@ -47,11 +47,8 @@
                         <constraints>
                             <constraint firstItem="tfP-RX-STQ" firstAttribute="trailing" secondItem="vDx-3z-0ZX" secondAttribute="trailing" id="JOv-Nd-qLJ"/>
                             <constraint firstAttribute="trailing" secondItem="tfP-RX-STQ" secondAttribute="trailing" constant="20" id="LUC-GB-piK"/>
-                            <constraint firstItem="OCq-tB-ORW" firstAttribute="leading" secondItem="vDx-3z-0ZX" secondAttribute="leading" id="MZe-KM-fj0"/>
-                            <constraint firstItem="OCq-tB-ORW" firstAttribute="top" secondItem="yaM-Y0-XlU" secondAttribute="bottom" constant="14" id="Sb8-Uh-yMc"/>
                             <constraint firstItem="tfP-RX-STQ" firstAttribute="leading" secondItem="vDx-3z-0ZX" secondAttribute="leading" id="eL7-lK-38b"/>
                             <constraint firstItem="vDx-3z-0ZX" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" constant="20" id="nlt-jB-E68"/>
-                            <constraint firstItem="tfP-RX-STQ" firstAttribute="trailing" secondItem="OCq-tB-ORW" secondAttribute="trailing" constant="-20" id="paV-u6-OLB"/>
                             <constraint firstAttribute="centerY" secondItem="vDx-3z-0ZX" secondAttribute="centerY" constant="-15" id="q00-2O-6E3"/>
                             <constraint firstAttribute="bottom" secondItem="tfP-RX-STQ" secondAttribute="bottom" constant="20" symbolic="YES" id="rGJ-3M-VuD"/>
                         </constraints>
