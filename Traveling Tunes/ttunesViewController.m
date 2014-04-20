@@ -671,6 +671,7 @@ int songTitleY = 0;
         
         int albumOffset = self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height; //_albumTitle.frame.origin.y;
         if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-_albumTitle.frame.size.height)-[self getBannerHeight]-bottomMargin; //20 is bottom margin
+        if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) albumOffset = albumOffset-15;
         _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,_albumTitle.frame.size.height);
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
@@ -718,10 +719,12 @@ int songTitleY = 0;
         _topRightRegion.textAlignment = NSTextAlignmentRight;
         topMargin = 40;
     } else _topRightRegion.text = @"";
+    int playbackBarMargin = 50;
+    if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) playbackBarMargin = 65;
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
         _bottomLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomLeft"] ];
         _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
-        _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-50,150,50);
+        _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin,150,50);
         _bottomLeftRegion.textColor = _themeColorArtist;
         _bottomLeftRegion.numberOfLines=1;
         _bottomLeftRegion.lineBreakMode=NSLineBreakByClipping;
@@ -730,7 +733,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) {
         _bottomCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomCenter"] ];
         _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
-        _bottomCenterRegion.frame = CGRectMake(100,self.view.bounds.size.height-50,self.view.bounds.size.width-200,50);
+        _bottomCenterRegion.frame = CGRectMake(100,self.view.bounds.size.height-playbackBarMargin,self.view.bounds.size.width-200,50);
         _bottomCenterRegion.textColor = _themeColorArtist;
         _bottomCenterRegion.numberOfLines=1;
         _bottomCenterRegion.lineBreakMode=NSLineBreakByClipping;
@@ -740,7 +743,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
         _bottomRightRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomRight"] ];
         _bottomRightRegion.font = [UIFont systemFontOfSize:30];
-        _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-(150+rightMargin),self.view.bounds.size.height-50,150,50);
+        _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-(150+rightMargin),self.view.bounds.size.height-playbackBarMargin,150,50);
         _bottomRightRegion.textColor = _themeColorArtist;
         _bottomRightRegion.numberOfLines=1;
         _bottomRightRegion.lineBreakMode=NSLineBreakByClipping;
