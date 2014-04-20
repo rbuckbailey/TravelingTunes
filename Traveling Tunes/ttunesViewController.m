@@ -707,6 +707,7 @@ int songTitleY = 0;
         _topLeftRegion.textColor = _themeColorArtist;
         _topLeftRegion.numberOfLines=1;
         _topLeftRegion.lineBreakMode=NSLineBreakByClipping;
+        [_topLeftRegion setAlpha:0.5f];
         topMargin = 40;
     } else _topLeftRegion.text = @"";
     if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) {
@@ -717,6 +718,7 @@ int songTitleY = 0;
         _topCenterRegion.numberOfLines=1;
         _topCenterRegion.lineBreakMode=NSLineBreakByClipping;
         _topCenterRegion.textAlignment = NSTextAlignmentCenter;
+        [_topCenterRegion setAlpha:0.5f];
         topMargin = 40;
     } else _topCenterRegion.text = @"";
     if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) {
@@ -727,6 +729,7 @@ int songTitleY = 0;
         _topRightRegion.numberOfLines=1;
         _topRightRegion.lineBreakMode=NSLineBreakByClipping;
         _topRightRegion.textAlignment = NSTextAlignmentRight;
+        [_topRightRegion setAlpha:0.5f];
         topMargin = 40;
     } else _topRightRegion.text = @"";
     int playbackBarMargin = 50;
@@ -738,6 +741,7 @@ int songTitleY = 0;
         _bottomLeftRegion.textColor = _themeColorArtist;
         _bottomLeftRegion.numberOfLines=1;
         _bottomLeftRegion.lineBreakMode=NSLineBreakByClipping;
+        [_bottomLeftRegion setAlpha:0.5f];
         bottomMargin = 40;
     } else _bottomLeftRegion.text = @"";
     if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) {
@@ -748,6 +752,7 @@ int songTitleY = 0;
         _bottomCenterRegion.numberOfLines=1;
         _bottomCenterRegion.lineBreakMode=NSLineBreakByClipping;
         _bottomCenterRegion.textAlignment = NSTextAlignmentCenter;
+        [_bottomCenterRegion setAlpha:0.5f];
         bottomMargin = 40;
     } else _bottomCenterRegion.text = @"";
     if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
@@ -758,6 +763,7 @@ int songTitleY = 0;
         _bottomRightRegion.numberOfLines=1;
         _bottomRightRegion.lineBreakMode=NSLineBreakByClipping;
         _bottomRightRegion.textAlignment = NSTextAlignmentRight;
+        [_bottomRightRegion setAlpha:0.5f];
         bottomMargin = 40;
     } else _bottomRightRegion.text = @"";
 }
