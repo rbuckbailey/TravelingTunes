@@ -752,8 +752,9 @@ int songTitleY = 0;
     } else _bottomRightRegion.text = @"";
 }
 
-
 -(NSString*)actionSymbol:(NSString*)action {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     if ([action isEqual:@"Rewind"]) return @"\u2190";
     else if ([action isEqual:@"FastForward"]) return @"\u2192";
     else if ([action isEqual:@"Play"]) return @"\u25b8";
@@ -766,10 +767,13 @@ int songTitleY = 0;
     else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) return @"\u21c7";
     else if ([action isEqual:@"Menu"]) return @"\u2699";
     else if ([action isEqual:@"SongPicker"]) return @"\u23cf";
-//    else if ([action isEqual:@"PlayCurrentArtist"]) return @"\u1F464";
-// if play default, return playlist name
-// if play artist/album, return artist/album titles?
-    //toggleRepeat,toggleShuffle will show current state
+    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) return @"\u2799";
+    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"NO"]) return @"\u21dd";
+    else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"YES"]) return @"\u221e";
+    else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"NO"]) return @"\u223e";
+    //    else if ([action isEqual:@"PlayCurrentArtist"]) return @"\u1F464";
+    // if play default, return playlist name
+    // if play artist/album, return artist/album titles?
     // ratings buttons will show current state
     
 /*
