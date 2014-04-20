@@ -672,7 +672,7 @@ int songTitleY = 0;
 //        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
         // do not replace song title label if the scrolling marquee is handling that right now
         if (_timersRunning==0) {
-            _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset, self.view.bounds.size.width-rightMargin*2, (int)[[defaults objectForKey:@"songFontSize"] floatValue]+15);
+            _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset-([self getBannerHeight]/2), self.view.bounds.size.width-rightMargin*2, (int)[[defaults objectForKey:@"songFontSize"] floatValue]+15);
             _songTitle.numberOfLines = 1;
             _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
             _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
@@ -681,7 +681,7 @@ int songTitleY = 0;
         }
         
         int albumOffset = self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height; //_albumTitle.frame.origin.y;
-        if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-_albumTitle.frame.size.height)-[self getBannerHeight]-bottomMargin; //20 is bottom margin
+        if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height)-[self getBannerHeight]; //20 is bottom margin
         if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) albumOffset = albumOffset-15;
         _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,(int)[[defaults objectForKey:@"albumFontSize"] floatValue]+15);
         _albumTitle.numberOfLines = 1;
@@ -738,7 +738,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
         _bottomLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomLeft"] ];
         if ([_bottomLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomLeftRegion.font = [UIFont systemFontOfSize:18]; else _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
-        _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
+        _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin-[self getBannerHeight],(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomLeftRegion.textColor = _themeColorSong;
         _bottomLeftRegion.numberOfLines=0;
         _bottomLeftRegion.lineBreakMode=NSLineBreakByTruncatingTail;
@@ -750,7 +750,7 @@ int songTitleY = 0;
 //        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _bottomCenterRegion.font = [UIFont systemFontOfSize:30]; else _bottomCenterRegion.font = [UIFont systemFontOfSize:18];
         if ([_bottomCenterRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomCenterRegion.font = [UIFont systemFontOfSize:18]; else _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
         
-        _bottomCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
+        _bottomCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,self.view.bounds.size.height-playbackBarMargin-[self getBannerHeight],(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomCenterRegion.textColor = _themeColorSong;
         _bottomCenterRegion.numberOfLines=0;
         _bottomCenterRegion.lineBreakMode=NSLineBreakByClipping;
@@ -761,7 +761,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
         _bottomRightRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomRight"] ];
         if ([_bottomRightRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomRightRegion.font = [UIFont systemFontOfSize:18]; else _bottomRightRegion.font = [UIFont systemFontOfSize:30];
-        _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
+        _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),self.view.bounds.size.height-playbackBarMargin-[self getBannerHeight],(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomRightRegion.textColor = _themeColorSong;
         _bottomRightRegion.numberOfLines=0;
         _bottomRightRegion.lineBreakMode=NSLineBreakByTruncatingTail;
@@ -1308,7 +1308,7 @@ int songTitleY = 0;
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else { if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
                 }
-                else if (location.y>self.view.bounds.size.height-30) { // bottom bar region
+                else if (location.y>self.view.bounds.size.height-30-[self getBannerHeight]) { // bottom bar region
                     if (location.x<100) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
                     else { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
