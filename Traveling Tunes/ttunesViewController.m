@@ -767,13 +767,15 @@ int songTitleY = 0;
     else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) return @"\u21c7";
     else if ([action isEqual:@"Menu"]) return @"\u2699";
     else if ([action isEqual:@"SongPicker"]) return @"\u23cf";
-    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) return @"\u2799";
-    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"NO"]) return @"\u21dd";
+    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) return @"\u21dd";
+    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"NO"]) return @"\u2799";
     else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"YES"]) return @"\u221e";
     else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"NO"]) return @"\u223e";
-    else if ([action isEqual:@"StartDefaultPlaylist"]) return [defaults objectForKey:@"playlist"];
-    //    else if ([action isEqual:@"PlayCurrentAlbum"]) return @"\u1F464";
-    //    else if ([action isEqual:@"PlayCurrentArtist"]) return @"\u1F464";
+    else if ([action isEqual:@"StartDefaultPlaylist"]) return [NSString stringWithFormat:@"Play %@",[defaults objectForKey:@"playlist"] ];
+    else if ([action isEqual:@"PlayCurrentAlbum"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] ];
+    else if ([action isEqual:@"PlayCurrentArtist"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist] ];;
+   
+    
     // if play default, return playlist name
     // if play artist/album, return artist/album titles?
     // ratings buttons will show current state
