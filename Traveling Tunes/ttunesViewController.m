@@ -693,7 +693,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) {
         _topLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"TopLeft"] ];
         _topLeftRegion.font = [UIFont systemFontOfSize:30];
-        _topLeftRegion.frame = CGRectMake(leftMargin,0,150,50);
+        _topLeftRegion.frame = CGRectMake(leftMargin,0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topLeftRegion.textColor = _themeColorArtist;
         _topLeftRegion.numberOfLines=1;
         _topLeftRegion.lineBreakMode=NSLineBreakByClipping;
@@ -702,7 +702,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) {
         _topCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"TopCenter"] ];
         _topCenterRegion.font = [UIFont systemFontOfSize:30];
-        _topCenterRegion.frame = CGRectMake(100,0,self.view.bounds.size.width-200,50);
+        _topCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topCenterRegion.textColor = _themeColorArtist;
         _topCenterRegion.numberOfLines=1;
         _topCenterRegion.lineBreakMode=NSLineBreakByClipping;
@@ -712,7 +712,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) {
         _topRightRegion.text = [self actionSymbol:[defaults objectForKey:@"TopRight"] ];
         _topRightRegion.font = [UIFont systemFontOfSize:30];
-        _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-(150+rightMargin),0,150,50);
+        _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topRightRegion.textColor = _themeColorArtist;
         _topRightRegion.numberOfLines=1;
         _topRightRegion.lineBreakMode=NSLineBreakByClipping;
@@ -724,7 +724,8 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
         _bottomLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomLeft"] ];
         _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
-        _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin,150,50);
+//        _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin,150,50);
+        _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomLeftRegion.textColor = _themeColorArtist;
         _bottomLeftRegion.numberOfLines=1;
         _bottomLeftRegion.lineBreakMode=NSLineBreakByClipping;
@@ -733,7 +734,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) {
         _bottomCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomCenter"] ];
         _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
-        _bottomCenterRegion.frame = CGRectMake(100,self.view.bounds.size.height-playbackBarMargin,self.view.bounds.size.width-200,50);
+        _bottomCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomCenterRegion.textColor = _themeColorArtist;
         _bottomCenterRegion.numberOfLines=1;
         _bottomCenterRegion.lineBreakMode=NSLineBreakByClipping;
@@ -743,7 +744,7 @@ int songTitleY = 0;
     if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
         _bottomRightRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomRight"] ];
         _bottomRightRegion.font = [UIFont systemFontOfSize:30];
-        _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-(150+rightMargin),self.view.bounds.size.height-playbackBarMargin,150,50);
+        _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomRightRegion.textColor = _themeColorArtist;
         _bottomRightRegion.numberOfLines=1;
         _bottomRightRegion.lineBreakMode=NSLineBreakByClipping;
