@@ -771,6 +771,8 @@ int songTitleY = 0;
     else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"NO"]) return @"\u21dd";
     else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"YES"]) return @"\u221e";
     else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"NO"]) return @"\u223e";
+    else if ([action isEqual:@"StartDefaultPlaylist"]) return [defaults objectForKey:@"playlist"];
+    //    else if ([action isEqual:@"PlayCurrentAlbum"]) return @"\u1F464";
     //    else if ([action isEqual:@"PlayCurrentArtist"]) return @"\u1F464";
     // if play default, return playlist name
     // if play artist/album, return artist/album titles?
