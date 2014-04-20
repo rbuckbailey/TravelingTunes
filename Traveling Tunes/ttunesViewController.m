@@ -945,28 +945,17 @@ int songTitleY = 0;
             _actionHUD.lineBreakMode = NSLineBreakByClipping;
             _actionHUD.numberOfLines = 1;
             
-            if ([action isEqual:@"Rewind"]) _actionHUD.text = @"\u2190";
-            else if ([action isEqual:@"FastForward"]) _actionHUD.text = @"\u2192";
-            else if ([action isEqual:@"Play"]) _actionHUD.text = @"|>";
-            else if ([action isEqual:@"Pause"]) _actionHUD.text = @"\u220e\u220e";
-            else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u220e\u220e";
-            else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) _actionHUD.text = @"\u25b8";
-            else if ([action isEqual:@"VolumeUp"]) _actionHUD.text = @"\u2191";
-            else if ([action isEqual:@"VolumeDown"]) _actionHUD.text = @"\u2193";
-            else if ([action isEqual:@"Next"]) _actionHUD.text = @"\u21c9";
-            else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) _actionHUD.text = @"\u21c7";
-            else if ([action isEqual:@"DecreaseRating"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==0) rating=1; _actionHUD.text=@""; for (int i = 0; i<rating-1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];} }
-            else if ([action isEqual:@"IncreaseRating"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text=@""; for (int i = 0; i<rating+1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];}}
-            else if ([action isEqual:@"ToggleShuffle"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"Shuffle Off"; else _actionHUD.text=@"Shuffle On"; }
-            else if ([action isEqual:@"ToggleRepeat"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _actionHUD.text = @"Repeat Off"; else _actionHUD.text=@"Repeat On"; }
+            // a few pop-ups need special set-up, for font sizes for example
+            if ([action isEqual:@"DecreaseRating"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==0) rating=1;  _actionHUD.text = [self ratingStars:rating-1];  }
+            else if ([action isEqual:@"IncreaseRating"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text = [self ratingStars:rating+1]; }
+            else if ([action isEqual:@"ToggleShuffle"]) { if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"\u2799"; else _actionHUD.text=@"\u21dd"; }
+            else if ([action isEqual:@"ToggleRepeat"])  { if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _actionHUD.text = @"\u223e"; else _actionHUD.text=@"\u221e"; }
             else if ([action isEqual:@"PlayCurrentArtist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
             else if ([action isEqual:@"PlayCurrentAlbum"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle]
 ]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
             else if ([action isEqual:@"StartDefaultPlaylist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
+            else _actionHUD.text = [self actionSymbol:action];
 
-            // action not identified, so I failed to code it.
-            else _actionHUD.text = @"?";
-            
             [self startActionHUDFadeTimer];
         }
     }
@@ -985,10 +974,6 @@ int songTitleY = 0;
     //adjust volume range for iAds
     long height;
     height = self.view.bounds.size.height-[self getBannerHeight];
-/*    if ([[defaults objectForKey:@"disableBannerAds"] isEqual:@"YES"]) height = self.view.bounds.size.height;
-    else if (self.view.bounds.size.height==320) height = self.view.bounds.size.height-32; //reduce height for landscape ad banner
-    else height=self.view.bounds.size.height-50; // reduce height for portrait iAd banner
- */
     
     // should be using "if GPS volume is on, then..."
     float volumeLevel=height-(height*_volumeBase);
@@ -998,7 +983,7 @@ int songTitleY = 0;
     _edgeViewBG.backgroundColor = [UIColor clearColor];
 
     //setup for rectangle drawing display
-    if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) {
+    if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) { //setup bar display
         _lineView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.10f];
         _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
