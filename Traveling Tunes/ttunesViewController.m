@@ -690,7 +690,7 @@ int songTitleY = 0;
     topMargin = 20;
     bottomMargin = 20;
     if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) {
-        _topLeftRegion.text = [defaults objectForKey:@"TopLeft"];
+        _topLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"TopLeft"] ];
         _topLeftRegion.font = [UIFont systemFontOfSize:30];
         _topLeftRegion.frame = CGRectMake(0,0,150,50);
         _topLeftRegion.textColor = _themeColorArtist;
@@ -699,7 +699,7 @@ int songTitleY = 0;
         topMargin = 40;
     } else _topLeftRegion.text = @"";
     if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) {
-        _topCenterRegion.text = [defaults objectForKey:@"TopCenter"];
+        _topCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"TopCenter"] ];
         _topCenterRegion.font = [UIFont systemFontOfSize:30];
         _topCenterRegion.frame = CGRectMake(100,0,self.view.bounds.size.width-200,50);
         _topCenterRegion.textColor = _themeColorArtist;
@@ -709,7 +709,7 @@ int songTitleY = 0;
         topMargin = 40;
     } else _topCenterRegion.text = @"";
     if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) {
-        _topRightRegion.text = [defaults objectForKey:@"TopRight"];
+        _topRightRegion.text = [self actionSymbol:[defaults objectForKey:@"TopRight"] ];
         _topRightRegion.font = [UIFont systemFontOfSize:30];
         _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-150,0,150,50);
         _topRightRegion.textColor = _themeColorArtist;
@@ -719,7 +719,7 @@ int songTitleY = 0;
         topMargin = 40;
     } else _topRightRegion.text = @"";
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
-        _bottomLeftRegion.text = [defaults objectForKey:@"BottomLeft"];
+        _bottomLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomLeft"] ];
         _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
         _bottomLeftRegion.frame = CGRectMake(0,self.view.bounds.size.height-50,150,50);
         _bottomLeftRegion.textColor = _themeColorArtist;
@@ -728,7 +728,7 @@ int songTitleY = 0;
         bottomMargin = 40;
     } else _bottomLeftRegion.text = @"";
     if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) {
-        _bottomCenterRegion.text = [defaults objectForKey:@"BottomCenter"];
+        _bottomCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomCenter"] ];
         _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
         _bottomCenterRegion.frame = CGRectMake(100,self.view.bounds.size.height-50,self.view.bounds.size.width-200,50);
         _bottomCenterRegion.textColor = _themeColorArtist;
@@ -738,7 +738,7 @@ int songTitleY = 0;
         bottomMargin = 40;
     } else _bottomCenterRegion.text = @"";
     if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
-        _bottomRightRegion.text = [defaults objectForKey:@"BottomRight"];
+        _bottomRightRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomRight"] ];
         _bottomRightRegion.font = [UIFont systemFontOfSize:30];
         _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-150,self.view.bounds.size.height-50,150,50);
         _bottomRightRegion.textColor = _themeColorArtist;
@@ -747,6 +747,33 @@ int songTitleY = 0;
         _bottomRightRegion.textAlignment = NSTextAlignmentRight;
         bottomMargin = 40;
     } else _bottomRightRegion.text = @"";
+}
+
+
+-(NSString*)actionSymbol:(NSString*)action {
+    if ([action isEqual:@"Rewind"]) return @"\u2190";
+    else if ([action isEqual:@"FastForward"]) return @"\u2192";
+    else if ([action isEqual:@"Play"]) return @"|>";
+    else if ([action isEqual:@"Pause"]) return @"\u220e\u220e";
+    else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) return @"\u220e\u220e";
+    else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) return @"\u25b8";
+    else if ([action isEqual:@"VolumeUp"]) return @"\u2191";
+    else if ([action isEqual:@"VolumeDown"]) return @"\u2193";
+    else if ([action isEqual:@"Next"]) return @"\u21c9";
+    else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) return @"\u21c7";
+    else if ([action isEqual:@"Menu"]) return @"\u2699";
+    else if ([action isEqual:@"SongPicker"]) return @"\u23cf";
+/*
+ else if ([action isEqual:@"DecreaseRating"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==0) rating=1; _actionHUD.text=@""; for (int i = 0; i<rating-1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];} }
+    else if ([action isEqual:@"IncreaseRating"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text=@""; for (int i = 0; i<rating+1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];}}
+    else if ([action isEqual:@"ToggleShuffle"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"Shuffle Off"; else _actionHUD.text=@"Shuffle On"; }
+    else if ([action isEqual:@"ToggleRepeat"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) _actionHUD.text = @"Repeat Off"; else _actionHUD.text=@"Repeat On"; }
+    else if ([action isEqual:@"PlayCurrentArtist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
+    else if ([action isEqual:@"PlayCurrentAlbum"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle]
+                                                                                                    ]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
+    else if ([action isEqual:@"StartDefaultPlaylist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
+ */
+    return @"?";
 }
 
 -(void)drawFittedText {
@@ -1276,7 +1303,7 @@ int songTitleY = 0;
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else { if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
                 }
-                else if (location.y>self.view.bounds.size.width-100) { // bottom bar region
+                else if (location.y>self.view.bounds.size.height-100) { // bottom bar region
                     if (location.x<100) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
                     else { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
