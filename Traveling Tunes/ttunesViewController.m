@@ -702,7 +702,7 @@ int songTitleY = 0;
     bottomMargin = 20;
     if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) {
         _topLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"TopLeft"] ];
-        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _topLeftRegion.font = [UIFont systemFontOfSize:30]; else _topLeftRegion.font = [UIFont systemFontOfSize:18];
+        if ([_topLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topLeftRegion.font = [UIFont systemFontOfSize:18]; else _topLeftRegion.font = [UIFont systemFontOfSize:30];
         _topLeftRegion.frame = CGRectMake(leftMargin,0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topLeftRegion.textColor = _themeColorSong;
         _topLeftRegion.numberOfLines=1;
@@ -712,7 +712,7 @@ int songTitleY = 0;
     } else _topLeftRegion.text = @"";
     if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) {
         _topCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"TopCenter"] ];
-        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _topCenterRegion.font = [UIFont systemFontOfSize:30]; else _topCenterRegion.font = [UIFont systemFontOfSize:18];
+        if ([_topCenterRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topCenterRegion.font = [UIFont systemFontOfSize:18]; else _topCenterRegion.font = [UIFont systemFontOfSize:30];
         _topCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topCenterRegion.textColor = _themeColorSong;
         _topCenterRegion.numberOfLines=1;
@@ -723,7 +723,7 @@ int songTitleY = 0;
     } else _topCenterRegion.text = @"";
     if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) {
         _topRightRegion.text = [self actionSymbol:[defaults objectForKey:@"TopRight"] ];
-        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _topRightRegion.font = [UIFont systemFontOfSize:30]; else _topRightRegion.font = [UIFont systemFontOfSize:18];
+        if ([_topRightRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topRightRegion.font = [UIFont systemFontOfSize:18]; else _topRightRegion.font = [UIFont systemFontOfSize:30];
         _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topRightRegion.textColor = _themeColorSong;
         _topRightRegion.numberOfLines=1;
@@ -736,7 +736,7 @@ int songTitleY = 0;
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) playbackBarMargin = 65;
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
         _bottomLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomLeft"] ];
-        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _bottomLeftRegion.font = [UIFont systemFontOfSize:30]; else _bottomLeftRegion.font = [UIFont systemFontOfSize:18];
+        if ([_bottomLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomLeftRegion.font = [UIFont systemFontOfSize:18]; else _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
         _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomLeftRegion.textColor = _themeColorSong;
         _bottomLeftRegion.numberOfLines=1;
@@ -746,7 +746,9 @@ int songTitleY = 0;
     } else _bottomLeftRegion.text = @"";
     if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) {
         _bottomCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomCenter"] ];
-        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _bottomCenterRegion.font = [UIFont systemFontOfSize:30]; else _bottomCenterRegion.font = [UIFont systemFontOfSize:18];
+//        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _bottomCenterRegion.font = [UIFont systemFontOfSize:30]; else _bottomCenterRegion.font = [UIFont systemFontOfSize:18];
+        if ([_bottomCenterRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomCenterRegion.font = [UIFont systemFontOfSize:18]; else _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
+        
         _bottomCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomCenterRegion.textColor = _themeColorSong;
         _bottomCenterRegion.numberOfLines=1;
@@ -757,7 +759,7 @@ int songTitleY = 0;
     } else _bottomCenterRegion.text = @"";
     if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
         _bottomRightRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomRight"] ];
-        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _bottomRightRegion.font = [UIFont systemFontOfSize:30]; else _bottomRightRegion.font = [UIFont systemFontOfSize:18];
+        if ([_bottomRightRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomRightRegion.font = [UIFont systemFontOfSize:18]; else _bottomRightRegion.font = [UIFont systemFontOfSize:30];
         _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),self.view.bounds.size.height-playbackBarMargin,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomRightRegion.textColor = _themeColorSong;
         _bottomRightRegion.numberOfLines=1;
