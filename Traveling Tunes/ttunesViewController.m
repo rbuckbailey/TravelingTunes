@@ -753,7 +753,7 @@ int songTitleY = 0;
 -(NSString*)actionSymbol:(NSString*)action {
     if ([action isEqual:@"Rewind"]) return @"\u2190";
     else if ([action isEqual:@"FastForward"]) return @"\u2192";
-    else if ([action isEqual:@"Play"]) return @"|>";
+    else if ([action isEqual:@"Play"]) return @"\u25b8";
     else if ([action isEqual:@"Pause"]) return @"\u220e\u220e";
     else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) return @"\u220e\u220e";
     else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) return @"\u25b8";
@@ -763,6 +763,12 @@ int songTitleY = 0;
     else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) return @"\u21c7";
     else if ([action isEqual:@"Menu"]) return @"\u2699";
     else if ([action isEqual:@"SongPicker"]) return @"\u23cf";
+//    else if ([action isEqual:@"PlayCurrentArtist"]) return @"\u1F464";
+// if play default, return playlist name
+// if play artist/album, return artist/album titles?
+    //toggleRepeat,toggleShuffle will show current state
+    // ratings buttons will show current state
+    
 /*
  else if ([action isEqual:@"DecreaseRating"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==0) rating=1; _actionHUD.text=@""; for (int i = 0; i<rating-1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];} }
     else if ([action isEqual:@"IncreaseRating"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text=@""; for (int i = 0; i<rating+1; i++) { _actionHUD.text=[_actionHUD.text stringByAppendingString:@"\u2605"];}}
@@ -773,7 +779,7 @@ int songTitleY = 0;
                                                                                                     ]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
     else if ([action isEqual:@"StartDefaultPlaylist"]) { _actionHUD.numberOfLines=0; _actionHUD.text = [NSString stringWithFormat:@"Playing\n%@",[defaults objectForKey:@"playlist"]]; _actionHUD.font=[UIFont systemFontOfSize:30]; }
  */
-    return @"?";
+    return action;
 }
 
 -(void)drawFittedText {
