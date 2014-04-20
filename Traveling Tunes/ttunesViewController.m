@@ -657,7 +657,7 @@ int songTitleY = 0;
         _albumTitle.frame = CGRectMake(leftMargin,self.view.bounds.size.height-40-[self getBannerHeight],self.view.bounds.size.width,30);
 
     } else {
-        _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]); //_artistTitle.frame.size.height);
+        _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15); //_artistTitle.frame.size.height);
         _artistTitle.numberOfLines = 1;
         _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
         _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
@@ -671,7 +671,7 @@ int songTitleY = 0;
 //        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
         // do not replace song title label if the scrolling marquee is handling that right now
         if (_timersRunning==0) {
-            _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset, self.view.bounds.size.width-rightMargin*2, (int)[[defaults objectForKey:@"songFontSize"] floatValue]);
+            _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset, self.view.bounds.size.width-rightMargin*2, (int)[[defaults objectForKey:@"songFontSize"] floatValue]+15);
             _songTitle.numberOfLines = 1;
             _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
             _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
@@ -682,7 +682,7 @@ int songTitleY = 0;
         int albumOffset = self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height; //_albumTitle.frame.origin.y;
         if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-_albumTitle.frame.size.height)-[self getBannerHeight]-bottomMargin; //20 is bottom margin
         if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) albumOffset = albumOffset-15;
-        _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,(int)[[defaults objectForKey:@"albumFontSize"] floatValue]);
+        _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,(int)[[defaults objectForKey:@"albumFontSize"] floatValue]+15);
         _albumTitle.numberOfLines = 1;
         _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
         _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
