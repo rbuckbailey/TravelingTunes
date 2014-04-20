@@ -37,9 +37,6 @@ BOOL areAdsRemoved;
 @property (nonatomic, assign) BOOL bannerIsVisible;
 
 @property swipeDirections direction;
-@property (weak, nonatomic) IBOutlet UILabel *artistTitle;
-@property (weak, nonatomic) IBOutlet UILabel *songTitle;
-@property (weak, nonatomic) IBOutlet UILabel *albumTitle;
 @property NSTimer *marqueeTimer,*scrollingTimer,*scrubTimer,*fadeHUDTimer,*actionHUDFadeTimer,*DNRTimer;
 @property MPVolumeView* volume;
 @property NSInteger marqueePosition;
