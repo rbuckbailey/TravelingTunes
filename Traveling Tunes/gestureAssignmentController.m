@@ -146,8 +146,8 @@
 
     [defaults setObject:@"RestartPrevious" forKey:@"2SwipeLeft"];
     [defaults setObject:@"Next" forKey:@"2SwipeRight"];
-    [defaults setObject:@"Unassigned" forKey:@"2SwipeUp"];
-    [defaults setObject:@"Unassigned" forKey:@"2SwipeDown"];
+    [defaults setObject:@"IncreaseRating" forKey:@"2SwipeUp"];
+    [defaults setObject:@"DecreaseRating" forKey:@"2SwipeDown"];
     [defaults setObject:@"NO" forKey:@"2SwipeLeftContinuous"];
     [defaults setObject:@"NO" forKey:@"2SwipeRightContinuous"];
     [defaults setObject:@"NO" forKey:@"2SwipeUpContinuous"];
@@ -171,6 +171,14 @@
     [defaults setObject:@"Unassigned" forKey:@"33Tap"];
     [defaults setObject:@"Unassigned" forKey:@"34Tap"];
     [defaults setObject:@"StartDefaultPlaylist" forKey:@"3LongPress"];
+    
+    [defaults setObject:@"ToggleRepeat" forKey:@"TopLeft"];
+    [defaults setObject:@"PlayPause" forKey:@"TopCenter"];
+    [defaults setObject:@"ToggleShuffle" forKey:@"TopRight"];
+    [defaults setObject:@"SongPicker" forKey:@"BottomLeft"];
+    [defaults setObject:@"IncreaseRating" forKey:@"BottomCenter"];
+    [defaults setObject:@"Menu" forKey:@"BottomRight"];
+    
     [defaults synchronize];
     NSLog(@"Initializing gestures assignments.");
 }
