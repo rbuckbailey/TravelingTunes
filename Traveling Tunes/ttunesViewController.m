@@ -427,11 +427,15 @@ int songTitleY = 0;
         NSString *album = [song valueForProperty:MPMediaItemPropertyAlbumTitle];
         NSString *artist = [song valueForProperty:MPMediaItemPropertyArtist];
         NSString *playCount = [song valueForProperty:MPMediaItemPropertyPlayCount];
+        NSURL* songURL = [song valueForProperty:MPMediaItemPropertyAssetURL];
+        AVAsset* songAsset = [AVURLAsset URLAssetWithURL:songURL options:nil];
+        NSString* lyrics = [songAsset lyrics];
         
         NSLog(@"title: %@", title);
         NSLog(@"album: %@", album);
         NSLog(@"artist: %@", artist);
         NSLog(@"playCount: %@", playCount);
+        NSLog(@"lyrics: %@",lyrics);
     }
 }
 
@@ -937,7 +941,7 @@ int songTitleY = 0;
             _actionHUD.lineBreakMode = NSLineBreakByClipping;
             _actionHUD.numberOfLines = 1;
             
-            // a few pop-ups need special set-up, for font sizes for example
+            // a few pop-ups need special set-up, for font sizes for example, or adjustments to reflect the unset upcoming state (pop-up appears before action)
             if ([action isEqual:@"DecreaseRating"])  { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==0) rating=1;  _actionHUD.text = [self ratingStars:rating-1];  }
             else if ([action isEqual:@"IncreaseRating"]) { _actionHUD.font=[UIFont systemFontOfSize:30]; MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; if (rating==5) rating=4; _actionHUD.text = [self ratingStars:rating+1]; }
             else if ([action isEqual:@"ToggleShuffle"]) { if ([[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) _actionHUD.text = @"\u2799"; else _actionHUD.text=@"\u21dd"; }
