@@ -427,15 +427,17 @@ int songTitleY = 0;
         NSString *album = [song valueForProperty:MPMediaItemPropertyAlbumTitle];
         NSString *artist = [song valueForProperty:MPMediaItemPropertyArtist];
         NSString *playCount = [song valueForProperty:MPMediaItemPropertyPlayCount];
+/*
         NSURL* songURL = [song valueForProperty:MPMediaItemPropertyAssetURL];
         AVAsset* songAsset = [AVURLAsset URLAssetWithURL:songURL options:nil];
         NSString* lyrics = [songAsset lyrics];
+ */
         
         NSLog(@"title: %@", title);
         NSLog(@"album: %@", album);
         NSLog(@"artist: %@", artist);
         NSLog(@"playCount: %@", playCount);
-        NSLog(@"lyrics: %@",lyrics);
+//        NSLog(@"lyrics: %@",lyrics);
     }
 }
 
