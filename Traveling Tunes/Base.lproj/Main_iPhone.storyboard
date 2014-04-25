@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="5056" systemVersion="13C64" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="6im-dd-IBQ">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="5056" systemVersion="13C1021" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="6im-dd-IBQ">
     <dependencies>
         <deployment defaultVersion="1792" identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3733"/>
@@ -482,6 +482,36 @@
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="Uvf-4G-LXi">
+                                        <rect key="frame" x="0.0" y="328" width="320" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Uvf-4G-LXi" id="jzT-10-Bru">
+                                            <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LU0-11-iIm">
+                                                    <rect key="frame" x="251" y="6" width="51" height="31"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <connections>
+                                                        <action selector="disableAutoLockChanged:" destination="MyG-5e-5oZ" eventType="valueChanged" id="Gfe-Du-y6d"/>
+                                                    </connections>
+                                                </switch>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Disable Auto-lock" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8g7-qD-Ihe">
+                                                    <rect key="frame" x="20" y="11" width="141" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="8g7-qD-Ihe" firstAttribute="centerY" secondItem="LU0-11-iIm" secondAttribute="centerY" id="GZa-tz-FZr"/>
+                                                <constraint firstAttribute="trailing" secondItem="LU0-11-iIm" secondAttribute="trailing" constant="20" symbolic="YES" id="R4v-Ok-vY9"/>
+                                                <constraint firstItem="8g7-qD-Ihe" firstAttribute="leading" secondItem="jzT-10-Bru" secondAttribute="leading" constant="20" symbolic="YES" id="S3m-St-hoz"/>
+                                                <constraint firstItem="LU0-11-iIm" firstAttribute="leading" secondItem="8g7-qD-Ihe" secondAttribute="trailing" constant="90" id="Ym7-Nc-a8i"/>
+                                                <constraint firstItem="LU0-11-iIm" firstAttribute="centerY" secondItem="jzT-10-Bru" secondAttribute="centerY" id="oJa-ew-ecy"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
                                 </cells>
                             </tableViewSection>
                         </sections>
@@ -493,6 +523,7 @@
                     <navigationItem key="navigationItem" id="reR-C3-df4"/>
                     <connections>
                         <outlet property="defaultPlaylistLabel" destination="HD4-8G-hWg" id="4Lt-d6-iDh"/>
+                        <outlet property="disableAutoLock" destination="LU0-11-iIm" id="9sS-GF-kAj"/>
                         <outlet property="pauseOnExit" destination="4Sg-Zu-3kf" id="Zw2-Mp-LZi"/>
                         <outlet property="playOnLaunch" destination="4Tn-cz-cIE" id="ik5-ng-7NJ"/>
                         <outlet property="playlistRepeat" destination="arA-rd-XYN" id="cxk-QZ-8Ys"/>
@@ -3120,8 +3151,30 @@
                                             </subviews>
                                         </tableViewCellContentView>
                                     </tableViewCell>
-                                    <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="5va-bK-dw4">
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="eiw-gJ-9Oq">
                                         <rect key="frame" x="0.0" y="944" width="320" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="eiw-gJ-9Oq" id="LNI-VN-hmI">
+                                            <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Show Quick Start Screen" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="XLd-gr-PlE">
+                                                    <rect key="frame" x="20" y="11" width="280" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="✓" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="on8-f3-u7G">
+                                                    <rect key="frame" x="-22" y="11" width="42" height="21"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                        </tableViewCellContentView>
+                                    </tableViewCell>
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="5va-bK-dw4">
+                                        <rect key="frame" x="0.0" y="988" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="5va-bK-dw4" id="pfS-jj-yNx">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -3163,6 +3216,8 @@
                         <outlet property="Restart" destination="qEF-fi-WQz" id="6dW-Ry-Kfh"/>
                         <outlet property="RestartPrevious" destination="29u-D5-Feu" id="9sM-1e-U0A"/>
                         <outlet property="Rewind" destination="Ts7-j2-gap" id="qtJ-LH-6lO"/>
+                        <outlet property="ShowQuickStart" destination="eiw-gJ-9Oq" id="lcr-fE-4I1"/>
+                        <outlet property="ShowQuickStartCheck" destination="on8-f3-u7G" id="iMv-Ui-hRA"/>
                         <outlet property="SongPicker" destination="M7U-sp-FZW" id="6IL-rS-9Ak"/>
                         <outlet property="VolumeDown" destination="tck-aw-vJe" id="U6O-Cp-bO4"/>
                         <outlet property="VolumeUp" destination="FoT-I1-IIy" id="a3X-z1-SYP"/>

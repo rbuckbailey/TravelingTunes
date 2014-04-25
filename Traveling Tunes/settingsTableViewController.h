@@ -55,6 +55,7 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *toggleShuffle;
 @property (weak, nonatomic) IBOutlet UITableViewCell *increaseRating;
 @property (weak, nonatomic) IBOutlet UITableViewCell *decreaseRating;
+@property (weak, nonatomic) IBOutlet UITableViewCell *ShowQuickStart;
 
 
 @property (weak, nonatomic) IBOutlet UILabel *nothingCheck;
@@ -78,6 +79,7 @@
 @property (weak, nonatomic) IBOutlet UILabel *toggleRepeatCheck;
 @property (weak, nonatomic) IBOutlet UILabel *increaseRatingCheck;
 @property (weak, nonatomic) IBOutlet UILabel *decreaseRatingCheck;
+@property (weak, nonatomic) IBOutlet UILabel *ShowQuickStartCheck;
 
 // display settings outlets
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;
@@ -221,6 +223,8 @@
 @property (weak, nonatomic) IBOutlet UISwitch *GPSVolumeToggle;
 - (IBAction)GPSVolumeToggleChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UILabel *GPSSensivityLabel;
+- (IBAction)disableAutoLockChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *disableAutoLock;
 
 #ifdef FREE
 @property (weak, nonatomic) IBOutlet UISwitch *disableAdBanners;

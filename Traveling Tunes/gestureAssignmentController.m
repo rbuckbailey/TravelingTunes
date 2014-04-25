@@ -176,7 +176,7 @@
     [defaults setObject:@"ToggleRepeat" forKey:@"TopLeft"];
     [defaults setObject:@"PlayPause" forKey:@"TopCenter"];
     [defaults setObject:@"ToggleShuffle" forKey:@"TopRight"];
-    [defaults setObject:@"SongPicker" forKey:@"BottomLeft"];
+    [defaults setObject:@"ShowQuickStart" forKey:@"BottomLeft"];
     [defaults setObject:@"IncreaseRating" forKey:@"BottomCenter"];
     [defaults setObject:@"Menu" forKey:@"BottomRight"];
     

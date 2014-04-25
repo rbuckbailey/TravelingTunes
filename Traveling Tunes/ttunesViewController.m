@@ -794,6 +794,7 @@ int songTitleY = 0;
     else if ([action isEqual:@"PlayCurrentAlbum"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] ];
     else if ([action isEqual:@"PlayCurrentArtist"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist] ];
     else if ([action isEqual:@"IncreaseRating"]|[action isEqual:@"DecreaseRating"]) { MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; return [self ratingStars:rating]; }
+    else if ([action isEqual:@"ShowQuickStart"]) return @"?";
 
     return action;
 }
@@ -1400,8 +1401,7 @@ int songTitleY = 0;
 
     NSLog(@"Performing action %@",action);
 
-//    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
-    if ([action isEqual:@"Unassigned"]) [self showInstructions];
+    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self killAdBanner]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
@@ -1422,6 +1422,7 @@ int songTitleY = 0;
     else if ([action isEqual:@"ToggleRepeat"]) [self toggleRepeat];
     else if ([action isEqual:@"DecreaseRating"]) [self decreaseRating];
     else if ([action isEqual:@"IncreaseRating"]) [self increaseRating];
+    else if ([action isEqual:@"ShowQuickStart"]) [self showInstructions];
 }
 
 -(void) toggleShuffle {

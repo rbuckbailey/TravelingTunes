@@ -449,6 +449,7 @@
     else if (selection == _toggleShuffle) [self configure:@"ToggleShuffle"];
     else if (selection == _increaseRating) [self configure:@"IncreaseRating"];
     else if (selection == _decreaseRating) [self configure:@"DecreaseRating"];
+    else if (selection == _ShowQuickStart) [self configure:@"ShowQuickStart"];
     else if (selection == _Menu) [self configure:@"Menu"];
 
     // "reset" buttons
@@ -869,6 +870,7 @@
         _toggleShuffleCheck.textColor = [UIColor whiteColor];
         _increaseRatingCheck.textColor = [UIColor whiteColor];
         _decreaseRatingCheck.textColor = [UIColor whiteColor];
+        _ShowQuickStartCheck.textColor = [UIColor whiteColor];
 
         if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
@@ -890,7 +892,9 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"ToggleRepeat"]) _toggleRepeatCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"ToggleShuffle"]) _toggleShuffleCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"IncreaseRating"]) _increaseRatingCheck.textColor = [UIColor blackColor];
-        if ([[defaults objectForKey:fullGesture] isEqual: @"DecreaseRating"]) _decreaseRatingCheck.textColor = [UIColor blackColor];    }
+        if ([[defaults objectForKey:fullGesture] isEqual: @"DecreaseRating"]) _decreaseRatingCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"ShowQuickStart"]) _ShowQuickStartCheck.textColor = [UIColor blackColor];
+    }
 }
 
 
@@ -1154,4 +1158,6 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:_albumArtFade.value] forKey:@"AlbumArtFade"];
     [defaults synchronize];}
+- (IBAction)disableAutoLockChanged:(id)sender {
+}
 @end
