@@ -97,22 +97,21 @@ int songTitleY = 0;
 - (void) showInstructions {
     [self.navigationController setNavigationBarHidden:YES];
     
-    
     self.pageController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:nil];
     
     self.pageController.dataSource = self;
-    [[self.pageController view] setFrame:[[self view] bounds]];
+//    [[self.pageController view] setFrame:[[self view] bounds]];
     
-    quickstartViewController *initialViewController = [self viewControllerAtIndex:0];
+//    quickstartViewController *initialViewController = [self viewControllerAtIndex:0];
     
-    NSArray *viewControllers = [NSArray arrayWithObject:initialViewController];
+//    NSArray *viewControllers = [NSArray arrayWithObject:initialViewController];
     
-    [self.pageController setViewControllers:viewControllers direction:UIPageViewControllerNavigationDirectionForward animated:NO completion:nil];
+//    [self.pageController setViewControllers:viewControllers direction:UIPageViewControllerNavigationDirectionForward animated:YES completion:nil];
     
     //[self addChildViewController:self.pageController];
     //[[self view] addSubview:[self.pageController view]];
     //[self.pageController didMoveToParentViewController:self];
-    [self.navigationController pushViewController:self.pageController animated:YES];
+//    [self.navigationController pushViewController:self.pageController animated:YES];
     
 }
 
@@ -296,7 +295,9 @@ int songTitleY = 0;
     else [self.gps stopUpdatingLocation];
     
     //disable sleep mode
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    if ([[defaults objectForKey:@"disableAutolock"] isEqual:@"YES"]) [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    
+    //[self showInstructions];
 }
 
 - (void)viewDidLoad

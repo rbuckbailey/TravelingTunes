@@ -60,6 +60,7 @@
     [defaults setObject:@"YES" forKey:@"albumArtColors"];
     [defaults setObject:@"YES" forKey:@"showActions"];
     [defaults setObject:@"1" forKey:@"AlbumArtScale"];
+    [defaults setObject:@"YES" forKey:@"disableAutolock"];
 }
 
 - (void)initDisplaySettings {
