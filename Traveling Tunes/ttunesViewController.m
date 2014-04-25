@@ -294,6 +294,9 @@ int songTitleY = 0;
     //start gps if enabled
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"])[self.gps startUpdatingLocation];
     else [self.gps stopUpdatingLocation];
+    
+    //disable sleep mode
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
 }
 
 - (void)viewDidLoad
