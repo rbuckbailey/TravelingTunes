@@ -290,7 +290,8 @@ int songTitleY = 0;
     else [self.gps stopUpdatingLocation];
     
     //disable sleep mode
-    if ([[defaults objectForKey:@"disableAutolock"] isEqual:@"YES"]) [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    else [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
 }
 
 - (void)viewDidLoad
@@ -794,7 +795,7 @@ int songTitleY = 0;
     else if ([action isEqual:@"PlayCurrentAlbum"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] ];
     else if ([action isEqual:@"PlayCurrentArtist"]) return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist] ];
     else if ([action isEqual:@"IncreaseRating"]|[action isEqual:@"DecreaseRating"]) { MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; return [self ratingStars:rating]; }
-    else if ([action isEqual:@"ShowQuickStart"]) return @"?";
+    else if ([action isEqual:@"ShowQuickStart"]) return @"?⃝";
 
     return action;
 }

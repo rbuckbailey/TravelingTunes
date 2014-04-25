@@ -1157,7 +1157,16 @@
 - (IBAction)albumArtFadeChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:[NSNumber numberWithFloat:_albumArtFade.value] forKey:@"AlbumArtFade"];
-    [defaults synchronize];}
-- (IBAction)disableAutoLockChanged:(id)sender {
+    [defaults synchronize];
 }
+
+
+- (IBAction)disableAutoLockChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_disableAutoLock.on) [defaults setObject:@"YES" forKey:@"DisableAutoLock"];
+    else [defaults setObject:@"NO" forKey:@"DisableAutoLock"];
+    [defaults synchronize];
+}
+
+
 @end
