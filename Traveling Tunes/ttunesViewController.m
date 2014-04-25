@@ -95,6 +95,7 @@ int songTitleY = 0;
 }
 
 - (void) showInstructions {
+    [self scrubTimerKiller];
     [self.navigationController setNavigationBarHidden:YES];
     
     self.pageController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:nil];
