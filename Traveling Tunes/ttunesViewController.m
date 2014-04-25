@@ -109,9 +109,10 @@ int songTitleY = 0;
     
     [self.pageController setViewControllers:viewControllers direction:UIPageViewControllerNavigationDirectionForward animated:NO completion:nil];
     
-    [self addChildViewController:self.pageController];
-    [[self view] addSubview:[self.pageController view]];
-    [self.pageController didMoveToParentViewController:self];
+    //[self addChildViewController:self.pageController];
+    //[[self view] addSubview:[self.pageController view]];
+    //[self.pageController didMoveToParentViewController:self];
+    [self.navigationController pushViewController:self.pageController animated:YES];
     
 }
 
@@ -916,7 +917,7 @@ int songTitleY = 0;
 
 -(void) startActionHUDFadeTimer {
         [self fadeActionHUDTimerKiller];
-    _fadeActionHUDAlpha = 0.75f; //CGColorGetAlpha(_actionHUD.backgroundColor.CGColor);
+    _fadeActionHUDAlpha = CGColorGetAlpha(_actionHUD.backgroundColor.CGColor);
         
         self.actionHUDFadeTimer = [NSTimer scheduledTimerWithTimeInterval: 0.75f
                                                              target: self
@@ -950,8 +951,8 @@ int songTitleY = 0;
             _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
             _actionHUD.textAlignment=NSTextAlignmentCenter;
             _actionHUD.font = [UIFont systemFontOfSize:120];
-            _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.75f];
-            _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75f];
+            _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.4f];
+            _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.4f];
             _actionHUD.layer.cornerRadius = 10;
             _actionHUD.lineBreakMode = NSLineBreakByClipping;
             _actionHUD.numberOfLines = 1;
