@@ -427,6 +427,8 @@ int songTitleY = 0;
     MPMusicPlayerController *mediaPlayer = (MPMusicPlayerController *)notification.object;
 
     [self scrollingTimerKiller]; [self startMarqueeTimer];
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL)
+        [self setGlobalColors];
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
     if (song) {
         NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
