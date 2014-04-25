@@ -19,8 +19,6 @@
 @interface settingsTableViewController : UITableViewController
 <UIPageViewControllerDataSource>
 
-- (void) closeInstructions;
-
 #ifdef FREE
 - (void)purchase;
 - (void)restore;

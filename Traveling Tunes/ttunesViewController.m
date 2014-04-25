@@ -100,19 +100,13 @@ int songTitleY = 0;
     self.pageController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:nil];
     
     self.pageController.dataSource = self;
-//    [[self.pageController view] setFrame:[[self view] bounds]];
+    [[self.pageController view] setFrame:[[self view] bounds]];
     
-//    quickstartViewController *initialViewController = [self viewControllerAtIndex:0];
+    quickstartViewController *initialViewController = [self viewControllerAtIndex:0];
     
-//    NSArray *viewControllers = [NSArray arrayWithObject:initialViewController];
-    
-//    [self.pageController setViewControllers:viewControllers direction:UIPageViewControllerNavigationDirectionForward animated:YES completion:nil];
-    
-    //[self addChildViewController:self.pageController];
-    //[[self view] addSubview:[self.pageController view]];
-    //[self.pageController didMoveToParentViewController:self];
-//    [self.navigationController pushViewController:self.pageController animated:YES];
-    
+    NSArray *viewControllers = [NSArray arrayWithObject:initialViewController];
+    [self.pageController setViewControllers:viewControllers direction:UIPageViewControllerNavigationDirectionForward animated:NO completion:nil];
+    [self.navigationController pushViewController:self.pageController animated:YES];
 }
 
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
@@ -296,8 +290,6 @@ int songTitleY = 0;
     
     //disable sleep mode
     if ([[defaults objectForKey:@"disableAutolock"] isEqual:@"YES"]) [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-    
-    //[self showInstructions];
 }
 
 - (void)viewDidLoad
@@ -404,7 +396,7 @@ int songTitleY = 0;
     if ([[defaults objectForKey:@"firstRun"] isEqual:@"QS"]) {
         [defaults setObject:@"done" forKey:@"firstRun"];
         [defaults synchronize];
-//        [self showInstructions];
+        [self showInstructions];
     }
 }
 
@@ -1407,7 +1399,8 @@ int songTitleY = 0;
 
     NSLog(@"Performing action %@",action);
 
-    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
+//    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
+    if ([action isEqual:@"Unassigned"]) [self showInstructions];
     else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self killAdBanner]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];

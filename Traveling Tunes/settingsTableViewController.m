@@ -166,9 +166,7 @@
 - (void) showInstructions {
     [self.navigationController setNavigationBarHidden:YES];
 
-    
     self.pageController = [[UIPageViewController alloc] initWithTransitionStyle:UIPageViewControllerTransitionStyleScroll navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal options:nil];
-    
     self.pageController.dataSource = self;
     [[self.pageController view] setFrame:[[self view] bounds]];
     
@@ -177,16 +175,7 @@
     NSArray *viewControllers = [NSArray arrayWithObject:initialViewController];
     [self.pageController setViewControllers:viewControllers direction:UIPageViewControllerNavigationDirectionForward animated:NO completion:nil];
     [self.navigationController pushViewController:self.pageController animated:YES];
-
-    
 }
-
-- (void) closeInstructions {
-    [self.pageController didMoveToParentViewController:nil];
-    [self.pageController.view removeFromSuperview];
-    [self.pageController removeFromParentViewController];
-}
-
 
 -(void)viewWillAppear:(BOOL)animated
 {

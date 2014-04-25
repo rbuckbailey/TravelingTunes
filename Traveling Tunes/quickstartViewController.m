@@ -131,11 +131,8 @@
 }
 
 - (void)buttonClicked{
-//    [self.navigationController popToRootViewControllerAnimated:YES];
-//    [[self.view viewWithTag:123] removeFromSuperview];
     [self.navigationController popViewControllerAnimated:YES];
-//        [(UIPageViewController *)self.parentViewController removeFromParentViewController];
-
+    [self removeFromParentViewController];
 }
 
 - (void)didReceiveMemoryWarning
