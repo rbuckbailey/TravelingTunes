@@ -66,14 +66,12 @@
         _acceptButton.frame = CGRectMake((self.view.bounds.size.width/2)-50, self.view.bounds.size.height-40, 100, 50);
         NSLog(@"appear portrait: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
     }
-
+    [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationSlide];
 }
 
 
 - (BOOL)prefersStatusBarHidden {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if ([[defaults objectForKey:@"ShowStatusBar"] isEqual:@"NO"]) return YES;
-    else return NO;
+    return YES;
 }
 
 - (void)viewDidLoad

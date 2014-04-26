@@ -277,8 +277,8 @@
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) _showActions.on = YES; else _showActions.on = NO;
     if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) _albumArtColors.on = YES; else _albumArtColors.on = NO;
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
+    if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) _disableAutoLock.on = YES; else _disableAutoLock.on = NO;
 #ifdef FREE
-//    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [self.adBannerCell setHidden:YES]; else _disableAdBanners.on = NO;
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) _disableAdBanners.on = YES; else _disableAdBanners.on = NO;
 #endif
     
@@ -286,7 +286,6 @@
 
 - (void) popToRoot {
     [self.navigationController popToRootViewControllerAnimated:YES]; //requires iOS 7+
-//    [self.navigationController popViewControllerAnimated:YES];
 }
 
 

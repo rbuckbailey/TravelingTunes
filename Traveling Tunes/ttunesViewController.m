@@ -503,7 +503,7 @@ int songTitleY = 0;
                     _themeColorSong = [UIColor colorWithRed: (sred+(pred*2))/3   green: (sgreen+(pgreen*2))/3   blue:(sblue+(pblue*2))/3   alpha:1];
                     _themeColorAlbum = [colorScheme secondaryTextColor];
                 }
-            }
+            } else [self setThemeColors];
         } else { _albumArt.alpha = 0.0f; [self setThemeColors]; }
         
     }  else { _albumArt.alpha = 0.0f; [self setThemeColors]; }
