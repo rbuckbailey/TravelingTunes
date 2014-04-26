@@ -372,6 +372,7 @@ int songTitleY = 0;
             _map.delegate = self;
             [self.view addSubview:_map];
 //            [self bringTitlesToFront];
+            [self bringHUDSToFront];
             _map.showsUserLocation=YES;
 //            [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
             _map.zoomEnabled = NO;
@@ -381,7 +382,7 @@ int songTitleY = 0;
         }
         if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
-            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //*3; //fade map less than art b/c we want to see it
+            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*3; //*3; //fade map less than art b/c we want to see it
             if (mapFade>0.75) mapFade = 0.75;  //never completely fade out text
             [_map setAlpha:mapFade];
         }
@@ -403,7 +404,9 @@ int songTitleY = 0;
     [self.view bringSubviewToFront:_artistTitle];
     [self.view bringSubviewToFront:_songTitle];
     [self.view bringSubviewToFront:_albumTitle];
-    
+}
+
+- (void) bringHUDSToFront {
     [self.view bringSubviewToFront:_actionHUD];
     [self.view bringSubviewToFront:_nightTimeFade];
 }
