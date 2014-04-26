@@ -150,6 +150,8 @@
 - (IBAction)albumArtFadeChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISwitch *showMap;
 - (IBAction)showMapChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *artDisplayLayout;
+- (IBAction)artDisplayLayoutChanged:(id)sender;
 
 
 

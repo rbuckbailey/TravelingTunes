@@ -243,6 +243,7 @@
     _HUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"HUDType"] floatValue];
     _ScrubHUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"ScrubHUDType"] floatValue];
     _albumArtScale.selectedSegmentIndex = (int)[[defaults objectForKey:@"AlbumArtScale"] floatValue];
+    _artDisplayLayout.selectedSegmentIndex = (int)[[defaults objectForKey:@"ArtDisplayLayout"] floatValue];
 
     // initialize theme previews for Display settings
     [self setThemeLabels];
@@ -1154,8 +1155,6 @@
         [defaults setObject:@"0" forKey:@"AlbumArtScale"];
     } else if(_albumArtScale.selectedSegmentIndex == 1) {
         [defaults setObject:@"1" forKey:@"AlbumArtScale"];
-    } else if(_albumArtScale.selectedSegmentIndex == 2) {
-        [defaults setObject:@"2" forKey:@"AlbumArtScale"];
     }
     [defaults synchronize];
 }
@@ -1186,4 +1185,17 @@
     } else [defaults setObject:@"NO" forKey:@"showMap"];
     [defaults synchronize];
 }
+
+- (IBAction)artDisplayLayoutChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    if (_artDisplayLayout.selectedSegmentIndex == 0) {
+        [defaults setObject:@"0" forKey:@"ArtDisplayLayout"];
+    } else if(_artDisplayLayout.selectedSegmentIndex == 1) {
+        [defaults setObject:@"1" forKey:@"ArtDisplayLayout"];
+    }
+    [defaults synchronize];
+}
+
+
 @end

@@ -112,7 +112,9 @@ int songTitleY = 0;
 
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
 {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+
     // do not reset marquee if the device has been set face-up (orientation 5), but do reset for other changes
     if (orientation != 5) {
         if (_activeOrientation != orientation) {
@@ -125,15 +127,31 @@ int songTitleY = 0;
     _actionHUD.textColor = [UIColor clearColor];
     [self.actionHUDFadeTimer invalidate];
     
-    _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height);
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) { // overlay
+        _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height);
+        _map.frame = self.view.bounds;
+        leftMargin = 20;
+    }
+    else { // side by side
+        if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
+            _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
+            _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
+            leftMargin = (self.view.bounds.size.width/2)+20;
+            topMargin = 20;
+            NSLog(@"margins are %d %d",leftMargin,topMargin);
+        } else {
+            _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
+            _map.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
+            topMargin = (self.view.bounds.size.height/2) +20;
+            leftMargin = 20;
+            NSLog(@"margins are %d %d",leftMargin,topMargin);
+        }
+    }
     [self setupLabels];
     [self setupHUD];
 
     if (self.bannerIsVisible) adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
     else adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight]);
-    NSLog(@"banner is %hhd visible",self.bannerIsVisible);
-    
-    _map.frame = self.view.bounds;
 }
 
 - (IBAction)singleTapDetected:(id)sender {
@@ -321,9 +339,12 @@ int songTitleY = 0;
             _map.scrollEnabled = NO;
             _map.userInteractionEnabled = NO;
         }
-        float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
-        if (mapFade>1) mapFade = 1;
-        [_map setAlpha:mapFade];
+        if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
+        else {
+            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
+            if (mapFade>1) mapFade = 1;
+            [_map setAlpha:mapFade];
+        }
     } else { [_map removeFromSuperview]; _map=NULL; }
 }
 
@@ -524,10 +545,12 @@ int songTitleY = 0;
         // so do a second check to see if it has at least 50x50 pixels
         if ([artwork imageWithSize:CGSizeMake(50,50)]) {
             _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
-            _albumArt.alpha = [[defaults objectForKey:@"AlbumArtFade"] floatValue];
-            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]) _albumArt.contentMode = UIViewContentModeCenter;
-            else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"1"]) _albumArt.contentMode = UIViewContentModeScaleAspectFill;
-            else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"2"]) _albumArt.contentMode = UIViewContentModeScaleAspectFit;
+
+            if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _albumArt.alpha = 1;
+            else _albumArt.alpha = [[defaults objectForKey:@"AlbumArtFade"] floatValue];
+
+            else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]) _albumArt.contentMode = UIViewContentModeScaleAspectFill;
+            else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"1"]) _albumArt.contentMode = UIViewContentModeScaleAspectFit;
             //                _albumArt.contentMode = UIViewContentModeCenter;
             
             if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) {
@@ -713,11 +736,11 @@ int songTitleY = 0;
         
         
 //        int songOffset = _songTitle.frame.origin.y;
-    int songOffset = (self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);
+    int songOffset = topMargin+(((self.view.bounds.size.height-(topMargin+bottomMargin))/2)-(_songTitle.frame.size.height/2));
 //        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
         // do not replace song title label if the scrolling marquee is handling that right now
     if (_timersRunning==0) {
-        _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset-([self getBannerHeight]/2), self.view.bounds.size.width-rightMargin*2, (int)[[defaults objectForKey:@"songFontSize"] floatValue]+15);
+        _songTitle.frame=CGRectMake(leftMargin-_marqueePosition, songOffset-([self getBannerHeight]/2), self.view.bounds.size.width-(leftMargin+rightMargin), (int)[[defaults objectForKey:@"songFontSize"] floatValue]+15);
         _songTitle.numberOfLines = 1;
         _songTitle.text   = songString;
         _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
@@ -728,7 +751,7 @@ int songTitleY = 0;
     int albumOffset = self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height; //_albumTitle.frame.origin.y;
     if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height)-[self getBannerHeight]; //20 is bottom margin
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) albumOffset = albumOffset-15;
-    _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,(int)[[defaults objectForKey:@"albumFontSize"] floatValue]+15);
+    _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"albumFontSize"] floatValue]+15);
     _albumTitle.numberOfLines = 1;
     _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
     _albumTitle.text    = albumString;
@@ -744,40 +767,45 @@ int songTitleY = 0;
 - (void) drawCornerRegions {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    topMargin = 20;
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & !UIInterfaceOrientationIsLandscape(_activeOrientation)) topMargin = (self.view.bounds.size.height/2)+20;
+    else topMargin = 20;
     bottomMargin = 20;
+    bool topButtons = NO;
     if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) {
         _topLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"TopLeft"] ];
         if ([_topLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topLeftRegion.font = [UIFont systemFontOfSize:18]; else _topLeftRegion.font = [UIFont systemFontOfSize:30];
-        _topLeftRegion.frame = CGRectMake(leftMargin,0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
+        _topLeftRegion.frame = CGRectMake(leftMargin,topMargin-20,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topLeftRegion.textColor = _themeColorSong;
         _topLeftRegion.numberOfLines=0;
         _topLeftRegion.lineBreakMode=NSLineBreakByTruncatingTail;
         [_topLeftRegion setAlpha:0.65f];
-        topMargin = 40;
+        topButtons = YES;
     } else _topLeftRegion.text = @"";
     if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) {
         _topCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"TopCenter"] ];
         if ([_topCenterRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topCenterRegion.font = [UIFont systemFontOfSize:18]; else _topCenterRegion.font = [UIFont systemFontOfSize:30];
-        _topCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
+        _topCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,topMargin-20,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topCenterRegion.textColor = _themeColorSong;
         _topCenterRegion.numberOfLines=0;
         _topCenterRegion.lineBreakMode=NSLineBreakByTruncatingTail;
         _topCenterRegion.textAlignment = NSTextAlignmentCenter;
         [_topCenterRegion setAlpha:0.65f];
-        topMargin = 40;
+        topButtons = YES;
     } else _topCenterRegion.text = @"";
     if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) {
         _topRightRegion.text = [self actionSymbol:[defaults objectForKey:@"TopRight"] ];
         if ([_topRightRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topRightRegion.font = [UIFont systemFontOfSize:18]; else _topRightRegion.font = [UIFont systemFontOfSize:30];
-        _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),0,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
+        _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),topMargin-20,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topRightRegion.textColor = _themeColorSong;
         _topRightRegion.numberOfLines=0;
         _topRightRegion.lineBreakMode=NSLineBreakByTruncatingTail;
         _topRightRegion.textAlignment = NSTextAlignmentRight;
         [_topRightRegion setAlpha:0.65f];
-        topMargin = 40;
+        topButtons = YES;
     } else _topRightRegion.text = @"";
+    if (topButtons) topMargin = topMargin+20;
+
+    // bottom row
     int playbackBarMargin = 50;
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) playbackBarMargin = 65;
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {

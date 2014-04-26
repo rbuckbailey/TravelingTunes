@@ -62,6 +62,7 @@
     [defaults setObject:@"YES" forKey:@"showActions"];
     [defaults setObject:@"1" forKey:@"AlbumArtScale"];
     [defaults setObject:@"YES" forKey:@"disableAutolock"];
+    [defaults setObject:@"0" forKey:@"ArtDisplayLayout"];
 }
 
 - (void)initDisplaySettings {
