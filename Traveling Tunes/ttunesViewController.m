@@ -1104,7 +1104,7 @@ int songTitleY = 0;
 
     //setup for rectangle drawing display
     int leftSide = 0;
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) leftSide=self.view.bounds.size.width/2;
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) leftSide=self.view.bounds.size.width/2+38;
     
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) { //setup bar display
         _lineView.frame=CGRectMake(leftSide, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
