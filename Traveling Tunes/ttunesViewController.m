@@ -110,23 +110,9 @@ int songTitleY = 0;
     [self.navigationController pushViewController:self.pageController animated:YES];
 }
 
-- (void)deviceOrientationDidChangeNotification:(NSNotification*)note
-{
+- (void) setupFramesAndMargins {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
 
-    // do not reset marquee if the device has been set face-up (orientation 5), but do reset for other changes
-    if (orientation != 5) {
-        if (_activeOrientation != orientation) {
-            [self scrollingTimerKiller]; [self startMarqueeTimer];
-        }
-        _activeOrientation = orientation;
-    }
-    //clear actionHUD if action
-    _actionHUD.backgroundColor = [UIColor clearColor];
-    _actionHUD.textColor = [UIColor clearColor];
-    [self.actionHUDFadeTimer invalidate];
-    
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) { // overlay
         _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height);
         _map.frame = self.view.bounds;
@@ -151,6 +137,26 @@ int songTitleY = 0;
             NSLog(@"scale button %@ art is %@",[defaults objectForKey:@"AlbumArtScale"],[defaults objectForKey:@"showAlbumArt"]);
         }
     }
+
+}
+
+- (void)deviceOrientationDidChangeNotification:(NSNotification*)note
+{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+
+    // do not reset marquee if the device has been set face-up (orientation 5), but do reset for other changes
+    if (orientation != 5) {
+        if (_activeOrientation != orientation) {
+            [self scrollingTimerKiller]; [self startMarqueeTimer];
+        }
+        _activeOrientation = orientation;
+    }
+    //clear actionHUD if action
+    _actionHUD.backgroundColor = [UIColor clearColor];
+    _actionHUD.textColor = [UIColor clearColor];
+    [self.actionHUDFadeTimer invalidate];
+    
     [self setupLabels];
     [self setupHUD];
 
@@ -662,6 +668,8 @@ int songTitleY = 0;
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
+    [self setupFramesAndMargins];
+    
     // dim display if it's night and dim-at-night is on
     NSDate *currentTime = [NSDate date];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
@@ -729,8 +737,9 @@ int songTitleY = 0;
         albumString    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
     }
 
-    
-    _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & UIInterfaceOrientationIsLandscape(_activeOrientation) & [[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"])
+        _artistTitle.frame = CGRectMake(leftMargin,topMargin+20,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
+    else _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
     _artistTitle.numberOfLines = 1;
     _artistTitle.text   = artistString;
     _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
@@ -1094,17 +1103,20 @@ int songTitleY = 0;
     _edgeViewBG.backgroundColor = [UIColor clearColor];
 
     //setup for rectangle drawing display
+    int leftSide = 0;
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) leftSide=self.view.bounds.size.width/2;
+    
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) { //setup bar display
-        _lineView.frame=CGRectMake(0, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
+        _lineView.frame=CGRectMake(leftSide, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.10f];
-        _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
+        _edgeViewBG.frame = CGRectMake(leftSide, targetVolumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.25f];
 //        _edgeViewBG.backgroundColor = [UIColor clearColor];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) { // setup line display
-        _lineView.frame = CGRectMake(0, volumeLevel, self.view.bounds.size.width, 15);
+        _lineView.frame = CGRectMake(leftSide, volumeLevel, self.view.bounds.size.width, 15);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.10f];
 //        _edgeViewBG.backgroundColor = [UIColor clearColor];
-        _edgeViewBG.frame = CGRectMake(0, targetVolumeLevel, self.view.bounds.size.width, 15);
+        _edgeViewBG.frame = CGRectMake(leftSide, targetVolumeLevel, self.view.bounds.size.width, 15);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.25f];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) { // setup edge display
         _lineView.frame = CGRectMake(self.view.bounds.size.width-15, volumeLevel, self.view.bounds.size.width, 15);
