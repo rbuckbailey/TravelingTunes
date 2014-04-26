@@ -478,7 +478,7 @@ int songTitleY = 0;
     }
     
     self.bannerIsVisible = NO;
-    _speedTier = 0;
+//    _speedTier = 0;
     
     if ([[defaults objectForKey:@"firstRun"] isEqual:@"QS"]) {
         [defaults setObject:@"done" forKey:@"firstRun"];
@@ -623,41 +623,47 @@ int songTitleY = 0;
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL) {
         [self setGlobalColors];
 
-    float red, green, blue, alpha;
-    float red2, green2, blue2, alpha2;
+        float red, green, blue, alpha;
+        float red2, green2, blue2, alpha2;
 
-    [_themeColorArtist getRed:&red green:&green blue:&blue alpha:&alpha];
-    [_themeBG getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
+        [_themeColorArtist getRed:&red green:&green blue:&blue alpha:&alpha];
+        [_themeBG getRed:&red2 green:&green2 blue:&blue2 alpha:&alpha2];
 
-    long totalPlaybackTime = [[[mediaPlayer nowPlayingItem] valueForProperty: @"playbackDuration"] longValue];
+        long totalPlaybackTime = [[[mediaPlayer nowPlayingItem] valueForProperty: @"playbackDuration"] longValue];
 
-    float playbackPosition=(self.view.bounds.size.width*([mediaPlayer currentPlaybackTime]/totalPlaybackTime));
+        float playbackPosition=(self.view.bounds.size.width*([mediaPlayer currentPlaybackTime]/totalPlaybackTime));
+        int scrubTop = 0;
+        int scrubLeft = 0;
+        if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
+            if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
+                scrubLeft = (self.view.bounds.size.width/2)+36;
+                playbackPosition = ((self.view.bounds.size.width/2)-36)*([mediaPlayer currentPlaybackTime]/totalPlaybackTime) + scrubLeft;
+            } else {
+                scrubTop = (self.view.bounds.size.height/2)+36;
+            }
+        }
 
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & UIInterfaceOrientationIsLandscape(_activeOrientation)) {
-        playbackPosition = ((self.view.bounds.size.width/2)-36)*([mediaPlayer currentPlaybackTime]/totalPlaybackTime) + ((self.view.bounds.size.width/2)+36);
-    }
-
-    _playbackLineView.backgroundColor = [UIColor clearColor];
-    _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
+        _playbackLineView.backgroundColor = [UIColor clearColor];
+        _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
         
         long height;
         height = self.view.bounds.size.height-[self getBannerHeight];
         
-    if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"0"]) {
-        _playbackLineView.frame=CGRectMake(playbackPosition, 0,  self.view.bounds.size.width, self.view.bounds.size.height);
-        _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
-        _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
-    } else if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"1"]) {
-        _playbackLineView.frame = CGRectMake(playbackPosition, 0, 15, self.view.bounds.size.height);
-        _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
-        _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
-    } else if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) {
-        _playbackLineView.frame = CGRectMake(playbackPosition, height-15, 15, 80);
-        _playbackLineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.f];
-        _playbackEdgeViewBG.frame = CGRectMake(0, height-15, self.view.bounds.size.width, 80);
-        _playbackEdgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
+        if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"0"]) {
+            _playbackLineView.frame=CGRectMake(playbackPosition, scrubTop,  self.view.bounds.size.width, self.view.bounds.size.height);
+            _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+            _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
+        } else if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"1"]) {
+            _playbackLineView.frame = CGRectMake(playbackPosition, scrubTop, 15, self.view.bounds.size.height);
+            _playbackLineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.35f];
+            _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
+        } else if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) {
+            _playbackLineView.frame = CGRectMake(playbackPosition, height-15, 15, 80);
+            _playbackLineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.f];
+            _playbackEdgeViewBG.frame = CGRectMake(scrubLeft, height-15, self.view.bounds.size.width, 80);
+            _playbackEdgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
+        }
     }
-}
     
     // since this runs 5 times a second, update volume per GPS here
     mediaPlayer.volume=_volumeTarget;
@@ -1109,24 +1115,24 @@ int songTitleY = 0;
 
     //setup for rectangle drawing display
     int leftSide = 0;
+    int topSide = 0;
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) leftSide=self.view.bounds.size.width/2+36;
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation)) topSide=self.view.bounds.size.height/2+36;
     
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) { //setup bar display
         _lineView.frame=CGRectMake(leftSide, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.10f];
         _edgeViewBG.frame = CGRectMake(leftSide, targetVolumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.25f];
-//        _edgeViewBG.backgroundColor = [UIColor clearColor];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"2"]) { // setup line display
         _lineView.frame = CGRectMake(leftSide, volumeLevel, self.view.bounds.size.width, 15);
         _lineView.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.10f];
-//        _edgeViewBG.backgroundColor = [UIColor clearColor];
         _edgeViewBG.frame = CGRectMake(leftSide, targetVolumeLevel, self.view.bounds.size.width, 15);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.25f];
     } else if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) { // setup edge display
         _lineView.frame = CGRectMake(self.view.bounds.size.width-15, volumeLevel, self.view.bounds.size.width, 15);
         _lineView.backgroundColor = [UIColor colorWithRed:red2 green:green2 blue:blue2 alpha:1.0f];
-        _edgeViewBG.frame = CGRectMake(self.view.bounds.size.width-15, 0, self.view.bounds.size.width, self.view.bounds.size.height);
+        _edgeViewBG.frame = CGRectMake(self.view.bounds.size.width-15, topSide, self.view.bounds.size.width, self.view.bounds.size.height);
         _edgeViewBG.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:0.5f];
     }
     [self startFadeHUDTimer];
