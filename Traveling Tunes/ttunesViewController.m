@@ -635,64 +635,54 @@ int songTitleY = 0;
     
     //actually do the drawing
     _bgView.backgroundColor = _themeBG;
-    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing playing
-//    if ([mediaPlayer.nowPlayingItem]) { //output "nothing playing screen" if nothing playing
-        _artistTitle.numberOfLines = 1;
-        _artistTitle.text   = @"No music playing.";
-        _artistTitle.font   = [UIFont systemFontOfSize:28];
-        _artistTitle.textColor = _themeColorArtist;
-        [_artistTitle setAlpha:0.8f];
-        [_artistTitle sizeToFit];
-        
-        _songTitle.numberOfLines = 1;
-        _songTitle.text   = @"Tap for default playlist.";
-        _songTitle.font   = [UIFont systemFontOfSize:28];
-        _songTitle.textColor = _themeColorSong;
-        [_songTitle sizeToFit];
-        _songTitle.frame = CGRectMake(leftMargin,(self.view.bounds.size.height/2)-([self getBannerHeight]/2),self.view.bounds.size.width,30);
-        
-        _albumTitle.numberOfLines = 1;
-        _albumTitle.text    = @"Long hold for menu.";
-        _albumTitle.font    =  [UIFont systemFontOfSize:28];
-        _albumTitle.textColor = _themeColorAlbum;
-        [_albumTitle setAlpha:0.8f];
-        _albumTitle.frame = CGRectMake(leftMargin,self.view.bounds.size.height-40-[self getBannerHeight],self.view.bounds.size.width,30);
-
+    NSString *artistString = [NSString stringWithFormat:@""];
+    NSString *songString = [NSString stringWithFormat:@""];
+    NSString *albumString = [NSString stringWithFormat:@""];
+    if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing
+        artistString = @"No music playing.";
+        songString = @"Tap for default playlist.";
+        albumString = @"Long hold for menu.";
     } else {
-        _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15); //_artistTitle.frame.size.height);
-        _artistTitle.numberOfLines = 1;
-        _artistTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
-        _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
-        _artistTitle.textColor = _themeColorArtist;
-        [_artistTitle setAlpha:0.8f];
-        _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+        artistString   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist];
+        songString   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
+        albumString    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
+    }
+
+    
+    _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
+    _artistTitle.numberOfLines = 1;
+    _artistTitle.text   = artistString;
+    _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
+    _artistTitle.textColor = _themeColorArtist;
+    [_artistTitle setAlpha:0.8f];
+    _artistTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
         
         
 //        int songOffset = _songTitle.frame.origin.y;
-        int songOffset = (self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);
+    int songOffset = (self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);
 //        if (self.bannerIsVisible) songOffset=(self.view.bounds.size.height/2)-(_songTitle.frame.size.height/2);//-([self getBannerHeight]/2);
         // do not replace song title label if the scrolling marquee is handling that right now
-        if (_timersRunning==0) {
-            _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset-([self getBannerHeight]/2), self.view.bounds.size.width-rightMargin*2, (int)[[defaults objectForKey:@"songFontSize"] floatValue]+15);
-            _songTitle.numberOfLines = 1;
-            _songTitle.text   = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle];
-            _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
-            _songTitle.textColor = _themeColorSong;
-            _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-        }
-        
-        int albumOffset = self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height; //_albumTitle.frame.origin.y;
-        if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height)-[self getBannerHeight]; //20 is bottom margin
-        if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) albumOffset = albumOffset-15;
-        _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,(int)[[defaults objectForKey:@"albumFontSize"] floatValue]+15);
-        _albumTitle.numberOfLines = 1;
-        _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
-        _albumTitle.text    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
-        _albumTitle.textColor = _themeColorAlbum;
-        [_albumTitle setAlpha:0.8f];
-        _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
-//        if (self.bannerIsVisible) _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -[self getBannerHeight]);
+    if (_timersRunning==0) {
+        _songTitle.frame=CGRectMake(20-_marqueePosition, songOffset-([self getBannerHeight]/2), self.view.bounds.size.width-rightMargin*2, (int)[[defaults objectForKey:@"songFontSize"] floatValue]+15);
+        _songTitle.numberOfLines = 1;
+        _songTitle.text   = songString;
+        _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
+        _songTitle.textColor = _themeColorSong;
+        _songTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
     }
+        
+    int albumOffset = self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height; //_albumTitle.frame.origin.y;
+    if (self.bannerIsVisible) albumOffset=(self.view.bounds.size.height-bottomMargin-_albumTitle.frame.size.height)-[self getBannerHeight]; //20 is bottom margin
+    if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) albumOffset = albumOffset-15;
+    _albumTitle.frame=CGRectMake(leftMargin,albumOffset,self.view.bounds.size.width-rightMargin*2,(int)[[defaults objectForKey:@"albumFontSize"] floatValue]+15);
+    _albumTitle.numberOfLines = 1;
+    _albumTitle.font    = [UIFont systemFontOfSize:albumFontSize];
+    _albumTitle.text    = albumString;
+    _albumTitle.textColor = _themeColorAlbum;
+    [_albumTitle setAlpha:0.8f];
+    _albumTitle.minimumFontSize=(int)[[defaults objectForKey:@"minimumFontSize"] floatValue];
+//        if (self.bannerIsVisible) _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -[self getBannerHeight]);
+
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) [self drawFittedText];
     [self drawCornerRegions];
 }
