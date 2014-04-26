@@ -314,7 +314,7 @@ int songTitleY = 0;
     _map = [[MKMapView alloc] initWithFrame: self.view.bounds];
     _map.delegate = self;
     [self.view addSubview:_map];
-    int mapFade = (int)[[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
+    float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
     if (mapFade>1) mapFade = 1;
     [_map setAlpha:mapFade];
     _map.showsUserLocation=YES;
@@ -362,6 +362,8 @@ int songTitleY = 0;
     [self.view addSubview:_artistTitle];
     [self.view addSubview:_songTitle];
     [self.view addSubview:_albumTitle];
+    
+    [self.view bringSubviewToFront:_map];
     
     [self.view addSubview:_actionHUD];
     [self.view addSubview:_nightTimeFade];
