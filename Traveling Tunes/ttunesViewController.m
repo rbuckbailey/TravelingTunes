@@ -132,6 +132,8 @@ int songTitleY = 0;
     if (self.bannerIsVisible) adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
     else adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight]);
     NSLog(@"banner is %hhd visible",self.bannerIsVisible);
+    
+    _map.frame = self.view.bounds;
 }
 
 - (IBAction)singleTapDetected:(id)sender {
@@ -290,8 +292,16 @@ int songTitleY = 0;
     else [self.gps stopUpdatingLocation];
     
     //disable sleep mode
-    if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-    else [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+    if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) { [[UIApplication sharedApplication] setIdleTimerDisabled:YES]; NSLog(@"sleep off"); }
+    else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; NSLog(@"sleep on"); }
+}
+
+- (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
+{
+    MKCoordinateRegion mapRegion;
+    mapRegion.center = mapView.userLocation.coordinate;
+    mapRegion.span = MKCoordinateSpanMake(0.0025, 0.0025);
+    [mapView setRegion:mapRegion animated: YES];
 }
 
 - (void)viewDidLoad
@@ -301,7 +311,12 @@ int songTitleY = 0;
     //initialized and not used for a good reason that I don't rememeber now
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
-    
+    _map = [[MKMapView alloc] initWithFrame: self.view.bounds];
+    _map.delegate = self;
+    [self.view addSubview:_map];
+    [_map setAlpha:[[defaults objectForKey:@"AlbumArtFade"] floatValue]];
+    _map.showsUserLocation=YES;
+
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
     

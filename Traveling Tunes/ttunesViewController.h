@@ -12,6 +12,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "LEColorPicker.h"
 #import <iAd/iAd.h>
+#import <MapKit/MapKit.h>
 //#import <AVFoundation/AVFoundation.h>
 
 CGFloat const gestureMinimumTranslation = 20.0;
@@ -28,7 +29,7 @@ ADBannerView *adBanner;
 BOOL bannerIsVisible;
 BOOL areAdsRemoved;
 
-@interface ttunesViewController : UIViewController <CLLocationManagerDelegate, ADBannerViewDelegate, UIPageViewControllerDataSource>
+@interface ttunesViewController : UIViewController <CLLocationManagerDelegate, ADBannerViewDelegate, UIPageViewControllerDataSource, MKMapViewDelegate>
 
 @property (strong, nonatomic) UIPageViewController *pageController;
 
@@ -44,6 +45,7 @@ BOOL areAdsRemoved;
 @property int speedTier,oldSpeedTier;
 @property NSArray* playlists;
 @property float volumeBase,volumeTenth,volumeTarget;
+@property MKMapView *map;
 
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;
