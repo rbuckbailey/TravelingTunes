@@ -46,6 +46,7 @@ BOOL areAdsRemoved;
 @property NSArray* playlists;
 @property float volumeBase,volumeTenth,volumeTarget;
 @property MKMapView *map;
+@property CLLocationDirection currentHeading;
 
 - (IBAction)singleTapDetected:(id)sender;
 - (IBAction)longPressDetected:(id)sender;

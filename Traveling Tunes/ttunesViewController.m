@@ -134,7 +134,7 @@ int songTitleY = 0;
             topMargin = (self.view.bounds.size.height/2)+20;
             leftMargin = 20;
             if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) topMargin=topMargin+60; //adjust for wide/tall fit of album
-            NSLog(@"scale button %@ art is %@",[defaults objectForKey:@"AlbumArtScale"],[defaults objectForKey:@"showAlbumArt"]);
+//            NSLog(@"scale button %@ art is %@",[defaults objectForKey:@"AlbumArtScale"],[defaults objectForKey:@"showAlbumArt"]);
         }
     }
 
@@ -179,8 +179,18 @@ int songTitleY = 0;
     }
 }
 
+- (void)startGPSHeading {
+    // Start heading updates.
+//    if ([CLLocationManager headingAvailable]) {
+        self.gps.desiredAccuracy = kCLLocationAccuracyBest;
+
+        self.gps.headingFilter = 5;
+        [self.gps startUpdatingHeading];
+ //   }
+}
+
 - (id)init{
-//    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+//    mediaPlayer = [MPMusicPlayerCscale buttontroller iPodMusicPlayer];
     self = [super init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"]) [self startGPSVolume];
@@ -327,12 +337,30 @@ int songTitleY = 0;
     else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; NSLog(@"sleep on"); }
 }
 
+- (void)locationManager:(CLLocationManager *)manager didUpdateHeading:(CLHeading *)newHeading {
+    if (newHeading.headingAccuracy < 0)
+        return;
+    /*
+    // Use the true heading if it is valid.
+    CLLocationDirection  theHeading = ((newHeading.trueHeading > 0) ?
+                                       newHeading.trueHeading : newHeading.magneticHeading);
+    _currentHeading = theHeading;
+//    [_map setTransform:CGAffineTransformMakeRotation(-1*newHeading.magneticHeading*3.14159/180)];*/
+    float rotation = -1.0f * M_PI * (newHeading.magneticHeading) / 180.0f; // or .trueHeading for GPS
+//	_map.transform = CGAffineTransformMakeRotation(rotation);
+
+ for (UIView *aView in _map.subviews){
+        NSLog(@"view class: %@", aView.class);
+//        aView.transform= CGAffineTransformMakeRotation(rotation);
+
+//        if ([aView isKindOfClass:UIView]) NSLog(@"boop");
+    }
+}
+
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-    MKCoordinateRegion mapRegion;
-    mapRegion.center = mapView.userLocation.coordinate;
-    mapRegion.span = MKCoordinateSpanMake(0.0025, 0.0025);
-    [mapView setRegion:mapRegion animated: NO];
+    [_map.camera setAltitude:400+(_speedTier*10)];
+    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 }
 
 - (void)initMapView{
@@ -343,16 +371,18 @@ int songTitleY = 0;
             _map = [[MKMapView alloc] initWithFrame: self.view.bounds];
             _map.delegate = self;
             [self.view addSubview:_map];
-            [self bringTitlesToFront];
+//            [self bringTitlesToFront];
             _map.showsUserLocation=YES;
+//            [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
             _map.zoomEnabled = NO;
             _map.scrollEnabled = NO;
             _map.userInteractionEnabled = NO;
+            [self startGPSHeading];
         }
         if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
-            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
-            if (mapFade>1) mapFade = 1;
+            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //*3; //fade map less than art b/c we want to see it
+            if (mapFade>0.75) mapFade = 0.75;  //never completely fade out text
             [_map setAlpha:mapFade];
         }
     } else { [_map removeFromSuperview]; _map=NULL; }
@@ -636,7 +666,8 @@ int songTitleY = 0;
         int scrubLeft = 0;
         if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
             if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
-                scrubLeft = (self.view.bounds.size.width/2)+36;
+                if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubLeft = (self.view.bounds.size.width/2)+36;
+                else scrubLeft = (self.view.bounds.size.width/2);
                 playbackPosition = ((self.view.bounds.size.width/2)-36)*([mediaPlayer currentPlaybackTime]/totalPlaybackTime) + scrubLeft;
             } else {
                 scrubTop = (self.view.bounds.size.height/2)+36;
@@ -1116,7 +1147,11 @@ int songTitleY = 0;
     //setup for rectangle drawing display
     int leftSide = 0;
     int topSide = 0;
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) leftSide=self.view.bounds.size.width/2+36;
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) {
+        // if fill scale, which is big, swell up 36px
+        if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftSide=self.view.bounds.size.width/2+36;
+        else leftSide=self.view.bounds.size.width/2;
+    }
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation)) topSide=self.view.bounds.size.height/2+36;
     
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) { //setup bar display
@@ -1426,13 +1461,30 @@ int songTitleY = 0;
                 UITouch *touch = [[event allTouches] anyObject];
                 CGPoint location = [touch locationInView:touch.view];
 
-                if (location.y<30) { // top bar region
-                    if (location.x<100) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
+                // set default button zones
+                int checkTopZero = 0;
+                int checkTop = 30;
+                int checkLeft = 100;
+                int checkLeftZero = 0;
+            
+                // set check zones for side-by-side
+                if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(!UIInterfaceOrientationIsLandscape(_activeOrientation))) {
+                    checkTopZero = (self.view.bounds.size.height/2)+36;
+                    checkTop = (self.view.bounds.size.height/2)+76;
+                }
+                if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(UIInterfaceOrientationIsLandscape(_activeOrientation))) {
+                    checkLeftZero = (self.view.bounds.size.width/2)+36;
+                    checkLeft = (self.view.bounds.size.width/2)+136;
+                }
+                
+                // check for button zones
+                if (location.y<checkTop&location.y>checkTopZero) { // top bar region
+                    if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else { if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
                 }
-                else if (location.y>self.view.bounds.size.height-30-[self getBannerHeight]) { // bottom bar region
-                    if (location.x<100) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
+                else if (location.y>self.view.bounds.size.height-40-[self getBannerHeight]) { // bottom bar region
+                    if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
                     else { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
                 }
