@@ -755,10 +755,6 @@ BOOL bottomButtons = NO;
         albumString    = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle];
     }
 
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & UIInterfaceOrientationIsLandscape(_activeOrientation) & [[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"])
-        _artistTitle.frame = CGRectMake(leftMargin,topMargin+20,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & !UIInterfaceOrientationIsLandscape(_activeOrientation) & [[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"])        _artistTitle.frame = CGRectMake(leftMargin,topMargin+20,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
-    else _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
     _artistTitle.numberOfLines = 1;
     _artistTitle.text   = artistString;
     _artistTitle.font   = [UIFont systemFontOfSize:artistFontSize];
@@ -822,7 +818,7 @@ BOOL bottomButtons = NO;
             if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftMargin=leftMargin+40;  //if art scale is "fill" it is wider than "fit" or map view
             else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"1"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftMargin=leftMargin+20;  //if art scale is "fill" it is wider than "fit" or map view
             
-            _artistTitle.frame = CGRectMake(leftMargin,topMargin+20,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
+            artistPosition = topMargin;
             
             _albumArt.frame = CGRectMake(18,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
             _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
@@ -840,12 +836,16 @@ BOOL bottomButtons = NO;
             leftMargin = 20;
         }
     }
-    _artistTitle.frame = CGRectMake(leftMargin,artistPosition,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
     // adjust for edge HUD layouts
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) bottomMargin=bottomMargin+15;
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) leftMargin=leftMargin+15;
     
     [self drawCornerRegions];
+    artistPosition = topMargin;
+    if (topButtons) {
+        artistPosition=artistPosition+20;
+    }
+    _artistTitle.frame = CGRectMake(leftMargin,artistPosition,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
 }
 
 - (void) drawCornerRegions {
