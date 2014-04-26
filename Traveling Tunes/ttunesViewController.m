@@ -1094,17 +1094,20 @@ int songTitleY = 0;
     //adjust volume range for iAds
     long height;
     height = self.view.bounds.size.height-[self getBannerHeight];
-    
-    // should be using "if GPS volume is on, then..."
     float volumeLevel=height-(height*_volumeBase);
     float targetVolumeLevel=height-(height*_volumeTarget);
-    
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation)) {
+        height=(self.view.bounds.size.height/2)-[self getBannerHeight];
+        volumeLevel=(height-(height*_volumeBase))+(self.view.bounds.size.height/2)+36;
+        targetVolumeLevel=(height-(height*_volumeTarget))+(self.view.bounds.size.height/2)+35;
+    }
+
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
 
     //setup for rectangle drawing display
     int leftSide = 0;
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) leftSide=self.view.bounds.size.width/2+38;
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) leftSide=self.view.bounds.size.width/2+36;
     
     if ([[defaults objectForKey:@"HUDType"] isEqual:@"1"]) { //setup bar display
         _lineView.frame=CGRectMake(leftSide, volumeLevel, self.view.bounds.size.width, self.view.bounds.size.height);
@@ -1584,6 +1587,8 @@ int songTitleY = 0;
     mediaPlayer.volume = volume+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _volumeBase = _volumeBase+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _volumeTarget = _volumeTarget+[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    if (_volumeBase>1) _volumeBase=1;
+    if (_volumeTarget>1) _volumeTarget=1;
     _volumeTenth = _volumeBase/100;
     [self setupHUD];
 }
@@ -1594,6 +1599,8 @@ int songTitleY = 0;
     mediaPlayer.volume = volume-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _volumeBase = _volumeBase-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
     _volumeTarget = _volumeTarget-[[defaults objectForKey:@"volumeSensitivity"] floatValue];
+    if (_volumeBase<0) _volumeBase=0;
+    if (_volumeTarget<0) _volumeTarget=0;
     _volumeTenth = _volumeBase/100;
     [self setupHUD];
 }
