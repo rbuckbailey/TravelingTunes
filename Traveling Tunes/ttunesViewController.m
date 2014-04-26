@@ -301,7 +301,7 @@ int songTitleY = 0;
     MKCoordinateRegion mapRegion;
     mapRegion.center = mapView.userLocation.coordinate;
     mapRegion.span = MKCoordinateSpanMake(0.0025, 0.0025);
-    [mapView setRegion:mapRegion animated: YES];
+    [mapView setRegion:mapRegion animated: NO];
 }
 
 - (void)viewDidLoad
@@ -314,7 +314,9 @@ int songTitleY = 0;
     _map = [[MKMapView alloc] initWithFrame: self.view.bounds];
     _map.delegate = self;
     [self.view addSubview:_map];
-    [_map setAlpha:[[defaults objectForKey:@"AlbumArtFade"] floatValue]];
+    int mapFade = (int)[[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
+    if (mapFade>1) mapFade = 1;
+    [_map setAlpha:mapFade];
     _map.showsUserLocation=YES;
 
     _volumeTarget = mediaPlayer.volume;
