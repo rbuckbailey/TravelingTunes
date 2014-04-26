@@ -633,8 +633,10 @@ int songTitleY = 0;
 
     float playbackPosition=(self.view.bounds.size.width*([mediaPlayer currentPlaybackTime]/totalPlaybackTime));
 
-    
-    
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & UIInterfaceOrientationIsLandscape(_activeOrientation)) {
+        playbackPosition = ((self.view.bounds.size.width/2)-36)*([mediaPlayer currentPlaybackTime]/totalPlaybackTime) + ((self.view.bounds.size.width/2)+36);
+    }
+
     _playbackLineView.backgroundColor = [UIColor clearColor];
     _playbackEdgeViewBG.backgroundColor = [UIColor clearColor];
         
