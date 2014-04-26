@@ -277,6 +277,7 @@
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) _showActions.on = YES; else _showActions.on = NO;
     if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) _albumArtColors.on = YES; else _albumArtColors.on = NO;
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
+    if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) _showMap.on = YES; else _showMap.on = NO;
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) _disableAutoLock.on = YES; else _disableAutoLock.on = NO;
 #ifdef FREE
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) _disableAdBanners.on = YES; else _disableAdBanners.on = NO;
@@ -1120,7 +1121,13 @@
 
 - (IBAction)showAlbumArtChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if (_showAlbumArt.on) [defaults setObject:@"YES" forKey:@"showAlbumArt"];
+    if (_showAlbumArt.on) {
+        [defaults setObject:@"YES" forKey:@"showAlbumArt"];
+        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+            [defaults setObject:@"NO" forKey:@"showMap"];
+            [_showMap setOn:NO];
+        }
+    }
     else [defaults setObject:@"NO" forKey:@"showAlbumArt"];
     [defaults synchronize];
 }
@@ -1168,4 +1175,15 @@
 }
 
 
+- (IBAction)showMapChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_showMap.on) {
+        [defaults setObject:@"YES" forKey:@"showMap"];
+        if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
+            [defaults setObject:@"NO" forKey:@"showAlbumArt"];
+            [_showAlbumArt setOn:NO];
+        }
+    } else [defaults setObject:@"NO" forKey:@"showMap"];
+    [defaults synchronize];
+}
 @end

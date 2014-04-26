@@ -57,6 +57,7 @@
     [defaults setObject:@"NO" forKey:@"GPSVolume"];
     [defaults setObject:@"0.5" forKey:@"GPSSensivity"];
     [defaults setObject:@"YES" forKey:@"showAlbumArt"];
+    [defaults setObject:@"NO" forKey:@"showMap"];
     [defaults setObject:@"YES" forKey:@"albumArtColors"];
     [defaults setObject:@"YES" forKey:@"showActions"];
     [defaults setObject:@"1" forKey:@"AlbumArtScale"];

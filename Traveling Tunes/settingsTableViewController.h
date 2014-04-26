@@ -148,6 +148,8 @@
 - (IBAction)albumArtScaleChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISlider *albumArtFade;
 - (IBAction)albumArtFadeChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *showMap;
+- (IBAction)showMapChanged:(id)sender;
 
 
 
