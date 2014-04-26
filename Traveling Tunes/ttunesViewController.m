@@ -134,17 +134,21 @@ int songTitleY = 0;
     }
     else { // side by side
         if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
-            _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
+            // the 'full' size produces an odd frame. compensate.
+            _albumArt.frame = CGRectMake(18,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
             _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
-            leftMargin = (self.view.bounds.size.width/2)+20;
+            leftMargin = (self.view.bounds.size.width/2)+40;
             topMargin = 20;
-            NSLog(@"margins are %d %d",leftMargin,topMargin);
+            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftMargin=leftMargin+20;  //adjust for wide/tall fit of album
         } else {
-            _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
+            // the 'full' size produces an odd frame. compensate.
+            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _albumArt.frame = CGRectMake(0,18, self.view.bounds.size.width,self.view.bounds.size.height/2);
+            else _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
             _map.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
-            topMargin = (self.view.bounds.size.height/2) +20;
+            topMargin = (self.view.bounds.size.height/2)+20;
             leftMargin = 20;
-            NSLog(@"margins are %d %d",leftMargin,topMargin);
+            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) topMargin=topMargin+60; //adjust for wide/tall fit of album
+            NSLog(@"scale button %@ art is %@",[defaults objectForKey:@"AlbumArtScale"],[defaults objectForKey:@"showAlbumArt"]);
         }
     }
     [self setupLabels];
@@ -549,7 +553,7 @@ int songTitleY = 0;
             if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _albumArt.alpha = 1;
             else _albumArt.alpha = [[defaults objectForKey:@"AlbumArtFade"] floatValue];
 
-            else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]) _albumArt.contentMode = UIViewContentModeScaleAspectFill;
+            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]) _albumArt.contentMode = UIViewContentModeScaleAspectFill;
             else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"1"]) _albumArt.contentMode = UIViewContentModeScaleAspectFit;
             //                _albumArt.contentMode = UIViewContentModeCenter;
             
@@ -767,7 +771,10 @@ int songTitleY = 0;
 - (void) drawCornerRegions {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & !UIInterfaceOrientationIsLandscape(_activeOrientation)) topMargin = (self.view.bounds.size.height/2)+20;
+    // if art is side-by-side, and not in landscape, set top margin to bottom half of view
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & !UIInterfaceOrientationIsLandscape(_activeOrientation) & [[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]) topMargin = (self.view.bounds.size.height/2)+58;
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & !UIInterfaceOrientationIsLandscape(_activeOrientation)) topMargin = (self.view.bounds.size.height/2)+20;
+    // or use basic top 20
     else topMargin = 20;
     bottomMargin = 20;
     bool topButtons = NO;
