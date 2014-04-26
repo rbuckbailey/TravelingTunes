@@ -315,15 +315,36 @@ int songTitleY = 0;
             _map = [[MKMapView alloc] initWithFrame: self.view.bounds];
             _map.delegate = self;
             [self.view addSubview:_map];
-            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
-            if (mapFade>1) mapFade = 1;
-            [_map setAlpha:mapFade];
+            [self bringTitlesToFront];
             _map.showsUserLocation=YES;
             _map.zoomEnabled = NO;
             _map.scrollEnabled = NO;
             _map.userInteractionEnabled = NO;
         }
+        float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
+        if (mapFade>1) mapFade = 1;
+        [_map setAlpha:mapFade];
     } else { [_map removeFromSuperview]; _map=NULL; }
+}
+
+- (void) bringTitlesToFront {
+    [self.view bringSubviewToFront:_edgeViewBG];
+    [self.view bringSubviewToFront:_playbackEdgeViewBG];
+    [self.view bringSubviewToFront:_lineView];
+    [self.view bringSubviewToFront:_playbackLineView];
+    [self.view bringSubviewToFront:_topLeftRegion];
+    [self.view bringSubviewToFront:_topCenterRegion];
+    [self.view bringSubviewToFront:_topRightRegion];
+    [self.view bringSubviewToFront:_bottomLeftRegion];
+    [self.view bringSubviewToFront:_bottomCenterRegion];
+    [self.view bringSubviewToFront:_bottomRightRegion];
+    
+    [self.view bringSubviewToFront:_artistTitle];
+    [self.view bringSubviewToFront:_songTitle];
+    [self.view bringSubviewToFront:_albumTitle];
+    
+    [self.view bringSubviewToFront:_actionHUD];
+    [self.view bringSubviewToFront:_nightTimeFade];
 }
 
 - (void)viewDidLoad
@@ -362,6 +383,8 @@ int songTitleY = 0;
     
     [self.view addSubview:_bgView];
     [self.view addSubview:_albumArt];
+    [self.view bringSubviewToFront:_map];
+    
     [self.view addSubview:_edgeViewBG];
     [self.view addSubview:_playbackEdgeViewBG];
     [self.view addSubview:_lineView];
@@ -376,8 +399,6 @@ int songTitleY = 0;
     [self.view addSubview:_artistTitle];
     [self.view addSubview:_songTitle];
     [self.view addSubview:_albumTitle];
-    
-    [self.view bringSubviewToFront:_map];
     
     [self.view addSubview:_actionHUD];
     [self.view addSubview:_nightTimeFade];
