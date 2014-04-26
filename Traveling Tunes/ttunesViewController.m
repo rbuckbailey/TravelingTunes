@@ -291,6 +291,9 @@ int songTitleY = 0;
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"])[self.gps startUpdatingLocation];
     else [self.gps stopUpdatingLocation];
     
+    // initialize map view
+    [self initMapView];
+    
     //disable sleep mode
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) { [[UIApplication sharedApplication] setIdleTimerDisabled:YES]; NSLog(@"sleep off"); }
     else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; NSLog(@"sleep on"); }
@@ -304,20 +307,31 @@ int songTitleY = 0;
     [mapView setRegion:mapRegion animated: NO];
 }
 
+- (void)initMapView{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+        if (_map==NULL) {
+            _map = [[MKMapView alloc] initWithFrame: self.view.bounds];
+            _map.delegate = self;
+            [self.view addSubview:_map];
+            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
+            if (mapFade>1) mapFade = 1;
+            [_map setAlpha:mapFade];
+            _map.showsUserLocation=YES;
+            _map.zoomEnabled = NO;
+            _map.scrollEnabled = NO;
+            _map.userInteractionEnabled = NO;
+        }
+    } else { [_map removeFromSuperview]; _map=NULL; }
+}
+
 - (void)viewDidLoad
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
     //initialized and not used for a good reason that I don't rememeber now
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
-
-    _map = [[MKMapView alloc] initWithFrame: self.view.bounds];
-    _map.delegate = self;
-    [self.view addSubview:_map];
-    float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*2; //fade map less than art b/c we want to see it
-    if (mapFade>1) mapFade = 1;
-    [_map setAlpha:mapFade];
-    _map.showsUserLocation=YES;
 
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
