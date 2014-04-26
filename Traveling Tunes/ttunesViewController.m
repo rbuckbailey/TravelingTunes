@@ -22,6 +22,11 @@ int topMargin = 20;
 int bottomMargin = 20;
 int albumTitleY = 0;
 int songTitleY = 0;
+int artistPosition = 0;
+int songPosition = 0;
+int albumPosition = 0;
+BOOL topButtons = NO;
+BOOL bottomButtons = NO;
 
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade,*bgView;
@@ -110,35 +115,6 @@ int songTitleY = 0;
     [self.navigationController pushViewController:self.pageController animated:YES];
 }
 
-- (void) setupFramesAndMargins {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) { // overlay
-        _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height);
-        _map.frame = self.view.bounds;
-        leftMargin = 20;
-    }
-    else { // side by side
-        if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
-            // the 'full' size produces an odd frame. compensate.
-            _albumArt.frame = CGRectMake(18,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
-            _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
-            leftMargin = (self.view.bounds.size.width/2)+40;
-            topMargin = 20;
-            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftMargin=leftMargin+20;  //adjust for wide/tall fit of album
-        } else {
-            // the 'full' size produces an odd frame. compensate.
-            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _albumArt.frame = CGRectMake(0,18, self.view.bounds.size.width,self.view.bounds.size.height/2);
-            else _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
-            _map.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
-            topMargin = (self.view.bounds.size.height/2)+20;
-            leftMargin = 20;
-            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) topMargin=topMargin+60; //adjust for wide/tall fit of album
-//            NSLog(@"scale button %@ art is %@",[defaults objectForKey:@"AlbumArtScale"],[defaults objectForKey:@"showAlbumArt"]);
-        }
-    }
-
-}
 
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
 {
@@ -709,7 +685,7 @@ int songTitleY = 0;
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    
+
     [self setupFramesAndMargins];
     
     // dim display if it's night and dim-at-night is on
@@ -781,6 +757,7 @@ int songTitleY = 0;
 
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & UIInterfaceOrientationIsLandscape(_activeOrientation) & [[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"])
         _artistTitle.frame = CGRectMake(leftMargin,topMargin+20,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & !UIInterfaceOrientationIsLandscape(_activeOrientation) & [[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"])        _artistTitle.frame = CGRectMake(leftMargin,topMargin+20,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
     else _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
     _artistTitle.numberOfLines = 1;
     _artistTitle.text   = artistString;
@@ -816,19 +793,65 @@ int songTitleY = 0;
 //        if (self.bannerIsVisible) _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -[self getBannerHeight]);
 
     if ([[defaults objectForKey:@"titleShrinkLong"] isEqual:@"YES"]) [self drawFittedText];
+}
+
+
+- (void) setupFramesAndMargins {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    leftMargin = 20;
+    rightMargin = 20;
+    topMargin = 20;
+    bottomMargin = 20;
+    
+    
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) { // overlay set up is simple
+        _artistTitle.frame = CGRectMake(leftMargin,topMargin,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
+        
+        artistPosition = topMargin;
+        songPosition = 0;
+        albumPosition = 0;
+        
+        _albumArt.frame = self.view.bounds;
+        _map.frame = self.view.bounds;
+    }
+    else { // side by side
+        if (UIInterfaceOrientationIsLandscape(_activeOrientation)) { // side by side landscape
+            leftMargin = (self.view.bounds.size.width/2)+20;
+            topMargin = 20;
+            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftMargin=leftMargin+40;  //if art scale is "fill" it is wider than "fit" or map view
+            else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"1"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftMargin=leftMargin+20;  //if art scale is "fill" it is wider than "fit" or map view
+            
+            _artistTitle.frame = CGRectMake(leftMargin,topMargin+20,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
+            
+            _albumArt.frame = CGRectMake(18,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
+            _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
+        } else { // side by side portrait
+            // the 'full' size produces an odd frame. compensate.
+            if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
+                topMargin = (self.view.bounds.size.height/2)+58;
+                _albumArt.frame = CGRectMake(0,18, self.view.bounds.size.width,self.view.bounds.size.height/2);
+            }
+            else {
+                topMargin = (self.view.bounds.size.height/2)+20;
+                _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
+            }
+            _map.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
+            leftMargin = 20;
+        }
+    }
+    _artistTitle.frame = CGRectMake(leftMargin,artistPosition,self.view.bounds.size.width-(leftMargin+rightMargin),(int)[[defaults objectForKey:@"artistFontSize"] floatValue]+15);
+    // adjust for edge HUD layouts
+    if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) bottomMargin=bottomMargin+15;
+    if ([[defaults objectForKey:@"HUDType"] isEqual:@"3"]) leftMargin=leftMargin+15;
+    
     [self drawCornerRegions];
 }
 
 - (void) drawCornerRegions {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    // if art is side-by-side, and not in landscape, set top margin to bottom half of view
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & !UIInterfaceOrientationIsLandscape(_activeOrientation) & [[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]) topMargin = (self.view.bounds.size.height/2)+58;
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"] & !UIInterfaceOrientationIsLandscape(_activeOrientation)) topMargin = (self.view.bounds.size.height/2)+20;
-    // or use basic top 20
-    else topMargin = 20;
-    bottomMargin = 20;
-    bool topButtons = NO;
+    topButtons = NO;
     if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) {
         _topLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"TopLeft"] ];
         if ([_topLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topLeftRegion.font = [UIFont systemFontOfSize:18]; else _topLeftRegion.font = [UIFont systemFontOfSize:30];
@@ -861,7 +884,6 @@ int songTitleY = 0;
         [_topRightRegion setAlpha:0.65f];
         topButtons = YES;
     } else _topRightRegion.text = @"";
-    if (topButtons) topMargin = topMargin+20;
 
     // bottom row
     int playbackBarMargin = 50;
