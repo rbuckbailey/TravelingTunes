@@ -177,11 +177,25 @@
         CFArrayRef allPeople = ABAddressBookCopyArrayOfAllPeople(addressBook);
         CFIndex nPeople= ABAddressBookGetPersonCount(addressBook);
         
+        CFMutableArrayRef peopleMutable = CFArrayCreateMutableCopy(
+                                                                   kCFAllocatorDefault,
+                                                                   CFArrayGetCount(allPeople),
+                                                                   allPeople
+                                                                   );
+        
+        CFArraySortValues(
+                          peopleMutable,
+                          CFRangeMake(0, CFArrayGetCount(peopleMutable)),
+                          (CFComparatorFunction) ABPersonComparePeopleByName,
+                          (void*) ABPersonGetSortOrdering()
+                          );
+        
         NSUInteger peopleCounter = 0;
         for (peopleCounter = 0;peopleCounter < nPeople; peopleCounter++)
         {
             
-            ABRecordRef thisPerson = CFArrayGetValueAtIndex(allPeople,peopleCounter);
+            ABRecordRef thisPerson = CFArrayGetValueAtIndex(peopleMutable,peopleCounter);
+            
             NSString *contactFirstLast = @"";
             
             if ((ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)|(ABRecordCopyValue(thisPerson, kABPersonLastNameProperty)!=NULL)) {
@@ -201,14 +215,15 @@
             if ((firstAddress!=NULL)&(contactFirstLast!=NULL)) {
                 [_temp addObject:firstAddress];
                 // filter out people with addresses but no street address
+//                NSLog(@"%@ lives on %@",ABRecordCopyValue(CFArrayGetValueAtIndex(allPeople,peopleCounter), kABPersonFirstNameProperty),ABRecordCopyValue(CFArrayGetValueAtIndex(peopleMutable,peopleCounter), kABPersonAddressProperty));
                 if ([[_temp objectAtIndex:current] objectForKey:@"Street"]) {
                     [_names addObject:contactFirstLast];
                     [_addresses addObject:firstAddress];
-                    current++;
 #ifdef DEBUG
 //                    NSLog(@"%lu: %@ at %@",(unsigned long)peopleCounter,contactFirstLast,firstAddress);
 #endif
                 }
+                current++;
             }
 
         }
