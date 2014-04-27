@@ -1124,10 +1124,10 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_showAlbumArt.on) {
         [defaults setObject:@"YES" forKey:@"showAlbumArt"];
-        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+/*        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
             [defaults setObject:@"NO" forKey:@"showMap"];
             [_showMap setOn:NO];
-        }
+        }*/
     }
     else [defaults setObject:@"NO" forKey:@"showAlbumArt"];
     [defaults synchronize];
@@ -1178,10 +1178,10 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_showMap.on) {
         [defaults setObject:@"YES" forKey:@"showMap"];
-        if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
+/*        if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
             [defaults setObject:@"NO" forKey:@"showAlbumArt"];
             [_showAlbumArt setOn:NO];
-        }
+        } */
     } else [defaults setObject:@"NO" forKey:@"showMap"];
     [defaults synchronize];
 }
