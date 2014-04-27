@@ -988,8 +988,9 @@ MKRoute *routeDetails;
     }
     else if ([action isEqual:@"IncreaseRating"]|[action isEqual:@"DecreaseRating"]) { MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; return [self ratingStars:rating]; }
     else if ([action isEqual:@"ShowQuickStart"]) return @"?⃝";
-//    else if ([action isEqual:@"NavigateHome"]) return @"\u2302";
-//    else if ([action isEqual:@"NavigateToContact"]) return @"\uD83D\uDC64";
+    else if ([action isEqual:@"NavigateHome"]) return @"\u2302";
+    else if ([action isEqual:@"NavigateToWork"]) return @"⚒";
+    else if ([action isEqual:@"NavigateToContact"]) return @"\u21ac";
     return action;
 }
 
@@ -1658,8 +1659,8 @@ MKRoute *routeDetails;
     else if ([action isEqual:@"IncreaseRating"]) [self increaseRating];
     else if ([action isEqual:@"ShowQuickStart"]) [self showInstructions];
     else if ([action isEqual:@"NavigateHome"]) [self navigateHome];
-    else if ([action isEqual:@"NavigateToContact"]) [self pickContactAddress];
     else if ([action isEqual:@"NavigateToWork"]) [self navigateToWork];
+    else if ([action isEqual:@"NavigateToContact"]) [self pickContactAddress];
 }
 
 -(void) toggleShuffle {
