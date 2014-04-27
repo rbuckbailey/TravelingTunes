@@ -47,6 +47,9 @@ BOOL bottomButtons = NO;
 
 @implementation ttunesViewController
 
+CLPlacemark *thePlacemark;
+MKRoute *routeDetails;
+
 
 /*** initialization and watchers ********************************************************************************************************************************************/
 
@@ -322,20 +325,14 @@ BOOL bottomButtons = NO;
                                        newHeading.trueHeading : newHeading.magneticHeading);
     _currentHeading = theHeading;
 //    [_map setTransform:CGAffineTransformMakeRotation(-1*newHeading.magneticHeading*3.14159/180)];*/
-    float rotation = -1.0f * M_PI * (newHeading.magneticHeading) / 180.0f; // or .trueHeading for GPS
+//    float rotation = -1.0f * M_PI * (newHeading.magneticHeading) / 180.0f; // or .trueHeading for GPS
 //	_map.transform = CGAffineTransformMakeRotation(rotation);
-
- for (UIView *aView in _map.subviews){
-        NSLog(@"view class: %@", aView.class);
-//        aView.transform= CGAffineTransformMakeRotation(rotation);
-
-//        if ([aView isKindOfClass:UIView]) NSLog(@"boop");
-    }
 }
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-    [_map.camera setAltitude:400+(_speedTier*10)];
+    [_map.camera setAltitude:1400+(_speedTier*10)];
+//    [_map.camera setAltitude:400+(_speedTier*10)];
     [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 }
 
@@ -1629,7 +1626,8 @@ BOOL bottomButtons = NO;
 
     NSLog(@"Performing action %@",action);
 
-    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
+//    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
+    if ([action isEqual:@"Unassigned"]) [self addressSearch:@"915 Whitney Ave Hamden CT"];
     else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self killAdBanner]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
@@ -1927,6 +1925,110 @@ BOOL bottomButtons = NO;
     int newRating = (int)[[song valueForKey:@"rating"] floatValue];
     if (newRating>0) newRating--;
     [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
+}
+
+- (void)addressSearch:(NSString *)address {
+    CLGeocoder *geocoder = [[CLGeocoder alloc] init];
+    [geocoder geocodeAddressString:address completionHandler:^(NSArray *placemarks, NSError *error) {
+        if (error) {
+            NSLog(@"%@", error);
+        } else {
+            thePlacemark = [placemarks lastObject];
+            float spanX = 1.00725;
+            float spanY = 1.00725;
+            MKCoordinateRegion region;
+            region.center.latitude = thePlacemark.location.coordinate.latitude;
+            region.center.longitude = thePlacemark.location.coordinate.longitude;
+            region.span = MKCoordinateSpanMake(spanX, spanY);
+            [_map setRegion:region animated:YES];
+            [self addAnnotation:thePlacemark];
+            [self drawRoute];
+        }
+    }];
+}
+
+- (void)addAnnotation:(CLPlacemark *)placemark {
+    MKPointAnnotation *point = [[MKPointAnnotation alloc] init];
+    point.coordinate = CLLocationCoordinate2DMake(placemark.location.coordinate.latitude, placemark.location.coordinate.longitude);
+    point.title = [placemark.addressDictionary objectForKey:@"Street"];
+    point.subtitle = [placemark.addressDictionary objectForKey:@"City"];
+    [_map addAnnotation:point];
+}
+
+-(MKAnnotationView *)mapView:(MKMapView *)mapView viewForAnnotation:(id<MKAnnotation>)annotation {
+    // If it's the user location, just return nil.
+    if ([annotation isKindOfClass:[MKUserLocation class]])
+        return nil;
+    // Handle any custom annotations.
+    if ([annotation isKindOfClass:[MKPointAnnotation class]]) {
+        // Try to dequeue an existing pin view first.
+        MKPinAnnotationView *pinView = (MKPinAnnotationView*)[_map dequeueReusableAnnotationViewWithIdentifier:@"CustomPinAnnotationView"];
+        if (!pinView)
+        {
+            // If an existing pin view was not available, create one.
+            pinView = [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"CustomPinAnnotationView"];
+            pinView.canShowCallout = YES;
+        } else {
+            pinView.annotation = annotation;
+        }
+        return pinView;
+    }
+    return nil;
+}
+
+- (IBAction)drawRoute {
+    MKDirectionsRequest *directionsRequest = [[MKDirectionsRequest alloc] init];
+    MKPlacemark *placemark = [[MKPlacemark alloc] initWithPlacemark:thePlacemark];
+    [directionsRequest setSource:[MKMapItem mapItemForCurrentLocation]];
+    [directionsRequest setDestination:[[MKMapItem alloc] initWithPlacemark:placemark]];
+    directionsRequest.transportType = MKDirectionsTransportTypeAutomobile;
+    MKDirections *directions = [[MKDirections alloc] initWithRequest:directionsRequest];
+    [directions calculateDirectionsWithCompletionHandler:^(MKDirectionsResponse *response, NSError *error) {
+        if (error) {
+            NSLog(@"Error %@", error.description);
+        } else {
+            routeDetails = response.routes.lastObject;
+            [_map addOverlay:routeDetails.polyline];
+            NSLog(@"Destination %@",[placemark.addressDictionary objectForKey:@"Street"]);
+            NSLog(@"Distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
+            NSLog(@"by %@",[NSString stringWithFormat:@"%u" ,routeDetails.transportType]);
+            for (int i = 0; i < routeDetails.steps.count; i++) {
+                MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
+                NSString *newStep = step.instructions;
+                NSLog(@"Route %@",newStep);
+            }
+            /*
+            self.destinationLabel.text = [placemark.addressDictionary objectForKey:@"Street"];
+            self.distanceLabel.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
+            self.transportLabel.text = [NSString stringWithFormat:@"%u" ,routeDetails.transportType];
+            self.allSteps = @"";
+            for (int i = 0; i < routeDetails.steps.count; i++) {
+                MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
+                NSString *newStep = step.instructions;
+                self.allSteps = [self.allSteps stringByAppendingString:newStep];
+                self.allSteps = [self.allSteps stringByAppendingString:@"\n\n"];
+                self.steps.text = self.allSteps;
+            }
+             */
+        }
+             
+    }];
+}
+
+-(MKOverlayRenderer *)mapView:(MKMapView *)mapView rendererForOverlay:(id<MKOverlay>)overlay {
+    MKPolylineRenderer  * routeLineRenderer = [[MKPolylineRenderer alloc] initWithPolyline:routeDetails.polyline];
+    routeLineRenderer.strokeColor = [UIColor redColor];
+    routeLineRenderer.lineWidth = 5;
+    return routeLineRenderer;
+}
+
+- (void)clearRoute {
+/*    self.destinationLabel.text = nil;
+    self.distanceLabel.text = nil;
+    self.transportLabel.text = nil;
+    self.steps.text = nil;
+ */
+    [_map removeOverlay:routeDetails.polyline];
 }
 
 @end
