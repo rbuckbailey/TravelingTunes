@@ -359,11 +359,8 @@ BOOL bottomButtons = NO;
         // max opacity of map if there is art
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
         if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
-            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*3; //*3; //fade map less than art b/c we want to see it
-            if (mapFade>0.75) mapFade = 0.75;  //never completely fade out text
-            // unless both are on display, b/c left-side map should be at full alpha
-            if ([artwork imageWithSize:CGSizeMake(50,50)]) [_map setAlpha:1];
-            else [_map setAlpha:mapFade];
+            // if both are on display,  left-side map should be at full alpha
+            [_map setAlpha:1];
         }
         else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
@@ -1763,8 +1760,8 @@ BOOL bottomButtons = NO;
     float textWidth = [_songTitle.text sizeWithFont:_songTitle.font].width;
     _marqueePosition=_marqueePosition+2;
     _adjustedSongFontSize = _songTitle.font.pointSize;
-    _songTitle.frame=CGRectMake(20-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
-    if (_marqueePosition>= textWidth+20) {
+    _songTitle.frame=CGRectMake(leftMargin-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
+    if (_marqueePosition-leftMargin >= textWidth) {
         [self scrollingTimerKiller];
         [self marqueeTimerKiller];
         _songTitle.frame=CGRectMake(leftMargin, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
