@@ -29,6 +29,7 @@
 		F435F9FE18E229D300C71345 /* playlistTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F435F9FD18E229D300C71345 /* playlistTableViewController.m */; };
 		F475CEA118F7739B00D92CDE /* quickstartViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F475CEA018F7739B00D92CDE /* quickstartViewController.m */; };
 		F47D029B190D5CED00E5FBEF /* contactsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029A190D5CED00E5FBEF /* contactsTableViewController.m */; };
+		F47D029E190D76B300E5FBEF /* contactsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029D190D76B300E5FBEF /* contactsTableViewCell.m */; };
 		F4B3B3C018F9815D0079C334 /* quick start 3p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BC18F9815D0079C334 /* quick start 3p.png */; };
 		F4B3B3C118F9815D0079C334 /* quick start 2p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BD18F9815D0079C334 /* quick start 2p.png */; };
 		F4B3B3C218F9815D0079C334 /* quick start 1p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BE18F9815D0079C334 /* quick start 1p.png */; };
@@ -115,6 +116,8 @@
 		F475CEA018F7739B00D92CDE /* quickstartViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = quickstartViewController.m; sourceTree = "<group>"; };
 		F47D0299190D5CED00E5FBEF /* contactsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = contactsTableViewController.h; sourceTree = "<group>"; };
 		F47D029A190D5CED00E5FBEF /* contactsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = contactsTableViewController.m; sourceTree = "<group>"; };
+		F47D029C190D76B300E5FBEF /* contactsTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = contactsTableViewCell.h; sourceTree = "<group>"; };
+		F47D029D190D76B300E5FBEF /* contactsTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = contactsTableViewCell.m; sourceTree = "<group>"; };
 		F4B3B3BC18F9815D0079C334 /* quick start 3p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 3p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 3p.png"; sourceTree = "<group>"; };
 		F4B3B3BD18F9815D0079C334 /* quick start 2p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 2p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 2p.png"; sourceTree = "<group>"; };
 		F4B3B3BE18F9815D0079C334 /* quick start 1p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 1p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 1p.png"; sourceTree = "<group>"; };
@@ -266,6 +269,8 @@
 				F435F9FD18E229D300C71345 /* playlistTableViewController.m */,
 				F41E16E418E9134D004FDB4F /* playlistTableViewCell.h */,
 				F41E16E518E9134D004FDB4F /* playlistTableViewCell.m */,
+				F47D029C190D76B300E5FBEF /* contactsTableViewCell.h */,
+				F47D029D190D76B300E5FBEF /* contactsTableViewCell.m */,
 				F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */,
 				F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */,
 				F475CE9F18F7739B00D92CDE /* quickstartViewController.h */,
@@ -491,6 +496,7 @@
 				F4DA1FC418FAEF4400C018EC /* playlistTableViewCell.m in Sources */,
 				F4DA1FC518FAEF4400C018EC /* LEColorPicker.m in Sources */,
 				F4DA1FC618FAEF4400C018EC /* ttunesViewController.m in Sources */,
+				F47D029E190D76B300E5FBEF /* contactsTableViewCell.m in Sources */,
 				F4DA1FC718FAEF4400C018EC /* main.m in Sources */,
 				F4DA1FC818FAEF4400C018EC /* ttunesNavViewController.m in Sources */,
 				F4DA1FC918FAEF4400C018EC /* UIColor+YUVSpace.m in Sources */,

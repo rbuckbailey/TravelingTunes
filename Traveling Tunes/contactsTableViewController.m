@@ -7,6 +7,7 @@
 //
 
 #import "contactsTableViewController.h"
+#import "contactsTableViewCell.h"
 
 @interface contactsTableViewController ()
 
@@ -63,62 +64,49 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"contactCell" forIndexPath:indexPath];
+   
+    contactsTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"contactCell" forIndexPath:indexPath];
+    if (cell == nil) {
+        cell = [[contactsTableViewCell alloc]
+                initWithStyle:UITableViewCellStyleDefault
+                reuseIdentifier:@"contactCell"];
+    }
+    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]);
     
     // Configure the cell...
+    cell.nameLabel.frame = CGRectMake(10,10,self.view.bounds.size.width-10,20);
+    [cell.nameLabel setTextColor:[UIColor blackColor]];
+    [cell.nameLabel setBackgroundColor:[UIColor clearColor]];
+    [cell.nameLabel setFont:[UIFont systemFontOfSize: 18.0f]];
+    cell.nameLabel.text = [_names objectAtIndex:[indexPath row]];
     
+    [cell.addressLabel setTextColor:[UIColor lightGrayColor]];
+    [cell.addressLabel setBackgroundColor:[UIColor clearColor]];
+    [cell.addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
+    cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+20, 10, self.view.bounds.size.width-20, 20);
+    NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"Street"]];
+    if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"])
+        fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"]]];
+    if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"State"])
+        fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"State"]]];
+    [fullAddress stringByAppendingString:@"foo"];
+    cell.addressLabel.text = fullAddress;
+/*
+    UILabel *addressLabel = [[UILabel alloc] initWithFrame:CGRectMake([nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+20, 10, self.view.bounds.size.width-20, 20)];
+    [addressLabel setTextColor:[UIColor lightGrayColor]];
+    [addressLabel setBackgroundColor:[UIColor clearColor]];
+    [addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
+    NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"Street"]];
+    if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"])
+        fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"]]];
+    if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"State"])
+        fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"State"]]];
+    [fullAddress stringByAppendingString:@"foo"];
+    addressLabel.text = fullAddress;
+    [cell addSubview:addressLabel];
+*/
     return cell;
 }
-
-
-/*
-// Override to support conditional editing of the table view.
-- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    // Return NO if you do not want the specified item to be editable.
-    return YES;
-}
-*/
-
-/*
-// Override to support editing the table view.
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    if (editingStyle == UITableViewCellEditingStyleDelete) {
-        // Delete the row from the data source
-        [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-    } else if (editingStyle == UITableViewCellEditingStyleInsert) {
-        // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-    }   
-}
-*/
-
-/*
-// Override to support rearranging the table view.
-- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
-{
-}
-*/
-
-/*
-// Override to support conditional rearranging of the table view.
-- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    // Return NO if you do not want the item to be re-orderable.
-    return YES;
-}
-*/
-
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
-{
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-}
-*/
 
 -(void)listContacts {
     __block BOOL userDidGrantAddressBookAccess;
@@ -163,7 +151,7 @@
             
             if ((ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)|(ABRecordCopyValue(thisPerson, kABPersonLastNameProperty)!=NULL)) {
                 if ((ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)&(ABRecordCopyValue(thisPerson, kABPersonLastNameProperty)!=NULL))
-                    contactFirstLast = [NSString stringWithFormat:@"%@,%@",ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty), ABRecordCopyValue(thisPerson,kABPersonLastNameProperty)];
+                    contactFirstLast = [NSString stringWithFormat:@"%@, %@",ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty), ABRecordCopyValue(thisPerson,kABPersonLastNameProperty)];
                 else if (ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)
                     contactFirstLast = [NSString stringWithFormat:@"%@",ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)];
                 else if (ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)
@@ -187,5 +175,57 @@
     }
 
 }
+
+
+
+/*
+ // Override to support conditional editing of the table view.
+ - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
+ {
+ // Return NO if you do not want the specified item to be editable.
+ return YES;
+ }
+ */
+
+/*
+ // Override to support editing the table view.
+ - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+ {
+ if (editingStyle == UITableViewCellEditingStyleDelete) {
+ // Delete the row from the data source
+ [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+ } else if (editingStyle == UITableViewCellEditingStyleInsert) {
+ // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
+ }
+ }
+ */
+
+/*
+ // Override to support rearranging the table view.
+ - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
+ {
+ }
+ */
+
+/*
+ // Override to support conditional rearranging of the table view.
+ - (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
+ {
+ // Return NO if you do not want the item to be re-orderable.
+ return YES;
+ }
+ */
+
+/*
+ #pragma mark - Navigation
+ 
+ // In a storyboard-based application, you will often want to do a little preparation before navigation
+ - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
+ {
+ // Get the new view controller using [segue destinationViewController].
+ // Pass the selected object to the new view controller.
+ }
+ */
+
 
 @end
