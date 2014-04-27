@@ -63,6 +63,8 @@
     [defaults setObject:@"0" forKey:@"AlbumArtScale"];
     [defaults setObject:@"YES" forKey:@"disableAutolock"];
     [defaults setObject:@"0" forKey:@"ArtDisplayLayout"];
+    [defaults setObject:@"14 N Moore St, New York, NY" forKey:@"homeAddress"];
+    [defaults setObject:@"narf!" forKey:@"destinationAddress"];
 }
 
 - (void)initDisplaySettings {

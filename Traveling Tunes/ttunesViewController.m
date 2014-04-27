@@ -314,6 +314,12 @@ MKRoute *routeDetails;
     //disable sleep mode
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) { [[UIApplication sharedApplication] setIdleTimerDisabled:YES]; NSLog(@"sleep off"); }
     else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; NSLog(@"sleep on"); }
+    
+    //if there's an address to navigate to, do that
+    if (![[defaults objectForKey:@"destinationAddress"] isEqual:@"narf!"]) {
+        [self addressSearch:[defaults objectForKey:@"destinationAddress"]];
+        [defaults setObject:@"narf!" forKey:@"destinationAddress"];
+    }
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateHeading:(CLHeading *)newHeading {
@@ -1627,7 +1633,8 @@ MKRoute *routeDetails;
     NSLog(@"Performing action %@",action);
 
 //    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
-    if ([action isEqual:@"Unassigned"]) [self addressSearch:@"915 Whitney Ave Hamden CT"];
+//    if ([action isEqual:@"Unassigned"]) [self navigateHome];
+    if ([action isEqual:@"Unassigned"]) [self pickContactAddress];
     else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self killAdBanner]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
@@ -1929,6 +1936,7 @@ MKRoute *routeDetails;
 
 - (void)addressSearch:(NSString *)address {
     CLGeocoder *geocoder = [[CLGeocoder alloc] init];
+    NSLog(@"navigating to %@",address);
     [geocoder geocodeAddressString:address completionHandler:^(NSArray *placemarks, NSError *error) {
         if (error) {
             NSLog(@"%@", error);
@@ -1937,10 +1945,11 @@ MKRoute *routeDetails;
             float spanX = 1.00725;
             float spanY = 1.00725;
             MKCoordinateRegion region;
-            region.center.latitude = thePlacemark.location.coordinate.latitude;
+/*            region.center.latitude = thePlacemark.location.coordinate.latitude;
             region.center.longitude = thePlacemark.location.coordinate.longitude;
             region.span = MKCoordinateSpanMake(spanX, spanY);
             [_map setRegion:region animated:YES];
+ */
             [self addAnnotation:thePlacemark];
             [self drawRoute];
         }
@@ -1997,21 +2006,7 @@ MKRoute *routeDetails;
                 NSString *newStep = step.instructions;
                 NSLog(@"Route %@",newStep);
             }
-            /*
-            self.destinationLabel.text = [placemark.addressDictionary objectForKey:@"Street"];
-            self.distanceLabel.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
-            self.transportLabel.text = [NSString stringWithFormat:@"%u" ,routeDetails.transportType];
-            self.allSteps = @"";
-            for (int i = 0; i < routeDetails.steps.count; i++) {
-                MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
-                NSString *newStep = step.instructions;
-                self.allSteps = [self.allSteps stringByAppendingString:newStep];
-                self.allSteps = [self.allSteps stringByAppendingString:@"\n\n"];
-                self.steps.text = self.allSteps;
-            }
-             */
         }
-             
     }];
 }
 
@@ -2029,6 +2024,30 @@ MKRoute *routeDetails;
     self.steps.text = nil;
  */
     [_map removeOverlay:routeDetails.polyline];
+}
+
+- (void) navigateHome {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self addressSearch:[defaults objectForKey:@"homeAddress"]];
+}
+
+- (void) pickContactAddress {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self scrubTimerKiller];
+    [self performSegueWithIdentifier: @"openContacts" sender: self];
+}
+
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
+{
+    // Get the new view controller using [segue destinationViewController].
+    settingsTableViewController *destination = [segue destinationViewController];
+    
+    // set up passthrough for subsequent view controller
+    NSMutableDictionary *passthrough = [NSMutableDictionary dictionary];
+    
+    //preserve data from higher menus in passthrough dictionary
+    [passthrough setObject:@"openContacts" forKey:@"sender"];
+    destination.passthrough = passthrough;
 }
 
 @end

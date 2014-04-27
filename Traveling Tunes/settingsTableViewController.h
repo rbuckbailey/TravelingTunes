@@ -191,6 +191,7 @@
 - (IBAction)invertAtNightChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISwitch *showActions;
 - (IBAction)showActionsChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UILabel *homeAddressLabel;
 
 
 

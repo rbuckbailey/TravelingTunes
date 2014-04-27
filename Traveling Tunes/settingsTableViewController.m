@@ -223,6 +223,7 @@
         labelText = [[NSString stringWithFormat:@"%i",(int)([[defaults objectForKey:@"SunRiseHour"] floatValue])] stringByAppendingString:@" pm"];
     else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
     _sunRiseLabel.text = labelText;
+    _homeAddressLabel.text = [defaults objectForKey:@"homeAddress"];
 
     _defaultPlaylistLabel.text = [defaults objectForKey:@"playlist"];
     
@@ -283,7 +284,6 @@
 #ifdef FREE
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) _disableAdBanners.on = YES; else _disableAdBanners.on = NO;
 #endif
-    
 }
 
 - (void) popToRoot {

@@ -8,6 +8,7 @@
 
 #import "contactsTableViewController.h"
 #import "contactsTableViewCell.h"
+#import "ttunesViewController.h"
 
 @interface contactsTableViewController ()
 
@@ -75,7 +76,7 @@
     NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]);
     
     // Configure the cell...
-    cell.nameLabel.frame = CGRectMake(10,10,self.view.bounds.size.width-10,20);
+    cell.nameLabel.frame = CGRectMake(20,10,self.view.bounds.size.width-20,20);
     [cell.nameLabel setTextColor:[UIColor blackColor]];
     [cell.nameLabel setBackgroundColor:[UIColor clearColor]];
     [cell.nameLabel setFont:[UIFont systemFontOfSize: 18.0f]];
@@ -84,7 +85,7 @@
     [cell.addressLabel setTextColor:[UIColor lightGrayColor]];
     [cell.addressLabel setBackgroundColor:[UIColor clearColor]];
     [cell.addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
-    cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+20, 10, self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+20, 20);
+    cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+30, 10, (self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width)-40, 20);
     NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"Street"]];
     if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"])
         fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"]]];
@@ -107,6 +108,25 @@
     [cell addSubview:addressLabel];
 */
     return cell;
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
+    contactsTableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    NSString *cellText = cell.addressLabel.text;
+    
+    // if called from "pick contact" action, set navigation destination
+    if ([[_passthrough objectForKey:@"sender"] isEqual:@"openContacts"]) {
+        NSLog(@"called from view controller");
+        [defaults setObject:cell.addressLabel.text forKey:@"destinationAddress"];
+        [defaults synchronize];
+    } else { // if called from settings pane, set home to new address
+        [defaults setObject:cellText forKey:@"homeAddress"];
+        NSLog(@"set home to %@",[defaults objectForKey:@"homeAddress"]);
+        [defaults synchronize];
+    }
+    [self.navigationController popViewControllerAnimated:YES];
 }
 
 -(void)listContacts {
@@ -173,7 +193,7 @@
                     [_addresses addObject:firstAddress];
                     current++;
 #ifdef DEBUG
-                    NSLog(@"%lu: %@ at %@",(unsigned long)peopleCounter,contactFirstLast,firstAddress);
+//                    NSLog(@"%lu: %@ at %@",(unsigned long)peopleCounter,contactFirstLast,firstAddress);
 #endif
                 }
             }

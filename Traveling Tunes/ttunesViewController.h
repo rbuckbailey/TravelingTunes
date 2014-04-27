@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <MediaPlayer/MediaPlayer.h>
 #import "gestureAssignmentController.h"
+#import "contactsTableViewController.h"
 #import <CoreLocation/CoreLocation.h>
 #import "LEColorPicker.h"
 #import <iAd/iAd.h>
