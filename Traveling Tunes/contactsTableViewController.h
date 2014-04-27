@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <AddressBook/AddressBook.h>
 
-@interface contactsTableViewController : UITableViewController
+@interface contactsTableViewController : UITableViewController <UITextFieldDelegate>
 @property NSMutableDictionary *passthrough;
 @property NSMutableArray *names;// = [[NSMutableArray alloc] init];
 @property NSMutableArray *addresses;// = [[NSMutableArray alloc] init];

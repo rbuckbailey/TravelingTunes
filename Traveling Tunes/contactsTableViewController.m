@@ -63,50 +63,55 @@
     return [_names count];
 }
 
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [textField resignFirstResponder];
+    
+    [defaults setObject:textField.text forKey:@"destinationAddress"];
+    [defaults synchronize];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+    [self.tableView selectRowAtIndexPath:indexPath animated:YES scrollPosition:UITableViewScrollPositionNone];
+    [self tableView:self.tableView didSelectRowAtIndexPath:indexPath];
+    return YES;
+}
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   
-    contactsTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"contactCell" forIndexPath:indexPath];
-    if (cell == nil) {
-        cell = [[contactsTableViewCell alloc]
-                initWithStyle:UITableViewCellStyleDefault
-                reuseIdentifier:@"contactCell"];
+    NSString *cellType = @"textEntryCell";
+    if ([indexPath row]>0) cellType = @"contactCell";
+        contactsTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellType forIndexPath:indexPath];
+        if (cell == nil) {
+            cell = [[contactsTableViewCell alloc]
+                    initWithStyle:UITableViewCellStyleDefault
+                    reuseIdentifier:cellType];
+        }
+    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]+1);
+    
+    if ([indexPath row]==0) {
+//        [cell.textField bind:@"value" toObject:self withKeyPath:@"self.textFieldString" options:nil];
+        cell.textField.delegate = self;
+
     }
-    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]);
-    
+    if ([indexPath row]>0) {
     // Configure the cell...
-    cell.nameLabel.frame = CGRectMake(20,10,self.view.bounds.size.width-20,20);
-    [cell.nameLabel setTextColor:[UIColor blackColor]];
-    [cell.nameLabel setBackgroundColor:[UIColor clearColor]];
-    [cell.nameLabel setFont:[UIFont systemFontOfSize: 18.0f]];
-    cell.nameLabel.text = [_names objectAtIndex:[indexPath row]];
+        cell.nameLabel.frame = CGRectMake(20,10,self.view.bounds.size.width-20,20);
+        [cell.nameLabel setTextColor:[UIColor blackColor]];
+        [cell.nameLabel setBackgroundColor:[UIColor clearColor]];
+        [cell.nameLabel setFont:[UIFont systemFontOfSize: 18.0f]];
+        cell.nameLabel.text = [_names objectAtIndex:[indexPath row]+1];
     
-    [cell.addressLabel setTextColor:[UIColor lightGrayColor]];
-    [cell.addressLabel setBackgroundColor:[UIColor clearColor]];
-    [cell.addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
-    cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+30, 10, (self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width)-40, 20);
-    NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"Street"]];
-    if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"])
-        fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"]]];
-    if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"State"])
-        fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"State"]]];
-    [fullAddress stringByAppendingString:@"foo"];
-    cell.addressLabel.text = fullAddress;
-/*
-    UILabel *addressLabel = [[UILabel alloc] initWithFrame:CGRectMake([nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+20, 10, self.view.bounds.size.width-20, 20)];
-    [addressLabel setTextColor:[UIColor lightGrayColor]];
-    [addressLabel setBackgroundColor:[UIColor clearColor]];
-    [addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
-    NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"Street"]];
-    if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"])
-        fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"]]];
-    if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"State"])
-        fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"State"]]];
-    [fullAddress stringByAppendingString:@"foo"];
-    addressLabel.text = fullAddress;
-    [cell addSubview:addressLabel];
-*/
+        [cell.addressLabel setTextColor:[UIColor lightGrayColor]];
+        [cell.addressLabel setBackgroundColor:[UIColor clearColor]];
+        [cell.addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
+        cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+30, 10, (self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width)-40, 20);
+        NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"Street"]];
+        if ([[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"City"])
+            fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"City"]]];
+        if ([[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"State"])
+            fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"State"]]];
+        cell.addressLabel.text = fullAddress;
+    }
+    
     return cell;
 }
 
@@ -117,14 +122,22 @@
     NSString *cellText = cell.addressLabel.text;
     
     // if called from "pick contact" action, set navigation destination
-    if ([[_passthrough objectForKey:@"sender"] isEqual:@"openContacts"]) {
-        NSLog(@"called from view controller");
-        [defaults setObject:cell.addressLabel.text forKey:@"destinationAddress"];
-        [defaults synchronize];
-    } else { // if called from settings pane, set home to new address
-        [defaults setObject:cellText forKey:@"homeAddress"];
-        NSLog(@"set home to %@",[defaults objectForKey:@"homeAddress"]);
-        [defaults synchronize];
+    switch ([indexPath row]) {
+        case 0:
+            [defaults setObject:cell.textField.text forKey:@"destinationAddress"];
+            [defaults synchronize];
+            break;
+        default:
+            if ([[_passthrough objectForKey:@"sender"] isEqual:@"openContacts"]) {
+                NSLog(@"called from view controller");
+                [defaults setObject:cell.addressLabel.text forKey:@"destinationAddress"];
+                [defaults synchronize];
+            } else { // if called from settings pane, set home to new address
+                [defaults setObject:cellText forKey:@"homeAddress"];
+                NSLog(@"set home to %@",[defaults objectForKey:@"homeAddress"]);
+                [defaults synchronize];
+            }
+            break;
     }
     [self.navigationController popViewControllerAnimated:YES];
 }
