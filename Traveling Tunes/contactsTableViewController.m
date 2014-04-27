@@ -30,6 +30,7 @@
     
     _names = [[NSMutableArray alloc] init];
     _addresses = [[NSMutableArray alloc] init];
+    _temp = [[NSMutableArray alloc] init];
 
     [self listContacts];
     
@@ -83,7 +84,7 @@
     [cell.addressLabel setTextColor:[UIColor lightGrayColor]];
     [cell.addressLabel setBackgroundColor:[UIColor clearColor]];
     [cell.addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
-    cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+20, 10, self.view.bounds.size.width-20, 20);
+    cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+20, 10, self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+20, 20);
     NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"Street"]];
     if ([[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"])
         fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]] objectForKey:@"City"]]];
@@ -109,6 +110,7 @@
 }
 
 -(void)listContacts {
+    int current = 0;
     __block BOOL userDidGrantAddressBookAccess;
     CFErrorRef addressBookError = NULL;
     ABAddressBookRef addressBook = ABAddressBookCreateWithOptions(NULL, NULL);
@@ -164,11 +166,16 @@
             
             // now that we have a name and address, only add to the list if the address is not null
             if ((firstAddress!=NULL)&(contactFirstLast!=NULL)) {
-                [_names addObject:contactFirstLast];
-                [_addresses addObject:firstAddress];
+                [_temp addObject:firstAddress];
+                // filter out people with addresses but no street address
+                if ([[_temp objectAtIndex:current] objectForKey:@"Street"]) {
+                    [_names addObject:contactFirstLast];
+                    [_addresses addObject:firstAddress];
+                    current++;
 #ifdef DEBUG
-                NSLog(@"%lu: %@ at %@",(unsigned long)peopleCounter,contactFirstLast,firstAddress);
+                    NSLog(@"%lu: %@ at %@",(unsigned long)peopleCounter,contactFirstLast,firstAddress);
 #endif
+                }
             }
 
         }

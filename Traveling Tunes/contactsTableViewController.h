@@ -12,5 +12,6 @@
 @interface contactsTableViewController : UITableViewController
 @property NSMutableArray *names;// = [[NSMutableArray alloc] init];
 @property NSMutableArray *addresses;// = [[NSMutableArray alloc] init];
+@property NSMutableArray *temp;// = [[NSMutableArray alloc] init];
 
 @end
