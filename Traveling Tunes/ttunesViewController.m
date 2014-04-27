@@ -838,8 +838,10 @@ BOOL bottomButtons = NO;
             
             _albumArt.frame = CGRectMake(18,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
             _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
-            if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"])
+            if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(self.view.bounds.size.width/2,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
+                leftMargin = (self.view.bounds.size.width/2)+20;
+            }
         } else { // side by side portrait
             // the 'full' size produces an odd frame. compensate.
             if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
