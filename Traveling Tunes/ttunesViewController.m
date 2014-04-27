@@ -653,11 +653,13 @@ BOOL bottomButtons = NO;
         int scrubLeft = 0;
         if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
             if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
-                if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubLeft = (self.view.bounds.size.width/2)+36;
+                if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubLeft = (self.view.bounds.size.width/2);
+                else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubLeft = (self.view.bounds.size.width/2)+36;
                 else scrubLeft = (self.view.bounds.size.width/2);
                 playbackPosition = ((self.view.bounds.size.width/2)-36)*([mediaPlayer currentPlaybackTime]/totalPlaybackTime) + scrubLeft;
             } else {
-                scrubTop = (self.view.bounds.size.height/2)+36;
+                if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubTop = (self.view.bounds.size.height/2);
+                    else scrubTop = (self.view.bounds.size.height/2)+36;
             }
         }
 
@@ -853,9 +855,11 @@ BOOL bottomButtons = NO;
                 _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
             }
             _map.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
-            if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"])
+            if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(0,self.view.bounds.size.height/2, self.view.bounds.size.width,self.view.bounds.size.height/2);
-            leftMargin = 20;
+                topMargin = (self.view.bounds.size.height/2)+20;
+                leftMargin = 20;
+            }
         }
     }
     // adjust for edge HUD layouts
@@ -1194,9 +1198,11 @@ BOOL bottomButtons = NO;
     //setup for rectangle drawing display
     int leftSide = 0;
     int topSide = 0;
+    
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) {
         // if fill scale, which is big, swell up 36px
-        if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftSide=self.view.bounds.size.width/2+36;
+        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftSide=self.view.bounds.size.width/2;
+        else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftSide=self.view.bounds.size.width/2+36;
         else leftSide=self.view.bounds.size.width/2;
     }
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation)) topSide=self.view.bounds.size.height/2+36;
