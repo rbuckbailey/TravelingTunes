@@ -337,9 +337,9 @@ MKRoute *routeDetails;
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-    [_map.camera setAltitude:1400+(_speedTier*10)];
-//    [_map.camera setAltitude:400+(_speedTier*10)];
-    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
+//    [_map.camera setAltitude:1400+(_speedTier*10)];
+    [_map.camera setAltitude:400+(_speedTier*10)];
+//    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 }
 
 - (void)initMapView{
@@ -357,6 +357,7 @@ MKRoute *routeDetails;
             _map.zoomEnabled = NO;
             _map.scrollEnabled = NO;
             _map.userInteractionEnabled = NO;
+            [_map setUserTrackingMode:MKUserTrackingModeFollow animated:YES];
             [self startGPSHeading];
         }
         // max opacity of map if there is art
@@ -986,7 +987,8 @@ MKRoute *routeDetails;
     }
     else if ([action isEqual:@"IncreaseRating"]|[action isEqual:@"DecreaseRating"]) { MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; return [self ratingStars:rating]; }
     else if ([action isEqual:@"ShowQuickStart"]) return @"?⃝";
-
+//    else if ([action isEqual:@"NavigateHome"]) return @"\u2302";
+//    else if ([action isEqual:@"NavigateToContact"]) return @"\uD83D\uDC64";
     return action;
 }
 
@@ -1632,9 +1634,7 @@ MKRoute *routeDetails;
 
     NSLog(@"Performing action %@",action);
 
-//    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
-//    if ([action isEqual:@"Unassigned"]) [self navigateHome];
-    if ([action isEqual:@"Unassigned"]) [self pickContactAddress];
+    if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self killAdBanner]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
@@ -1656,6 +1656,8 @@ MKRoute *routeDetails;
     else if ([action isEqual:@"DecreaseRating"]) [self decreaseRating];
     else if ([action isEqual:@"IncreaseRating"]) [self increaseRating];
     else if ([action isEqual:@"ShowQuickStart"]) [self showInstructions];
+    else if ([action isEqual:@"NavigateHome"]) [self navigateHome];
+    else if ([action isEqual:@"NavigateToContact"]) [self pickContactAddress];
 }
 
 -(void) toggleShuffle {
@@ -1986,6 +1988,8 @@ MKRoute *routeDetails;
 }
 
 - (IBAction)drawRoute {
+    [_map removeOverlay:routeDetails.polyline];
+
     MKDirectionsRequest *directionsRequest = [[MKDirectionsRequest alloc] init];
     MKPlacemark *placemark = [[MKPlacemark alloc] initWithPlacemark:thePlacemark];
     [directionsRequest setSource:[MKMapItem mapItemForCurrentLocation]];

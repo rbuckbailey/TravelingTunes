@@ -451,6 +451,8 @@
     else if (selection == _increaseRating) [self configure:@"IncreaseRating"];
     else if (selection == _decreaseRating) [self configure:@"DecreaseRating"];
     else if (selection == _ShowQuickStart) [self configure:@"ShowQuickStart"];
+    else if (selection == _navigateHome) [self configure:@"NavigateHome"];
+    else if (selection == _navigateToContact) [self configure:@"NavigateToContact"];
     else if (selection == _Menu) [self configure:@"Menu"];
 
     // "reset" buttons
@@ -872,6 +874,8 @@
         _increaseRatingCheck.textColor = [UIColor whiteColor];
         _decreaseRatingCheck.textColor = [UIColor whiteColor];
         _ShowQuickStartCheck.textColor = [UIColor whiteColor];
+        _navigateHomeCheck.textColor = [UIColor whiteColor];
+        _navigateToContactCheck.textColor = [UIColor whiteColor];
 
         if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
@@ -895,6 +899,8 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"IncreaseRating"]) _increaseRatingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"DecreaseRating"]) _decreaseRatingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"ShowQuickStart"]) _ShowQuickStartCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateHome"]) _navigateHomeCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateToContact"]) _navigateToContactCheck.textColor = [UIColor blackColor];
     }
 }
 

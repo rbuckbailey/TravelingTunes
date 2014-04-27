@@ -56,6 +56,8 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *increaseRating;
 @property (weak, nonatomic) IBOutlet UITableViewCell *decreaseRating;
 @property (weak, nonatomic) IBOutlet UITableViewCell *ShowQuickStart;
+@property (weak, nonatomic) IBOutlet UITableViewCell *navigateToContact;
+@property (weak, nonatomic) IBOutlet UITableViewCell *navigateHome;
 
 
 @property (weak, nonatomic) IBOutlet UILabel *nothingCheck;
@@ -80,6 +82,8 @@
 @property (weak, nonatomic) IBOutlet UILabel *increaseRatingCheck;
 @property (weak, nonatomic) IBOutlet UILabel *decreaseRatingCheck;
 @property (weak, nonatomic) IBOutlet UILabel *ShowQuickStartCheck;
+@property (weak, nonatomic) IBOutlet UILabel *navigateToContactCheck;
+@property (weak, nonatomic) IBOutlet UILabel *navigateHomeCheck;
 
 // display settings outlets
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;
