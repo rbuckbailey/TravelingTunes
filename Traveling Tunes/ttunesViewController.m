@@ -358,7 +358,7 @@ BOOL bottomButtons = NO;
         }
         // max opacity of map if there is art
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
-        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
+        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
             // if both are on display,  left-side map should be at full alpha
             [_map setAlpha:1];
         }
@@ -1761,7 +1761,7 @@ BOOL bottomButtons = NO;
     _marqueePosition=_marqueePosition+2;
     _adjustedSongFontSize = _songTitle.font.pointSize;
     _songTitle.frame=CGRectMake(leftMargin-(_marqueePosition), _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
-    if (_marqueePosition-leftMargin >= textWidth) {
+    if (_marqueePosition >= textWidth) {
         [self scrollingTimerKiller];
         [self marqueeTimerKiller];
         _songTitle.frame=CGRectMake(leftMargin, _songTitle.frame.origin.y, textWidth, _songTitle.frame.size.height);
