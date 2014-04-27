@@ -60,7 +60,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     // Return the number of rows in the section.
-    return [_names count];
+    return [_names count]+3;
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
@@ -77,38 +77,47 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *cellType = @"textEntryCell";
+
     if ([indexPath row]>0) cellType = @"contactCell";
         contactsTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellType forIndexPath:indexPath];
-        if (cell == nil) {
-            cell = [[contactsTableViewCell alloc]
-                    initWithStyle:UITableViewCellStyleDefault
-                    reuseIdentifier:cellType];
-        }
-    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]-1);
+    if (cell == nil) {
+       cell = [[contactsTableViewCell alloc]
+                initWithStyle:UITableViewCellStyleDefault
+                reuseIdentifier:cellType];
+    }
+    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]-3);
     
     if ([indexPath row]==0) {
 //        [cell.textField bind:@"value" toObject:self withKeyPath:@"self.textFieldString" options:nil];
         cell.textField.delegate = self;
 
-    }
-    if ([indexPath row]>0) {
+    } else if ([indexPath row]<=2) {
+        switch ([indexPath row]) {
+            case 1: cell.nameLabel.text = @"Go home";
+                cell.addressLabel.text = [defaults objectForKey:@"homeAddress"];
+                break;
+            case 2: cell.nameLabel.text = @"Go to Work";
+                cell.addressLabel.text = [defaults objectForKey:@"workAddress"];
+            break;        }
+    } else if ([indexPath row]>2) {
     // Configure the cell...
         cell.nameLabel.frame = CGRectMake(20,10,self.view.bounds.size.width-20,20);
         [cell.nameLabel setTextColor:[UIColor blackColor]];
         [cell.nameLabel setBackgroundColor:[UIColor clearColor]];
         [cell.nameLabel setFont:[UIFont systemFontOfSize: 18.0f]];
-        cell.nameLabel.text = [_names objectAtIndex:[indexPath row]-1];
+        cell.nameLabel.text = [_names objectAtIndex:[indexPath row]-3];
     
         [cell.addressLabel setTextColor:[UIColor lightGrayColor]];
         [cell.addressLabel setBackgroundColor:[UIColor clearColor]];
         [cell.addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
         cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+30, 10, (self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width)-40, 20);
-        NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"Street"]];
-        if ([[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"City"])
-            fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"City"]]];
-        if ([[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"State"])
-            fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"State"]]];
+        NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]-3] objectForKey:@"Street"]];
+        if ([[_addresses objectAtIndex:[indexPath row]-3] objectForKey:@"City"])
+            fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]-3] objectForKey:@"City"]]];
+        if ([[_addresses objectAtIndex:[indexPath row]-3] objectForKey:@"State"])
+            fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]-3] objectForKey:@"State"]]];
         cell.addressLabel.text = fullAddress;
     }
     
