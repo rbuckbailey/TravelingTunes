@@ -535,7 +535,7 @@
 
     
     // Pass the selected object to the new view controller and log.
-    if ([[segue identifier] isEqual:@"quickStartGuide"]) { } else destination.passthrough = passthrough;
+    if ([[segue identifier] isEqual:@"quickStartGuide"]|[[segue identifier] isEqual:@"openContactsPicker"]) { } else destination.passthrough = passthrough;
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
