@@ -829,7 +829,7 @@ BOOL bottomButtons = NO;
     else { // side by side
         // if artwork on and no artwork, revert to full width
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
-        if (![artwork imageWithSize:CGSizeMake(50,50)]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) [self setupDefaultFrames];
+        if (![artwork imageWithSize:CGSizeMake(50,50)]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"showMap"] isEqual:@"NO"]) [self setupDefaultFrames];
         else if (UIInterfaceOrientationIsLandscape(_activeOrientation)) { // side by side landscape
             leftMargin = (self.view.bounds.size.width/2)+20;
             topMargin = 20;
