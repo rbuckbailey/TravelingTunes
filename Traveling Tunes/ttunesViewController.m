@@ -356,10 +356,14 @@ BOOL bottomButtons = NO;
             _map.userInteractionEnabled = NO;
             [self startGPSHeading];
         }
+        // max opacity of map if there is art
+        MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
         if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
             float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*3; //*3; //fade map less than art b/c we want to see it
             if (mapFade>0.75) mapFade = 0.75;  //never completely fade out text
-            [_map setAlpha:mapFade];
+            // unless both are on display, b/c left-side map should be at full alpha
+            if ([artwork imageWithSize:CGSizeMake(50,50)]) [_map setAlpha:1];
+            else [_map setAlpha:mapFade];
         }
         else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
@@ -779,7 +783,7 @@ BOOL bottomButtons = NO;
         // do not replace song title label if the scrolling marquee is handling that right now
     if (_timersRunning==0) {
         _songTitle.frame=CGRectMake(leftMargin-_marqueePosition, songOffset-([self getBannerHeight]/2), self.view.bounds.size.width-(leftMargin+rightMargin), (int)[[defaults objectForKey:@"songFontSize"] floatValue]+15);
-        _songTitle.numberOfLines = 1;
+        if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _songTitle.numberOfLines = 2; else _songTitle.numberOfLines = 1;
         _songTitle.text   = songString;
         _songTitle.font   = [UIFont systemFontOfSize:songFontSize];
         _songTitle.textColor = _themeColorSong;
