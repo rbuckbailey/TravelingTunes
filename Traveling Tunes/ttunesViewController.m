@@ -333,13 +333,16 @@ MKRoute *routeDetails;
 //    [_map setTransform:CGAffineTransformMakeRotation(-1*newHeading.magneticHeading*3.14159/180)];*/
 //    float rotation = -1.0f * M_PI * (newHeading.magneticHeading) / 180.0f; // or .trueHeading for GPS
 //	_map.transform = CGAffineTransformMakeRotation(rotation);
+//    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
 }
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
 //    [_map.camera setAltitude:1400+(_speedTier*10)];
-    [_map.camera setAltitude:400+(_speedTier*10)];
+//    [_map.camera setAltitude:400+(_speedTier*10)];
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
+//    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+
 }
 
 - (void)initMapView{
@@ -353,11 +356,10 @@ MKRoute *routeDetails;
 //            [self bringTitlesToFront];
             [self bringHUDSToFront];
             _map.showsUserLocation=YES;
-//            [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
             _map.zoomEnabled = NO;
             _map.scrollEnabled = NO;
             _map.userInteractionEnabled = NO;
-            [_map setUserTrackingMode:MKUserTrackingModeFollow animated:YES];
+            [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
             [self startGPSHeading];
         }
         // max opacity of map if there is art
@@ -2022,11 +2024,6 @@ MKRoute *routeDetails;
 }
 
 - (void)clearRoute {
-/*    self.destinationLabel.text = nil;
-    self.distanceLabel.text = nil;
-    self.transportLabel.text = nil;
-    self.steps.text = nil;
- */
     [_map removeOverlay:routeDetails.polyline];
 }
 
