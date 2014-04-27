@@ -224,6 +224,7 @@
     else labelText = [[NSString stringWithFormat:@"%i",(int)[[defaults objectForKey:@"SunRiseHour"] floatValue]] stringByAppendingString:@" am"];
     _sunRiseLabel.text = labelText;
     _homeAddressLabel.text = [defaults objectForKey:@"homeAddress"];
+    _workAddressLabel.text = [defaults objectForKey:@"workAddress"];
 
     _defaultPlaylistLabel.text = [defaults objectForKey:@"playlist"];
     
@@ -453,6 +454,7 @@
     else if (selection == _ShowQuickStart) [self configure:@"ShowQuickStart"];
     else if (selection == _navigateHome) [self configure:@"NavigateHome"];
     else if (selection == _navigateToContact) [self configure:@"NavigateToContact"];
+    else if (selection == _navigateToWork) [self configure:@"NavigateToWork"];
     else if (selection == _Menu) [self configure:@"Menu"];
 
     // "reset" buttons
@@ -537,7 +539,13 @@
 
     
     // Pass the selected object to the new view controller and log.
-    if ([[segue identifier] isEqual:@"quickStartGuide"]|[[segue identifier] isEqual:@"openContactsPicker"]) { } else destination.passthrough = passthrough;
+    if ([[segue identifier] isEqual:@"quickStartGuide"]) { }
+    else if ([[segue identifier] isEqual:@"setWorkAddress"]|[[segue identifier] isEqual:@"setHomeAddress"]) {
+        if ([[segue identifier] isEqual:@"setHomeAddress"]) [passthrough setObject:@"setHomeAddress" forKey:@"sender"];
+        else [passthrough setObject:@"setWorkAddress" forKey:@"sender"];
+        destination.passthrough = passthrough;
+    }
+    else destination.passthrough = passthrough;
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
@@ -876,6 +884,7 @@
         _ShowQuickStartCheck.textColor = [UIColor whiteColor];
         _navigateHomeCheck.textColor = [UIColor whiteColor];
         _navigateToContactCheck.textColor = [UIColor whiteColor];
+        _navigateToWorkCheck.textColor = [UIColor whiteColor];
 
         if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
@@ -901,6 +910,7 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"ShowQuickStart"]) _ShowQuickStartCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateHome"]) _navigateHomeCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateToContact"]) _navigateToContactCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateToWork"]) _navigateToWorkCheck.textColor = [UIColor blackColor];
     }
 }
 

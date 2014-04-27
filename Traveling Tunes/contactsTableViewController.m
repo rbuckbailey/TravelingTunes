@@ -85,7 +85,7 @@
                     initWithStyle:UITableViewCellStyleDefault
                     reuseIdentifier:cellType];
         }
-    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]+1);
+    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]-1);
     
     if ([indexPath row]==0) {
 //        [cell.textField bind:@"value" toObject:self withKeyPath:@"self.textFieldString" options:nil];
@@ -98,17 +98,17 @@
         [cell.nameLabel setTextColor:[UIColor blackColor]];
         [cell.nameLabel setBackgroundColor:[UIColor clearColor]];
         [cell.nameLabel setFont:[UIFont systemFontOfSize: 18.0f]];
-        cell.nameLabel.text = [_names objectAtIndex:[indexPath row]+1];
+        cell.nameLabel.text = [_names objectAtIndex:[indexPath row]-1];
     
         [cell.addressLabel setTextColor:[UIColor lightGrayColor]];
         [cell.addressLabel setBackgroundColor:[UIColor clearColor]];
         [cell.addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
         cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+30, 10, (self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width)-40, 20);
-        NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"Street"]];
-        if ([[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"City"])
-            fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"City"]]];
-        if ([[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"State"])
-            fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]+1] objectForKey:@"State"]]];
+        NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"Street"]];
+        if ([[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"City"])
+            fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"City"]]];
+        if ([[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"State"])
+            fullAddress = [fullAddress stringByAppendingString: [NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]-1] objectForKey:@"State"]]];
         cell.addressLabel.text = fullAddress;
     }
     
@@ -120,23 +120,27 @@
     //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     contactsTableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
     NSString *cellText = cell.addressLabel.text;
-    
+    NSLog(@"sent from %@",[_passthrough objectForKey:@"sender"]);
     // if called from "pick contact" action, set navigation destination
     switch ([indexPath row]) {
         case 0:
-            [defaults setObject:cell.textField.text forKey:@"destinationAddress"];
+            if ([[_passthrough objectForKey:@"sender"] isEqual:@"setHomeAddress"])
+                [defaults setObject:cell.textField.text forKey:@"homeAddress"];
+            else if ([[_passthrough objectForKey:@"sender"] isEqual:@"setWorkAddress"])
+                [defaults setObject:cell.textField.text forKey:@"workAddress"];
+            else [defaults setObject:cell.textField.text forKey:@"destinationAddress"];
             [defaults synchronize];
             break;
         default:
             if ([[_passthrough objectForKey:@"sender"] isEqual:@"openContacts"]) {
                 NSLog(@"called from view controller");
                 [defaults setObject:cell.addressLabel.text forKey:@"destinationAddress"];
-                [defaults synchronize];
-            } else { // if called from settings pane, set home to new address
+            } else if ([[_passthrough objectForKey:@"sender"] isEqual:@"setHomeAddress"]) {
                 [defaults setObject:cellText forKey:@"homeAddress"];
-                NSLog(@"set home to %@",[defaults objectForKey:@"homeAddress"]);
-                [defaults synchronize];
+            } else if ([[_passthrough objectForKey:@"sender"] isEqual:@"setWorkAddress"]) { // setting work address
+                [defaults setObject:cellText forKey:@"workAddress"];
             }
+            [defaults synchronize];
             break;
     }
     [self.navigationController popViewControllerAnimated:YES];

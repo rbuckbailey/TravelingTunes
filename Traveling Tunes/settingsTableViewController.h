@@ -58,6 +58,7 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *ShowQuickStart;
 @property (weak, nonatomic) IBOutlet UITableViewCell *navigateToContact;
 @property (weak, nonatomic) IBOutlet UITableViewCell *navigateHome;
+@property (weak, nonatomic) IBOutlet UITableViewCell *navigateToWork;
 
 
 @property (weak, nonatomic) IBOutlet UILabel *nothingCheck;
@@ -84,6 +85,7 @@
 @property (weak, nonatomic) IBOutlet UILabel *ShowQuickStartCheck;
 @property (weak, nonatomic) IBOutlet UILabel *navigateToContactCheck;
 @property (weak, nonatomic) IBOutlet UILabel *navigateHomeCheck;
+@property (weak, nonatomic) IBOutlet UILabel *navigateToWorkCheck;
 
 // display settings outlets
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;
@@ -196,6 +198,7 @@
 @property (weak, nonatomic) IBOutlet UISwitch *showActions;
 - (IBAction)showActionsChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UILabel *homeAddressLabel;
+@property (weak, nonatomic) IBOutlet UILabel *workAddressLabel;
 
 
 

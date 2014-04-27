@@ -338,11 +338,10 @@ MKRoute *routeDetails;
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-//    [_map.camera setAltitude:1400+(_speedTier*10)];
+    [_map.camera setAltitude:1400+(_speedTier*10)];
 //    [_map.camera setAltitude:400+(_speedTier*10)];
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
-
 }
 
 - (void)initMapView{
@@ -1660,6 +1659,7 @@ MKRoute *routeDetails;
     else if ([action isEqual:@"ShowQuickStart"]) [self showInstructions];
     else if ([action isEqual:@"NavigateHome"]) [self navigateHome];
     else if ([action isEqual:@"NavigateToContact"]) [self pickContactAddress];
+    else if ([action isEqual:@"NavigateToWork"]) [self navigateToWork];
 }
 
 -(void) toggleShuffle {
@@ -2030,6 +2030,12 @@ MKRoute *routeDetails;
 - (void) navigateHome {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self addressSearch:[defaults objectForKey:@"homeAddress"]];
+}
+
+
+- (void) navigateToWork {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self addressSearch:[defaults objectForKey:@"workAddress"]];
 }
 
 - (void) pickContactAddress {
