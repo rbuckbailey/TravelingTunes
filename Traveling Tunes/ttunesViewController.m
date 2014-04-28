@@ -33,6 +33,7 @@ BOOL bottomButtons = NO;
 @property UILabel *actionHUD;
 @property UILabel *topLeftRegion,*topCenterRegion,*topRightRegion,*bottomLeftRegion,*bottomCenterRegion,*bottomRightRegion;
 @property UILabel *artistTitle,*songTitle,*albumTitle;
+@property UILabel *gpsDistanceRemaining;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
@@ -339,6 +340,8 @@ MKRoute *routeDetails;
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
     [_map.camera setAltitude:1400+(_speedTier*10)];
+    _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
+    NSLog(@"distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
 //    [_map.camera setAltitude:400+(_speedTier*10)];
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
@@ -366,6 +369,7 @@ MKRoute *routeDetails;
         if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
             // if both are on display,  left-side map should be at full alpha
             [_map setAlpha:1];
+            [self.view bringSubviewToFront:_gpsDistanceRemaining];
         }
         else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
@@ -432,6 +436,8 @@ MKRoute *routeDetails;
     _bottomCenterRegion = [[UILabel alloc] init];
     _bottomRightRegion = [[UILabel alloc] init];
     
+    _gpsDistanceRemaining = [[UILabel alloc] init];
+    
     [self.view addSubview:_bgView];
     [self.view addSubview:_albumArt];
     [self.view bringSubviewToFront:_map];
@@ -453,6 +459,11 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_actionHUD];
     [self.view addSubview:_nightTimeFade];
+    
+    [self.view addSubview:_gpsDistanceRemaining];
+    _gpsDistanceRemaining.frame=CGRectMake(10,0,100,30);
+    _gpsDistanceRemaining.textColor = [UIColor blackColor];
+    [_gpsDistanceRemaining setAlpha:0.5];
 
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
@@ -1959,10 +1970,10 @@ MKRoute *routeDetails;
             NSLog(@"%@", error);
         } else {
             thePlacemark = [placemarks lastObject];
-            float spanX = 1.00725;
+/*            float spanX = 1.00725;
             float spanY = 1.00725;
             MKCoordinateRegion region;
-/*            region.center.latitude = thePlacemark.location.coordinate.latitude;
+            region.center.latitude = thePlacemark.location.coordinate.latitude;
             region.center.longitude = thePlacemark.location.coordinate.longitude;
             region.span = MKCoordinateSpanMake(spanX, spanY);
             [_map setRegion:region animated:YES];
@@ -2019,7 +2030,6 @@ MKRoute *routeDetails;
             [_map addOverlay:routeDetails.polyline];
             NSLog(@"Destination %@",[placemark.addressDictionary objectForKey:@"Street"]);
             NSLog(@"Distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
-            NSLog(@"by %@",[NSString stringWithFormat:@"%u" ,routeDetails.transportType]);
             for (int i = 0; i < routeDetails.steps.count; i++) {
                 MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
                 NSString *newStep = step.instructions;
