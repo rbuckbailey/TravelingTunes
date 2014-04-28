@@ -96,10 +96,10 @@
 
     } else if ([indexPath row]<=2) {
         switch ([indexPath row]) {
-            case 1: cell.nameLabel.text = @"Go home";
+            case 1: cell.nameLabel.text = @"\u2302\u20DD Go home";
                 cell.addressLabel.text = [defaults objectForKey:@"homeAddress"];
                 break;
-            case 2: cell.nameLabel.text = @"Go to Work";
+            case 2: cell.nameLabel.text = @"⚒\u20DD Go to work";
                 cell.addressLabel.text = [defaults objectForKey:@"workAddress"];
             break;        }
     } else if ([indexPath row]>2) {
@@ -214,7 +214,7 @@
             
             if ((ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)|(ABRecordCopyValue(thisPerson, kABPersonLastNameProperty)!=NULL)) {
                 if ((ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)&(ABRecordCopyValue(thisPerson, kABPersonLastNameProperty)!=NULL))
-                    contactFirstLast = [NSString stringWithFormat:@"%@, %@",ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty), ABRecordCopyValue(thisPerson,kABPersonLastNameProperty)];
+                    contactFirstLast = [NSString stringWithFormat:@"%@ %@",ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty), ABRecordCopyValue(thisPerson,kABPersonLastNameProperty)];
                 else if (ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)
                     contactFirstLast = [NSString stringWithFormat:@"%@",ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)];
                 else if (ABRecordCopyValue(thisPerson, kABPersonFirstNameProperty)!=NULL)
