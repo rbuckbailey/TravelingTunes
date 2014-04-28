@@ -1526,16 +1526,20 @@ MKRoute *routeDetails;
                 int checkTopZero = 0;
                 int checkTop = 30;
                 int checkLeft = 100;
-                int checkLeftZero = 0;
+                int checkLeftZero = (self.view.bounds.size.width/3);
             
                 // set check zones for side-by-side
                 if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(!UIInterfaceOrientationIsLandscape(_activeOrientation))) {
-                    checkTopZero = (self.view.bounds.size.height/2)+36;
-                    checkTop = (self.view.bounds.size.height/2)+76;
+//                    checkTopZero = (self.view.bounds.size.height/2)+36;
+//                    checkTop = (self.view.bounds.size.height/2)+76;
+                    checkTopZero = topMargin-20;
+                    checkTop = topMargin+30;
                 }
                 if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(UIInterfaceOrientationIsLandscape(_activeOrientation))) {
-                    checkLeftZero = (self.view.bounds.size.width/2)+36;
-                    checkLeft = (self.view.bounds.size.width/2)+136;
+//                    checkLeftZero = (self.view.bounds.size.width/2)+36;
+//                    checkLeft = (self.view.bounds.size.width/2)+136;
+                    checkLeftZero = leftMargin;
+                    checkLeft = leftMargin+(self.view.bounds.size.width/3);
                 }
                 
                 // check for button zones
