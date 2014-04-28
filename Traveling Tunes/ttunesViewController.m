@@ -962,7 +962,7 @@ MKRoute *routeDetails;
     if ([action isEqual:@"Rewind"]) return @"\u2190\u20DD";
     else if ([action isEqual:@"FastForward"]) return @"\u2192\u20DD";
     else if ([action isEqual:@"Play"]) return @"\u25b8\u20DD";
-    else if ([action isEqual:@"Pause"]) return @"\u05f2\u20dd";
+    else if ([action isEqual:@"Pause"]) return @"\u05f2\u20DD";
     else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) return @"\u05f2\u20dd"; // @"\u220e\u220e";
     else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) return @"\u25b8\u20DD";
     else if ([action isEqual:@"VolumeUp"]) return @"\u2191\u20DD";
