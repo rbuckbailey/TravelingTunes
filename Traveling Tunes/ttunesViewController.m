@@ -343,7 +343,8 @@ MKRoute *routeDetails;
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
 //    [_map.camera setAltitude:1400+(_speedTier*10)];
-    if (routeDetails.distance>0) _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ((routeDetails.distance>0)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
     else _gpsDistanceRemaining.text = @"";
 
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
@@ -424,7 +425,10 @@ MKRoute *routeDetails;
 
 - (void) fixGPSLabels {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
+    if ([[defaults objectForKey:@"showMap"] isEqual:@"NO"]) {
+        _gpsDestination.text = @"";
+    }
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
         _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50,self.view.bounds.size.width-20,30);
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width/2,30);
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width-20,30);
