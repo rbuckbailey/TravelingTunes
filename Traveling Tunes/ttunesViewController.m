@@ -311,7 +311,7 @@ MKRoute *routeDetails;
     
     // initialize map view
     [self initMapView];
-    
+
     //disable sleep mode
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) { [[UIApplication sharedApplication] setIdleTimerDisabled:YES]; NSLog(@"sleep off"); }
     else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; NSLog(@"sleep on"); }
@@ -339,12 +339,26 @@ MKRoute *routeDetails;
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-    [_map.camera setAltitude:1400+(_speedTier*10)];
+//    [_map.camera setAltitude:1400+(_speedTier*10)];
     _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
-    NSLog(@"distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
+//    NSLog(@"distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
 //    [_map.camera setAltitude:400+(_speedTier*10)];
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+}
+
+- (void) setMapInteractivity {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSLog(@"art style %@",[defaults objectForKey:@"artDisplayStyle"]);
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) {
+        _map.zoomEnabled = NO;
+        _map.scrollEnabled = NO;
+        _map.userInteractionEnabled = NO;
+    } else {
+        _map.zoomEnabled = YES;
+        _map.scrollEnabled = YES;
+        _map.userInteractionEnabled = YES;
+    }
 }
 
 - (void)initMapView{
@@ -358,12 +372,13 @@ MKRoute *routeDetails;
 //            [self bringTitlesToFront];
             [self bringHUDSToFront];
             _map.showsUserLocation=YES;
-            _map.zoomEnabled = NO;
-            _map.scrollEnabled = NO;
-            _map.userInteractionEnabled = NO;
+            [_map.camera setAltitude:1400+(_speedTier*10)];
+
+            //disable map interaction in overlay mode
             [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
             [self startGPSHeading];
         }
+        [self setMapInteractivity];
         // max opacity of map if there is art
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
         if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
@@ -398,8 +413,9 @@ MKRoute *routeDetails;
 }
 
 - (void) bringHUDSToFront {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self.view bringSubviewToFront:_actionHUD];
-    [self.view bringSubviewToFront:_nightTimeFade];
+//    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) [self.view bringSubviewToFront:_nightTimeFade];
 }
 
 - (void)viewDidLoad
