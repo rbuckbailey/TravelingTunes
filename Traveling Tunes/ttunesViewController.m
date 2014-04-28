@@ -1523,8 +1523,8 @@ MKRoute *routeDetails;
                 CGPoint location = [touch locationInView:touch.view];
 
                 // set default button zones
-                int checkTopZero = topMargin;
-                int checkTop = topMargin+50;
+                int checkTopZero = topMargin-20;
+                int checkTop = topMargin+30;
                 int checkLeftZero = leftMargin;
                 int checkLeft = (self.view.bounds.size.width/3);
                 int middleButtonLeft = (self.view.bounds.size.width/3);
