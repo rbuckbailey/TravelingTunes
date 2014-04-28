@@ -1523,10 +1523,12 @@ MKRoute *routeDetails;
                 CGPoint location = [touch locationInView:touch.view];
 
                 // set default button zones
-                int checkTopZero = 0;
-                int checkTop = 30;
-                int checkLeft = 100;
-                int checkLeftZero = (self.view.bounds.size.width/3);
+                int checkTopZero = topMargin;
+                int checkTop = topMargin+50;
+                int checkLeftZero = leftMargin;
+                int checkLeft = (self.view.bounds.size.width/3);
+                int middleButtonLeft = (self.view.bounds.size.width/3);
+                int middleButtonRight = (self.view.bounds.size.width/3)+(self.view.bounds.size.width/3);
             
                 // set check zones for side-by-side
                 if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(!UIInterfaceOrientationIsLandscape(_activeOrientation))) {
@@ -1538,20 +1540,23 @@ MKRoute *routeDetails;
                 if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(UIInterfaceOrientationIsLandscape(_activeOrientation))) {
 //                    checkLeftZero = (self.view.bounds.size.width/2)+36;
 //                    checkLeft = (self.view.bounds.size.width/2)+136;
+                    int activeWidth = self.view.bounds.size.width-leftMargin;
                     checkLeftZero = leftMargin;
-                    checkLeft = leftMargin+(self.view.bounds.size.width/3);
+                    checkLeft = leftMargin+(activeWidth/3);
+                    middleButtonLeft = leftMargin+(activeWidth/3);
+                    middleButtonRight = leftMargin+(activeWidth/3)+(activeWidth/3);
                 }
                 
                 // check for button zones
                 if (location.y<checkTop&location.y>checkTopZero) { // top bar region
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
-                    else { if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
+                    else if (location.x<middleButtonRight&location.x>middleButtonLeft){ if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
                 }
                 else if (location.y>self.view.bounds.size.height-40-[self getBannerHeight]) { // bottom bar region
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
-                    else { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
+                    else if (location.x<middleButtonRight&location.x>middleButtonLeft) { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
                 }
                 else {
                     [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
