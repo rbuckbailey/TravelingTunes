@@ -92,6 +92,7 @@
     if ([indexPath row]==0) {
 //        [cell.textField bind:@"value" toObject:self withKeyPath:@"self.textFieldString" options:nil];
         cell.textField.delegate = self;
+        if ([defaults objectForKey:@"lastDestination"]) cell.textField.text = [defaults objectForKey:@"lastDestination"];
 
     } else if ([indexPath row]<=2) {
         switch ([indexPath row]) {
