@@ -41,13 +41,13 @@
         _page.frame=CGRectMake(0,0,width,height);
         _page.image=[UIImage imageNamed:[_qsLandscapeImages objectAtIndex:_index]];
         _acceptButton.frame = CGRectMake((self.view.bounds.size.width/2)-50, self.view.bounds.size.height-40, 100, 50);
-        NSLog(@"landscape: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
+//        NSLog(@"landscape: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
 
     } else {
         _page.frame=CGRectMake(0,0,self.view.bounds.size.width,self.view.bounds.size.height);
         _page.image=[UIImage imageNamed:[_qsImages objectAtIndex:_index]];
         _acceptButton.frame = CGRectMake((self.view.bounds.size.width/2)-50, self.view.bounds.size.height-40, 100, 50);
-        NSLog(@"portrait: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
+//        NSLog(@"portrait: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
 
     }
 }
@@ -59,12 +59,12 @@
     if (UIInterfaceOrientationIsLandscape([[UIDevice currentDevice] orientation])) {
         _page.image=[UIImage imageNamed:[_qsLandscapeImages objectAtIndex:_index]];
         _acceptButton.frame = CGRectMake((self.view.bounds.size.width/2)-50, self.view.bounds.size.height-40, 100, 50);
-        NSLog(@"appear landscape: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
+//        NSLog(@"appear landscape: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
 
     } else {
         _page.image=[UIImage imageNamed:[_qsImages objectAtIndex:_index]];
         _acceptButton.frame = CGRectMake((self.view.bounds.size.width/2)-50, self.view.bounds.size.height-40, 100, 50);
-        NSLog(@"appear portrait: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
+//        NSLog(@"appear portrait: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
     }
     [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationSlide];
 }
@@ -111,7 +111,7 @@
         [_acceptButton addTarget:self action:@selector(buttonClicked) forControlEvents:UIControlEventTouchUpInside];
         [self.view addSubview:_acceptButton];
 
-        NSLog(@"load landscape: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
+//        NSLog(@"load landscape: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
     } else {
         _page = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,self.view.bounds.size.width,self.view.bounds.size.height)];
         _page.image=[UIImage imageNamed:[_qsImages objectAtIndex:_index]];
@@ -122,7 +122,7 @@
         [_acceptButton addTarget:self action:@selector(buttonClicked) forControlEvents:UIControlEventTouchUpInside];
         [self.view addSubview:_acceptButton];
         
-        NSLog(@"load portrait: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
+//        NSLog(@"load portrait: %f by %f",self.view.bounds.size.width,self.view.bounds.size.height);
     }
 
 

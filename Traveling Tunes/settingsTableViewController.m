@@ -401,24 +401,24 @@
     
     if ([[_passthrough objectForKey:@"Fingers"] isEqual:@"Corner"]) {
 #ifdef DEBUG
-        NSLog(@"Configuring corner %@ to action %@",[_passthrough objectForKey:@"Gesture"],action);
+//        NSLog(@"Configuring corner %@ to action %@",[_passthrough objectForKey:@"Gesture"],action);
         [defaults setObject:action forKey:[_passthrough objectForKey:@"Gesture"]];
 #endif
     } else { // we're on a fingers menu, so do finger setting things
         NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
         NSString *fullGestureContinuous = [fullGesture stringByAppendingString:@"Continuous"];
     
-        NSLog(@"defaults was %@",[defaults objectForKey:fullGesture]);
+//        NSLog(@"defaults was %@",[defaults objectForKey:fullGesture]);
         // change the dictionary
         [defaults setObject:action forKey: fullGesture];
         if ([action isEqual:@"VolumeUp"] | [action isEqual:@"VolumeDown"]) [defaults setObject:@"YES" forKey:fullGestureContinuous];
         else [defaults setObject:@"NO" forKey:fullGestureContinuous];
 
-        NSLog(@"defaults is %@",[defaults objectForKey:fullGesture]);
+//        NSLog(@"defaults is %@",[defaults objectForKey:fullGesture]);
 
         // save the dictionary
 #ifdef DEBUG
-        NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
+//        NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
 #endif
     }
     [defaults synchronize];
@@ -855,7 +855,7 @@
 
 - (void)setUpActionChecks {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSLog(@"fingers %@ gesture is %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"]);
+//    NSLog(@"fingers %@ gesture is %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"]);
     if (([_passthrough objectForKey:@"Fingers"]!=NULL) & ([_passthrough objectForKey:@"Gesture"]!=NULL)) {
         NSString *fullGesture = @"";
         if ([[_passthrough objectForKey:@"Fingers"] isEqual:@"Corner"]) fullGesture = [_passthrough objectForKey:@"Gesture"];

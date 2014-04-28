@@ -94,7 +94,7 @@ MPMusicPlayerController*        mediaPlayer;
     
     for(int i = 0; i < [_playlists count]; i++)
     {
-        NSLog(@"Playlist : %@", [[_playlists objectAtIndex:i] valueForProperty: MPMediaPlaylistPropertyName]);
+//        NSLog(@"Playlist : %@", [[_playlists objectAtIndex:i] valueForProperty: MPMediaPlaylistPropertyName]);
     }
 }
 
@@ -104,7 +104,7 @@ MPMusicPlayerController*        mediaPlayer;
         playlistTableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
     NSString *cellText = cell.playlistLabel.text;
 
-    NSLog(@"%@",cell.playlistLabel.text);
+//    NSLog(@"%@",cell.playlistLabel.text);
 
     switch ([indexPath row]) {
         case 0: [defaults setObject:@"All Songs, Shuffled" forKey:@"playlist"]; break;
@@ -112,7 +112,7 @@ MPMusicPlayerController*        mediaPlayer;
         default:
             [defaults setObject:cellText forKey:@"playlist"]; break;
     }
-    NSLog(@"set playlist to %@",[defaults objectForKey:@"playlist"]);
+//    NSLog(@"set playlist to %@",[defaults objectForKey:@"playlist"]);
     [defaults synchronize];
     [self.navigationController popViewControllerAnimated:YES];
 }

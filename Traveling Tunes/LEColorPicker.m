@@ -324,13 +324,13 @@ NSUInteger squareDistanceInRGBSpaceBetweenColor(LEColor colorA, LEColor colorB)
     if (_context == NULL) {
         _context = [[EAGLContext alloc] initWithAPI:api];
         if (!_context) {
-            NSLog(@"Failed to initialize OpenGLES 2.0 context");
+//            NSLog(@"Failed to initialize OpenGLES 2.0 context");
             return NO;
         }
     }
     
     if (![EAGLContext setCurrentContext:_context]) {
-        NSLog(@"Failed to set current OpenGL context");
+//        NSLog(@"Failed to set current OpenGL context");
         return NO;
     }
     

@@ -186,7 +186,7 @@
     [defaults setObject:@"Menu" forKey:@"BottomRight"];
     
     [defaults synchronize];
-    NSLog(@"Initializing gestures assignments.");
+//    NSLog(@"Initializing gestures assignments.");
 }
 
 -(void)saveThemes {

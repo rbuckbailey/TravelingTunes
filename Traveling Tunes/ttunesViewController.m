@@ -235,7 +235,7 @@ MKRoute *routeDetails;
 
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView *)banner willLeaveApplication:(BOOL)willLeave
 {
-    NSLog(@"Banner view is beginning an ad action");
+//    NSLog(@"Banner view is beginning an ad action");
     /*BOOL shouldExecuteAction = [self allowActionToRun]; // your app implements this method
     if (!willLeave && shouldExecuteAction)
     {
@@ -341,15 +341,14 @@ MKRoute *routeDetails;
 {
 //    [_map.camera setAltitude:1400+(_speedTier*10)];
     _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
-//    NSLog(@"distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
-//    [_map.camera setAltitude:400+(_speedTier*10)];
+
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
 }
 
 - (void) setMapInteractivity {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSLog(@"art style %@",[defaults objectForKey:@"artDisplayStyle"]);
+//    NSLog(@"art style %@",[defaults objectForKey:@"artDisplayStyle"]);
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) {
         _map.zoomEnabled = NO;
         _map.scrollEnabled = NO;
@@ -1082,10 +1081,10 @@ MKRoute *routeDetails;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     const CGFloat* components = CGColorGetComponents(_lineView.backgroundColor.CGColor);
-    NSLog(@"Red: %f", components[0]);
-    NSLog(@"Green: %f", components[1]);
-    NSLog(@"Blue: %f", components[2]);
-    NSLog(@"Alpha: %f", CGColorGetAlpha(_lineView.backgroundColor.CGColor));
+//    NSLog(@"Red: %f", components[0]);
+//    NSLog(@"Green: %f", components[1]);
+//    NSLog(@"Blue: %f", components[2]);
+//    NSLog(@"Alpha: %f", CGColorGetAlpha(_lineView.backgroundColor.CGColor));
     float red=components[0];
     float green=components[1];
     float blue=components[2];
@@ -1379,7 +1378,6 @@ MKRoute *routeDetails;
     }
     else if (gesture.state == UIGestureRecognizerStateEnded) {
         _fingers=0;
-        NSLog(@"Stop. Mediaplayer state is %ld",(long)[mediaPlayer playbackState]);
         //if ([mediaPlayer playbackState] == MPMusicPlaybackStateSeekingForward | [mediaPlayer playbackState]==MPMusicPlaybackStateSeekingBackward) [mediaPlayer endSeeking];
     }
     [defaults synchronize];
@@ -1530,7 +1528,7 @@ MKRoute *routeDetails;
     int newFingers = [[event allTouches]count];
     // do not count down -- otherwise, two fingers will trigger off three if the dismount is not perfectly even!
     if (newFingers > _fingers) _fingers=newFingers;
-    NSLog(@"currently %d fingers",_fingers);
+//    NSLog(@"currently %d fingers",_fingers);
 }
 
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
@@ -1539,7 +1537,7 @@ MKRoute *routeDetails;
     NSUInteger numTaps = [[touches anyObject] tapCount];
     int finalFingers = (int)[[event allTouches] count];
     if (_fingers==0) _fingers=finalFingers;
-    NSLog(@"end %d fingers",_fingers);
+//    NSLog(@"end %d fingers",_fingers);
 
     float delay = 0.3;
     switch (_fingers) {
@@ -1671,7 +1669,7 @@ MKRoute *routeDetails;
     [self drawActionHUD:action];
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
 
-    NSLog(@"Performing action %@",action);
+//    NSLog(@"Performing action %@",action);
 
     if ([action isEqual:@"Unassigned"]) NSLog(@"%@ sent unassigned command",sender);
     else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self killAdBanner]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
@@ -1853,7 +1851,7 @@ MKRoute *routeDetails;
 - (void)playDefaultPlaylist {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
-    NSLog(@"Playing %@",[defaults objectForKey:@"playlist"]);
+//    NSLog(@"Playing %@",[defaults objectForKey:@"playlist"]);
     
     if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs, Shuffled"]) [self playAllSongs];
     else if ([[defaults objectForKey:@"playlist"] isEqual:@"All Songs by Album"]) [self playAllByAlbum];
@@ -1981,7 +1979,7 @@ MKRoute *routeDetails;
     [defaults setObject:address forKey:@"lastDestination"];
     [defaults synchronize];
     CLGeocoder *geocoder = [[CLGeocoder alloc] init];
-    NSLog(@"navigating to %@",address);
+//    NSLog(@"navigating to %@",address);
     [geocoder geocodeAddressString:address completionHandler:^(NSArray *placemarks, NSError *error) {
         if (error) {
             NSLog(@"%@", error);

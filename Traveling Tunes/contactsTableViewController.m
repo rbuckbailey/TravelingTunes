@@ -87,7 +87,7 @@
                 initWithStyle:UITableViewCellStyleDefault
                 reuseIdentifier:cellType];
     }
-    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]-3);
+//    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]-3);
     
     if ([indexPath row]==0) {
 //        [cell.textField bind:@"value" toObject:self withKeyPath:@"self.textFieldString" options:nil];
@@ -104,16 +104,16 @@
             break;        }
     } else if ([indexPath row]>2) {
     // Configure the cell...
-        cell.nameLabel.frame = CGRectMake(20,10,self.view.bounds.size.width-20,20);
+//        cell.nameLabel.frame = CGRectMake(20,10,self.view.bounds.size.width-20,20);
         [cell.nameLabel setTextColor:[UIColor blackColor]];
         [cell.nameLabel setBackgroundColor:[UIColor clearColor]];
         [cell.nameLabel setFont:[UIFont systemFontOfSize: 18.0f]];
         cell.nameLabel.text = [_names objectAtIndex:[indexPath row]-3];
     
+        //        cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+30, 10, (self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width)-40, 20);
         [cell.addressLabel setTextColor:[UIColor lightGrayColor]];
         [cell.addressLabel setBackgroundColor:[UIColor clearColor]];
         [cell.addressLabel setFont:[UIFont systemFontOfSize: 18.0f]];
-        cell.addressLabel.frame = CGRectMake([cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width+30, 10, (self.view.bounds.size.width-[cell.nameLabel.text sizeWithFont:[UIFont systemFontOfSize:18]].width)-40, 20);
         NSString *fullAddress = [NSString stringWithFormat:@"%@",[[_addresses objectAtIndex:[indexPath row]-3] objectForKey:@"Street"]];
         if ([[_addresses objectAtIndex:[indexPath row]-3] objectForKey:@"City"])
             fullAddress = [fullAddress stringByAppendingString:[NSString stringWithFormat:@", %@",[[_addresses objectAtIndex:[indexPath row]-3] objectForKey:@"City"]]];
@@ -130,7 +130,7 @@
     //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
     contactsTableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
     NSString *cellText = cell.addressLabel.text;
-    NSLog(@"sent from %@",[_passthrough objectForKey:@"sender"]);
+//    NSLog(@"sent from %@",[_passthrough objectForKey:@"sender"]);
     // if called from "pick contact" action, set navigation destination
     switch ([indexPath row]) {
         case 0:
@@ -143,7 +143,7 @@
             break;
         default:
             if ([[_passthrough objectForKey:@"sender"] isEqual:@"openContacts"]) {
-                NSLog(@"called from view controller");
+//                NSLog(@"called from view controller");
                 [defaults setObject:cell.addressLabel.text forKey:@"destinationAddress"];
             } else if ([[_passthrough objectForKey:@"sender"] isEqual:@"setHomeAddress"]) {
                 [defaults setObject:cellText forKey:@"homeAddress"];
@@ -185,7 +185,7 @@
     if (addressBook != nil)
     {
 #ifdef DEBUG
-        NSLog(@"Successfully accessed the address book.");
+//        NSLog(@"Successfully accessed the address book.");
 #endif
         
         CFArrayRef allPeople = ABAddressBookCopyArrayOfAllPeople(addressBook);
