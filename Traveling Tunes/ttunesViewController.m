@@ -415,7 +415,7 @@ MKRoute *routeDetails;
 - (void) bringHUDSToFront {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self.view bringSubviewToFront:_actionHUD];
-//    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) [self.view bringSubviewToFront:_nightTimeFade];
+    [self.view bringSubviewToFront:_nightTimeFade];
 }
 
 - (void)viewDidLoad
@@ -475,6 +475,7 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_actionHUD];
     [self.view addSubview:_nightTimeFade];
+    _nightTimeFade.userInteractionEnabled=NO;
     
     [self.view addSubview:_gpsDistanceRemaining];
     _gpsDistanceRemaining.frame=CGRectMake(10,0,100,30);
