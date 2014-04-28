@@ -96,10 +96,10 @@
 
     } else if ([indexPath row]<=2) {
         switch ([indexPath row]) {
-            case 1: cell.nameLabel.text = @"\u2302\u20DD Go home";
+            case 1: cell.nameLabel.text = @"\u2302\u20DD Home";
                 cell.addressLabel.text = [defaults objectForKey:@"homeAddress"];
                 break;
-            case 2: cell.nameLabel.text = @"⚒\u20DD Go to work";
+            case 2: cell.nameLabel.text = @"⚒\u20DD Work";
                 cell.addressLabel.text = [defaults objectForKey:@"workAddress"];
             break;        }
     } else if ([indexPath row]>2) {
@@ -138,13 +138,17 @@
                 [defaults setObject:cell.textField.text forKey:@"homeAddress"];
             else if ([[_passthrough objectForKey:@"sender"] isEqual:@"setWorkAddress"])
                 [defaults setObject:cell.textField.text forKey:@"workAddress"];
-            else [defaults setObject:cell.textField.text forKey:@"destinationAddress"];
+            else {
+                [defaults setObject:cell.textField.text forKey:@"destinationAddress"];
+                [defaults setObject:cell.textField.text forKey:@"DestinationName"];
+            }
             [defaults synchronize];
             break;
         default:
             if ([[_passthrough objectForKey:@"sender"] isEqual:@"openContacts"]) {
 //                NSLog(@"called from view controller");
                 [defaults setObject:cell.addressLabel.text forKey:@"destinationAddress"];
+                [defaults setObject:cell.nameLabel.text forKey:@"DestinationName"];
             } else if ([[_passthrough objectForKey:@"sender"] isEqual:@"setHomeAddress"]) {
                 [defaults setObject:cellText forKey:@"homeAddress"];
             } else if ([[_passthrough objectForKey:@"sender"] isEqual:@"setWorkAddress"]) { // setting work address

@@ -33,7 +33,7 @@ BOOL bottomButtons = NO;
 @property UILabel *actionHUD;
 @property UILabel *topLeftRegion,*topCenterRegion,*topRightRegion,*bottomLeftRegion,*bottomCenterRegion,*bottomRightRegion;
 @property UILabel *artistTitle,*songTitle,*albumTitle;
-@property UILabel *gpsDistanceRemaining;
+@property UILabel *gpsDistanceRemaining,*gpsDestination;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
@@ -142,6 +142,8 @@ MKRoute *routeDetails;
 
     if (self.bannerIsVisible) adBanner.frame = CGRectMake(0,self.view.bounds.size.height-[self getBannerHeight],self.view.bounds.size.width,[self getBannerHeight]);
     else adBanner.frame = CGRectMake(0,self.view.bounds.size.height,self.view.bounds.size.width,[self getBannerHeight]);
+    
+    [self fixGPSLabels];
 }
 
 - (IBAction)singleTapDetected:(id)sender {
@@ -300,7 +302,8 @@ MKRoute *routeDetails;
     [self setupLabels];
     [self setupHUD];
     [self setupSystemHUD];
-    
+    [self fixGPSLabels];
+
     //reset marquee
     [self scrollingTimerKiller];
     [self firstStartTimer];
@@ -340,7 +343,8 @@ MKRoute *routeDetails;
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
 //    [_map.camera setAltitude:1400+(_speedTier*10)];
-    _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
+    if (routeDetails.distance>0) _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
+    else _gpsDistanceRemaining.text = @"";
 
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
@@ -384,6 +388,7 @@ MKRoute *routeDetails;
             // if both are on display,  left-side map should be at full alpha
             [_map setAlpha:1];
             [self.view bringSubviewToFront:_gpsDistanceRemaining];
+            [self.view bringSubviewToFront:_gpsDestination];
         }
         else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
@@ -415,6 +420,14 @@ MKRoute *routeDetails;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self.view bringSubviewToFront:_actionHUD];
     [self.view bringSubviewToFront:_nightTimeFade];
+}
+
+- (void) fixGPSLabels {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
+        _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50,self.view.bounds.size.width-20,30);
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width/2,30);
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width-20,30);
 }
 
 - (void)viewDidLoad
@@ -452,6 +465,7 @@ MKRoute *routeDetails;
     _bottomRightRegion = [[UILabel alloc] init];
     
     _gpsDistanceRemaining = [[UILabel alloc] init];
+    _gpsDestination = [[UILabel alloc] init];
     
     [self.view addSubview:_bgView];
     [self.view addSubview:_albumArt];
@@ -477,9 +491,14 @@ MKRoute *routeDetails;
     _nightTimeFade.userInteractionEnabled=NO;
     
     [self.view addSubview:_gpsDistanceRemaining];
+    [self.view addSubview:_gpsDestination];
     _gpsDistanceRemaining.frame=CGRectMake(10,0,100,30);
     _gpsDistanceRemaining.textColor = [UIColor blackColor];
     [_gpsDistanceRemaining setAlpha:0.5];
+    
+    [self fixGPSLabels];
+    _gpsDestination.textColor = [UIColor blackColor];
+    [_gpsDestination setAlpha:0.5];
 
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
@@ -1993,6 +2012,7 @@ MKRoute *routeDetails;
             region.span = MKCoordinateSpanMake(spanX, spanY);
             [_map setRegion:region animated:YES];
  */
+            _gpsDestination.text = [NSString stringWithFormat:@"Traveling to %@",[defaults objectForKey:@"DestinationName"]];
             [self addAnnotation:thePlacemark];
             [self drawRoute];
         }
