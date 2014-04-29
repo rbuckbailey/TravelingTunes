@@ -2181,6 +2181,9 @@ MKRoute *routeDetails;
 }
 
 - (void)clearRoute {
+    NSMutableArray * annotationsToRemove = [ _map.annotations mutableCopy ] ;
+    [ annotationsToRemove removeObject:_map.userLocation ] ;
+    [ _map removeAnnotations:annotationsToRemove ] ;
     [_map removeOverlay:routeDetails.polyline];
 }
 
