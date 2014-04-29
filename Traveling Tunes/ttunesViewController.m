@@ -43,6 +43,7 @@ BOOL bottomButtons = NO;
 @property UIColor *themeBG, *themeColorArtist,*themeColorSong,*themeColorAlbum;
 @property UIImageView *albumArt;
 @property AVSpeechSynthesizer *synth;
+@property NSString *latestInstructions;
 @end
 
 
@@ -323,6 +324,7 @@ MKRoute *routeDetails;
     if (![[defaults objectForKey:@"destinationAddress"] isEqual:@"narf!"]) {
         if ([[defaults objectForKey:@"destinationAddress"] isEqual:@"cancel"]) [self cancelNavigation];
         else {
+            [self cancelNavigation];
             [defaults setObject:[defaults objectForKey:@"destinationAddress"] forKey:@"currentDestination"];
             [self addressSearch:[defaults objectForKey:@"destinationAddress"]];
             [self startGPSTimer];
@@ -408,6 +410,7 @@ MKRoute *routeDetails;
     _gpsDistanceRemaining.text = @"";
     _gpsDestination.text = @"";
     [self GPSTimerKiller];
+    _latestInstructions = @"";
 }
 
 - (void) bringTitlesToFront {
@@ -2111,6 +2114,7 @@ MKRoute *routeDetails;
             NSLog(@"Error %@", error.description);
         } else {
             routeDetails = response.routes.lastObject;
+            [self clearRoute];
             [_map addOverlay:routeDetails.polyline];
             NSLog(@"Destination %@",[placemark.addressDictionary objectForKey:@"Street"]);
             NSLog(@"Distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
@@ -2122,14 +2126,22 @@ MKRoute *routeDetails;
             }
             MKRouteStep *nextStep = [routeDetails.steps objectAtIndex:0];
             MKRouteStep *andThenStep;
-            if (nextStep.distance<100) {
-                NSString *sayWhat = nextStep.instructions;
+            // convert distance in meters to feet before comparison; if <100 feet, announce turn
+            if ((nextStep.distance/3.28084)<100) {
+                NSString *sayWhat;
+                if (nextStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %d feet",(int)(nextStep.distance/3.28084)];
+                else sayWhat = @"";
+                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                 if ([routeDetails.steps count]>1) {
                     andThenStep = [routeDetails.steps objectAtIndex:1];
                     sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",andThenStep.instructions]];
 //                    [self say:andThenStep.instructions];
                 }
-                [self say:sayWhat];
+                // do not repeat the last instructions if we're only rerouting
+                if (![_latestInstructions isEqual:nextStep.instructions]) {
+                    [self say:sayWhat];
+                    _latestInstructions = nextStep.instructions;
+                }
             }
             _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance]; //  /1609.344];
         }
@@ -2175,6 +2187,7 @@ MKRoute *routeDetails;
 
 - (void) navigateHome {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self cancelNavigation];
     [defaults setObject:[defaults objectForKey:@"homeAddress"] forKey:@"currentDestination"];
     [self addressSearch:[defaults objectForKey:@"homeAddress"]];
     [self startGPSTimer];
@@ -2183,6 +2196,7 @@ MKRoute *routeDetails;
 
 - (void) navigateToWork {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self cancelNavigation];
     [defaults setObject:[defaults objectForKey:@"workAddress"] forKey:@"currentDestination"];
     [self addressSearch:[defaults objectForKey:@"workAddress"]];
     [self startGPSTimer];
