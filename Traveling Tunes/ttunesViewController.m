@@ -2086,11 +2086,11 @@ MKRoute *routeDetails;
 //                                    speechUtteranceWithString:instructions];
     AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc] initWithString:instructions];
 
-    utterance.rate = 0.75;
+    utterance.rate = 0.25;
 //    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
     utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-GB"];
     utterance.volume = 1;
-    NSLog(@"say what? %@",utterance);
+//    NSLog(@"say what? %@",utterance);
     if (_synth.paused) [_synth continueSpeaking];
     [_synth speakUtterance:utterance];
 }
@@ -2126,7 +2126,8 @@ MKRoute *routeDetails;
                 NSString *sayWhat = nextStep.instructions;
                 if ([routeDetails.steps count]>1) {
                     andThenStep = [routeDetails.steps objectAtIndex:1];
-                    [sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",andThenStep.instructions]];
+                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",andThenStep.instructions]];
+//                    [self say:andThenStep.instructions];
                 }
                 [self say:sayWhat];
             }
