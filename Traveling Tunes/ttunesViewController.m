@@ -124,7 +124,7 @@ MKRoute *routeDetails;
 
 - (void)deviceOrientationDidChangeNotification:(NSNotification*)note
 {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
 
     // do not reset marquee if the device has been set face-up (orientation 5), but do reset for other changes
@@ -388,7 +388,7 @@ MKRoute *routeDetails;
         [self startGPSHeading];
         [self setMapInteractivity];
         // max opacity of map if there is art
-        MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
+//        MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
         if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
             // if both are on display,  left-side map should be at full alpha
             [_map setAlpha:1];
@@ -430,7 +430,7 @@ MKRoute *routeDetails;
 }
 
 - (void) bringHUDSToFront {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self.view bringSubviewToFront:_actionHUD];
     [self.view bringSubviewToFront:_nightTimeFade];
 }
@@ -443,8 +443,10 @@ MKRoute *routeDetails;
     }
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
         _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50,self.view.bounds.size.width-20,30);
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width/2,30);
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width-20,30);
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width/2,50);
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width-20,50);
+    _gpsDestination.font = [UIFont systemFontOfSize:35];
+    _gpsDistanceRemaining.font = [UIFont systemFontOfSize:35];
 }
 
 - (void)viewDidLoad
@@ -511,7 +513,7 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_gpsDistanceRemaining];
     [self.view addSubview:_gpsDestination];
-    _gpsDistanceRemaining.frame=CGRectMake(10,0,100,30);
+    _gpsDistanceRemaining.frame=CGRectMake(10,10,320,30);
     _gpsDistanceRemaining.textColor = [UIColor blackColor];
     [_gpsDistanceRemaining setAlpha:0.5];
     
@@ -823,9 +825,9 @@ MKRoute *routeDetails;
     
     //actually do the drawing
     _bgView.backgroundColor = _themeBG;
-    NSString *artistString = [NSString stringWithFormat:@""];
-    NSString *songString = [NSString stringWithFormat:@""];
-    NSString *albumString = [NSString stringWithFormat:@""];
+    NSString *artistString;
+    NSString *songString;
+    NSString *albumString;
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) { //output "nothing playing screen" if nothing
         artistString = @"No music playing.";
         songString = @"Tap for default playlist.";
@@ -2050,7 +2052,6 @@ MKRoute *routeDetails;
             region.span = MKCoordinateSpanMake(spanX, spanY);
             [_map setRegion:region animated:YES];
  */
-//            _gpsDestination.text = [NSString stringWithFormat:@"Traveling to %@",[defaults objectForKey:@"DestinationName"]];
             [self addAnnotation:thePlacemark];
             [self drawRoute];
         }
@@ -2101,7 +2102,7 @@ MKRoute *routeDetails;
 }
 
 - (IBAction)drawRoute {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [_map removeOverlay:routeDetails.polyline];
 
     MKDirectionsRequest *directionsRequest = [[MKDirectionsRequest alloc] init];
@@ -2124,7 +2125,6 @@ MKRoute *routeDetails;
                 MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
                 NSString *newStep = step.instructions;
                 NSLog(@"Route %@, %f",newStep,step.distance);
-//            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance]; //  /1609.344];
             }
             MKRouteStep *nextStep = [routeDetails.steps objectAtIndex:0];
             MKRouteStep *andThenStep;
@@ -2175,7 +2175,7 @@ MKRoute *routeDetails;
             [dateFormatter setDateFormat:@"h:mm"];
             NSLog(@"Trip time: %@",tripTime);
             NSLog(@"ETA: %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]);
-            _gpsDestination.text = [NSString stringWithFormat:@"Traveling %@, ETA %@",tripTime,[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]];
+            _gpsDestination.text = [NSString stringWithFormat:@"Arriving %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]];
 //            [defaults setObject:etaTime forKey:@"tripETA"];
 //            [defaults setObject:tripTime forKey:@"tripTime"];
         }
@@ -2219,7 +2219,7 @@ MKRoute *routeDetails;
 }
 
 - (void) pickContactAddress {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self scrubTimerKiller];
     [self performSegueWithIdentifier: @"openContacts" sender: self];
 }
