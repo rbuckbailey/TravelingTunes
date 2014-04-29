@@ -380,13 +380,11 @@ MKRoute *routeDetails;
             [self.view addSubview:_map];
 //            [self bringTitlesToFront];
             [self bringHUDSToFront];
-            _map.showsUserLocation=YES;
-            [_map.camera setAltitude:1400+(_speedTier*10)];
-
-            //disable map interaction in overlay mode
-            [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
-            [self startGPSHeading];
         }
+        _map.showsUserLocation=YES;
+        [_map.camera setAltitude:1400+(_speedTier*10)];
+        [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+        [self startGPSHeading];
         [self setMapInteractivity];
         // max opacity of map if there is art
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
@@ -402,7 +400,7 @@ MKRoute *routeDetails;
             if (mapFade>0.75) mapFade = 0.75;  //never completely fade out text
             [_map setAlpha:mapFade];
         }
-    } else { [self cancelNavigation]; }
+    } else { [self cancelNavigation]; [_map removeFromSuperview]; _map=NULL; }
 }
 
 - (void) cancelNavigation {
@@ -1902,6 +1900,7 @@ MKRoute *routeDetails;
         //NSLog(@"%d timers running", _timersRunning);
     }
 }
+
 
 - (void)playDefaultPlaylist {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
