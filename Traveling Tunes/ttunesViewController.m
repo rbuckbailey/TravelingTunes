@@ -2086,10 +2086,11 @@ MKRoute *routeDetails;
 //                                    speechUtteranceWithString:instructions];
     AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc] initWithString:instructions];
 
-    utterance.rate = AVSpeechUtteranceMinimumSpeechRate;
+    utterance.rate = 0.75;
 //    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
     utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-GB"];
     utterance.volume = 1;
+    NSLog(@"say what? %@",utterance);
     if (_synth.paused) [_synth continueSpeaking];
     [_synth speakUtterance:utterance];
 }
