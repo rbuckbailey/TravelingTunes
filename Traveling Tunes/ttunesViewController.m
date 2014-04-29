@@ -42,7 +42,7 @@ BOOL bottomButtons = NO;
 @property int fingers;
 @property UIColor *themeBG, *themeColorArtist,*themeColorSong,*themeColorAlbum;
 @property UIImageView *albumArt;
-
+@property AVSpeechSynthesizer *synth;
 @end
 
 
@@ -319,10 +319,16 @@ MKRoute *routeDetails;
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) { [[UIApplication sharedApplication] setIdleTimerDisabled:YES]; NSLog(@"sleep off"); }
     else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; NSLog(@"sleep on"); }
     
-    //if there's an address to navigate to, do that
+    //if the contact picker sent an address to navigate to, do that
     if (![[defaults objectForKey:@"destinationAddress"] isEqual:@"narf!"]) {
-        [self addressSearch:[defaults objectForKey:@"destinationAddress"]];
-        [defaults setObject:@"narf!" forKey:@"destinationAddress"];
+        if ([[defaults objectForKey:@"destinationAddress"] isEqual:@"cancel"]) [self cancelNavigation];
+        else {
+            [defaults setObject:[defaults objectForKey:@"destinationAddress"] forKey:@"currentDestination"];
+            [self addressSearch:[defaults objectForKey:@"destinationAddress"]];
+            [self startGPSTimer];
+            [defaults setObject:@"narf!" forKey:@"destinationAddress"];
+            [defaults synchronize];
+        }
     }
 }
 
@@ -343,10 +349,7 @@ MKRoute *routeDetails;
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
 //    [_map.camera setAltitude:1400+(_speedTier*10)];
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if ((routeDetails.distance>0)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344];
-    else _gpsDistanceRemaining.text = @"";
-
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
 }
@@ -397,7 +400,14 @@ MKRoute *routeDetails;
             if (mapFade>0.75) mapFade = 0.75;  //never completely fade out text
             [_map setAlpha:mapFade];
         }
-    } else { [_map removeFromSuperview]; _map=NULL; }
+    } else { [self cancelNavigation]; }
+}
+
+- (void) cancelNavigation {
+    [self clearRoute];
+    _gpsDistanceRemaining.text = @"";
+    _gpsDestination.text = @"";
+    [self GPSTimerKiller];
 }
 
 - (void) bringTitlesToFront {
@@ -427,6 +437,7 @@ MKRoute *routeDetails;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if ([[defaults objectForKey:@"showMap"] isEqual:@"NO"]) {
         _gpsDestination.text = @"";
+        _gpsDistanceRemaining.text = @"";
     }
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
         _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50,self.view.bounds.size.width-20,30);
@@ -441,6 +452,8 @@ MKRoute *routeDetails;
     //initialized and not used for a good reason that I don't rememeber now
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
+    _synth = [[AVSpeechSynthesizer alloc] init];
+    
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
     
@@ -1185,6 +1198,22 @@ MKRoute *routeDetails;
                                                 userInfo: nil
                                                  repeats: NO];
     }
+}
+
+- (void) GPSTimerKiller {
+    if ( [[self GPSTimer] isValid]){
+        [[self GPSTimer] invalidate];
+    }
+}
+
+-(void) startGPSTimer {
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self GPSTimerKiller];
+    self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 60.0f
+                                                     target: self
+                                                   selector: @selector(refreshGPSRoute)
+                                                   userInfo: nil
+                                                    repeats: YES];
 }
 
 -(void) drawActionHUD:(NSString*)action {
@@ -2016,7 +2045,7 @@ MKRoute *routeDetails;
             region.span = MKCoordinateSpanMake(spanX, spanY);
             [_map setRegion:region animated:YES];
  */
-            _gpsDestination.text = [NSString stringWithFormat:@"Traveling to %@",[defaults objectForKey:@"DestinationName"]];
+//            _gpsDestination.text = [NSString stringWithFormat:@"Traveling to %@",[defaults objectForKey:@"DestinationName"]];
             [self addAnnotation:thePlacemark];
             [self drawRoute];
         }
@@ -2052,7 +2081,21 @@ MKRoute *routeDetails;
     return nil;
 }
 
+- (void)say:(NSString*)instructions {
+//    AVSpeechUtterance *utterance = [AVSpeechUtterance
+//                                    speechUtteranceWithString:instructions];
+    AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc] initWithString:instructions];
+
+    utterance.rate = AVSpeechUtteranceMinimumSpeechRate;
+//    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
+    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-GB"];
+    utterance.volume = 1;
+    if (_synth.paused) [_synth continueSpeaking];
+    [_synth speakUtterance:utterance];
+}
+
 - (IBAction)drawRoute {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [_map removeOverlay:routeDetails.polyline];
 
     MKDirectionsRequest *directionsRequest = [[MKDirectionsRequest alloc] init];
@@ -2061,6 +2104,7 @@ MKRoute *routeDetails;
     [directionsRequest setDestination:[[MKMapItem alloc] initWithPlacemark:placemark]];
     directionsRequest.transportType = MKDirectionsTransportTypeAutomobile;
     MKDirections *directions = [[MKDirections alloc] initWithRequest:directionsRequest];
+    MKDirections *eta = [[MKDirections alloc] initWithRequest:directionsRequest];
     [directions calculateDirectionsWithCompletionHandler:^(MKDirectionsResponse *response, NSError *error) {
         if (error) {
             NSLog(@"Error %@", error.description);
@@ -2072,10 +2116,48 @@ MKRoute *routeDetails;
             for (int i = 0; i < routeDetails.steps.count; i++) {
                 MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
                 NSString *newStep = step.instructions;
-                NSLog(@"Route %@",newStep);
+                NSLog(@"Route %@, %f",newStep,step.distance);
+//            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance]; //  /1609.344];
             }
+            MKRouteStep *nextStep = [routeDetails.steps objectAtIndex:0];
+            MKRouteStep *andThenStep;
+            if (nextStep.distance<100) {
+                NSString *sayWhat = nextStep.instructions;
+                if ([routeDetails.steps count]>1) {
+                    andThenStep = [routeDetails.steps objectAtIndex:1];
+                    [sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",andThenStep.instructions]];
+                }
+                [self say:sayWhat];
+            }
+            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance]; //  /1609.344];
         }
     }];
+    [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
+        if (error) {
+            NSLog(@"Error %@", error.description);
+        } else {
+            int minutes = (int)response.expectedTravelTime/60;
+            int hours = (int)minutes/60;
+            
+            NSString *tripTime = @"";
+            if (hours>0) tripTime = [NSString stringWithFormat:@"%d hours, %d minutes",hours,minutes-(hours*60)];
+            else tripTime = [NSString stringWithFormat:@"%d minutes",minutes];
+            NSDate *currentTime = [NSDate date];
+            NSDate* etaTime = [currentTime dateByAddingTimeInterval:response.expectedTravelTime];
+            NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+            [dateFormatter setDateFormat:@"h:mm"];
+            NSLog(@"Trip time: %@",tripTime);
+            NSLog(@"ETA: %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]);
+            _gpsDestination.text = [NSString stringWithFormat:@"Traveling %@, ETA %@",tripTime,[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]];
+//            [defaults setObject:etaTime forKey:@"tripETA"];
+//            [defaults setObject:tripTime forKey:@"tripTime"];
+        }
+    }];
+}
+
+- (void) refreshGPSRoute {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self addressSearch:[defaults objectForKey:@"currentDestination"]];
 }
 
 -(MKOverlayRenderer *)mapView:(MKMapView *)mapView rendererForOverlay:(id<MKOverlay>)overlay {
@@ -2091,13 +2173,17 @@ MKRoute *routeDetails;
 
 - (void) navigateHome {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[defaults objectForKey:@"homeAddress"] forKey:@"currentDestination"];
     [self addressSearch:[defaults objectForKey:@"homeAddress"]];
+    [self startGPSTimer];
 }
 
 
 - (void) navigateToWork {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[defaults objectForKey:@"workAddress"] forKey:@"currentDestination"];
     [self addressSearch:[defaults objectForKey:@"workAddress"]];
+    [self startGPSTimer];
 }
 
 - (void) pickContactAddress {

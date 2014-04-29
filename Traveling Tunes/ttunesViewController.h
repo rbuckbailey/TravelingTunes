@@ -14,7 +14,7 @@
 #import "LEColorPicker.h"
 #import <iAd/iAd.h>
 #import <MapKit/MapKit.h>
-//#import <AVFoundation/AVFoundation.h>
+#import <AVFoundation/AVFoundation.h>
 
 CGFloat const gestureMinimumTranslation = 20.0;
 
@@ -39,7 +39,7 @@ BOOL areAdsRemoved;
 @property (nonatomic, assign) BOOL bannerIsVisible;
 
 @property swipeDirections direction;
-@property NSTimer *marqueeTimer,*scrollingTimer,*scrubTimer,*fadeHUDTimer,*actionHUDFadeTimer,*DNRTimer;
+@property NSTimer *marqueeTimer,*scrollingTimer,*scrubTimer,*fadeHUDTimer,*actionHUDFadeTimer,*DNRTimer,*GPSTimer;
 @property MPVolumeView* volume;
 @property NSInteger marqueePosition;
 @property CLLocationManager *gps;

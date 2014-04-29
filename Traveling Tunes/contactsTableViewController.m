@@ -60,7 +60,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     // Return the number of rows in the section.
-    return [_names count]+3;
+    return [_names count]+4;
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
@@ -94,15 +94,19 @@
         cell.textField.delegate = self;
         if ([defaults objectForKey:@"lastDestination"]) cell.textField.text = [defaults objectForKey:@"lastDestination"];
 
-    } else if ([indexPath row]<=2) {
+    } else if ([indexPath row]<=3) {
         switch ([indexPath row]) {
-            case 1: cell.nameLabel.text = @"\u2302\u20DD Home";
+            case 1: cell.nameLabel.text = @"Cancel Navigation";
+                cell.addressLabel.text = @"";
+                break;
+            case 2: cell.nameLabel.text = @"\u2302\u20DD Home";
                 cell.addressLabel.text = [defaults objectForKey:@"homeAddress"];
                 break;
-            case 2: cell.nameLabel.text = @"⚒\u20DD Work";
+            case 3: cell.nameLabel.text = @"⚒\u20DD Work";
                 cell.addressLabel.text = [defaults objectForKey:@"workAddress"];
-            break;        }
-    } else if ([indexPath row]>2) {
+                break;
+        }
+    } else if ([indexPath row]>3) {
     // Configure the cell...
 //        cell.nameLabel.frame = CGRectMake(20,10,self.view.bounds.size.width-20,20);
         [cell.nameLabel setTextColor:[UIColor blackColor]];
@@ -143,6 +147,9 @@
                 [defaults setObject:cell.textField.text forKey:@"DestinationName"];
             }
             [defaults synchronize];
+            break;
+        case 1:
+            [defaults setObject:@"cancel" forKey:@"destinationAddress"];
             break;
         default:
             if ([[_passthrough objectForKey:@"sender"] isEqual:@"openContacts"]) {
