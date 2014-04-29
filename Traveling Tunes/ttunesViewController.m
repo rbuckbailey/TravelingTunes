@@ -44,6 +44,7 @@ BOOL bottomButtons = NO;
 @property UIImageView *albumArt;
 @property AVSpeechSynthesizer *synth;
 @property NSString *latestInstructions;
+@property BOOL didSayTurn,finishedNavigating,onLastStep;
 @end
 
 
@@ -1210,7 +1211,9 @@ MKRoute *routeDetails;
 -(void) startGPSTimer {
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self GPSTimerKiller];
-    self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 60.0f
+    _finishedNavigating = NO;
+    _onLastStep = NO;
+    self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 30.0f
                                                      target: self
                                                    selector: @selector(refreshGPSRoute)
                                                    userInfo: nil
@@ -2135,12 +2138,23 @@ MKRoute *routeDetails;
                     andThenStep = [routeDetails.steps objectAtIndex:1];
                     sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",andThenStep.instructions]];
 //                    [self say:andThenStep.instructions];
-                }
-                // do not repeat the last instructions if we're only rerouting
-                if (![_latestInstructions isEqual:nextStep.instructions]) {
+                } else _onLastStep = YES;
+                // only say instructions once between 100 ft,
+                if ((![_latestInstructions isEqual:nextStep.instructions])&((nextStep.distance/3.28084)>15)) {
                     [self say:sayWhat];
                     _latestInstructions = nextStep.instructions;
+                    _didSayTurn = NO;
                 }
+                // then say again at <15ft, also only once
+                if (((nextStep.distance/3.28084)<15)&!(_didSayTurn)) {
+                    [self say:sayWhat];
+                    _didSayTurn = YES;
+                    if (_onLastStep) _finishedNavigating = YES;
+                }
+                if (_finishedNavigating) [self cancelNavigation];
+                // last, if under 100', setFireDate of the timer to 10 seconds instead of 30
+                NSDate *currentTime = [NSDate date];
+                [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:10.0]];
             }
             _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance]; //  /1609.344];
         }
