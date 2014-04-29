@@ -45,12 +45,12 @@ BOOL bottomButtons = NO;
 @property AVSpeechSynthesizer *synth;
 @property NSString *latestInstructions;
 @property BOOL didSayTurn,finishedNavigating,onLastStep;
+@property CLPlacemark *thePlacemark;
 @end
 
 
 @implementation ttunesViewController
 
-CLPlacemark *thePlacemark;
 MKRoute *routeDetails;
 
 
@@ -1218,7 +1218,7 @@ MKRoute *routeDetails;
     _didSayTurn = NO;
     _latestInstructions = @"";
 
-    self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 30.0f
+    self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 15.0f
                                                      target: self
                                                    selector: @selector(refreshGPSRoute)
                                                    userInfo: nil
@@ -2046,7 +2046,7 @@ MKRoute *routeDetails;
         if (error) {
             NSLog(@"%@", error);
         } else {
-            thePlacemark = [placemarks lastObject];
+            _thePlacemark = [placemarks lastObject];
 /*            float spanX = 1.00725;
             float spanY = 1.00725;
             MKCoordinateRegion region;
@@ -2055,8 +2055,8 @@ MKRoute *routeDetails;
             region.span = MKCoordinateSpanMake(spanX, spanY);
             [_map setRegion:region animated:YES];
  */
-            [self addAnnotation:thePlacemark];
             [self drawRoute];
+            [self addAnnotation:_thePlacemark];
         }
     }];
 }
@@ -2109,7 +2109,8 @@ MKRoute *routeDetails;
     [_map removeOverlay:routeDetails.polyline];
 
     MKDirectionsRequest *directionsRequest = [[MKDirectionsRequest alloc] init];
-    MKPlacemark *placemark = [[MKPlacemark alloc] initWithPlacemark:thePlacemark];
+    [self clearRoute];
+    MKPlacemark *placemark = [[MKPlacemark alloc] initWithPlacemark:_thePlacemark];
     [directionsRequest setSource:[MKMapItem mapItemForCurrentLocation]];
     [directionsRequest setDestination:[[MKMapItem alloc] initWithPlacemark:placemark]];
     directionsRequest.transportType = MKDirectionsTransportTypeAutomobile;
@@ -2120,7 +2121,7 @@ MKRoute *routeDetails;
             NSLog(@"Error %@", error.description);
         } else {
             routeDetails = response.routes.lastObject;
-            [self clearRoute];
+//            [self clearRoute];
             [_map addOverlay:routeDetails.polyline];
             NSLog(@"Destination %@",[placemark.addressDictionary objectForKey:@"Street"]);
             NSLog(@"Distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
@@ -2158,7 +2159,7 @@ MKRoute *routeDetails;
                 if (_finishedNavigating) [self cancelNavigation];
                 // last, if under 100', setFireDate of the timer to 10 seconds instead of 30
                 NSDate *currentTime = [NSDate date];
-                [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:10.0]];
+                [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
             }
             _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance/1609.344];
         }
@@ -2201,6 +2202,7 @@ MKRoute *routeDetails;
 - (void)clearRoute {
     NSMutableArray * annotationsToRemove = [ _map.annotations mutableCopy ] ;
     [ annotationsToRemove removeObject:_map.userLocation ] ;
+    [ annotationsToRemove removeObject:_thePlacemark ] ;
     [ _map removeAnnotations:annotationsToRemove ] ;
     [_map removeOverlay:routeDetails.polyline];
 }
