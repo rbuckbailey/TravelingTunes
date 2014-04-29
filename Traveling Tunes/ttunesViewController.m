@@ -1215,6 +1215,9 @@ MKRoute *routeDetails;
     [self GPSTimerKiller];
     _finishedNavigating = NO;
     _onLastStep = NO;
+    _didSayTurn = NO;
+    _latestInstructions = @"";
+
     self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 30.0f
                                                      target: self
                                                    selector: @selector(refreshGPSRoute)
@@ -2135,6 +2138,7 @@ MKRoute *routeDetails;
                 else sayWhat = @"";
                 sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                 if ([routeDetails.steps count]>1) {
+                    _onLastStep = NO;
                     andThenStep = [routeDetails.steps objectAtIndex:1];
                     sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",andThenStep.instructions]];
 //                    [self say:andThenStep.instructions];
@@ -2156,7 +2160,7 @@ MKRoute *routeDetails;
                 NSDate *currentTime = [NSDate date];
                 [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:10.0]];
             }
-            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance]; //  /1609.344];
+            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance/1609.344];
         }
     }];
     [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
