@@ -33,7 +33,7 @@ BOOL bottomButtons = NO;
 @property UILabel *actionHUD;
 @property UILabel *topLeftRegion,*topCenterRegion,*topRightRegion,*bottomLeftRegion,*bottomCenterRegion,*bottomRightRegion;
 @property UILabel *artistTitle,*songTitle,*albumTitle;
-@property UILabel *gpsDistanceRemaining,*gpsDestination,*gpsDebugLabel;
+@property UILabel *gpsDistanceRemaining,*gpsDestination; //,*gpsDebugLabel;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
@@ -395,7 +395,7 @@ MKRoute *routeDetails;
             [_map setAlpha:1];
             [self.view bringSubviewToFront:_gpsDistanceRemaining];
             [self.view bringSubviewToFront:_gpsDestination];
-            [self.view bringSubviewToFront:_gpsDebugLabel];
+//            [self.view bringSubviewToFront:_gpsDebugLabel];
         }
         else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
@@ -490,7 +490,7 @@ MKRoute *routeDetails;
     
     _gpsDistanceRemaining = [[UILabel alloc] init];
     _gpsDestination = [[UILabel alloc] init];
-    _gpsDebugLabel = [[UILabel alloc] init];
+//    _gpsDebugLabel = [[UILabel alloc] init];
     
     [self.view addSubview:_bgView];
     [self.view addSubview:_albumArt];
@@ -517,18 +517,18 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_gpsDistanceRemaining];
     [self.view addSubview:_gpsDestination];
-    [self.view addSubview:_gpsDebugLabel];
+//    [self.view addSubview:_gpsDebugLabel];
 
     _gpsDistanceRemaining.frame=CGRectMake(10,10,320,30);
     _gpsDistanceRemaining.textColor = [UIColor blackColor];
     [_gpsDistanceRemaining setAlpha:0.5];
     
-    _gpsDebugLabel.frame=CGRectMake(10,20,320,300);
+/*    _gpsDebugLabel.frame=CGRectMake(10,20,320,300);
     _gpsDebugLabel.numberOfLines = 0;
     _gpsDebugLabel.textColor = [UIColor blackColor];
     _gpsDebugLabel.font = [UIFont systemFontOfSize:30];
     [_gpsDebugLabel setAlpha:0.5];
-
+*/
     
     [self fixGPSLabels];
     _gpsDestination.textColor = [UIColor blackColor];
@@ -2120,6 +2120,11 @@ MKRoute *routeDetails;
     [_synth speakUtterance:utterance];
 }
 
+- (NSString*) feetOrMiles:(float)distance {
+    if ((distance/3.28084)<250) return [NSString stringWithFormat:@"%d feet", (int)(distance/3.28084)];
+    else return [NSString stringWithFormat:@"%0.1f Miles", distance/1609.344];
+}
+
 - (IBAction)drawRoute {
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [_map removeOverlay:routeDetails.polyline];
@@ -2140,7 +2145,7 @@ MKRoute *routeDetails;
 //            [self clearRoute];
             [_map addOverlay:routeDetails.polyline];
             NSLog(@"Destination %@",[placemark.addressDictionary objectForKey:@"Street"]);
-            NSLog(@"Distance %@",[NSString stringWithFormat:@"%0.1f Miles", routeDetails.distance/1609.344]);
+            NSLog(@"Distance %@",[self feetOrMiles:routeDetails.distance] );
             for (int i = 0; i < routeDetails.steps.count; i++) {
                 MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
                 NSString *newStep = step.instructions;
@@ -2151,15 +2156,15 @@ MKRoute *routeDetails;
             MKRouteStep *step3Step;
             NSString *sayWhat;
             if ([routeDetails.steps count]>1) {
-                _onLastStep = NO;
                 andThenStep = [routeDetails.steps objectAtIndex:1];
-                if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %d feet %@",(int)(andThenStep.distance/3.28084),andThenStep.instructions];
+                if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],andThenStep.instructions];
                 else sayWhat = @"";
                 if ([routeDetails.steps count]>2) {
+                    _onLastStep = NO;
                     step3Step = [routeDetails.steps objectAtIndex:2];
-                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",step3Step.instructions]];
-                }
-            } else _onLastStep = YES;
+                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then in %@ %@",[self feetOrMiles:step3Step.distance],step3Step.instructions]];
+                } else _onLastStep = YES;
+            }
             if (_firstStep) {
                 sayWhat = nextStep.instructions;
                 [self say:sayWhat];
@@ -2167,28 +2172,27 @@ MKRoute *routeDetails;
             }
             // convert distance in meters to feet before comparison; if <100 feet, announce turn
             else if ((andThenStep.distance/3.28084)<250) {
-                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
+//                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                 // only say instructions once between 100 ft,
-                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>50)) {
+                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>75)) {
                     [self say:sayWhat];
                     _latestInstructions = andThenStep.instructions;
                     _didSayTurn = NO;
                 }
                 // then say again at <15ft, also only once
-                if (((andThenStep.distance/3.28084)<50)&!(_didSayTurn)) {
+                if (((andThenStep.distance/3.28084)<75)&!(_didSayTurn)) {
                     [self say:sayWhat];
                     _latestInstructions = andThenStep.instructions;
                     _didSayTurn = YES;
                     if (_onLastStep) _finishedNavigating = YES;
                 }
-                _gpsDebugLabel.text = [NSString stringWithFormat:@"%@\n%@\n%@\n%@",nextStep.instructions,_latestInstructions,andThenStep.instructions,step3Step.instructions];
+//                _gpsDebugLabel.text = [NSString stringWithFormat:@"%@\n%@\n%@",nextStep.instructions,andThenStep.instructions,step3Step.instructions];
                 if (_finishedNavigating) [self cancelNavigation];
                 // last, if under 100', setFireDate of the timer to 10 seconds instead of 30
                 NSDate *currentTime = [NSDate date];
                 [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
             }
-            if ((andThenStep.distance/3.28084)<250) _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%d feet", (int)(andThenStep.distance/3.28084)];
-            else _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", andThenStep.distance/1609.344];
+            _gpsDistanceRemaining.text = [self feetOrMiles:andThenStep.distance];
         }
     }];
     [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
