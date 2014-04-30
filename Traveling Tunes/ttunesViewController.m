@@ -2162,9 +2162,9 @@ MKRoute *routeDetails;
                     _didSayTurn = NO;
                 }
                 // then say again at <15ft, also only once
-                if (((nextStep.distance/3.28084)<15)&!(_didSayTurn)) {
+                if (((andThenStep.distance/3.28084)<15)&!(_didSayTurn)) {
                     [self say:sayWhat];
-                    _latestInstructions = nextStep.instructions;
+                    _latestInstructions = nextStep.instructions;sdf
                     _didSayTurn = YES;
                     if (_onLastStep) _finishedNavigating = YES;
                 }
