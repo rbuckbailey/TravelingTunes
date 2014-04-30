@@ -30,6 +30,8 @@
 		F475CEA118F7739B00D92CDE /* quickstartViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F475CEA018F7739B00D92CDE /* quickstartViewController.m */; };
 		F47D029B190D5CED00E5FBEF /* contactsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029A190D5CED00E5FBEF /* contactsTableViewController.m */; };
 		F47D029E190D76B300E5FBEF /* contactsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029D190D76B300E5FBEF /* contactsTableViewCell.m */; };
+		F47D029F1911B75200E5FBEF /* contactsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029A190D5CED00E5FBEF /* contactsTableViewController.m */; };
+		F47D02A01911B76B00E5FBEF /* contactsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029D190D76B300E5FBEF /* contactsTableViewCell.m */; };
 		F4B3B3C018F9815D0079C334 /* quick start 3p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BC18F9815D0079C334 /* quick start 3p.png */; };
 		F4B3B3C118F9815D0079C334 /* quick start 2p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BD18F9815D0079C334 /* quick start 2p.png */; };
 		F4B3B3C218F9815D0079C334 /* quick start 1p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BE18F9815D0079C334 /* quick start 1p.png */; };
@@ -469,10 +471,12 @@
 				F41E16E618E9134D004FDB4F /* playlistTableViewCell.m in Sources */,
 				F4B7DA9818EF9857008170BF /* LEColorPicker.m in Sources */,
 				8E3C8CED189BF785004A90AE /* ttunesViewController.m in Sources */,
+				F47D02A01911B76B00E5FBEF /* contactsTableViewCell.m in Sources */,
 				8E3C8CE0189BF785004A90AE /* main.m in Sources */,
 				F41CF5E818E737BB00F7A148 /* ttunesNavViewController.m in Sources */,
 				F4B7DA9B18EF98D0008170BF /* UIColor+YUVSpace.m in Sources */,
 				F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */,
+				F47D029F1911B75200E5FBEF /* contactsTableViewController.m in Sources */,
 				F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */,
 				F435F9FE18E229D300C71345 /* playlistTableViewController.m in Sources */,
 				8E3C8CE4189BF785004A90AE /* ttunesAppDelegate.m in Sources */,

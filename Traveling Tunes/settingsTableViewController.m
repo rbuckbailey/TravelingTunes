@@ -402,8 +402,8 @@
     if ([[_passthrough objectForKey:@"Fingers"] isEqual:@"Corner"]) {
 #ifdef DEBUG
 //        NSLog(@"Configuring corner %@ to action %@",[_passthrough objectForKey:@"Gesture"],action);
-        [defaults setObject:action forKey:[_passthrough objectForKey:@"Gesture"]];
 #endif
+        [defaults setObject:action forKey:[_passthrough objectForKey:@"Gesture"]];
     } else { // we're on a fingers menu, so do finger setting things
         NSString *fullGesture = [[_passthrough objectForKey:@"Fingers"] stringByAppendingString:[_passthrough objectForKey:@"Gesture"]];
         NSString *fullGestureContinuous = [fullGesture stringByAppendingString:@"Continuous"];
@@ -418,7 +418,7 @@
 
         // save the dictionary
 #ifdef DEBUG
-//        NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
+        NSLog(@"Configuring %@ fingers %@ (%@) to action %@",[_passthrough objectForKey:@"Fingers"],[_passthrough objectForKey:@"Gesture"],fullGesture,action);
 #endif
     }
     [defaults synchronize];
@@ -431,6 +431,7 @@
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
     
     // actions on gesture configuration pages
+    NSLog(@"selected %@",selection);
     if (selection == _Nothing) [self configure:@"Unassigned"];
     else if (selection == _Play) [self configure:@"Play"];
     else if (selection == _Pause) [self configure:@"Pause"];
