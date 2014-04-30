@@ -44,7 +44,7 @@ BOOL bottomButtons = NO;
 @property UIImageView *albumArt;
 @property AVSpeechSynthesizer *synth;
 @property NSString *latestInstructions;
-@property BOOL didSayTurn,finishedNavigating,onLastStep;
+@property BOOL didSayTurn,finishedNavigating,onLastStep,playbackPausedByGPS,firstStep;
 @property CLPlacemark *thePlacemark;
 @end
 
@@ -328,6 +328,7 @@ MKRoute *routeDetails;
             [self cancelNavigation];
             [defaults setObject:[defaults objectForKey:@"destinationAddress"] forKey:@"currentDestination"];
             [self addressSearch:[defaults objectForKey:@"destinationAddress"]];
+            _firstStep = YES;
             [self startGPSTimer];
             [defaults setObject:@"narf!" forKey:@"destinationAddress"];
             [defaults synchronize];
@@ -458,6 +459,7 @@ MKRoute *routeDetails;
     gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     _synth = [[AVSpeechSynthesizer alloc] init];
+    _synth.delegate = self;
     
     _volumeTarget = mediaPlayer.volume;
     _timersRunning=0;
@@ -1228,7 +1230,6 @@ MKRoute *routeDetails;
     _onLastStep = NO;
     _didSayTurn = NO;
     _latestInstructions = @"";
-
     self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 15.0f
                                                      target: self
                                                    selector: @selector(refreshGPSRoute)
@@ -2049,7 +2050,6 @@ MKRoute *routeDetails;
 
 - (void)addressSearch:(NSString *)address {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:address forKey:@"lastDestination"];
     [defaults synchronize];
     CLGeocoder *geocoder = [[CLGeocoder alloc] init];
 //    NSLog(@"navigating to %@",address);
@@ -2101,6 +2101,10 @@ MKRoute *routeDetails;
     return nil;
 }
 
+-(void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer didFinishSpeechUtterance:(AVSpeechUtterance *)utterance {
+    if (_playbackPausedByGPS) [self playOrDefault];
+}
+
 - (void)say:(NSString*)instructions {
 //    AVSpeechUtterance *utterance = [AVSpeechUtterance
 //                                    speechUtteranceWithString:instructions];
@@ -2112,6 +2116,7 @@ MKRoute *routeDetails;
     utterance.volume = 1;
 //    NSLog(@"say what? %@",utterance);
     if (_synth.paused) [_synth continueSpeaking];
+    if ((mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)|_playbackPausedByGPS) _playbackPausedByGPS = YES; else _playbackPausedByGPS = NO;
     [_synth speakUtterance:utterance];
 }
 
@@ -2148,36 +2153,42 @@ MKRoute *routeDetails;
             if ([routeDetails.steps count]>1) {
                 _onLastStep = NO;
                 andThenStep = [routeDetails.steps objectAtIndex:1];
-                if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %d feet",(int)(andThenStep.distance/3.28084)];
+                if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %d feet %@",(int)(andThenStep.distance/3.28084),andThenStep.instructions];
                 else sayWhat = @"";
                 if ([routeDetails.steps count]>2) {
                     step3Step = [routeDetails.steps objectAtIndex:2];
                     sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",step3Step.instructions]];
                 }
             } else _onLastStep = YES;
+            if (_firstStep) {
+                sayWhat = nextStep.instructions;
+                [self say:sayWhat];
+                _firstStep = NO;
+            }
             // convert distance in meters to feet before comparison; if <100 feet, announce turn
-            if ((nextStep.distance/3.28084)<100) {
+            else if ((andThenStep.distance/3.28084)<250) {
                 sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                 // only say instructions once between 100 ft,
-                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>15)) {
+                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>50)) {
                     [self say:sayWhat];
                     _latestInstructions = andThenStep.instructions;
                     _didSayTurn = NO;
                 }
                 // then say again at <15ft, also only once
-                if (((andThenStep.distance/3.28084)<15)&!(_didSayTurn)) {
+                if (((andThenStep.distance/3.28084)<50)&!(_didSayTurn)) {
                     [self say:sayWhat];
                     _latestInstructions = andThenStep.instructions;
                     _didSayTurn = YES;
                     if (_onLastStep) _finishedNavigating = YES;
                 }
-                _gpsDebugLabel.text = [NSString stringWithFormat:@"%@\n%@\n%@",nextStep.instructions,_latestInstructions,andThenStep.instructions];
+                _gpsDebugLabel.text = [NSString stringWithFormat:@"%@\n%@\n%@\n%@",nextStep.instructions,_latestInstructions,andThenStep.instructions,step3Step.instructions];
                 if (_finishedNavigating) [self cancelNavigation];
                 // last, if under 100', setFireDate of the timer to 10 seconds instead of 30
                 NSDate *currentTime = [NSDate date];
                 [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
             }
-            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", andThenStep.distance/1609.344];
+            if ((andThenStep.distance/3.28084)<250) _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%d feet", (int)(andThenStep.distance/3.28084)];
+            else _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", andThenStep.distance/1609.344];
         }
     }];
     [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
@@ -2228,6 +2239,7 @@ MKRoute *routeDetails;
     [self cancelNavigation];
     [defaults setObject:[defaults objectForKey:@"homeAddress"] forKey:@"currentDestination"];
     [self addressSearch:[defaults objectForKey:@"homeAddress"]];
+    _firstStep = YES;
     [self startGPSTimer];
 }
 
@@ -2237,6 +2249,7 @@ MKRoute *routeDetails;
     [self cancelNavigation];
     [defaults setObject:[defaults objectForKey:@"workAddress"] forKey:@"currentDestination"];
     [self addressSearch:[defaults objectForKey:@"workAddress"]];
+    _firstStep = YES;
     [self startGPSTimer];
 }
 

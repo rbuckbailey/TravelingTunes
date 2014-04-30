@@ -145,6 +145,7 @@
             else {
                 [defaults setObject:cell.textField.text forKey:@"destinationAddress"];
                 [defaults setObject:cell.textField.text forKey:@"DestinationName"];
+                [defaults setObject:cell.textField.text forKey:@"lastDestination"];
             }
             [defaults synchronize];
             break;
