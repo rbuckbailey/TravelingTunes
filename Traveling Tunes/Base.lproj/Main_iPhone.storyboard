@@ -1088,7 +1088,7 @@
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <prototypes>
                             <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="textEntryCell" id="lAH-d7-O3u" customClass="contactsTableViewCell">
-                                <rect key="frame" x="0.0" y="86" width="320" height="44"/>
+                                <rect key="frame" x="0.0" y="22" width="320" height="44"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="lAH-d7-O3u" id="pBI-iE-BBI">
                                     <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -1116,7 +1116,7 @@
                                 </connections>
                             </tableViewCell>
                             <tableViewCell contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="contactCell" id="ZjA-8S-yBt" customClass="contactsTableViewCell">
-                                <rect key="frame" x="0.0" y="130" width="320" height="44"/>
+                                <rect key="frame" x="0.0" y="66" width="320" height="44"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="ZjA-8S-yBt" id="U8e-p2-O2l">
                                     <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
@@ -3761,8 +3761,8 @@
         <simulatedScreenMetrics key="destination" type="retina4"/>
     </simulatedMetricsContainer>
     <inferredMetricsTieBreakers>
+        <segue reference="ngP-DT-azR"/>
         <segue reference="xBE-u1-XAc"/>
         <segue reference="rxE-2j-rGF"/>
-        <segue reference="z3R-45-eHC"/>
     </inferredMetricsTieBreakers>
 </document>

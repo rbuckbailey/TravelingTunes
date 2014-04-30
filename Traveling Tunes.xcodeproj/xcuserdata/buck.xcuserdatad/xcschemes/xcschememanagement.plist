@@ -4,6 +4,11 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>Traveling Tunes 2.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
 		<key>Traveling Tunes.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -18,6 +23,11 @@
 			<true/>
 		</dict>
 		<key>8E3C8CF3189BF785004A90AE</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>F4DA1FC118FAEF4400C018EC</key>
 		<dict>
 			<key>primary</key>
 			<true/>

@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8E3C8CCF189BF785004A90AE"
-               BuildableName = "Traveling Tunes.app"
-               BlueprintName = "Traveling Tunes"
+               BuildableName = "Traveling Tunes Free.app"
+               BlueprintName = "Traveling Tunes Free"
                ReferencedContainer = "container:Traveling Tunes.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -43,8 +43,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8E3C8CCF189BF785004A90AE"
-            BuildableName = "Traveling Tunes.app"
-            BlueprintName = "Traveling Tunes"
+            BuildableName = "Traveling Tunes Free.app"
+            BlueprintName = "Traveling Tunes Free"
             ReferencedContainer = "container:Traveling Tunes.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -62,8 +62,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8E3C8CCF189BF785004A90AE"
-            BuildableName = "Traveling Tunes.app"
-            BlueprintName = "Traveling Tunes"
+            BuildableName = "Traveling Tunes Free.app"
+            BlueprintName = "Traveling Tunes Free"
             ReferencedContainer = "container:Traveling Tunes.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -80,8 +80,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8E3C8CCF189BF785004A90AE"
-            BuildableName = "Traveling Tunes.app"
-            BlueprintName = "Traveling Tunes"
+            BuildableName = "Traveling Tunes Free.app"
+            BlueprintName = "Traveling Tunes Free"
             ReferencedContainer = "container:Traveling Tunes.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

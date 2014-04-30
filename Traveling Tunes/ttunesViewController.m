@@ -2143,39 +2143,41 @@ MKRoute *routeDetails;
             }
             MKRouteStep *nextStep = [routeDetails.steps objectAtIndex:0];
             MKRouteStep *andThenStep;
+            MKRouteStep *step3Step;
+            NSString *sayWhat;
+            if ([routeDetails.steps count]>1) {
+                _onLastStep = NO;
+                andThenStep = [routeDetails.steps objectAtIndex:1];
+                if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %d feet",(int)(andThenStep.distance/3.28084)];
+                else sayWhat = @"";
+                if ([routeDetails.steps count]>2) {
+                    step3Step = [routeDetails.steps objectAtIndex:2];
+                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",step3Step.instructions]];
+                }
+            } else _onLastStep = YES;
             // convert distance in meters to feet before comparison; if <100 feet, announce turn
             if ((nextStep.distance/3.28084)<100) {
-                NSString *sayWhat;
-                if (nextStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %d feet",(int)(nextStep.distance/3.28084)];
-                else sayWhat = @"";
                 sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
-                if ([routeDetails.steps count]>1) {
-                    _onLastStep = NO;
-                    andThenStep = [routeDetails.steps objectAtIndex:1];
-                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then %@",andThenStep.instructions]];
-//                    [self say:andThenStep.instructions];
-                } else _onLastStep = YES;
                 // only say instructions once between 100 ft,
-                if ((![_latestInstructions isEqual:nextStep.instructions])&((nextStep.distance/3.28084)>15)) {
+                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>15)) {
                     [self say:sayWhat];
-                    _latestInstructions = nextStep.instructions;
+                    _latestInstructions = andThenStep.instructions;
                     _didSayTurn = NO;
                 }
                 // then say again at <15ft, also only once
                 if (((andThenStep.distance/3.28084)<15)&!(_didSayTurn)) {
                     [self say:sayWhat];
-                    _latestInstructions = nextStep.instructions;sdf
+                    _latestInstructions = andThenStep.instructions;
                     _didSayTurn = YES;
                     if (_onLastStep) _finishedNavigating = YES;
                 }
                 _gpsDebugLabel.text = [NSString stringWithFormat:@"%@\n%@\n%@",nextStep.instructions,_latestInstructions,andThenStep.instructions];
-                NSLog(@"steps are %@",[NSString stringWithFormat:@"%@\n%@",nextStep.instructions,_latestInstructions]);
                 if (_finishedNavigating) [self cancelNavigation];
                 // last, if under 100', setFireDate of the timer to 10 seconds instead of 30
                 NSDate *currentTime = [NSDate date];
                 [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
             }
-            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", nextStep.distance/1609.344];
+            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%0.1f Miles", andThenStep.distance/1609.344];
         }
     }];
     [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
