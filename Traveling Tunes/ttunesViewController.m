@@ -33,7 +33,7 @@ BOOL bottomButtons = NO;
 @property UILabel *actionHUD;
 @property UILabel *topLeftRegion,*topCenterRegion,*topRightRegion,*bottomLeftRegion,*bottomCenterRegion,*bottomRightRegion;
 @property UILabel *artistTitle,*songTitle,*albumTitle;
-@property UILabel *gpsDistanceRemaining,*gpsDestination;
+@property UILabel *gpsDistanceRemaining,*gpsDestination,*gpsDebugLabel;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
@@ -394,6 +394,7 @@ MKRoute *routeDetails;
             [_map setAlpha:1];
             [self.view bringSubviewToFront:_gpsDistanceRemaining];
             [self.view bringSubviewToFront:_gpsDestination];
+            [self.view bringSubviewToFront:_gpsDebugLabel];
         }
         else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
@@ -487,6 +488,7 @@ MKRoute *routeDetails;
     
     _gpsDistanceRemaining = [[UILabel alloc] init];
     _gpsDestination = [[UILabel alloc] init];
+    _gpsDebugLabel = [[UILabel alloc] init];
     
     [self.view addSubview:_bgView];
     [self.view addSubview:_albumArt];
@@ -513,9 +515,18 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_gpsDistanceRemaining];
     [self.view addSubview:_gpsDestination];
+    [self.view addSubview:_gpsDebugLabel];
+
     _gpsDistanceRemaining.frame=CGRectMake(10,10,320,30);
     _gpsDistanceRemaining.textColor = [UIColor blackColor];
     [_gpsDistanceRemaining setAlpha:0.5];
+    
+    _gpsDebugLabel.frame=CGRectMake(10,20,320,300);
+    _gpsDebugLabel.numberOfLines = 0;
+    _gpsDebugLabel.textColor = [UIColor blackColor];
+    _gpsDebugLabel.font = [UIFont systemFontOfSize:30];
+    [_gpsDebugLabel setAlpha:0.5];
+
     
     [self fixGPSLabels];
     _gpsDestination.textColor = [UIColor blackColor];
@@ -2153,9 +2164,12 @@ MKRoute *routeDetails;
                 // then say again at <15ft, also only once
                 if (((nextStep.distance/3.28084)<15)&!(_didSayTurn)) {
                     [self say:sayWhat];
+                    _latestInstructions = nextStep.instructions;
                     _didSayTurn = YES;
                     if (_onLastStep) _finishedNavigating = YES;
                 }
+                _gpsDebugLabel.text = [NSString stringWithFormat:@"%@\n%@\n%@",nextStep.instructions,_latestInstructions,andThenStep.instructions];
+                NSLog(@"steps are %@",[NSString stringWithFormat:@"%@\n%@",nextStep.instructions,_latestInstructions]);
                 if (_finishedNavigating) [self cancelNavigation];
                 // last, if under 100', setFireDate of the timer to 10 seconds instead of 30
                 NSDate *currentTime = [NSDate date];
