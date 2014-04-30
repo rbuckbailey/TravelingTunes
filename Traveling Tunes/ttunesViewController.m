@@ -1658,11 +1658,17 @@ MKRoute *routeDetails;
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft){ if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
+                    else if ((location.x<checkLeft)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) // top of map
+                        NSLog(@"Show list view.");
                 }
                 else if (location.y>self.view.bounds.size.height-40-[self getBannerHeight]) { // bottom bar region
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
                     else if (location.x > self.view.bounds.size.width-100) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft) { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
+                    else if ((location.x<checkLeft)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // bottom of map
+                        [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+                        NSLog(@"Recenter map view.");
+                    }
                 }
                 else {
                     [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
@@ -2156,7 +2162,7 @@ MKRoute *routeDetails;
             for (int i = 0; i < routeDetails.steps.count; i++) {
                 MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
                 NSString *newStep = step.instructions;
-                NSLog(@"Route %@, %f",newStep,step.distance);
+                NSLog(@"%@, %@",newStep,[self feetOrMiles:step.distance]);
             }
             MKRouteStep *nextStep = [routeDetails.steps objectAtIndex:0];
             MKRouteStep *andThenStep;
