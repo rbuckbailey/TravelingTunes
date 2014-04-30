@@ -258,11 +258,18 @@ MKRoute *routeDetails;
 
 -(void)bannerViewDidLoadAd:(ADBannerView *)banner
 {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (!self.bannerIsVisible) {
         [UIView beginAnimations:@"animateAdBannerOn" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, -banner.frame.size.height);
 //                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, -(banner.frame.size.height/2));
 //                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -banner.frame.size.height);
-        [UIView commitAnimations]; self.bannerIsVisible = YES; }
+        [UIView commitAnimations]; self.bannerIsVisible = YES;
+//        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) {
+
+//        }
+    }
+    
+
     //        if (self.bannerIsVisible) _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -_albumTitle.frame.size.height);
 
 }
@@ -291,7 +298,7 @@ MKRoute *routeDetails;
     
 #ifdef FREE
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) [self killAdBanner];
-    if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self initAdBanner];
+    else [self initAdBanner];
     
     NSLog(@"ads are disabled? %@",[defaults objectForKey:@"disableAdBanners"]);
 #endif
@@ -897,7 +904,7 @@ MKRoute *routeDetails;
     albumPosition = 0;
     
     _albumArt.frame = self.view.bounds;
-    _map.frame = self.view.bounds;
+    _map.frame = CGRectMake(0,0,self.view.bounds.size.width,self.view.bounds.size.height-[self getBannerHeight]);
 }
 
 - (void) setupFramesAndMargins {
@@ -925,7 +932,7 @@ MKRoute *routeDetails;
             artistPosition = topMargin;
             
             _albumArt.frame = CGRectMake(18,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
-            _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
+            _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height-[self getBannerHeight]);
             if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(self.view.bounds.size.width/2,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
                 leftMargin = (self.view.bounds.size.width/2)+20;

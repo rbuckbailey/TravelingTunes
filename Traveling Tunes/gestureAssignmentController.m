@@ -31,7 +31,7 @@
 
 - (void)initOtherSettings {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-#ifdef free
+#ifdef FREE
     [defaults setObject:@"NO" forKey:@"disableAdBanners"];
 #endif
     [defaults setObject:@"0.01" forKey:@"volumeSensitivity"];
@@ -179,7 +179,7 @@
     [defaults setObject:@"StartDefaultPlaylist" forKey:@"3LongPress"];
     
     [defaults setObject:@"ToggleRepeat" forKey:@"TopLeft"];
-    [defaults setObject:@"PlayPause" forKey:@"TopCenter"];
+    [defaults setObject:@"NavigateToContact" forKey:@"TopCenter"];
     [defaults setObject:@"ToggleShuffle" forKey:@"TopRight"];
     [defaults setObject:@"ShowQuickStart" forKey:@"BottomLeft"];
     [defaults setObject:@"IncreaseRating" forKey:@"BottomCenter"];
