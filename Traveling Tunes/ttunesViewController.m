@@ -939,7 +939,6 @@ MKRoute *routeDetails;
             _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height-[self getBannerHeight]);
             if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(self.view.bounds.size.width/2,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
-                [self.view bringSubviewToFront:_albumArt];
                 leftMargin = (self.view.bounds.size.width/2)+20;
             }
         } else { // side by side portrait
@@ -1256,7 +1255,8 @@ MKRoute *routeDetails;
 
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) {
         if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"]|[action isEqual:@"Unassigned"])) {
-            _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
+            if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
+            else _actionHUD.frame=CGRectMake(self.view.bounds.size.width-(self.view.bounds.size.width/4)-80, (self.view.bounds.size.height/2)-80, 160, 160);
             _actionHUD.textAlignment=NSTextAlignmentCenter;
             _actionHUD.font = [UIFont systemFontOfSize:120];
             _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.4f];
