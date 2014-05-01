@@ -2370,7 +2370,7 @@ MKRoute *routeDetails;
     NSInteger MAX_HEIGHT = 2000;
     UITextView * textView = [[UITextView alloc] initWithFrame: CGRectMake(0, 0, _gpsInstructionsTable.frame.size.width, MAX_HEIGHT)];
     textView.text = text;
-    textView.font = [UIFont systemFontOfSize:20];
+    textView.font = [UIFont systemFontOfSize:22];
     [textView sizeToFit];
     return textView.frame.size.height;
 }
@@ -2383,7 +2383,7 @@ MKRoute *routeDetails;
     if (cell == nil) {
         cell = [[UITableViewCell alloc]initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:CellIdentifier];
         cell.textLabel.backgroundColor=[UIColor clearColor];
-        cell.textLabel.font = [UIFont systemFontOfSize:20];
+        cell.textLabel.font = [UIFont systemFontOfSize:22];
         cell.textLabel.numberOfLines = 0;
         cell.textLabel.userInteractionEnabled=YES;
     }
