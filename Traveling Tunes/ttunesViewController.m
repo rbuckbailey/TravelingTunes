@@ -2295,10 +2295,10 @@ MKRoute *routeDetails;
 }
 
 - (void) showGPSInstructions {
-    _gpsInstructionsTable.frame = _map.frame; //CGRectOffset(_map.frame, 0, -_gpsInstructionsTable.frame.size.height);
+    _gpsInstructionsTable.frame = CGRectOffset(_map.frame, 0, -_gpsInstructionsTable.frame.size.height);
     [self.view bringSubviewToFront:_gpsInstructionsTable];
-//    [UIView beginAnimations:@"showGPSInstructions" context:NULL]; _gpsInstructionsTable.frame = CGRectOffset(_gpsInstructionsTable.frame, 0, +_gpsInstructionsTable.frame.size.height);
-//    [UIView commitAnimations];
+    [UIView beginAnimations:@"showGPSInstructions" context:NULL]; _gpsInstructionsTable.frame = CGRectOffset(_gpsInstructionsTable.frame, 0, +_gpsInstructionsTable.frame.size.height);
+    [UIView commitAnimations];
 }
 
 - (void) hideGPSInstructions {
