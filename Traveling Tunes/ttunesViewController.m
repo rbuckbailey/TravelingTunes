@@ -2234,7 +2234,7 @@ MKRoute *routeDetails;
                 NSDate *currentTime = [NSDate date];
                 [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
             }
-            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%@ %@",[self symbolForDirections:andThenStep.instructions],[self feetOrMiles:andThenStep.distance]];
+            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%@%@",[self symbolForDirections:andThenStep.instructions],[self feetOrMiles:andThenStep.distance]];
         }
     }];
     [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
@@ -2259,11 +2259,11 @@ MKRoute *routeDetails;
 }
 
 - (NSString*) symbolForDirections:(NSString*)directions {
-    if ([directions rangeOfString:@"left" options:NSCaseInsensitiveSearch].location==!NSNotFound) return @"\u21b0";
-    else if ([directions rangeOfString:@"right" options:NSCaseInsensitiveSearch].location==!NSNotFound) return @"\u21b1";
-    else if ([directions rangeOfString:@"continue" options:NSCaseInsensitiveSearch].location==!NSNotFound) return @"\u2191";
-    else if ([directions rangeOfString:@"exit" options:NSCaseInsensitiveSearch].location==!NSNotFound) return @"\u07c2";
-    else return @"!";
+    if ([directions rangeOfString:@"left" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u21b0 ";
+    else if ([directions rangeOfString:@"right" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u21b1 ";
+    else if ([directions rangeOfString:@"continue" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u2191 ";
+    else if ([directions rangeOfString:@"exit" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"γ ";
+    else return @" ";
 }
 
 - (void) refreshGPSRoute {
@@ -2374,7 +2374,7 @@ MKRoute *routeDetails;
             cell.textLabel.textColor=[UIColor blueColor];
             break;
         default:
-            cell.textLabel.text = step.instructions;
+            cell.textLabel.text = [NSString stringWithFormat:@"%@%@",[self symbolForDirections:step.instructions],step.instructions];
             cell.textLabel.textColor=[UIColor blackColor];
             break;
     }
