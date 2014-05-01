@@ -259,8 +259,9 @@ MKRoute *routeDetails;
 
 -(void)bannerViewDidLoadAd:(ADBannerView *)banner
 {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (!self.bannerIsVisible) {
+        [self fixGPSLabels];
         [UIView beginAnimations:@"animateAdBannerOn" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, -banner.frame.size.height);
 //                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, -(banner.frame.size.height/2));
 //                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -banner.frame.size.height);
@@ -278,8 +279,9 @@ MKRoute *routeDetails;
 //Hide banner if can't load ad.
 -(void)bannerView:(ADBannerView *)banner didFailToReceiveAdWithError:(NSError *)error
 {
-    if (self.bannerIsVisible) {
-        [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, +banner.frame.size.height);
+   if (self.bannerIsVisible) {
+       [self fixGPSLabels];
+       [UIView beginAnimations:@"animateAdBannerOff" context:NULL]; banner.frame = CGRectOffset(banner.frame, 0, +banner.frame.size.height);
 //                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, +(banner.frame.size.height/2));
 //                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, +banner.frame.size.height);
         [UIView commitAnimations]; self.bannerIsVisible = NO; }
@@ -453,7 +455,7 @@ MKRoute *routeDetails;
         _gpsDistanceRemaining.text = @"";
     }
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
-        _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50-[self getBannerHeight],self.view.bounds.size.width-20,30);
+        _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50,self.view.bounds.size.width-20,30);
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50-[self getBannerHeight],self.view.bounds.size.width/2,50);
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50-[self getBannerHeight],self.view.bounds.size.width-20,50);
     _gpsDestination.font = [UIFont systemFontOfSize:35];
