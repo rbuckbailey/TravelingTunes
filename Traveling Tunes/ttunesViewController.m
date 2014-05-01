@@ -341,7 +341,7 @@ MKRoute *routeDetails;
             [defaults setObject:@"narf!" forKey:@"destinationAddress"];
             [defaults synchronize];
         }
-    }
+    } else _finishedNavigating = YES;
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateHeading:(CLHeading *)newHeading {
@@ -420,6 +420,7 @@ MKRoute *routeDetails;
     _gpsDestination.text = @"";
     [self GPSTimerKiller];
     _latestInstructions = @"";
+    _finishedNavigating = YES;
 }
 
 - (void) bringTitlesToFront {
@@ -1678,7 +1679,7 @@ MKRoute *routeDetails;
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
                     else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft){ if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
-                    else if ((location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) // top of map
+                    else if ((location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) // top of map
                         [self showGPSInstructions];
                 }
                 else if (location.y>self.view.bounds.size.height-50-[self getBannerHeight]) { // bottom bar region
@@ -1689,11 +1690,11 @@ MKRoute *routeDetails;
                         [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
                     }
                 }
+                else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) {
+                    [self showGPSInstructions];
+                }
                 else if ((location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
                     [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
-                }
-                else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
-                    [self showGPSInstructions];
                 }
                 else {
                     [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
