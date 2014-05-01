@@ -2356,6 +2356,25 @@ MKRoute *routeDetails;
     return routeDetails.steps.count;
 }
 
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    if ([indexPath row]>0) {
+        MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
+        return 10+[self heightForText:[NSString stringWithFormat:@"%@%@",[self symbolForDirections:step.instructions],step.instructions]];
+    }
+    else return 10+[self heightForText:@"Close List"];
+}
+
+-(CGFloat)heightForText:(NSString *)text
+{
+    NSInteger MAX_HEIGHT = 2000;
+    UITextView * textView = [[UITextView alloc] initWithFrame: CGRectMake(0, 0, _gpsInstructionsTable.frame.size.width, MAX_HEIGHT)];
+    textView.text = text;
+    textView.font = [UIFont systemFontOfSize:20];
+    [textView sizeToFit];
+    return textView.frame.size.height;
+}
+
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     static NSString *CellIdentifier = @"gpsInstructionCell";
@@ -2365,6 +2384,7 @@ MKRoute *routeDetails;
         cell = [[UITableViewCell alloc]initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:CellIdentifier];
         cell.textLabel.backgroundColor=[UIColor clearColor];
         cell.textLabel.font = [UIFont systemFontOfSize:20];
+        cell.textLabel.numberOfLines = 0;
         cell.textLabel.userInteractionEnabled=YES;
     }
     MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
