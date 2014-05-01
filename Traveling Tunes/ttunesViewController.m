@@ -2234,7 +2234,7 @@ MKRoute *routeDetails;
                 NSDate *currentTime = [NSDate date];
                 [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
             }
-            _gpsDistanceRemaining.text = [self feetOrMiles:andThenStep.distance];
+            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%@ %@",[self symbolForDirections:andThenStep.instructions],[self feetOrMiles:andThenStep.distance]];
         }
     }];
     [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
@@ -2256,6 +2256,14 @@ MKRoute *routeDetails;
             _gpsDestination.text = [NSString stringWithFormat:@"Arriving %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]];
         }
     }];
+}
+
+- (NSString*) symbolForDirections:(NSString*)directions {
+    if ([directions rangeOfString:@"left" options:NSCaseInsensitiveSearch].location==!NSNotFound) return @"\u21b0";
+    else if ([directions rangeOfString:@"right" options:NSCaseInsensitiveSearch].location==!NSNotFound) return @"\u21b1";
+    else if ([directions rangeOfString:@"continue" options:NSCaseInsensitiveSearch].location==!NSNotFound) return @"\u2191";
+    else if ([directions rangeOfString:@"exit" options:NSCaseInsensitiveSearch].location==!NSNotFound) return @"\u07c2";
+    else return @"!";
 }
 
 - (void) refreshGPSRoute {
