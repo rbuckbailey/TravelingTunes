@@ -81,8 +81,9 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *cellType = @"textEntryCell";
 
-    if ([indexPath row]>0) cellType = @"contactCell";
-        contactsTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellType forIndexPath:indexPath];
+    if (([indexPath row]==0)|([indexPath row]>=2)) cellType = @"contactCell";
+
+    contactsTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellType forIndexPath:indexPath];
     if (cell == nil) {
        cell = [[contactsTableViewCell alloc]
                 initWithStyle:UITableViewCellStyleDefault
@@ -90,15 +91,17 @@
     }
 //    NSLog(@"%lu names, %lu addresses, outputting row %ld",(unsigned long)[_names count],(unsigned long)[_addresses count],(long)[indexPath row]-3);
     
-    if ([indexPath row]==0) {
+    if ([indexPath row]==1) {
 //        [cell.textField bind:@"value" toObject:self withKeyPath:@"self.textFieldString" options:nil];
         cell.textField.delegate = self;
         if ([defaults objectForKey:@"lastDestination"]) cell.textField.text = [defaults objectForKey:@"lastDestination"];
 
-    } else if ([indexPath row]<=3) {
+    } else if (([indexPath row]==0)|([indexPath row]<=3)) {
         switch ([indexPath row]) {
-            case 1: cell.nameLabel.text = @"Cancel Navigation";
+            case 0: cell.nameLabel.text = @"Cancel Navigation";
                 cell.addressLabel.text = @"";
+                break;
+            case 1:
                 break;
             case 2: cell.nameLabel.text = @"\u2302\u20DD Home";
                 cell.addressLabel.text = [defaults objectForKey:@"homeAddress"];
@@ -139,6 +142,9 @@
     // if called from "pick contact" action, set navigation destination
     switch ([indexPath row]) {
         case 0:
+            [defaults setObject:@"cancel" forKey:@"destinationAddress"];
+            break;
+        case 1:
             if ([[_passthrough objectForKey:@"sender"] isEqual:@"setHomeAddress"])
                 [defaults setObject:cell.textField.text forKey:@"homeAddress"];
             else if ([[_passthrough objectForKey:@"sender"] isEqual:@"setWorkAddress"])
@@ -149,9 +155,6 @@
                 [defaults setObject:cell.textField.text forKey:@"lastDestination"];
             }
             [defaults synchronize];
-            break;
-        case 1:
-            [defaults setObject:@"cancel" forKey:@"destinationAddress"];
             break;
         default:
             if ([[_passthrough objectForKey:@"sender"] isEqual:@"openContacts"]) {
