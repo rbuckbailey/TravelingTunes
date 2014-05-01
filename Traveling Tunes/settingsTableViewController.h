@@ -203,6 +203,8 @@
 - (IBAction)nearingTurnNoiseChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *atTurnNoise;
 - (IBAction)atTurnNoiseChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *announce3Step;
+- (IBAction)announce3StepChanged:(id)sender;
 
 
 

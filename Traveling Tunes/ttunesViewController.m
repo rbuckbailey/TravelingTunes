@@ -2212,7 +2212,7 @@ MKRoute *routeDetails;
             } else _onLastStep = YES;
             if (_firstStep) {
                 sayWhat = nextStep.instructions;
-                if ([[defaults objectForKey:@"dingForInstructions"] isEqual:@"YES"]) [self dingForUpcomingDirections]; else [self say:sayWhat];
+                if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else [self say:sayWhat];
                 _firstStep = NO;
             }
             // convert distance in meters to feet before comparison; if <100 feet, announce turn
@@ -2353,13 +2353,13 @@ MKRoute *routeDetails;
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     // Return the number of rows in the section.
-    return routeDetails.steps.count;
+    return routeDetails.steps.count+1;
 }
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if ([indexPath row]>0) {
-        MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
+        MKRouteStep *step = [routeDetails.steps objectAtIndex:([indexPath row]-1)];
         return 10+[self heightForText:[NSString stringWithFormat:@"    %@%@",[self symbolForDirections:step.instructions],step.instructions]];
     }
     else return 10+[self heightForText:@"Close List"];
@@ -2387,13 +2387,14 @@ MKRoute *routeDetails;
         cell.textLabel.numberOfLines = 0;
         cell.textLabel.userInteractionEnabled=YES;
     }
-    MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
+    MKRouteStep *step;
     switch ([indexPath row]) {
         case 0:
             cell.textLabel.text = @"Close List";
             cell.textLabel.textColor=[UIColor blueColor];
             break;
         default:
+            step = [routeDetails.steps objectAtIndex:(int)(indexPath.row)-1];
             cell.textLabel.text = [NSString stringWithFormat:@"%@%@",[self symbolForDirections:step.instructions],step.instructions];
             cell.textLabel.textColor=[UIColor blackColor];
             break;

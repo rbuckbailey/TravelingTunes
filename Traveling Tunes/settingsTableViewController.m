@@ -284,6 +284,7 @@
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
     if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) _showMap.on = YES; else _showMap.on = NO;
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) _disableAutoLock.on = YES; else _disableAutoLock.on = NO;
+    if ([[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) _announce3Step.on = YES; else _announce3Step.on = NO;
 #ifdef FREE
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) _disableAdBanners.on = YES; else _disableAdBanners.on = NO;
 #endif
@@ -1234,5 +1235,15 @@
     } else if(_atTurnNoise.selectedSegmentIndex == 2) {
         [defaults setObject:@"2" forKey:@"atTurnNoise"];
     }
-    [defaults synchronize];}
+    [defaults synchronize];
+}
+
+- (IBAction)announce3StepChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_announce3Step.on) [defaults setObject:@"YES" forKey:@"announce3Step"];
+    else [defaults setObject:@"NO" forKey:@"announce3Step"];
+    [defaults synchronize];
+}
+
+
 @end
