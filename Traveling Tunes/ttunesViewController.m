@@ -453,9 +453,9 @@ MKRoute *routeDetails;
         _gpsDistanceRemaining.text = @"";
     }
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
-        _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50,self.view.bounds.size.width-20,30);
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width/2,50);
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50,self.view.bounds.size.width-20,50);
+        _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50-[self getBannerHeight],self.view.bounds.size.width-20,30);
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50-[self getBannerHeight],self.view.bounds.size.width/2,50);
+    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50-[self getBannerHeight],self.view.bounds.size.width-20,50);
     _gpsDestination.font = [UIFont systemFontOfSize:35];
     _gpsDistanceRemaining.font = [UIFont systemFontOfSize:35];
 }
