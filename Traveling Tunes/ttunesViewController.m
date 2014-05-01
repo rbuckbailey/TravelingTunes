@@ -2330,10 +2330,7 @@ MKRoute *routeDetails;
     _gpsInstructionsTable.delegate = self;
     _gpsInstructionsTable.separatorColor = [UIColor clearColor];
     [self.view addSubview:_gpsInstructionsTable];
-    _gpsInstructionsTable.frame = CGRectOffset(_map.frame, 0, -_gpsInstructionsTable.frame.size.height);
     [self.view bringSubviewToFront:_gpsInstructionsTable];
-//    [UIView beginAnimations:@"showGPSInstructions" context:NULL]; _gpsInstructionsTable.frame = CGRectOffset(_gpsInstructionsTable.frame, 0, +_gpsInstructionsTable.frame.size.height);
-//    [UIView commitAnimations];
     _gpsInstructionsTable.frame = _map.frame;
 }
 
@@ -2360,7 +2357,7 @@ MKRoute *routeDetails;
 {
     if ([indexPath row]>0) {
         MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
-        return 10+[self heightForText:[NSString stringWithFormat:@"%@%@",[self symbolForDirections:step.instructions],step.instructions]];
+        return 10+[self heightForText:[NSString stringWithFormat:@"    %@%@",[self symbolForDirections:step.instructions],step.instructions]];
     }
     else return 10+[self heightForText:@"Close List"];
 }
