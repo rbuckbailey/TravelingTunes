@@ -58,6 +58,7 @@
     [defaults setObject:@"0.5" forKey:@"GPSSensivity"];
     [defaults setObject:@"YES" forKey:@"showAlbumArt"];
     [defaults setObject:@"NO" forKey:@"showMap"];
+    [defaults setObject:@"2" forKey:@"showMapType"]; // set default "show map" to never
     [defaults setObject:@"YES" forKey:@"albumArtColors"];
     [defaults setObject:@"YES" forKey:@"showActions"];
     [defaults setObject:@"0" forKey:@"AlbumArtScale"]; // default to fill-screen art

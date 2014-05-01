@@ -1677,10 +1677,10 @@
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="Yq1-eS-EOM">
-                                                    <rect key="frame" x="113" y="8" width="192" height="29"/>
+                                                    <rect key="frame" x="128" y="8" width="177" height="29"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
-                                                        <constraint firstAttribute="width" constant="192" id="LUq-jg-9bG"/>
+                                                        <constraint firstAttribute="width" constant="177" id="cQu-FW-ZdK"/>
                                                     </constraints>
                                                     <segments>
                                                         <segment title="Overlay"/>
@@ -1692,8 +1692,8 @@
                                                 </segmentedControl>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstItem="Yq1-eS-EOM" firstAttribute="top" secondItem="LhU-DE-jvQ" secondAttribute="top" constant="8" id="4VA-LG-Kw6"/>
-                                                <constraint firstAttribute="trailing" secondItem="Yq1-eS-EOM" secondAttribute="trailing" constant="15" id="bEy-ee-4LP"/>
+                                                <constraint firstAttribute="trailing" secondItem="Yq1-eS-EOM" secondAttribute="trailing" constant="15" id="bKM-FK-tha"/>
+                                                <constraint firstItem="Yq1-eS-EOM" firstAttribute="top" secondItem="LhU-DE-jvQ" secondAttribute="top" constant="8" id="nls-gb-clv"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -1711,10 +1711,10 @@
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="ITO-2s-F8c">
-                                                    <rect key="frame" x="113" y="8" width="192" height="29"/>
+                                                    <rect key="frame" x="128" y="8" width="177" height="29"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
-                                                        <constraint firstAttribute="width" constant="192" id="MeT-zy-Pbu"/>
+                                                        <constraint firstAttribute="width" constant="177" id="qhM-60-NaS"/>
                                                     </constraints>
                                                     <segments>
                                                         <segment title="Fill"/>
@@ -1726,38 +1726,43 @@
                                                 </segmentedControl>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstItem="ITO-2s-F8c" firstAttribute="top" secondItem="fjo-gC-onA" secondAttribute="top" constant="8" id="c7Y-4r-lJf"/>
-                                                <constraint firstAttribute="trailing" secondItem="ITO-2s-F8c" secondAttribute="trailing" constant="15" id="gV9-xE-m8P"/>
+                                                <constraint firstItem="ITO-2s-F8c" firstAttribute="top" secondItem="fjo-gC-onA" secondAttribute="top" constant="8" id="Eqo-FQ-J4m"/>
+                                                <constraint firstAttribute="trailing" secondItem="ITO-2s-F8c" secondAttribute="trailing" constant="15" id="WRk-aO-eHo"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
-                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="Frk-zd-i6M">
+                                    <tableViewCell contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="dJW-IF-bh4">
                                         <rect key="frame" x="0.0" y="218" width="320" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
-                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Frk-zd-i6M" id="PBC-Nz-NH7">
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="dJW-IF-bh4" id="VzF-CC-UgS">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Show Map" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="OyZ-hS-AaB">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Show Map" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jAz-va-PSV">
                                                     <rect key="frame" x="20" y="11" width="280" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="M8j-Kw-5rh">
-                                                    <rect key="frame" x="251" y="6" width="51" height="31"/>
+                                                <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="wvy-hV-VsM">
+                                                    <rect key="frame" x="128" y="8" width="177" height="29"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="177" id="ayf-ah-8Nb"/>
+                                                    </constraints>
+                                                    <segments>
+                                                        <segment title="Always"/>
+                                                        <segment title="Nav"/>
+                                                        <segment title="Never"/>
+                                                    </segments>
                                                     <connections>
-                                                        <action selector="showMapChanged:" destination="02N-Jq-DSM" eventType="valueChanged" id="HaE-PL-FLf"/>
+                                                        <action selector="showMapSwitchChanged:" destination="02N-Jq-DSM" eventType="valueChanged" id="YEj-ZT-q08"/>
                                                     </connections>
-                                                </switch>
+                                                </segmentedControl>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstItem="OyZ-hS-AaB" firstAttribute="trailing" secondItem="M8j-Kw-5rh" secondAttribute="trailing" id="Dba-b8-4hh"/>
-                                                <constraint firstItem="OyZ-hS-AaB" firstAttribute="centerY" secondItem="M8j-Kw-5rh" secondAttribute="centerY" id="E8I-Zp-G3P"/>
-                                                <constraint firstItem="M8j-Kw-5rh" firstAttribute="centerY" secondItem="PBC-Nz-NH7" secondAttribute="centerY" id="HiG-Dk-9ec"/>
-                                                <constraint firstAttribute="trailing" secondItem="M8j-Kw-5rh" secondAttribute="trailing" constant="20" symbolic="YES" id="i0G-6K-qiJ"/>
-                                                <constraint firstItem="OyZ-hS-AaB" firstAttribute="leading" secondItem="PBC-Nz-NH7" secondAttribute="leading" constant="20" symbolic="YES" id="p8a-PX-ghI"/>
+                                                <constraint firstItem="wvy-hV-VsM" firstAttribute="top" secondItem="VzF-CC-UgS" secondAttribute="top" constant="8" id="3qg-7j-RY3"/>
+                                                <constraint firstAttribute="trailing" secondItem="wvy-hV-VsM" secondAttribute="trailing" constant="15" id="w5A-p2-ujm"/>
                                             </constraints>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -2137,7 +2142,7 @@
                         <outlet property="rotationPortrait" destination="R0f-zJ-Tzc" id="Pz1-1M-wo7"/>
                         <outlet property="showActions" destination="Ohb-bT-oL7" id="c72-5t-19C"/>
                         <outlet property="showAlbumArt" destination="luV-zg-OzC" id="5H1-P1-f8N"/>
-                        <outlet property="showMap" destination="M8j-Kw-5rh" id="xem-xo-oJo"/>
+                        <outlet property="showMapSwitch" destination="wvy-hV-VsM" id="FtE-uz-iA3"/>
                         <outlet property="showStatusBar" destination="uMF-Hq-ygW" id="ZrQ-ch-gLZ"/>
                         <outlet property="volumeAlwaysOn" destination="zIa-S4-F9R" id="gU1-UQ-ssb"/>
                     </connections>
