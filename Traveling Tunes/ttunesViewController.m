@@ -359,7 +359,7 @@ MKRoute *routeDetails;
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-//    [_map.camera setAltitude:1400+(_speedTier*10)];
+    [_map.camera setAltitude:400+(_speedTier*10)];
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
@@ -391,7 +391,7 @@ MKRoute *routeDetails;
             [self bringHUDSToFront];
         }
         _map.showsUserLocation=YES;
-        [_map.camera setAltitude:1400+(_speedTier*10)];
+        [_map.camera setAltitude:400+(_speedTier*10)];
         [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
         [self startGPSHeading];
         [self setMapInteractivity];
@@ -2290,13 +2290,46 @@ MKRoute *routeDetails;
 
 - (void) showGPSInstructions {
     {
-        [super viewDidLoad];
         UITableView *table = [[UITableView alloc] init];
+        gpsInstructionsTableViewController *foo = [[gpsInstructionsTableViewController alloc] init];
         table.dataSource = self;
         table.delegate = self;
         table.frame = _map.frame;
         [self.view addSubview:table];
     }
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+    // Return the number of sections.
+    return 1;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+#warning Incomplete method implementation.
+    // Return the number of rows in the section.
+    return 5;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *CellIdentifier = @"gpsInstructionCell";
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"gpsInstructionCell"];
+    
+    if (cell == nil) {
+        cell = [[UITableViewCell alloc]initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:CellIdentifier];
+        UILabel *text = [[UILabel alloc] init];
+        [text setFrame:CGRectMake(10,10,self.view.bounds.size.width,40)];
+        text.backgroundColor=[UIColor clearColor];
+        text.textColor=[UIColor blackColor];
+        text.font = [UIFont systemFontOfSize:20];
+        text.userInteractionEnabled=YES;
+        [cell addSubview:text];
+        text.text= @"TEST";
+    }
+    //etc.
+    return cell;
 }
 
 @end

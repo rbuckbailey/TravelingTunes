@@ -31,7 +31,7 @@ ADBannerView *adBanner;
 BOOL bannerIsVisible;
 BOOL areAdsRemoved;
 
-@interface ttunesViewController : UIViewController <CLLocationManagerDelegate, ADBannerViewDelegate, UIPageViewControllerDataSource, MKMapViewDelegate, AVSpeechSynthesizerDelegate>
+@interface ttunesViewController : UIViewController <CLLocationManagerDelegate, ADBannerViewDelegate, UIPageViewControllerDataSource, MKMapViewDelegate, AVSpeechSynthesizerDelegate,UITableViewDelegate,UITableViewDataSource>
 
 @property (strong, nonatomic) UIPageViewController *pageController;
 
