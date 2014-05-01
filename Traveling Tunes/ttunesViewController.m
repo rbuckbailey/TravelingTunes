@@ -360,7 +360,7 @@ MKRoute *routeDetails;
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-    [_map.camera setAltitude:400+(_speedTier*10)];
+//    [_map.camera setAltitude:400+(_speedTier*10)];
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
@@ -527,7 +527,7 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_gpsDistanceRemaining];
     [self.view addSubview:_gpsDestination];
-    [self.view addSubview:_gpsInstructionsTable];
+//    [self.view addSubview:_gpsInstructionsTable];
 //    [self.view addSubview:_gpsDebugLabel];
 
     _gpsDistanceRemaining.frame=CGRectMake(10,10,320,30);
@@ -958,6 +958,7 @@ MKRoute *routeDetails;
                 leftMargin = 20;
             }
         }
+        if (_gpsInstructionsTable!=nil) _gpsInstructionsTable.frame = _map.frame;
     }
     // adjust for edge HUD layouts
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) bottomMargin=bottomMargin+15;
@@ -1639,13 +1640,23 @@ MKRoute *routeDetails;
                 int checkLeft = (self.view.bounds.size.width/3);
                 int middleButtonLeft = (self.view.bounds.size.width/3);
                 int middleButtonRight = (self.view.bounds.size.width/3)+(self.view.bounds.size.width/3);
+                int gpsInstructionsTop,gpsInstructionsLeft,gpsInstructionsBottom,gpsInstructionsRight;
+                int gpsResetTop,gpsResetLeft,gpsResetBottom,gpsResetRight;
             
                 // set check zones for side-by-side
+                gpsInstructionsLeft = 0;
+                gpsInstructionsTop = 0;
+                gpsInstructionsBottom = 50;
                 if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(!UIInterfaceOrientationIsLandscape(_activeOrientation))) {
 //                    checkTopZero = (self.view.bounds.size.height/2)+36;
 //                    checkTop = (self.view.bounds.size.height/2)+76;
                     checkTopZero = topMargin-20;
                     checkTop = topMargin+30;
+                    gpsInstructionsRight = self.view.bounds.size.width;
+                    gpsResetTop = (self.view.bounds.size.height/2)-50;
+                    gpsResetBottom = (self.view.bounds.size.height/2);
+                    gpsResetLeft = 0;
+                    gpsResetRight = self.view.bounds.size.width;
                 }
                 if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(UIInterfaceOrientationIsLandscape(_activeOrientation))) {
 //                    checkLeftZero = (self.view.bounds.size.width/2)+36;
@@ -1655,6 +1666,11 @@ MKRoute *routeDetails;
                     checkLeft = leftMargin+(activeWidth/3);
                     middleButtonLeft = leftMargin+(activeWidth/3);
                     middleButtonRight = leftMargin+(activeWidth/3)+(activeWidth/3);
+                    gpsInstructionsRight = self.view.bounds.size.width/2;
+                    gpsResetTop = self.view.bounds.size.height-[self getBannerHeight]-50;
+                    gpsResetBottom = self.view.bounds.size.height-[self getBannerHeight];
+                    gpsResetLeft = 0;
+                    gpsResetRight = self.view.bounds.size.width/2;
                 }
                 
                 // check for button zones
@@ -1662,16 +1678,22 @@ MKRoute *routeDetails;
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
                     else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft){ if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
-                    else if ((location.x<checkLeft)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) // top of map
+                    else if ((location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) // top of map
                         [self showGPSInstructions];
                 }
                 else if (location.y>self.view.bounds.size.height-50-[self getBannerHeight]) { // bottom bar region
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
                     else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft) { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
-                    else if ((location.x<checkLeft)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // bottom of map
+                    else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // bottom of map
                         [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
                     }
+                }
+                else if ((location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
+                    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+                }
+                else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+                    [self showGPSInstructions];
                 }
                 else {
                     [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
@@ -2298,6 +2320,7 @@ MKRoute *routeDetails;
     _gpsInstructionsTable = [[UITableView alloc] init];
     _gpsInstructionsTable.dataSource = self;
     _gpsInstructionsTable.delegate = self;
+    _gpsInstructionsTable.separatorColor = [UIColor clearColor];
     [self.view addSubview:_gpsInstructionsTable];
     _gpsInstructionsTable.frame = CGRectOffset(_map.frame, 0, -_gpsInstructionsTable.frame.size.height);
     [self.view bringSubviewToFront:_gpsInstructionsTable];
@@ -2329,7 +2352,6 @@ MKRoute *routeDetails;
 {
     static NSString *CellIdentifier = @"gpsInstructionCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"gpsInstructionCell"];
-    UILabel *text;
     
     if (cell == nil) {
         cell = [[UITableViewCell alloc]initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:CellIdentifier];
@@ -2338,10 +2360,9 @@ MKRoute *routeDetails;
         cell.textLabel.userInteractionEnabled=YES;
     }
     MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
-    NSLog(@"row %ld: %@",(long)[indexPath row],[routeDetails.steps objectAtIndex:[indexPath row]]);
     switch ([indexPath row]) {
         case 0:
-            cell.textLabel.text = @"CANCEL";
+            cell.textLabel.text = @"Close List";
             cell.textLabel.textColor=[UIColor blueColor];
             break;
         default:
