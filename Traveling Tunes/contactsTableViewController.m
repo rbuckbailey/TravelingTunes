@@ -28,6 +28,7 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    self.tableView.separatorColor = [UIColor clearColor];
     
     _names = [[NSMutableArray alloc] init];
     _addresses = [[NSMutableArray alloc] init];

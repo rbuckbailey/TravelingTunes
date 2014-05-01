@@ -31,6 +31,7 @@ MPMusicPlayerController*        mediaPlayer;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    self.tableView.separatorColor = [UIColor clearColor];
  /*
     UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"Done"
                                                                     style:UIBarButtonItemStyleDone target:self action:@selector(popToRoot)];
