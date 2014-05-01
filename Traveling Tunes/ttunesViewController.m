@@ -2218,14 +2218,13 @@ MKRoute *routeDetails;
 //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                 // only say instructions once between 100 ft,
                 if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(_speedTier*1.5))) {
-                    if ([[defaults objectForKey:@"dingForInstructions"] isEqual:@"YES"]) [self dingForUpcomingDirections]; else [self say:sayWhat];
+                    if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                     _latestInstructions = andThenStep.instructions;
                     _didSayTurn = NO;
                 }
                 // then say again at <15ft, also only once
                 if (((andThenStep.distance/3.28084)<(_speedTier*1.5))&!(_didSayTurn)) {
-                    [self say:sayWhat];
-                    _latestInstructions = andThenStep.instructions;
+                    if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];                    _latestInstructions = andThenStep.instructions;
                     _didSayTurn = YES;
                     if (_onLastStep) _finishedNavigating = YES;
                 }

@@ -246,7 +246,9 @@
     _ScrubHUDType.selectedSegmentIndex = (int)[[defaults objectForKey:@"ScrubHUDType"] floatValue];
     _albumArtScale.selectedSegmentIndex = (int)[[defaults objectForKey:@"AlbumArtScale"] floatValue];
     _artDisplayLayout.selectedSegmentIndex = (int)[[defaults objectForKey:@"ArtDisplayLayout"] floatValue];
-
+    _nearingTurnNoise.selectedSegmentIndex = (int)[[defaults objectForKey:@"nearingTurnNoise"] floatValue];
+    _atTurnNoise.selectedSegmentIndex = (int)[[defaults objectForKey:@"atTurnNoise"] floatValue];
+    
     // initialize theme previews for Display settings
     [self setThemeLabels];
     if ([[defaults objectForKey:@"themeInvert"] isEqual:@"YES"]) {
@@ -1216,4 +1218,26 @@
 }
 
 
+- (IBAction)nearingTurnNoiseChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_nearingTurnNoise.selectedSegmentIndex == 0) {
+        [defaults setObject:@"0" forKey:@"nearingTurnNoise"];
+    } else if(_nearingTurnNoise.selectedSegmentIndex == 1) {
+        [defaults setObject:@"1" forKey:@"nearingTurnNoise"];
+    } else if(_nearingTurnNoise.selectedSegmentIndex == 2) {
+        [defaults setObject:@"2" forKey:@"nearingTurnNoise"];
+    }
+    [defaults synchronize];
+}
+
+- (IBAction)atTurnNoiseChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_atTurnNoise.selectedSegmentIndex == 0) {
+        [defaults setObject:@"0" forKey:@"atTurnNoise"];
+    } else if(_atTurnNoise.selectedSegmentIndex == 1) {
+        [defaults setObject:@"1" forKey:@"atTurnNoise"];
+    } else if(_atTurnNoise.selectedSegmentIndex == 2) {
+        [defaults setObject:@"2" forKey:@"atTurnNoise"];
+    }
+    [defaults synchronize];}
 @end

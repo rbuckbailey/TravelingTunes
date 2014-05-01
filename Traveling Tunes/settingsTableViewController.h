@@ -199,6 +199,11 @@
 - (IBAction)showActionsChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UILabel *homeAddressLabel;
 @property (weak, nonatomic) IBOutlet UILabel *workAddressLabel;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *nearingTurnNoise;
+- (IBAction)nearingTurnNoiseChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *atTurnNoise;
+- (IBAction)atTurnNoiseChanged:(id)sender;
+
 
 
 

@@ -39,15 +39,15 @@
     [defaults setObject:@"5" forKey:@"seekSensitivity"];
     [defaults setObject:@"NO" forKey:@"ShowStatusBar"];
     [defaults setObject:@"YES" forKey:@"VolumeAlwaysOn"];
-    [defaults setObject:@"1" forKey:@"HUDType"];
-    [defaults setObject:@"2" forKey:@"ScrubHUDType"];
+    [defaults setObject:@"1" forKey:@"HUDType"]; // default to bar volume
+    [defaults setObject:@"2" forKey:@"ScrubHUDType"]; // default to Edge playback HUD
     [defaults setObject:@"YES" forKey:@"RotationClockwise"];
     [defaults setObject:@"YES" forKey:@"RotationAntiClockwise"];
     [defaults setObject:@"YES" forKey:@"RotationInverted"];
     [defaults setObject:@"YES" forKey:@"RotationPortrait"];
     [defaults setObject:@"NO" forKey:@"PlayOnLaunch"];
     [defaults setObject:@"NO" forKey:@"PauseOnExit"];
-    [defaults setObject:@"YES" forKey:@"titleShrinkInPortrait"];
+    [defaults setObject:@"YES"forKey:@"titleShrinkInPortrait"];
     [defaults setObject:@"YES" forKey:@"titleShrinkLong"];
     [defaults setObject:@"NO" forKey:@"InvertAtNight"];
     [defaults setObject:@"YES" forKey:@"DimAtNight"];
@@ -60,14 +60,16 @@
     [defaults setObject:@"NO" forKey:@"showMap"];
     [defaults setObject:@"YES" forKey:@"albumArtColors"];
     [defaults setObject:@"YES" forKey:@"showActions"];
-    [defaults setObject:@"0" forKey:@"AlbumArtScale"];
+    [defaults setObject:@"0" forKey:@"AlbumArtScale"]; // default to fill-screen art
     [defaults setObject:@"YES" forKey:@"disableAutolock"];
-    [defaults setObject:@"0" forKey:@"ArtDisplayLayout"];
+    [defaults setObject:@"0" forKey:@"ArtDisplayLayout"]; // default to overlay
     [defaults setObject:@"14 N Moore St, New York, NY" forKey:@"homeAddress"];
     [defaults setObject:@"14 N Moore St, New York, NY" forKey:@"workAddress"];
     [defaults setObject:@"narf!" forKey:@"destinationAddress"];
     [defaults setObject:@"YES" forKey:@"announce3Step"];
     [defaults setObject:@"NO" forKey:@"dingForInstructions"];
+    [defaults setObject:@"1" forKey:@"nearingTurnNoise"]; // ding when nearing a turn
+    [defaults setObject:@"0" forKey:@"atTurnNoise"]; // speak when at turn
 }
 
 - (void)initDisplaySettings {
