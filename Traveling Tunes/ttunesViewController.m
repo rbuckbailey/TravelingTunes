@@ -1656,14 +1656,14 @@ MKRoute *routeDetails;
                 // check for button zones
                 if (location.y<checkTop&location.y>checkTopZero) { // top bar region
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
-                    else if (location.x > self.view.bounds.size.width-(self.view.bounds.size.width/3)*2) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
+                    else if (location.x > self.view.bounds.size.width-(self.view.bounds.size.width/3)) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft){ if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
                     else if ((location.x<checkLeft)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) // top of map
-                        NSLog(@"Show list view.");
+                        [self showGPSInstructions];
                 }
                 else if (location.y>self.view.bounds.size.height-50-[self getBannerHeight]) { // bottom bar region
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
-                    else if (location.x > self.view.bounds.size.width-(self.view.bounds.size.width/3)*2) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
+                    else if (location.x > self.view.bounds.size.width-(self.view.bounds.size.width/3)) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft) { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
                     else if ((location.x<checkLeft)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // bottom of map
                         [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
@@ -2286,6 +2286,17 @@ MKRoute *routeDetails;
     //preserve data from higher menus in passthrough dictionary
     [passthrough setObject:@"openContacts" forKey:@"sender"];
     destination.passthrough = passthrough;
+}
+
+- (void) showGPSInstructions {
+    {
+        [super viewDidLoad];
+        UITableView *table = [[UITableView alloc] init];
+        table.dataSource = self;
+        table.delegate = self;
+        table.frame = _map.frame;
+        [self.view addSubview:table];
+    }
 }
 
 @end

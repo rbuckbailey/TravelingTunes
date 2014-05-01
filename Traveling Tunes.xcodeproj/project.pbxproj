@@ -32,6 +32,8 @@
 		F47D029E190D76B300E5FBEF /* contactsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029D190D76B300E5FBEF /* contactsTableViewCell.m */; };
 		F47D029F1911B75200E5FBEF /* contactsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029A190D5CED00E5FBEF /* contactsTableViewController.m */; };
 		F47D02A01911B76B00E5FBEF /* contactsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D029D190D76B300E5FBEF /* contactsTableViewCell.m */; };
+		F47D02A31911C5F200E5FBEF /* gpsInstructionsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D02A21911C5F200E5FBEF /* gpsInstructionsTableViewController.m */; };
+		F47D02A41911C5F200E5FBEF /* gpsInstructionsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F47D02A21911C5F200E5FBEF /* gpsInstructionsTableViewController.m */; };
 		F4B3B3C018F9815D0079C334 /* quick start 3p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BC18F9815D0079C334 /* quick start 3p.png */; };
 		F4B3B3C118F9815D0079C334 /* quick start 2p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BD18F9815D0079C334 /* quick start 2p.png */; };
 		F4B3B3C218F9815D0079C334 /* quick start 1p.png in Resources */ = {isa = PBXBuildFile; fileRef = F4B3B3BE18F9815D0079C334 /* quick start 1p.png */; };
@@ -120,6 +122,8 @@
 		F47D029A190D5CED00E5FBEF /* contactsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = contactsTableViewController.m; sourceTree = "<group>"; };
 		F47D029C190D76B300E5FBEF /* contactsTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = contactsTableViewCell.h; sourceTree = "<group>"; };
 		F47D029D190D76B300E5FBEF /* contactsTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = contactsTableViewCell.m; sourceTree = "<group>"; };
+		F47D02A11911C5F200E5FBEF /* gpsInstructionsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gpsInstructionsTableViewController.h; path = ../gpsInstructionsTableViewController.h; sourceTree = "<group>"; };
+		F47D02A21911C5F200E5FBEF /* gpsInstructionsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = gpsInstructionsTableViewController.m; path = ../gpsInstructionsTableViewController.m; sourceTree = "<group>"; };
 		F4B3B3BC18F9815D0079C334 /* quick start 3p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 3p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 3p.png"; sourceTree = "<group>"; };
 		F4B3B3BD18F9815D0079C334 /* quick start 2p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 2p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 2p.png"; sourceTree = "<group>"; };
 		F4B3B3BE18F9815D0079C334 /* quick start 1p.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "quick start 1p.png"; path = "../../../Desktop/TT Icons/quick starts/quick start 1p.png"; sourceTree = "<group>"; };
@@ -222,6 +226,8 @@
 				F41CF5E718E737BB00F7A148 /* ttunesNavViewController.m */,
 				8E3C8CEB189BF785004A90AE /* ttunesViewController.h */,
 				8E3C8CEC189BF785004A90AE /* ttunesViewController.m */,
+				F47D02A11911C5F200E5FBEF /* gpsInstructionsTableViewController.h */,
+				F47D02A21911C5F200E5FBEF /* gpsInstructionsTableViewController.m */,
 				F41DA66A18D489D600D86912 /* Settings Pane Stuff */,
 				8E3C8CEE189BF785004A90AE /* Images.xcassets */,
 				8E3C8CDA189BF785004A90AE /* Supporting Files */,
@@ -477,6 +483,7 @@
 				F4B7DA9B18EF98D0008170BF /* UIColor+YUVSpace.m in Sources */,
 				F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */,
 				F47D029F1911B75200E5FBEF /* contactsTableViewController.m in Sources */,
+				F47D02A31911C5F200E5FBEF /* gpsInstructionsTableViewController.m in Sources */,
 				F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */,
 				F435F9FE18E229D300C71345 /* playlistTableViewController.m in Sources */,
 				8E3C8CE4189BF785004A90AE /* ttunesAppDelegate.m in Sources */,
@@ -506,6 +513,7 @@
 				F4DA1FC918FAEF4400C018EC /* UIColor+YUVSpace.m in Sources */,
 				F4DA1FCA18FAEF4400C018EC /* settingsTableViewController.m in Sources */,
 				F47D029B190D5CED00E5FBEF /* contactsTableViewController.m in Sources */,
+				F47D02A41911C5F200E5FBEF /* gpsInstructionsTableViewController.m in Sources */,
 				F4DA1FCB18FAEF4400C018EC /* settingsTableViewCell.m in Sources */,
 				F4DA1FCC18FAEF4400C018EC /* playlistTableViewController.m in Sources */,
 				F4DA1FCD18FAEF4400C018EC /* ttunesAppDelegate.m in Sources */,
