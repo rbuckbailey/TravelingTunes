@@ -15,7 +15,6 @@
 #import <iAd/iAd.h>
 #import <MapKit/MapKit.h>
 #import <AVFoundation/AVFoundation.h>
-#import "gpsInstructionsTableViewController.h"
 
 CGFloat const gestureMinimumTranslation = 20.0;
 

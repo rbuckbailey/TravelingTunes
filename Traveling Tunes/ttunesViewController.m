@@ -2291,16 +2291,22 @@ MKRoute *routeDetails;
 }
 
 - (void) showGPSInstructions {
+    UITableView *table = [[UITableView alloc] init];
+    table.dataSource = self;
+    table.delegate = self;
+    table.frame = _map.frame;
+    [self.view addSubview:table];
+}
+
+- (void) hideGPSInstructions {
     {
         UITableView *table = [[UITableView alloc] init];
-        gpsInstructionsTableViewController *foo = [[gpsInstructionsTableViewController alloc] init];
         table.dataSource = self;
         table.delegate = self;
         table.frame = _map.frame;
         [self.view addSubview:table];
     }
 }
-
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
     // Return the number of sections.
@@ -2309,9 +2315,8 @@ MKRoute *routeDetails;
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-#warning Incomplete method implementation.
     // Return the number of rows in the section.
-    return 5;
+    return routeDetails.steps.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -2324,11 +2329,18 @@ MKRoute *routeDetails;
         UILabel *text = [[UILabel alloc] init];
         [text setFrame:CGRectMake(10,10,self.view.bounds.size.width,40)];
         text.backgroundColor=[UIColor clearColor];
-        text.textColor=[UIColor blackColor];
         text.font = [UIFont systemFontOfSize:20];
         text.userInteractionEnabled=YES;
         [cell addSubview:text];
-        text.text= @"TEST";
+        MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
+        switch ([indexPath row]) {
+            case 0: text.text = @"CANCEL";
+                text.textColor=[UIColor blueColor];
+                break;
+            default:
+                text.text = step.instructions;
+                text.textColor=[UIColor blackColor];
+        }
     }
     //etc.
     return cell;
