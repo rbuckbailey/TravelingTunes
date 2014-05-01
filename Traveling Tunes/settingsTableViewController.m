@@ -248,7 +248,6 @@
     _artDisplayLayout.selectedSegmentIndex = (int)[[defaults objectForKey:@"ArtDisplayLayout"] floatValue];
     _nearingTurnNoise.selectedSegmentIndex = (int)[[defaults objectForKey:@"nearingTurnNoise"] floatValue];
     _atTurnNoise.selectedSegmentIndex = (int)[[defaults objectForKey:@"atTurnNoise"] floatValue];
-    _showMapSwitch.selectedSegmentIndex = (int)[[defaults objectForKey:@"showMapType"] floatValue];
     
     // initialize theme previews for Display settings
     [self setThemeLabels];
@@ -283,7 +282,7 @@
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) _showActions.on = YES; else _showActions.on = NO;
     if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) _albumArtColors.on = YES; else _albumArtColors.on = NO;
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
-//    if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) _showMap.on = YES; else _showMap.on = NO;
+    if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) _showMap.on = YES; else _showMap.on = NO;
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) _disableAutoLock.on = YES; else _disableAutoLock.on = NO;
 #ifdef FREE
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) _disableAdBanners.on = YES; else _disableAdBanners.on = NO;
@@ -1235,20 +1234,5 @@
     } else if(_atTurnNoise.selectedSegmentIndex == 2) {
         [defaults setObject:@"2" forKey:@"atTurnNoise"];
     }
-    [defaults synchronize];
-}
-
-- (IBAction)showMapSwitchChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if (_showMapSwitch.selectedSegmentIndex == 0) {
-        [defaults setObject:@"0" forKey:@"showMapType"];
-    } else if(_showMapSwitch.selectedSegmentIndex == 1) {
-        [defaults setObject:@"1" forKey:@"showMapType"];
-    } else if(_showMapSwitch.selectedSegmentIndex == 2) {
-        [defaults setObject:@"2" forKey:@"showMapType"];
-    }
-    if ([[defaults objectForKey:@"showMapType"] isEqual:@"0"]) [defaults setObject:@"YES" forKey:@"showMap"];
-    else [defaults setObject:@"NO" forKey:@"showMap"];
-    [defaults synchronize];
-}
+    [defaults synchronize];}
 @end
