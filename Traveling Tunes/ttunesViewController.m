@@ -2256,6 +2256,7 @@ MKRoute *routeDetails;
             NSLog(@"Trip time: %@",tripTime);
             NSLog(@"ETA: %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]);
             _gpsDestination.text = [NSString stringWithFormat:@"Arriving %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]];
+            [self fixGPSLabels];
         }
     }];
 }
