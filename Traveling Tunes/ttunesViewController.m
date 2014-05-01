@@ -2295,15 +2295,22 @@ MKRoute *routeDetails;
 }
 
 - (void) showGPSInstructions {
+    _gpsInstructionsTable = [[UITableView alloc] init];
+    _gpsInstructionsTable.dataSource = self;
+    _gpsInstructionsTable.delegate = self;
+    [self.view addSubview:_gpsInstructionsTable];
     _gpsInstructionsTable.frame = CGRectOffset(_map.frame, 0, -_gpsInstructionsTable.frame.size.height);
     [self.view bringSubviewToFront:_gpsInstructionsTable];
-    [UIView beginAnimations:@"showGPSInstructions" context:NULL]; _gpsInstructionsTable.frame = CGRectOffset(_gpsInstructionsTable.frame, 0, +_gpsInstructionsTable.frame.size.height);
-    [UIView commitAnimations];
+//    [UIView beginAnimations:@"showGPSInstructions" context:NULL]; _gpsInstructionsTable.frame = CGRectOffset(_gpsInstructionsTable.frame, 0, +_gpsInstructionsTable.frame.size.height);
+//    [UIView commitAnimations];
+    _gpsInstructionsTable.frame = _map.frame;
 }
 
 - (void) hideGPSInstructions {
     [UIView beginAnimations:@"hideGPSInstructions" context:NULL]; _gpsInstructionsTable.frame = CGRectOffset(_gpsInstructionsTable.frame, 0, -_gpsInstructionsTable.frame.size.height);
     [UIView commitAnimations];
+    [_gpsInstructionsTable removeFromSuperview];
+    _gpsInstructionsTable=nil;
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -2322,25 +2329,25 @@ MKRoute *routeDetails;
 {
     static NSString *CellIdentifier = @"gpsInstructionCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"gpsInstructionCell"];
+    UILabel *text;
     
     if (cell == nil) {
         cell = [[UITableViewCell alloc]initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:CellIdentifier];
-        UILabel *text = [[UILabel alloc] init];
-        [text setFrame:CGRectMake(10,10,self.view.bounds.size.width,40)];
-        text.backgroundColor=[UIColor clearColor];
-        text.font = [UIFont systemFontOfSize:20];
-        text.userInteractionEnabled=YES;
-        [cell addSubview:text];
-        MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
-        switch ([indexPath row]) {
-            case 0: text.text = @"CANCEL";
-                text.textColor=[UIColor blueColor];
-                break;
-            default:
-                text.text = step.instructions;
-                text.textColor=[UIColor blackColor];
-                break;
-        }
+        cell.textLabel.backgroundColor=[UIColor clearColor];
+        cell.textLabel.font = [UIFont systemFontOfSize:20];
+        cell.textLabel.userInteractionEnabled=YES;
+    }
+    MKRouteStep *step = [routeDetails.steps objectAtIndex:[indexPath row]];
+    NSLog(@"row %ld: %@",(long)[indexPath row],[routeDetails.steps objectAtIndex:[indexPath row]]);
+    switch ([indexPath row]) {
+        case 0:
+            cell.textLabel.text = @"CANCEL";
+            cell.textLabel.textColor=[UIColor blueColor];
+            break;
+        default:
+            cell.textLabel.text = step.instructions;
+            cell.textLabel.textColor=[UIColor blackColor];
+            break;
     }
     //etc.
     return cell;
