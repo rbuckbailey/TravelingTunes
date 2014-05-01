@@ -158,8 +158,6 @@
 - (IBAction)showMapChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *artDisplayLayout;
 - (IBAction)artDisplayLayoutChanged:(id)sender;
-@property (weak, nonatomic) IBOutlet UISegmentedControl *showMapSwitch;
-- (IBAction)showMapSwitchChanged:(id)sender;
 
 
 
