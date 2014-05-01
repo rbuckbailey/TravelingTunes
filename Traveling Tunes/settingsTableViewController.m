@@ -324,6 +324,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.tableView.separatorColor = [UIColor clearColor];
 #ifdef FREE
     [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
 #endif
