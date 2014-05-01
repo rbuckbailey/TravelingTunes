@@ -920,7 +920,6 @@ MKRoute *routeDetails;
     topMargin = 20;
     bottomMargin = 20;
     
-    
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) { // overlay set up is simple
         [self setupDefaultFrames];
     }
@@ -940,6 +939,7 @@ MKRoute *routeDetails;
             _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height-[self getBannerHeight]);
             if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(self.view.bounds.size.width/2,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
+                [self.view bringSubviewToFront:_albumArt];
                 leftMargin = (self.view.bounds.size.width/2)+20;
             }
         } else { // side by side portrait

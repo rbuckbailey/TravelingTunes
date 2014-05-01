@@ -434,7 +434,6 @@
     UITableViewCell *selection = [tableView cellForRowAtIndexPath:indexPath];
     
     // actions on gesture configuration pages
-    NSLog(@"selected %@",selection);
     if (selection == _Nothing) [self configure:@"Unassigned"];
     else if (selection == _Play) [self configure:@"Play"];
     else if (selection == _Pause) [self configure:@"Pause"];
@@ -1144,10 +1143,6 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_showAlbumArt.on) {
         [defaults setObject:@"YES" forKey:@"showAlbumArt"];
-/*        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
-            [defaults setObject:@"NO" forKey:@"showMap"];
-            [_showMap setOn:NO];
-        }*/
     }
     else [defaults setObject:@"NO" forKey:@"showAlbumArt"];
     [defaults synchronize];
