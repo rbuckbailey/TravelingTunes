@@ -66,6 +66,8 @@
     [defaults setObject:@"14 N Moore St, New York, NY" forKey:@"homeAddress"];
     [defaults setObject:@"14 N Moore St, New York, NY" forKey:@"workAddress"];
     [defaults setObject:@"narf!" forKey:@"destinationAddress"];
+    [defaults setObject:@"YES" forKey:@"announce3Step"];
+    [defaults setObject:@"NO" forKey:@"dingForInstructions"];
 }
 
 - (void)initDisplaySettings {

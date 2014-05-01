@@ -2132,13 +2132,17 @@ MKRoute *routeDetails;
     [_synth speakUtterance:utterance];
 }
 
+- (void) dingForUpcomingDirections {
+    [self say:@"ding"];
+}
+
 - (NSString*) feetOrMiles:(float)distance {
     if ((distance/3.28084)<250) return [NSString stringWithFormat:@"%d feet", (int)(distance/3.28084)];
     else return [NSString stringWithFormat:@"%0.1f Miles", distance/1609.344];
 }
 
 - (IBAction)drawRoute {
-//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [_map removeOverlay:routeDetails.polyline];
 
     MKDirectionsRequest *directionsRequest = [[MKDirectionsRequest alloc] init];
@@ -2168,31 +2172,31 @@ MKRoute *routeDetails;
             MKRouteStep *step3Step;
             NSString *sayWhat;
             if ([routeDetails.steps count]>1) {
+                _onLastStep = NO;
                 andThenStep = [routeDetails.steps objectAtIndex:1];
                 if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],andThenStep.instructions];
                 else sayWhat = @"";
-                if ([routeDetails.steps count]>2) {
-                    _onLastStep = NO;
+                if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
                     step3Step = [routeDetails.steps objectAtIndex:2];
                     sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then in %@ %@",[self feetOrMiles:step3Step.distance],step3Step.instructions]];
-                } else _onLastStep = YES;
-            }
+                }
+            } else _onLastStep = YES;
             if (_firstStep) {
                 sayWhat = nextStep.instructions;
-                [self say:sayWhat];
+                if ([[defaults objectForKey:@"dingForInstructions"] isEqual:@"YES"]) [self dingForUpcomingDirections]; else [self say:sayWhat];
                 _firstStep = NO;
             }
             // convert distance in meters to feet before comparison; if <100 feet, announce turn
-            else if ((andThenStep.distance/3.28084)<250) {
+            else if ((andThenStep.distance/3.28084)<150) {
 //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                 // only say instructions once between 100 ft,
-                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>75)) {
-                    [self say:sayWhat];
+                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(_speedTier*1.5))) {
+                    if ([[defaults objectForKey:@"dingForInstructions"] isEqual:@"YES"]) [self dingForUpcomingDirections]; else [self say:sayWhat];
                     _latestInstructions = andThenStep.instructions;
                     _didSayTurn = NO;
                 }
                 // then say again at <15ft, also only once
-                if (((andThenStep.distance/3.28084)<75)&!(_didSayTurn)) {
+                if (((andThenStep.distance/3.28084)<(_speedTier*1.5))&!(_didSayTurn)) {
                     [self say:sayWhat];
                     _latestInstructions = andThenStep.instructions;
                     _didSayTurn = YES;
@@ -2224,8 +2228,6 @@ MKRoute *routeDetails;
             NSLog(@"Trip time: %@",tripTime);
             NSLog(@"ETA: %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]);
             _gpsDestination.text = [NSString stringWithFormat:@"Arriving %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]];
-//            [defaults setObject:etaTime forKey:@"tripETA"];
-//            [defaults setObject:tripTime forKey:@"tripTime"];
         }
     }];
 }
