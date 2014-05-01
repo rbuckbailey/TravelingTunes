@@ -45,6 +45,7 @@ BOOL bottomButtons = NO;
 @property AVSpeechSynthesizer *synth;
 @property NSString *latestInstructions;
 @property BOOL didSayTurn,finishedNavigating,onLastStep,playbackPausedByGPS,firstStep;
+@property UITableView *gpsInstructionsTable;
 @property CLPlacemark *thePlacemark;
 @end
 
@@ -458,8 +459,7 @@ MKRoute *routeDetails;
     _gpsDistanceRemaining.font = [UIFont systemFontOfSize:35];
 }
 
-- (void)viewDidLoad
-{
+- (void)viewDidLoad {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [super viewDidLoad];
     //initialized and not used for a good reason that I don't rememeber now
@@ -498,6 +498,9 @@ MKRoute *routeDetails;
     _gpsDistanceRemaining = [[UILabel alloc] init];
     _gpsDestination = [[UILabel alloc] init];
 //    _gpsDebugLabel = [[UILabel alloc] init];
+    _gpsInstructionsTable = [[UITableView alloc] init];
+    _gpsInstructionsTable.dataSource = self;
+    _gpsInstructionsTable.delegate = self;
     
     [self.view addSubview:_bgView];
     [self.view addSubview:_albumArt];
@@ -524,6 +527,7 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_gpsDistanceRemaining];
     [self.view addSubview:_gpsDestination];
+    [self.view addSubview:_gpsInstructionsTable];
 //    [self.view addSubview:_gpsDebugLabel];
 
     _gpsDistanceRemaining.frame=CGRectMake(10,10,320,30);
@@ -2291,22 +2295,17 @@ MKRoute *routeDetails;
 }
 
 - (void) showGPSInstructions {
-    UITableView *table = [[UITableView alloc] init];
-    table.dataSource = self;
-    table.delegate = self;
-    table.frame = _map.frame;
-    [self.view addSubview:table];
+    _gpsInstructionsTable.frame = _map.frame; //CGRectOffset(_map.frame, 0, -_gpsInstructionsTable.frame.size.height);
+    [self.view bringSubviewToFront:_gpsInstructionsTable];
+//    [UIView beginAnimations:@"showGPSInstructions" context:NULL]; _gpsInstructionsTable.frame = CGRectOffset(_gpsInstructionsTable.frame, 0, +_gpsInstructionsTable.frame.size.height);
+//    [UIView commitAnimations];
 }
 
 - (void) hideGPSInstructions {
-    {
-        UITableView *table = [[UITableView alloc] init];
-        table.dataSource = self;
-        table.delegate = self;
-        table.frame = _map.frame;
-        [self.view addSubview:table];
-    }
+    [UIView beginAnimations:@"hideGPSInstructions" context:NULL]; _gpsInstructionsTable.frame = CGRectOffset(_gpsInstructionsTable.frame, 0, -_gpsInstructionsTable.frame.size.height);
+    [UIView commitAnimations];
 }
+
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
     // Return the number of sections.
@@ -2340,10 +2339,23 @@ MKRoute *routeDetails;
             default:
                 text.text = step.instructions;
                 text.textColor=[UIColor blackColor];
+                break;
         }
     }
     //etc.
     return cell;
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+//    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    switch ([indexPath row]) {
+        case 0:
+            [self hideGPSInstructions];
+            break;
+        default:
+            break;
+    }
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 @end
