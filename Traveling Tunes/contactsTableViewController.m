@@ -61,7 +61,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     // Return the number of rows in the section.
-    return [_names count]+4;
+    return [_names count]+3; // we add 4 cells, but this returns 1 high already so only add 3
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
