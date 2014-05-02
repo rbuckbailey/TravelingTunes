@@ -2157,7 +2157,8 @@ MKRoute *routeDetails;
 - (void)say:(NSString*)instructions {
 //    AVSpeechUtterance *utterance = [AVSpeechUtterance
 //                                    speechUtteranceWithString:instructions];
-    AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc] initWithString:instructions];
+    //strip commas to prevent awkward pausing after "at the end of the road"
+    AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc] initWithString:instructions]; //[instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
 
     utterance.rate = 0.25;
 //    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
@@ -2212,18 +2213,20 @@ MKRoute *routeDetails;
             else _onLastStep = YES;
             if ([routeDetails.steps count]>1) {
                 andThenStep = [routeDetails.steps objectAtIndex:1];
-                if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],andThenStep.instructions];
+                if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
                 else sayWhat = @"";
                 NSLog(@"step3step? %@",[defaults objectForKey:@"announce3Step"]);
                 if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
                     step3Step = [routeDetails.steps objectAtIndex:2];
-                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then in %@ %@",[self feetOrMiles:step3Step.distance],step3Step.instructions]];
+                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:step3Step.distance],[step3Step.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
                 }
-            }             if (_firstStep) {
-                sayWhat = nextStep.instructions;
+            }
+            if (_firstStep) {
+                NSString *currentDestination = [defaults objectForKey:@"currentDestination"];
+                sayWhat = [NSString stringWithFormat:@"Traveling to %@. %@",[currentDestination stringByReplacingOccurrencesOfString:@"," withString:@""],[nextStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
                 if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
                     step3Step = [routeDetails.steps objectAtIndex:2];
-                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then in %@ %@",[self feetOrMiles:step3Step.distance],step3Step.instructions]];
+                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:step3Step.distance],[step3Step.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
                 }
                 if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                 _firstStep = NO;
