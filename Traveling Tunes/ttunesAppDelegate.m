@@ -48,6 +48,26 @@
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
 
+- (BOOL)application:(UIApplication *)application
+            openURL:(NSURL *)url
+  sourceApplication:(NSString *)sourceApplication
+         annotation:(id)annotation {
+    if ([MKDirectionsRequest isDirectionsRequestURL:url]) {
+        MKDirectionsRequest* directionsInfo = [[MKDirectionsRequest alloc] initWithContentsOfURL:url];
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        MKPlacemark *destination = directionsInfo.destination.placemark;
+        NSString *destinationAddress = [NSString stringWithFormat:@"%@ %@",[destination.addressDictionary objectForKey:@"Street"],[destination.addressDictionary objectForKey:@"City"]];
+        [defaults setObject:destinationAddress forKey:@"destinationAddress"];
+        [defaults setObject:destinationAddress forKey:@"lastDestination"]; // remember address in "enter address" field
+        [defaults synchronize];
+        [self.ttunes setupDestinationAddress];
+        return YES;
+    }
+    else {
+        // Handle other URL types...
+    }
+    return NO;
+}
 
 @end
 

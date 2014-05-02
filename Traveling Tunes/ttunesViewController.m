@@ -332,18 +332,24 @@ MKRoute *routeDetails;
     else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; NSLog(@"sleep on"); }
     
     //if the contact picker sent an address to navigate to, do that
+    NSLog(@"destined for %@",[defaults objectForKey:@"destinationAddress"]);
     if (![[defaults objectForKey:@"destinationAddress"] isEqual:@"narf!"]) {
         if ([[defaults objectForKey:@"destinationAddress"] isEqual:@"cancel"]) [self cancelNavigation];
         else {
-            [self cancelNavigation];
-            [defaults setObject:[defaults objectForKey:@"destinationAddress"] forKey:@"currentDestination"];
-            [self addressSearch:[defaults objectForKey:@"destinationAddress"]];
-            _firstStep = YES;
-            [self startGPSTimer];
-            [defaults setObject:@"narf!" forKey:@"destinationAddress"];
-            [defaults synchronize];
+            [self setupDestinationAddress];
         }
     } else _finishedNavigating = YES;
+}
+
+- (void)setupDestinationAddress {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self cancelNavigation];
+    [defaults setObject:[defaults objectForKey:@"destinationAddress"] forKey:@"currentDestination"];
+    [self addressSearch:[defaults objectForKey:@"destinationAddress"]];
+    _firstStep = YES;
+    [self startGPSTimer];
+    [defaults setObject:@"narf!" forKey:@"destinationAddress"];
+    [defaults synchronize];    
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateHeading:(CLHeading *)newHeading {
@@ -599,6 +605,8 @@ MKRoute *routeDetails;
         [defaults synchronize];
         [self showInstructions];
     }
+    
+//    if ([defaults objectForKey:@"urlDirections"]) NSLog(@"directions object %@",[defaults objectForKey:@"urlDirections"]);
 }
 
 - (void) initAdBanner {
@@ -2419,5 +2427,6 @@ MKRoute *routeDetails;
     }
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
+
 
 @end
