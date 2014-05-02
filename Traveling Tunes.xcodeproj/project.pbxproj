@@ -75,6 +75,8 @@
 		F4FB066D191434DF0006F8D1 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4FB066C191434DF0006F8D1 /* MapKit.framework */; };
 		F4FB066F191435F30006F8D1 /* usaCanada.geojson in Resources */ = {isa = PBXBuildFile; fileRef = F4FB066E191435F30006F8D1 /* usaCanada.geojson */; };
 		F4FB0670191435F30006F8D1 /* usaCanada.geojson in Resources */ = {isa = PBXBuildFile; fileRef = F4FB066E191435F30006F8D1 /* usaCanada.geojson */; };
+		F4FB06721914406A0006F8D1 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4FB06711914406A0006F8D1 /* StoreKit.framework */; };
+		F4FB0673191440700006F8D1 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4FB066C191434DF0006F8D1 /* MapKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -143,6 +145,7 @@
 		F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settingsTableViewCell.m; sourceTree = "<group>"; };
 		F4FB066C191434DF0006F8D1 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		F4FB066E191435F30006F8D1 /* usaCanada.geojson */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = usaCanada.geojson; sourceTree = "<group>"; };
+		F4FB06711914406A0006F8D1 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,6 +156,7 @@
 				F42406DB18F07E37006C836E /* iAd.framework in Frameworks */,
 				8E3C8CD6189BF785004A90AE /* CoreGraphics.framework in Frameworks */,
 				F4FB066D191434DF0006F8D1 /* MapKit.framework in Frameworks */,
+				F4FB06721914406A0006F8D1 /* StoreKit.framework in Frameworks */,
 				8E3C8CD8189BF785004A90AE /* UIKit.framework in Frameworks */,
 				8E3C8CD4189BF785004A90AE /* Foundation.framework in Frameworks */,
 			);
@@ -174,6 +178,7 @@
 			files = (
 				F4DA1FD018FAEF4400C018EC /* iAd.framework in Frameworks */,
 				F4DA1FD118FAEF4400C018EC /* CoreGraphics.framework in Frameworks */,
+				F4FB0673191440700006F8D1 /* MapKit.framework in Frameworks */,
 				F4DA1FD318FAEF4400C018EC /* UIKit.framework in Frameworks */,
 				F4DA1FD418FAEF4400C018EC /* Foundation.framework in Frameworks */,
 			);
@@ -207,6 +212,7 @@
 		8E3C8CD2189BF785004A90AE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				F4FB06711914406A0006F8D1 /* StoreKit.framework */,
 				F4FB066C191434DF0006F8D1 /* MapKit.framework */,
 				F42406DA18F07E37006C836E /* iAd.framework */,
 				8E3C8CD3189BF785004A90AE /* Foundation.framework */,
@@ -399,6 +405,9 @@
 						SystemCapabilities = {
 							com.apple.InAppPurchase = {
 								enabled = 0;
+							};
+							com.apple.iOS = {
+								enabled = 1;
 							};
 						};
 					};
