@@ -72,6 +72,9 @@
 		F4DA1FE118FAEF4400C018EC /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8E3C8CDC189BF785004A90AE /* InfoPlist.strings */; };
 		F4F25E8218D3E54D0083641B /* settingsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8118D3E54D0083641B /* settingsTableViewController.m */; };
 		F4F25E8518D3E5B00083641B /* settingsTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */; };
+		F4FB066D191434DF0006F8D1 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4FB066C191434DF0006F8D1 /* MapKit.framework */; };
+		F4FB066F191435F30006F8D1 /* usaCanada.geojson in Resources */ = {isa = PBXBuildFile; fileRef = F4FB066E191435F30006F8D1 /* usaCanada.geojson */; };
+		F4FB0670191435F30006F8D1 /* usaCanada.geojson in Resources */ = {isa = PBXBuildFile; fileRef = F4FB066E191435F30006F8D1 /* usaCanada.geojson */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -138,6 +141,8 @@
 		F4F25E8118D3E54D0083641B /* settingsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settingsTableViewController.m; sourceTree = "<group>"; };
 		F4F25E8318D3E5B00083641B /* settingsTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = settingsTableViewCell.h; sourceTree = "<group>"; };
 		F4F25E8418D3E5B00083641B /* settingsTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = settingsTableViewCell.m; sourceTree = "<group>"; };
+		F4FB066C191434DF0006F8D1 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		F4FB066E191435F30006F8D1 /* usaCanada.geojson */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = usaCanada.geojson; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +152,7 @@
 			files = (
 				F42406DB18F07E37006C836E /* iAd.framework in Frameworks */,
 				8E3C8CD6189BF785004A90AE /* CoreGraphics.framework in Frameworks */,
+				F4FB066D191434DF0006F8D1 /* MapKit.framework in Frameworks */,
 				8E3C8CD8189BF785004A90AE /* UIKit.framework in Frameworks */,
 				8E3C8CD4189BF785004A90AE /* Foundation.framework in Frameworks */,
 			);
@@ -179,6 +185,7 @@
 		8E3C8CC7189BF784004A90AE = {
 			isa = PBXGroup;
 			children = (
+				F4FB066E191435F30006F8D1 /* usaCanada.geojson */,
 				8E3C8CD9189BF785004A90AE /* Traveling Tunes */,
 				8E3C8CFB189BF785004A90AE /* Traveling TunesTests */,
 				8E3C8CD2189BF785004A90AE /* Frameworks */,
@@ -200,6 +207,7 @@
 		8E3C8CD2189BF785004A90AE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				F4FB066C191434DF0006F8D1 /* MapKit.framework */,
 				F42406DA18F07E37006C836E /* iAd.framework */,
 				8E3C8CD3189BF785004A90AE /* Foundation.framework */,
 				8E3C8CD5189BF785004A90AE /* CoreGraphics.framework */,
@@ -378,6 +386,9 @@
 							com.apple.InAppPurchase = {
 								enabled = 1;
 							};
+							com.apple.iOS = {
+								enabled = 1;
+							};
 						};
 					};
 					8E3C8CF3189BF785004A90AE = {
@@ -420,6 +431,7 @@
 			files = (
 				F4B3B3C918F9AA040079C334 /* quick start 3.png in Resources */,
 				F4B3B3CB18F9AA040079C334 /* quick start 2.png in Resources */,
+				F4FB066F191435F30006F8D1 /* usaCanada.geojson in Resources */,
 				F4B3B3C018F9815D0079C334 /* quick start 3p.png in Resources */,
 				F4B3B3C818F9AA040079C334 /* quick start 4.png in Resources */,
 				8E3C8CEA189BF785004A90AE /* Main_iPad.storyboard in Resources */,
@@ -447,6 +459,7 @@
 			files = (
 				F4DA1FD618FAEF4400C018EC /* quick start 3.png in Resources */,
 				F4DA1FD718FAEF4400C018EC /* quick start 2.png in Resources */,
+				F4FB0670191435F30006F8D1 /* usaCanada.geojson in Resources */,
 				F4DA1FD818FAEF4400C018EC /* quick start 3p.png in Resources */,
 				F4DA1FD918FAEF4400C018EC /* quick start 4.png in Resources */,
 				F4DA1FDA18FAEF4400C018EC /* Main_iPad.storyboard in Resources */,

@@ -2155,9 +2155,8 @@ MKRoute *routeDetails;
 //    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
     utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-GB"];
     utterance.volume = 1;
-//    NSLog(@"say what? %@",utterance);
-    if (_synth.paused) [_synth continueSpeaking];
     if ((mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)|_playbackPausedByGPS) _playbackPausedByGPS = YES; else _playbackPausedByGPS = NO;
+    if (_synth.paused) [_synth continueSpeaking];
     [_synth speakUtterance:utterance];
 }
 
@@ -2200,32 +2199,38 @@ MKRoute *routeDetails;
             MKRouteStep *andThenStep;
             MKRouteStep *step3Step;
             NSString *sayWhat;
-            if ([routeDetails.steps count]>1) {
+            if ([routeDetails.steps count]>2)
                 _onLastStep = NO;
+            else _onLastStep = YES;
+            if ([routeDetails.steps count]>1) {
                 andThenStep = [routeDetails.steps objectAtIndex:1];
                 if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],andThenStep.instructions];
                 else sayWhat = @"";
+                NSLog(@"step3step? %@",[defaults objectForKey:@"announce3Step"]);
                 if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
                     step3Step = [routeDetails.steps objectAtIndex:2];
                     sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then in %@ %@",[self feetOrMiles:step3Step.distance],step3Step.instructions]];
                 }
-            } else _onLastStep = YES;
-            if (_firstStep) {
+            }             if (_firstStep) {
                 sayWhat = nextStep.instructions;
-                if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else [self say:sayWhat];
+                if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
+                    step3Step = [routeDetails.steps objectAtIndex:2];
+                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@"and then in %@ %@",[self feetOrMiles:step3Step.distance],step3Step.instructions]];
+                }
+                if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                 _firstStep = NO;
             }
             // convert distance in meters to feet before comparison; if <100 feet, announce turn
-            else if ((andThenStep.distance/3.28084)<150) {
+            else if ((andThenStep.distance/3.28084)<_speedTier*2) {
 //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                 // only say instructions once between 100 ft,
-                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(_speedTier*1.5))) {
+                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(_speedTier*1.3))) {
                     if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                     _latestInstructions = andThenStep.instructions;
                     _didSayTurn = NO;
                 }
                 // then say again at <15ft, also only once
-                if (((andThenStep.distance/3.28084)<(_speedTier*1.5))&!(_didSayTurn)) {
+                if (((andThenStep.distance/3.28084)<(_speedTier*1.3))&!(_didSayTurn)) {
                     if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];                    _latestInstructions = andThenStep.instructions;
                     _didSayTurn = YES;
                     if (_onLastStep) _finishedNavigating = YES;
