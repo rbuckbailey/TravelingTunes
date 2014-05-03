@@ -368,7 +368,7 @@ MKRoute *routeDetails;
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-//    [_map.camera setAltitude:400+(_speedTier*10)];
+//    [_map.camera setAltitude:200+(_speedTier*2)];
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
@@ -400,7 +400,7 @@ MKRoute *routeDetails;
             [self bringHUDSToFront];
         }
         _map.showsUserLocation=YES;
-        [_map.camera setAltitude:400+(_speedTier*10)];
+        [_map.camera setAltitude:200+(_speedTier*10)];
         [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
         [self startGPSHeading];
         [self setMapInteractivity];
@@ -1266,7 +1266,8 @@ MKRoute *routeDetails;
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) {
         if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"]|[action isEqual:@"Unassigned"])) {
             if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
-            else _actionHUD.frame=CGRectMake(self.view.bounds.size.width-(self.view.bounds.size.width/4)-80, (self.view.bounds.size.height/2)-80, 160, 160);
+            else if (UIInterfaceOrientationIsLandscape(_activeOrientation)) _actionHUD.frame=CGRectMake(self.view.bounds.size.width-(self.view.bounds.size.width/4)-80, (self.view.bounds.size.height/2)-80, 160, 160);
+            else _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, self.view.bounds.size.height-(self.view.bounds.size.height/4)-80, 160, 160);
             _actionHUD.textAlignment=NSTextAlignmentCenter;
             _actionHUD.font = [UIFont systemFontOfSize:120];
             _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.4f];
