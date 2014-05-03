@@ -766,7 +766,7 @@ MKRoute *routeDetails;
                 else scrubLeft = (self.view.bounds.size.width/2);
                 playbackPosition = ((self.view.bounds.size.width/2)-36)*([mediaPlayer currentPlaybackTime]/totalPlaybackTime) + scrubLeft;
             } else {
-                if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubTop = (self.view.bounds.size.height/2);
+                if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) scrubTop = (self.view.bounds.size.height/2);
                     else scrubTop = (self.view.bounds.size.height/2)+36;
             }
         }
@@ -1320,8 +1320,13 @@ MKRoute *routeDetails;
     float targetVolumeLevel=height-(height*_volumeTarget);
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation)) {
         height=(self.view.bounds.size.height/2)-[self getBannerHeight];
-        volumeLevel=(height-(height*_volumeBase))+(self.view.bounds.size.height/2)+36;
-        targetVolumeLevel=(height-(height*_volumeTarget))+(self.view.bounds.size.height/2)+35;
+        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+            volumeLevel=(height-(height*_volumeBase))+(self.view.bounds.size.height/2);
+            targetVolumeLevel=(height-(height*_volumeTarget))+(self.view.bounds.size.height/2);
+        } else {
+            volumeLevel=(height-(height*_volumeBase))+(self.view.bounds.size.height/2)+36;
+            targetVolumeLevel=(height-(height*_volumeTarget))+(self.view.bounds.size.height/2)+36;
+        }
     }
 
     _lineView.backgroundColor = [UIColor clearColor];
