@@ -1695,7 +1695,7 @@ MKRoute *routeDetails;
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
                     else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft){ if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
-                    else if ((location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) // top of map
+                    else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) // top of map
                         [self showGPSInstructions];
                 }
                 else if (location.y>self.view.bounds.size.height-50-[self getBannerHeight]) { // bottom bar region
@@ -1706,7 +1706,7 @@ MKRoute *routeDetails;
                         [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
                     }
                 }
-                else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) {
+                else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) {
                     [self showGPSInstructions];
                 }
                 else if ((location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
@@ -2245,7 +2245,8 @@ MKRoute *routeDetails;
                 }
                 // then say again at <15ft, also only once
                 if (((andThenStep.distance/3.28084)<(20+_speedTier))&!(_didSayTurn)) {
-                    if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];                    _latestInstructions = andThenStep.instructions;
+                    if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                    _latestInstructions = andThenStep.instructions;
                     _didSayTurn = YES;
                     if (_onLastStep) _finishedNavigating = YES;
                 }
