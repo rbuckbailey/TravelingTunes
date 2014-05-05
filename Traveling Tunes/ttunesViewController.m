@@ -44,7 +44,7 @@ BOOL bottomButtons = NO;
 @property UIImageView *albumArt;
 @property AVSpeechSynthesizer *synth;
 @property NSString *latestInstructions;
-@property BOOL didSayTurn,finishedNavigating,onLastStep,playbackPausedByGPS,firstStep;
+@property BOOL didSayTurn,finishedNavigating,onLastStep,playbackPausedByGPS,firstStep,showingGPSInstructions;
 @property int oldDistanceRemaining;
 @property UITableView *gpsInstructionsTable;
 @property CLPlacemark *thePlacemark;
@@ -554,6 +554,7 @@ MKRoute *routeDetails;
     [self fixGPSLabels];
     _gpsDestination.textColor = [UIColor blackColor];
     [_gpsDestination setAlpha:0.5];
+    _showingGPSInstructions = NO;
 
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
@@ -606,8 +607,6 @@ MKRoute *routeDetails;
         [defaults synchronize];
         [self showInstructions];
     }
-    
-//    if ([defaults objectForKey:@"urlDirections"]) NSLog(@"directions object %@",[defaults objectForKey:@"urlDirections"]);
 }
 
 - (void) initAdBanner {
@@ -1693,7 +1692,7 @@ MKRoute *routeDetails;
                 }
                 
                 // check for button zones
-                if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) {
+                if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)&(!_showingGPSInstructions)) {
                     [self showGPSInstructions];
                 }
                 else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
@@ -2260,10 +2259,10 @@ MKRoute *routeDetails;
                     _firstStep = NO;
                 }
                 // convert distance in meters to feet before comparison; if <100 feet, announce turn
-                else if ((andThenStep.distance/3.28084)<60+_speedTier) {
+                else if ((andThenStep.distance/3.28084)<80+_speedTier) {
                     //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                     // only say instructions once between 100 ft,
-                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier))) {
+                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier))&((andThenStep.distance/3.28084)<(40+_speedTier))) {
                         if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                         _latestInstructions = andThenStep.instructions;
                         _didSayTurn = NO;
@@ -2356,6 +2355,7 @@ MKRoute *routeDetails;
 }
 
 - (void) showGPSInstructions {
+    _showingGPSInstructions = YES;
     _gpsInstructionsTable = [[UITableView alloc] init];
     _gpsInstructionsTable.dataSource = self;
     _gpsInstructionsTable.delegate = self;
@@ -2370,6 +2370,7 @@ MKRoute *routeDetails;
     [UIView commitAnimations];
     [_gpsInstructionsTable removeFromSuperview];
     _gpsInstructionsTable=nil;
+    _showingGPSInstructions = NO;
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
