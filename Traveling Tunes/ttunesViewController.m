@@ -1691,28 +1691,23 @@ MKRoute *routeDetails;
                 }
                 
                 // check for button zones
-                if (location.y<checkTop&location.y>checkTopZero) { // top bar region
-                    if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
-                    else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
-                    else if (location.x<middleButtonRight&location.x>middleButtonLeft){ if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
-                    else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) // top of map
-                        [self showGPSInstructions];
-                }
-                else if (location.y>self.view.bounds.size.height-50-[self getBannerHeight]) { // bottom bar region
-                    if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
-                    else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
-                    else if (location.x<middleButtonRight&location.x>middleButtonLeft) { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
-                    else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // bottom of map
-                        [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
-                    }
-                }
-                else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) {
+                if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) {
                     [self showGPSInstructions];
                 }
                 else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
                     [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
                 }
-                else {
+                else if (location.y<checkTop&location.y>checkTopZero) { // top bar region
+                    if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
+                    else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopRight"] :@"TopRight"];}  } // right button
+                    else if (location.x<middleButtonRight&location.x>middleButtonLeft){ if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopCenter"] :@"TopCenter"];}  } // center button
+                }
+                else if (location.y>self.view.bounds.size.height-50-[self getBannerHeight]) { // bottom bar region
+                    if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
+                    else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
+                    else if (location.x<middleButtonRight&location.x>middleButtonLeft) { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
+                }
+                else { // no button regions tapped so pass tap to single tap event
                     [self performSelector:@selector(oneFingerSingleTap) withObject:nil afterDelay:delay ];
                     [self.nextResponder touchesEnded:touches withEvent:event];
                 }
