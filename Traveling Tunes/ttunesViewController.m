@@ -1702,14 +1702,14 @@ MKRoute *routeDetails;
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomLeft"] :@"BottomLeft"];} } // left button
                     else if (location.x > middleButtonRight) { if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomRight"] :@"BottomRight"];}  } // right button
                     else if (location.x<middleButtonRight&location.x>middleButtonLeft) { if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"BottomCenter"] :@"BottomCenter"];}  } // center button
-                    else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // bottom of map
+                    else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // bottom of map
                         [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
                     }
                 }
                 else if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)) {
                     [self showGPSInstructions];
                 }
-                else if ((location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
+                else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
                     [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
                 }
                 else {
