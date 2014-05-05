@@ -2252,7 +2252,6 @@ MKRoute *routeDetails;
                     NSString *currentDestination = [defaults objectForKey:@"currentDestination"];
                     sayWhat = [NSString stringWithFormat:@"Traveling to %@. %@",[currentDestination stringByReplacingOccurrencesOfString:@"," withString:@""],[nextStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
                     if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
-                        step3Step = [routeDetails.steps objectAtIndex:2];
                         sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
                     }
                     if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
