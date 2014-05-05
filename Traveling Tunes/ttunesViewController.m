@@ -2157,6 +2157,11 @@ MKRoute *routeDetails;
     if (_playbackPausedByGPS) [mediaPlayer play]; //[self playOrDefault];
 }
 
+- (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer didStartSpeechUtterance:(AVSpeechUtterance *)utterance {
+    if ((mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)|_playbackPausedByGPS) _playbackPausedByGPS = YES; else _playbackPausedByGPS = NO;
+    if (_synth.paused) [_synth continueSpeaking];    
+}
+
 - (void)say:(NSString*)instructions {
     AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc] initWithString:instructions]; //[instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
 
@@ -2164,8 +2169,6 @@ MKRoute *routeDetails;
 //    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
     utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-GB"];
     utterance.volume = 1;
-    if ((mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)|_playbackPausedByGPS) _playbackPausedByGPS = YES; else _playbackPausedByGPS = NO;
-    if (_synth.paused) [_synth continueSpeaking];
     [_synth speakUtterance:utterance];
 }
 
