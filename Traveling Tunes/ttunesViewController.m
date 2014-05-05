@@ -45,6 +45,7 @@ BOOL bottomButtons = NO;
 @property AVSpeechSynthesizer *synth;
 @property NSString *latestInstructions;
 @property BOOL didSayTurn,finishedNavigating,onLastStep,playbackPausedByGPS,firstStep;
+@property int oldDistanceRemaining;
 @property UITableView *gpsInstructionsTable;
 @property CLPlacemark *thePlacemark;
 @end
@@ -1252,6 +1253,7 @@ MKRoute *routeDetails;
     _onLastStep = NO;
     _didSayTurn = NO;
     _latestInstructions = @"";
+    _oldDistanceRemaining = 0;
     self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 15.0f
                                                      target: self
                                                    selector: @selector(refreshGPSRoute)
@@ -2188,6 +2190,25 @@ MKRoute *routeDetails;
     directionsRequest.transportType = MKDirectionsTransportTypeAutomobile;
     MKDirections *directions = [[MKDirections alloc] initWithRequest:directionsRequest];
     MKDirections *eta = [[MKDirections alloc] initWithRequest:directionsRequest];
+    [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
+        if (error) {
+            NSLog(@"Error %@", error.description);
+        } else {
+            int minutes = (int)response.expectedTravelTime/60;
+            int hours = (int)minutes/60;
+            
+            NSString *tripTime = @"";
+            if (hours>0) tripTime = [NSString stringWithFormat:@"%d hours, %d minutes",hours,minutes-(hours*60)];
+            else tripTime = [NSString stringWithFormat:@"%d minutes",minutes];
+            NSDate *currentTime = [NSDate date];
+            NSDate* etaTime = [currentTime dateByAddingTimeInterval:response.expectedTravelTime];
+            NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+            [dateFormatter setDateFormat:@"h:mm"];
+            NSLog(@"Trip time: %@",tripTime);
+            NSLog(@"ETA: %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]);
+            _gpsDestination.text = [NSString stringWithFormat:@"Arriving %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]];
+        }
+    }];
     [directions calculateDirectionsWithCompletionHandler:^(MKDirectionsResponse *response, NSError *error) {
         if (error) {
             NSLog(@"Error %@", error.description);
@@ -2206,74 +2227,62 @@ MKRoute *routeDetails;
             MKRouteStep *andThenStep;
             MKRouteStep *step3Step;
             NSString *sayWhat;
-            if ([routeDetails.steps count]>2)
-                _onLastStep = NO;
-            else _onLastStep = YES;
-            if ([routeDetails.steps count]>1) {
-                andThenStep = [routeDetails.steps objectAtIndex:1];
-                if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
-                else sayWhat = @"";
-                NSLog(@"step3step? %@",[defaults objectForKey:@"announce3Step"]);
-                if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
-                    step3Step = [routeDetails.steps objectAtIndex:2];
-                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:step3Step.distance],[step3Step.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
+            if (_oldDistanceRemaining> andThenStep.distance/3.28084) { //if distance goes up we're going the wrong way so prompt for a u-turn
+                sayWhat = @"Make a u-turn when possible.";
+                if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                _oldDistanceRemaining = andThenStep.distance/3.28084;
+            } else {
+                _oldDistanceRemaining = andThenStep.distance/3.28084;
+                if ([routeDetails.steps count]>2)
+                    _onLastStep = NO;
+                else _onLastStep = YES;
+                if ([routeDetails.steps count]>1) {
+                    andThenStep = [routeDetails.steps objectAtIndex:1];
+                    if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
+                    else sayWhat = @"";
+                    NSLog(@"step3step? %@",[defaults objectForKey:@"announce3Step"]);
+                    if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
+                        step3Step = [routeDetails.steps objectAtIndex:2];
+                        sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:step3Step.distance],[step3Step.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
+                    }
                 }
+                if (_firstStep) {
+                    NSString *currentDestination = [defaults objectForKey:@"currentDestination"];
+                    sayWhat = [NSString stringWithFormat:@"Traveling to %@. %@",[currentDestination stringByReplacingOccurrencesOfString:@"," withString:@""],[nextStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
+                    if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
+                        step3Step = [routeDetails.steps objectAtIndex:2];
+                        sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
+                    }
+                    if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                    _firstStep = NO;
+                }
+                // convert distance in meters to feet before comparison; if <100 feet, announce turn
+                else if ((andThenStep.distance/3.28084)<60+_speedTier) {
+                    //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
+                    // only say instructions once between 100 ft,
+                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier))) {
+                        if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                        _latestInstructions = andThenStep.instructions;
+                        _didSayTurn = NO;
+                    }
+                    // then say again at <15ft, also only once
+                    if (((andThenStep.distance/3.28084)<(20+_speedTier))&!(_didSayTurn)) {
+                        if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                        _latestInstructions = andThenStep.instructions;
+                        _didSayTurn = YES;
+                        if (_onLastStep) _finishedNavigating = YES;
+                    }
+                    //                _gpsDebugLabel.text = [NSString stringWithFormat:@"%@\n%@\n%@",nextStep.instructions,andThenStep.instructions,step3Step.instructions];
+                    //                if (_finishedNavigating) [self cancelNavigation];
+                    // last, if under 100', setFireDate of the timer to 10 seconds instead of 30
+                    NSDate *currentTime = [NSDate date];
+                    [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
+                }
+                _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%@%@",[self symbolForDirections:andThenStep.instructions],[self feetOrMiles:andThenStep.distance]];
             }
-            if (_firstStep) {
-                NSString *currentDestination = [defaults objectForKey:@"currentDestination"];
-                sayWhat = [NSString stringWithFormat:@"Traveling to %@. %@",[currentDestination stringByReplacingOccurrencesOfString:@"," withString:@""],[nextStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
-                if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
-                    step3Step = [routeDetails.steps objectAtIndex:2];
-                    sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
-                }
-                if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
-                _firstStep = NO;
-            }
-            // convert distance in meters to feet before comparison; if <100 feet, announce turn
-            else if ((andThenStep.distance/3.28084)<60+_speedTier) {
-//                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
-                // only say instructions once between 100 ft,
-                if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier))) {
-                    if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
-                    _latestInstructions = andThenStep.instructions;
-                    _didSayTurn = NO;
-                }
-                // then say again at <15ft, also only once
-                if (((andThenStep.distance/3.28084)<(20+_speedTier))&!(_didSayTurn)) {
-                    if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
-                    _latestInstructions = andThenStep.instructions;
-                    _didSayTurn = YES;
-                    if (_onLastStep) _finishedNavigating = YES;
-                }
-//                _gpsDebugLabel.text = [NSString stringWithFormat:@"%@\n%@\n%@",nextStep.instructions,andThenStep.instructions,step3Step.instructions];
-//                if (_finishedNavigating) [self cancelNavigation];
-                // last, if under 100', setFireDate of the timer to 10 seconds instead of 30
-                NSDate *currentTime = [NSDate date];
-                [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
-            }
-            _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%@%@",[self symbolForDirections:andThenStep.instructions],[self feetOrMiles:andThenStep.distance]];
         }
     }];
-    [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
-        if (error) {
-            NSLog(@"Error %@", error.description);
-        } else {
-            int minutes = (int)response.expectedTravelTime/60;
-            int hours = (int)minutes/60;
-            
-            NSString *tripTime = @"";
-            if (hours>0) tripTime = [NSString stringWithFormat:@"%d hours, %d minutes",hours,minutes-(hours*60)];
-            else tripTime = [NSString stringWithFormat:@"%d minutes",minutes];
-            NSDate *currentTime = [NSDate date];
-            NSDate* etaTime = [currentTime dateByAddingTimeInterval:response.expectedTravelTime];
-            NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-            [dateFormatter setDateFormat:@"h:mm"];
-            NSLog(@"Trip time: %@",tripTime);
-            NSLog(@"ETA: %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]);
-            _gpsDestination.text = [NSString stringWithFormat:@"Arriving %@",[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate: etaTime]]];
-            [self fixGPSLabels];
-        }
-    }];
+    [self fixGPSLabels];
     if (_finishedNavigating) [self cancelNavigation];
 }
 
