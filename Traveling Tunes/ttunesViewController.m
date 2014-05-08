@@ -353,15 +353,16 @@ MKRoute *routeDetails;
     [defaults synchronize];    
 }
 
+/*
 - (void)locationManager:(CLLocationManager *)manager didUpdateHeading:(CLHeading *)newHeading {
     if (newHeading.headingAccuracy < 0)
         return;
-    /*
+ 
     // Use the true heading if it is valid.
     CLLocationDirection  theHeading = ((newHeading.trueHeading > 0) ?
                                        newHeading.trueHeading : newHeading.magneticHeading);
     _currentHeading = theHeading;
-//    [_map setTransform:CGAffineTransformMakeRotation(-1*newHeading.magneticHeading*3.14159/180)];*/
+//    [_map setTransform:CGAffineTransformMakeRotation(-1*newHeading.magneticHeading*3.14159/180)];
 //    float rotation = -1.0f * M_PI * (newHeading.magneticHeading) / 180.0f; // or .trueHeading for GPS
 //	_map.transform = CGAffineTransformMakeRotation(rotation);
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
@@ -374,6 +375,7 @@ MKRoute *routeDetails;
 //    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
 }
+*/
 
 - (void) setMapInteractivity {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -2443,5 +2445,11 @@ MKRoute *routeDetails;
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
+- (BOOL)locationManagerShouldDisplayHeadingCalibration:(CLLocationManager *)manager{
+    if(!self.currentHeading) return YES; // Got nothing, We can assume we got to calibrate.
+    else if( self.currentHeading.headingAccuracy < 0 ) return YES; // 0 means invalid heading, need to calibrate
+    else if( self.currentHeading.headingAccuracy > 5 )return YES; // 5 degrees is a small value correct for my needs, too.
+    else return NO; // All is good. Compass is precise enough.
+}
 
 @end
