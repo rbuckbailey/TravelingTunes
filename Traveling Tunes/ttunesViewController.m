@@ -33,7 +33,7 @@ BOOL bottomButtons = NO;
 @property UILabel *actionHUD;
 @property UILabel *topLeftRegion,*topCenterRegion,*topRightRegion,*bottomLeftRegion,*bottomCenterRegion,*bottomRightRegion;
 @property UILabel *artistTitle,*songTitle,*albumTitle;
-@property UILabel *gpsDistanceRemaining,*gpsDestination; //,*gpsDebugLabel;
+@property UILabel *gpsDistanceRemaining,*gpsDestination,*gpsDebugLabel;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
@@ -173,6 +173,7 @@ MKRoute *routeDetails;
     }
     self.gps.desiredAccuracy = kCLLocationAccuracyBest;
     self.gps.headingFilter = 5;
+    [self.gps startUpdatingLocation];
     [self.gps startUpdatingHeading];
  //   }
 }
@@ -185,24 +186,23 @@ MKRoute *routeDetails;
     return self;
 }
 
-- (void)setupBaseVolume {
-//
-}
-
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     float mph = (newLocation.speed*2.23694);
 
-    // calibrate base volume when not moving; otherwise it is adjusted by [self increase/decreaseVolume]
     if (mph <= 0) {
+        // calibrate base volume when not moving
         _volumeBase = mediaPlayer.volume;
+        _volumeTarget = mediaPlayer.volume;
         _volumeTenth = _volumeBase/100;
+    } else {
+        // if moving, adjust volume levels and global speed
+        _speedTier = (int)(mph);
+        _gpsDebugLabel.text=[NSString stringWithFormat:@"%d",_speedTier];
+        _volumeTarget = _volumeBase+((_volumeTenth*_speedTier)*[[defaults objectForKey:@"GPSSensivity"] floatValue]);
     }
-    
-    _speedTier = (int)(mph / 1);
-    _volumeTarget = _volumeBase+((_volumeTenth*_speedTier)*[[defaults objectForKey:@"GPSSensivity"] floatValue]);
 
 //    [self setupHUD];
     
@@ -363,7 +363,6 @@ MKRoute *routeDetails;
     MKMapCamera *newCamera = [[_map camera] copy];
     [newCamera setHeading:90.0]; // or newCamera.heading + 90.0 % 360.0
     [_map setCamera:newCamera animated:YES];
-    NSLog(@"headings: %f & %f oriented %d",newHeading.magneticHeading,newHeading.trueHeading,_activeOrientation);
     switch (_activeOrientation) { // mapView camera adjusts for rotation but newHeading does not, so adjust manually
         case 2: theHeading=theHeading+180; break;
         case 3: theHeading=theHeading+90; break;
@@ -420,7 +419,7 @@ MKRoute *routeDetails;
             [_map setAlpha:1];
             [self.view bringSubviewToFront:_gpsDistanceRemaining];
             [self.view bringSubviewToFront:_gpsDestination];
-//            [self.view bringSubviewToFront:_gpsDebugLabel];
+            [self.view bringSubviewToFront:_gpsDebugLabel];
         }
         else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
         else {
@@ -487,6 +486,8 @@ MKRoute *routeDetails;
     _synth.delegate = self;
     
     _volumeTarget = mediaPlayer.volume;
+    _volumeBase = mediaPlayer.volume;
+    _volumeTenth = mediaPlayer.volume/100;
     _timersRunning=0;
     
     // attach to delegate so launch/exit actions can be called
@@ -515,7 +516,7 @@ MKRoute *routeDetails;
     
     _gpsDistanceRemaining = [[UILabel alloc] init];
     _gpsDestination = [[UILabel alloc] init];
-//    _gpsDebugLabel = [[UILabel alloc] init];
+    _gpsDebugLabel = [[UILabel alloc] init];
     _gpsInstructionsTable = [[UITableView alloc] init];
     _gpsInstructionsTable.dataSource = self;
     _gpsInstructionsTable.delegate = self;
@@ -545,19 +546,18 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_gpsDistanceRemaining];
     [self.view addSubview:_gpsDestination];
-//    [self.view addSubview:_gpsInstructionsTable];
-//    [self.view addSubview:_gpsDebugLabel];
+    [self.view addSubview:_gpsDebugLabel];
 
     _gpsDistanceRemaining.frame=CGRectMake(10,10,320,30);
     _gpsDistanceRemaining.textColor = [UIColor blackColor];
     [_gpsDistanceRemaining setAlpha:0.5];
     
-/*    _gpsDebugLabel.frame=CGRectMake(10,20,320,300);
+    _gpsDebugLabel.frame=CGRectMake(10,20,320,300);
     _gpsDebugLabel.numberOfLines = 0;
     _gpsDebugLabel.textColor = [UIColor blackColor];
     _gpsDebugLabel.font = [UIFont systemFontOfSize:30];
     [_gpsDebugLabel setAlpha:0.5];
-*/
+
     
     [self fixGPSLabels];
     _gpsDestination.textColor = [UIColor blackColor];
@@ -608,7 +608,6 @@ MKRoute *routeDetails;
     }
     
     self.bannerIsVisible = NO;
-//    _speedTier = 0;
     
     if ([[defaults objectForKey:@"firstRun"] isEqual:@"QS"]) {
         [defaults setObject:@"done" forKey:@"firstRun"];
@@ -802,7 +801,7 @@ MKRoute *routeDetails;
     }
     
     // since this runs 5 times a second, update volume per GPS here
-    mediaPlayer.volume=_volumeTarget;
+    if (_volumeTarget>0) mediaPlayer.volume = _volumeTarget;
     [self setupHUD];
     [self setupLabels];
 }
@@ -2180,7 +2179,7 @@ MKRoute *routeDetails;
 }
 
 - (void) dingForUpcomingDirections {
-    [self say:@"ding"];
+    [self say:@"ring a ding ding"];
 }
 
 - (NSString*) feetOrMiles:(float)distance {
@@ -2224,7 +2223,6 @@ MKRoute *routeDetails;
             NSLog(@"Error %@", error.description);
         } else {
             routeDetails = response.routes.lastObject;
-//            [self clearRoute];
             [_map addOverlay:routeDetails.polyline];
             NSLog(@"Destination %@",[placemark.addressDictionary objectForKey:@"Street"]);
             NSLog(@"Distance %@",[self feetOrMiles:routeDetails.distance] );
@@ -2237,7 +2235,7 @@ MKRoute *routeDetails;
             MKRouteStep *andThenStep;
             MKRouteStep *step3Step;
             NSString *sayWhat;
-            if (_oldDistanceRemaining> andThenStep.distance/3.28084) { //if distance goes up we're going the wrong way so prompt for a u-turn
+            if (_oldDistanceRemaining > andThenStep.distance/3.28084) { //if distance goes up we're going the wrong way so prompt for a u-turn
                 sayWhat = @"Make a u-turn when possible.";
                 if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
@@ -2305,11 +2303,14 @@ MKRoute *routeDetails;
 
 - (void) refreshGPSRoute {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+ //   [self addressSearch:[defaults objectForKey:@"currentDestination"]];
+
     // refresh route only if moving; else just trigger the timer again in 5s
     if (_speedTier>5) [self addressSearch:[defaults objectForKey:@"currentDestination"]];
     else {
         NSDate *currentTime = [NSDate date];
-        [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
+//        [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
         NSLog(@"not updating gps b/c not moving");
     }
 }
