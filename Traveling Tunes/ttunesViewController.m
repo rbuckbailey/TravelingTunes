@@ -404,7 +404,8 @@ MKRoute *routeDetails;
         }
         _map.showsUserLocation=YES;
         [_map.camera setAltitude:200+(_speedTier*10)];
-        [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+//        [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+        [_map setUserTrackingMode:MKUserTrackingModeFollow animated:NO];
         [self startGPSHeading];
         [self setMapInteractivity];
         // max opacity of map if there is art
@@ -2233,7 +2234,7 @@ MKRoute *routeDetails;
             NSString *sayWhat;
             if (_oldDistanceRemaining> andThenStep.distance/3.28084) { //if distance goes up we're going the wrong way so prompt for a u-turn
                 sayWhat = @"Make a u-turn when possible.";
-                if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
             } else {
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
@@ -2260,7 +2261,7 @@ MKRoute *routeDetails;
                     _firstStep = NO;
                 }
                 // convert distance in meters to feet before comparison; if <100 feet, announce turn
-                else if ((andThenStep.distance/3.28084)<80+_speedTier) {
+                else if ((andThenStep.distance/3.28084)<70+(_speedTier*2)) {
                     //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                     // only say instructions once between 100 ft,
                     if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier))&((andThenStep.distance/3.28084)<(40+_speedTier))) {
@@ -2269,7 +2270,7 @@ MKRoute *routeDetails;
                         _didSayTurn = NO;
                     }
                     // then say again at <15ft, also only once
-                    if (((andThenStep.distance/3.28084)<(20+_speedTier))&!(_didSayTurn)) {
+                    if (((andThenStep.distance/3.28084)<(20+(_speedTier*2)))&!(_didSayTurn)) {
                         if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                         _latestInstructions = andThenStep.instructions;
                         _didSayTurn = YES;
@@ -2299,7 +2300,12 @@ MKRoute *routeDetails;
 
 - (void) refreshGPSRoute {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [self addressSearch:[defaults objectForKey:@"currentDestination"]];
+    // refresh route only if moving; else just trigger the timer again in 5s
+    if (_speedTier>5) [self addressSearch:[defaults objectForKey:@"currentDestination"]];
+    else {
+        NSDate *currentTime = [NSDate date];
+        [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
+    }
 }
 
 -(MKOverlayRenderer *)mapView:(MKMapView *)mapView rendererForOverlay:(id<MKOverlay>)overlay {
