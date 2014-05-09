@@ -37,7 +37,6 @@ BOOL bottomButtons = NO;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
-@property (strong, nonatomic) CLLocationManager *locationManager;
 @property int baseVolume;
 @property int fingers;
 @property UIColor *themeBG, *themeColorArtist,*themeColorSong,*themeColorAlbum;
@@ -158,20 +157,23 @@ MKRoute *routeDetails;
 }
 
 -(void)startGPSVolume {
-    if (self != nil) {
+    if (self.gps == nil) {
         self.gps = [[CLLocationManager alloc] init];
         self.gps.delegate = self;
-        [self.gps startUpdatingLocation];
     }
+    [self.gps startUpdatingLocation];
 }
 
 - (void)startGPSHeading {
     // Start heading updates.
 //    if ([CLLocationManager headingAvailable]) {
-        self.gps.desiredAccuracy = kCLLocationAccuracyBest;
-
-        self.gps.headingFilter = 5;
-        [self.gps startUpdatingHeading];
+    if (self.gps == nil) {
+        self.gps = [[CLLocationManager alloc] init];
+        self.gps.delegate = self;
+    }
+    self.gps.desiredAccuracy = kCLLocationAccuracyBest;
+    self.gps.headingFilter = 5;
+    [self.gps startUpdatingHeading];
  //   }
 }
 
@@ -353,29 +355,28 @@ MKRoute *routeDetails;
     [defaults synchronize];    
 }
 
-/*
 - (void)locationManager:(CLLocationManager *)manager didUpdateHeading:(CLHeading *)newHeading {
-    if (newHeading.headingAccuracy < 0)
-        return;
+//    if (newHeading.headingAccuracy < 0)
+//        return;
  
     // Use the true heading if it is valid.
     CLLocationDirection  theHeading = ((newHeading.trueHeading > 0) ?
                                        newHeading.trueHeading : newHeading.magneticHeading);
-    _currentHeading = theHeading;
-//    [_map setTransform:CGAffineTransformMakeRotation(-1*newHeading.magneticHeading*3.14159/180)];
-//    float rotation = -1.0f * M_PI * (newHeading.magneticHeading) / 180.0f; // or .trueHeading for GPS
-//	_map.transform = CGAffineTransformMakeRotation(rotation);
-//    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+//    [_map setTransform:CGAffineTransformMakeRotation(theHeading*3.14159/180)];
+    theHeading=theHeading+90;
+    if (theHeading>360) theHeading=theHeading-
+        360;
+    [_map.camera setHeading:theHeading];
 }
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-//    [_map.camera setAltitude:200+(_speedTier*2)];
+    [_map.camera setAltitude:800+(_speedTier*10)];
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-//    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
+    [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
 //    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
 }
-*/
+
 
 - (void) setMapInteractivity {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -403,9 +404,8 @@ MKRoute *routeDetails;
             [self bringHUDSToFront];
         }
         _map.showsUserLocation=YES;
-        [_map.camera setAltitude:200+(_speedTier*10)];
 //        [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
-        [_map setUserTrackingMode:MKUserTrackingModeFollow animated:NO];
+//        [_map setUserTrackingMode:MKUserTrackingModeFollow animated:NO];
         [self startGPSHeading];
         [self setMapInteractivity];
         // max opacity of map if there is art
@@ -2305,6 +2305,7 @@ MKRoute *routeDetails;
     else {
         NSDate *currentTime = [NSDate date];
         [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
+        NSLog(@"not updating gps b/c not moving");
     }
 }
 
@@ -2451,13 +2452,5 @@ MKRoute *routeDetails;
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
-- (BOOL)locationManagerShouldDisplayHeadingCalibration:(CLLocationManager *)manager{
-/*    if(!self.currentHeading) return YES; // Got nothing, We can assume we got to calibrate.
-    else if( self.currentHeading.headingAccuracy < 0 ) return YES; // 0 means invalid heading, need to calibrate
-    else if( self.currentHeading.headingAccuracy > 5 )return YES; // 5 degrees is a small value correct for my needs, too.
-    else return NO; // All is good. Compass is precise enough.
- */
-    return NO;
-}
 
 @end
