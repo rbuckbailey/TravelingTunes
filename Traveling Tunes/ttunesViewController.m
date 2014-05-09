@@ -45,6 +45,7 @@ BOOL bottomButtons = NO;
 @property NSString *latestInstructions;
 @property BOOL didSayTurn,finishedNavigating,onLastStep,playbackPausedByGPS,firstStep,showingGPSInstructions;
 @property int oldDistanceRemaining;
+@property NSString *oldStepText;
 @property UITableView *gpsInstructionsTable;
 @property CLPlacemark *thePlacemark;
 @end
@@ -2236,12 +2237,13 @@ MKRoute *routeDetails;
             MKRouteStep *andThenStep;
             MKRouteStep *step3Step;
             NSString *sayWhat;
-            if (_oldDistanceRemaining > andThenStep.distance/3.28084) { //if distance goes up we're going the wrong way so prompt for a u-turn
+            if ((_oldDistanceRemaining > andThenStep.distance/3.28084)&&(_oldStepText==nextStep.instructions)) { //if distance goes up we're going the wrong way so prompt for a u-turn
                 sayWhat = @"Make a u-turn when possible.";
                 if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
             } else {
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
+                _oldStepText = andThenStep.instructions;
                 if ([routeDetails.steps count]>2)
                     _onLastStep = NO;
                 else _onLastStep = YES;
@@ -2268,7 +2270,7 @@ MKRoute *routeDetails;
                 else if ((andThenStep.distance/3.28084)<70+(_speedTier*2)) {
                     //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                     // only say instructions once between 100 ft,
-                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier))&((andThenStep.distance/3.28084)<(40+_speedTier))) {
+                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier*2))) {
                         if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                         _latestInstructions = andThenStep.instructions;
                         _didSayTurn = NO;
@@ -2308,8 +2310,10 @@ MKRoute *routeDetails;
  //   [self addressSearch:[defaults objectForKey:@"currentDestination"]];
 
     // refresh route only if moving; else just trigger the timer again in 5s
-    if (_speedTier>5) [self addressSearch:[defaults objectForKey:@"currentDestination"]];
-    else {
+    if (_speedTier>5) {
+        [self addressSearch:[defaults objectForKey:@"currentDestination"]];
+        _gpsDebugLabel.text = @"refreshing";
+    } else {
         NSDate *currentTime = [NSDate date];
 //        [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
         NSLog(@"not updating gps b/c not moving");
