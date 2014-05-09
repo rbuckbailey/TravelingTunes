@@ -2164,7 +2164,8 @@ MKRoute *routeDetails;
 }
 
 - (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer didStartSpeechUtterance:(AVSpeechUtterance *)utterance {
-    if ((mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)|_playbackPausedByGPS) _playbackPausedByGPS = YES; else _playbackPausedByGPS = NO;
+    if ((mediaPlayer.playbackState==MPMusicPlaybackStateInterrupted)||(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)||_playbackPausedByGPS) _playbackPausedByGPS = YES; else _playbackPausedByGPS = NO;
+    NSLog(@"playback state %ld",(long)mediaPlayer.playbackState);
     if (_synth.paused) [_synth continueSpeaking];    
 }
 
