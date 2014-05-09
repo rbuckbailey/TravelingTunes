@@ -356,25 +356,30 @@ MKRoute *routeDetails;
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateHeading:(CLHeading *)newHeading {
-//    if (newHeading.headingAccuracy < 0)
-//        return;
- 
     // Use the true heading if it is valid.
     CLLocationDirection  theHeading = ((newHeading.trueHeading > 0) ?
                                        newHeading.trueHeading : newHeading.magneticHeading);
 //    [_map setTransform:CGAffineTransformMakeRotation(theHeading*3.14159/180)];
-    theHeading=theHeading+90;
-    if (theHeading>360) theHeading=theHeading-
-        360;
+    MKMapCamera *newCamera = [[_map camera] copy];
+    [newCamera setHeading:90.0]; // or newCamera.heading + 90.0 % 360.0
+    [_map setCamera:newCamera animated:YES];
+    NSLog(@"headings: %f & %f oriented %d",newHeading.magneticHeading,newHeading.trueHeading,_activeOrientation);
+    switch (_activeOrientation) { // mapView camera adjusts for rotation but newHeading does not, so adjust manually
+        case 2: theHeading=theHeading+180; break;
+        case 3: theHeading=theHeading+90; break;
+        case 4: theHeading=theHeading-90; break;
+    }
+    if (theHeading>360) theHeading=theHeading-360;
+    else if (theHeading<0) theHeading=theHeading+360;
     [_map.camera setHeading:theHeading];
+//    [_map.camera setHeading:0];
 }
 
 - (void)mapView:(MKMapView *)mapView didUpdateUserLocation: (MKUserLocation *)userLocation
 {
-    [_map.camera setAltitude:800+(_speedTier*10)];
-//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [_map.camera setAltitude:600+(_speedTier*20)];
     [_map setCenterCoordinate:_map.userLocation.coordinate animated:NO];
-//    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
 }
 
 

@@ -107,7 +107,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "48"
             endingLineNumber = "48"
-            landmarkName = "oldDistanceRemaining"
+            landmarkName = "gpsInstructionsTable"
             landmarkType = "19">
          </BreakpointContent>
       </BreakpointProxy>
@@ -139,8 +139,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "85"
             endingLineNumber = "85"
-            landmarkName = "@implementation ttunesViewController"
-            landmarkType = "3">
+            landmarkName = "-pageViewController:viewControllerAfterViewController:"
+            landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -187,7 +187,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "178"
             endingLineNumber = "178"
-            landmarkName = "-init"
+            landmarkName = "-startGPSHeading"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
@@ -198,7 +198,39 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421254488.063367"
+            timestampString = "421340111.061838"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1510"
+            endingLineNumber = "1510"
+            landmarkName = "-determineSwipeDirectiond:"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Traveling Tunes/ttunesViewController.m"
+            timestampString = "421340111.061838"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1516"
+            endingLineNumber = "1516"
+            landmarkName = "-determineSwipeDirectiond:"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Traveling Tunes/ttunesViewController.m"
+            timestampString = "421340111.061838"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1505"
@@ -210,32 +242,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "No"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421254488.063367"
+            timestampString = "421340111.061838"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1511"
-            endingLineNumber = "1511"
-            landmarkName = "-determineSwipeDirectiond:"
-            landmarkType = "5">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421254488.063367"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1500"
-            endingLineNumber = "1500"
-            landmarkName = "-determineSwipeDirectiond:"
+            startingLineNumber = "2311"
+            endingLineNumber = "2311"
+            landmarkName = "-refreshGPSRoute"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
