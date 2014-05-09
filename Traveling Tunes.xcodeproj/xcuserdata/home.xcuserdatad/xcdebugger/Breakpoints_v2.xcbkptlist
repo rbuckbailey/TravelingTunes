@@ -38,7 +38,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421367967.603781"
+            timestampString = "421370979.155829"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "363"
@@ -54,7 +54,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421367967.603781"
+            timestampString = "421370979.155829"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "373"
@@ -70,7 +70,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421368276.382418"
+            timestampString = "421370979.155829"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "2170"
@@ -86,11 +86,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421368276.382418"
+            timestampString = "421371555.839877"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2240"
-            endingLineNumber = "2240"
+            startingLineNumber = "2247"
+            endingLineNumber = "2247"
             landmarkName = "-drawRoute"
             landmarkType = "5">
          </BreakpointContent>
@@ -102,7 +102,7 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421367967.603781"
+            timestampString = "421370979.155829"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "805"
@@ -118,28 +118,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421367967.603781"
+            timestampString = "421370979.155829"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1371"
             endingLineNumber = "1371"
             landmarkName = "-setupHUD"
-            landmarkType = "5">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421368686.709323"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "203"
-            endingLineNumber = "203"
-            landmarkName = "-locationManager:didUpdateToLocation:fromLocation:"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
