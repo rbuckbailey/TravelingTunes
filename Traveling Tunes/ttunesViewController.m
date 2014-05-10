@@ -2243,7 +2243,7 @@ MKRoute *routeDetails;
             else _onLastStep = YES;
             
             _gpsDebugLabel.text = [NSString stringWithFormat:@"%@ %@",_oldStepText,andThenStep.instructions];
-            if ((_oldDistanceRemaining > andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) { //if distance goes up we're going the wrong way so prompt for a u-turn
+            if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) { //if distance goes up we're going the wrong way so prompt for a u-turn
                 sayWhat = @"Make a u-turn when possible.";
                 if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
@@ -2277,13 +2277,13 @@ MKRoute *routeDetails;
                 else if ((andThenStep.distance/3.28084)<70+(_speedTier*2)) {
                     //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                     // only say instructions once between 100 ft,
-                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier*1.5))) {
+                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier*1.25))) {
                         if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                         _latestInstructions = andThenStep.instructions;
                         _didSayTurn = NO;
                     }
                     // then say again at <15ft, also only once
-                    if (((andThenStep.distance/3.28084)<(20+(_speedTier*1.5)))&!(_didSayTurn)) {
+                    if (((andThenStep.distance/3.28084)<(20+(_speedTier*1.25)))&!(_didSayTurn)) {
                         if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                         _latestInstructions = andThenStep.instructions;
                         _didSayTurn = YES;
