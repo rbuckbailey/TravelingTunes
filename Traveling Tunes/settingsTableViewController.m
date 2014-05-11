@@ -455,11 +455,15 @@
     else if (selection == _toggleShuffle) [self configure:@"ToggleShuffle"];
     else if (selection == _increaseRating) [self configure:@"IncreaseRating"];
     else if (selection == _decreaseRating) [self configure:@"DecreaseRating"];
+    
     else if (selection == _ShowQuickStart) [self configure:@"ShowQuickStart"];
+    else if (selection == _Menu) [self configure:@"Menu"];
+    
     else if (selection == _navigateHome) [self configure:@"NavigateHome"];
     else if (selection == _navigateToContact) [self configure:@"NavigateToContact"];
     else if (selection == _navigateToWork) [self configure:@"NavigateToWork"];
-    else if (selection == _Menu) [self configure:@"Menu"];
+    else if (selection == _showDirections) [self configure:@"showDirections"];
+    else if (selection == _recenterMap) [self configure:@"recenterMap"];
 
     // "reset" buttons
     else if (selection == _ResetGestureAssignments) [self confirmResetGestures];
@@ -535,6 +539,8 @@
     else if ([[segue identifier] isEqual:@"BottomLeftRegion"]) [passthrough setObject: @"BottomLeft" forKey: @"Gesture"];
     else if ([[segue identifier] isEqual:@"BottomCenterRegion"]) [passthrough setObject: @"BottomCenter" forKey: @"Gesture"];
     else if ([[segue identifier] isEqual:@"BottomRightRegion"]) [passthrough setObject: @"BottomRight" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"TopMapRegion"]) [passthrough setObject: @"TopMap" forKey: @"Gesture"];
+    else if ([[segue identifier] isEqual:@"BottomMapRegion"]) [passthrough setObject: @"BottomMap" forKey: @"Gesture"];
     
     // if a segue is not coded here you get a crash on the passthrough. so if we don't need to pass data, fill in "X"
     else if ([[segue identifier] isEqual:@"quickStartGuide"]) {  [passthrough setObject: @"x" forKey: @"Fingers"]; [passthrough setObject: @"x" forKey: @"Gesture"]; }
@@ -889,6 +895,8 @@
         _navigateHomeCheck.textColor = [UIColor whiteColor];
         _navigateToContactCheck.textColor = [UIColor whiteColor];
         _navigateToWorkCheck.textColor = [UIColor whiteColor];
+        _showDirectionsCheck.textColor = [UIColor whiteColor];
+        _recenterMapCheck.textColor = [UIColor whiteColor];
 
         if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
@@ -915,6 +923,8 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateHome"]) _navigateHomeCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateToContact"]) _navigateToContactCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateToWork"]) _navigateToWorkCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"showDirections"]) _showDirectionsCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"recenterMap"]) _recenterMapCheck.textColor = [UIColor blackColor];
     }
 }
 

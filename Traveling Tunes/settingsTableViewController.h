@@ -59,6 +59,8 @@
 @property (weak, nonatomic) IBOutlet UITableViewCell *navigateToContact;
 @property (weak, nonatomic) IBOutlet UITableViewCell *navigateHome;
 @property (weak, nonatomic) IBOutlet UITableViewCell *navigateToWork;
+@property (weak, nonatomic) IBOutlet UITableViewCell *showDirections;
+@property (weak, nonatomic) IBOutlet UITableViewCell *recenterMap;
 
 
 @property (weak, nonatomic) IBOutlet UILabel *nothingCheck;
@@ -86,6 +88,8 @@
 @property (weak, nonatomic) IBOutlet UILabel *navigateToContactCheck;
 @property (weak, nonatomic) IBOutlet UILabel *navigateHomeCheck;
 @property (weak, nonatomic) IBOutlet UILabel *navigateToWorkCheck;
+@property (weak, nonatomic) IBOutlet UILabel *showDirectionsCheck;
+@property (weak, nonatomic) IBOutlet UILabel *recenterMapCheck;
 
 // display settings outlets
 @property (weak, nonatomic) IBOutlet UILabel *artistFontSizeLabel;

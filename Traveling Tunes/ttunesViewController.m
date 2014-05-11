@@ -1283,7 +1283,8 @@ MKRoute *routeDetails;
 //    gestureAssignmentController *gestureController = [[gestureAssignmentController alloc] init];
 
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) {
-        if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"]|[action isEqual:@"Unassigned"])) {
+        // do not show these actions;
+        if (!([action isEqual:@"SongPicker"]|[action isEqual:@"Menu"]|[action isEqual:@"Unassigned"]|[action isEqual:@"showDirections"]|[action isEqual:@"recenterMap"])) {
             if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, (self.view.bounds.size.height/2)-80, 160, 160);
             else if (UIInterfaceOrientationIsLandscape(_activeOrientation)) _actionHUD.frame=CGRectMake(self.view.bounds.size.width-(self.view.bounds.size.width/4)-80, (self.view.bounds.size.height/2)-80, 160, 160);
             else _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, self.view.bounds.size.height-(self.view.bounds.size.height/4)-80, 160, 160);
@@ -1711,10 +1712,12 @@ MKRoute *routeDetails;
                 
                 // check for button zones
                 if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
-                    [self performPlayerAction:@"showGPSInstructions" :@"MapTopButton"];
+                    [self performPlayerAction:[defaults objectForKey:@"TopMap"] :@"MapTopButton"];
+//                    [self performPlayerAction:@"showGPSInstructions" :@"MapTopButton"];
                 }
                 else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
-                    [self performPlayerAction:@"recenterMap" :@"MapBottomButton"];
+                    [self performPlayerAction:[defaults objectForKey:@"BottomMap"] :@"MapBottomButton"];
+//                    [self performPlayerAction:@"recenterMap" :@"MapBottomButton"];
                 }
                 else if (location.y<checkTop&location.y>checkTopZero) { // top bar region
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
@@ -1838,7 +1841,7 @@ MKRoute *routeDetails;
     else if ([action isEqual:@"NavigateHome"]) [self navigateHome];
     else if ([action isEqual:@"NavigateToWork"]) [self navigateToWork];
     else if ([action isEqual:@"NavigateToContact"]) [self pickContactAddress];
-    else if ([action isEqual:@"showGPSInstructions"]) [self showGPSInstructions];
+    else if ([action isEqual:@"showDirections"]) [self showGPSInstructions];
     else if ([action isEqual:@"recenterMap"]) [self recenterMap];
 }
 

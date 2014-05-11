@@ -187,6 +187,8 @@
     [defaults setObject:@"ShowQuickStart" forKey:@"BottomLeft"];
     [defaults setObject:@"IncreaseRating" forKey:@"BottomCenter"];
     [defaults setObject:@"Menu" forKey:@"BottomRight"];
+    [defaults setObject:@"showGPSInstructions" forKey:@"TopMap"];
+    [defaults setObject:@"recenterMap" forKey:@"BottomMap"];
     
     [defaults synchronize];
 //    NSLog(@"Initializing gestures assignments.");
