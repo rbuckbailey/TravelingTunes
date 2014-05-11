@@ -436,6 +436,7 @@ MKRoute *routeDetails;
     _gpsDistanceRemaining.text = @"";
     _gpsDestination.text = @"";
     _gpsNextStepLabel.text = @"";
+    _gpsDebugLabel.text = @"";
     [self GPSTimerKiller];
     _latestInstructions = @"";
     _finishedNavigating = YES;
@@ -1709,11 +1710,11 @@ MKRoute *routeDetails;
                 }
                 
                 // check for button zones
-                if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]&(!_finishedNavigating)&(!_showingGPSInstructions)) {
-                    [self showGPSInstructions];
+                if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+                    [self performPlayerAction:@"showGPSInstructions" :@"MapTopButton"];
                 }
                 else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
-                    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+                    [self performPlayerAction:@"recenterMap" :@"MapBottomButton"];
                 }
                 else if (location.y<checkTop&location.y>checkTopZero) { // top bar region
                     if (location.x<checkLeft&location.x>checkLeftZero) { if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) { [self performPlayerAction:[defaults objectForKey:@"TopLeft"] :@"TopLeft"];} } // left button
@@ -1837,6 +1838,8 @@ MKRoute *routeDetails;
     else if ([action isEqual:@"NavigateHome"]) [self navigateHome];
     else if ([action isEqual:@"NavigateToWork"]) [self navigateToWork];
     else if ([action isEqual:@"NavigateToContact"]) [self pickContactAddress];
+    else if ([action isEqual:@"showGPSInstructions"]) [self showGPSInstructions];
+    else if ([action isEqual:@"recenterMap"]) [self recenterMap];
 }
 
 -(void) toggleShuffle {
@@ -2390,15 +2393,21 @@ MKRoute *routeDetails;
     destination.passthrough = passthrough;
 }
 
+- (void) recenterMap {
+    [_map setUserTrackingMode:MKUserTrackingModeFollowWithHeading animated:NO];
+}
+
 - (void) showGPSInstructions {
-    _showingGPSInstructions = YES;
-    _gpsInstructionsTable = [[UITableView alloc] init];
-    _gpsInstructionsTable.dataSource = self;
-    _gpsInstructionsTable.delegate = self;
-    _gpsInstructionsTable.separatorColor = [UIColor clearColor];
-    [self.view addSubview:_gpsInstructionsTable];
-    [self.view bringSubviewToFront:_gpsInstructionsTable];
-    _gpsInstructionsTable.frame = _map.frame;
+    if ((!_finishedNavigating)&(!_showingGPSInstructions)) {
+        _showingGPSInstructions = YES;
+        _gpsInstructionsTable = [[UITableView alloc] init];
+        _gpsInstructionsTable.dataSource = self;
+        _gpsInstructionsTable.delegate = self;
+        _gpsInstructionsTable.separatorColor = [UIColor clearColor];
+        [self.view addSubview:_gpsInstructionsTable];
+        [self.view bringSubviewToFront:_gpsInstructionsTable];
+        _gpsInstructionsTable.frame = _map.frame;
+    }
 }
 
 - (void) hideGPSInstructions {
