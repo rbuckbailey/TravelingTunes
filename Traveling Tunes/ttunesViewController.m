@@ -2189,19 +2189,28 @@ MKRoute *routeDetails;
 
 - (NSString*) expandText:(NSString*)words {
     NSString *temp;
-    temp = [words stringByReplacingOccurrencesOfString:@" Ave " withString:@" avenue"];
+    temp = [words stringByAppendingString:@"."];
     temp = [temp stringByReplacingOccurrencesOfString:@" Ave," withString:@" avenue,"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Br" withString:@" bridge"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Blvd" withString:@" boulevard"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Expwy" withString:@" expressway"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Trwy" withString:@" throughway"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Ter" withString:@" terrace"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Pky" withString:@" parkway"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Pl" withString:@" place"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Rd" withString:@" road"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" St" withString:@" street"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Cir" withString:@" circle"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Ave." withString:@" avenue,"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Br." withString:@" bridge"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Blvd." withString:@" boulevard"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Expwy." withString:@" expressway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Trwy." withString:@" throughway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Ter." withString:@" terrace"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Pky." withString:@" parkway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Pl." withString:@" place"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Rd." withString:@" road"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" St." withString:@" street"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Cir." withString:@" circle"];
 
+    temp = [temp stringByReplacingOccurrencesOfString:@" N." withString:@" North"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" S." withString:@" South"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" E." withString:@" East"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" W." withString:@" West"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" N," withString:@" North,"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" S," withString:@" South,"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" E," withString:@" East,"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" W," withString:@" West,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" N " withString:@" North "];
     temp = [temp stringByReplacingOccurrencesOfString:@" S " withString:@" South "];
     temp = [temp stringByReplacingOccurrencesOfString:@" E " withString:@" East "];
@@ -2211,13 +2220,11 @@ MKRoute *routeDetails;
     temp = [temp stringByReplacingOccurrencesOfString:@" SE " withString:@" South East "];
     temp = [temp stringByReplacingOccurrencesOfString:@" SW " withString:@" South West "];
 
-    temp = [temp stringByReplacingOccurrencesOfString:@" NY" withString:@" New York"];
-
     temp = [temp stringByReplacingOccurrencesOfString:@"0.5 Miles" withString:@"a half Mile"];
     temp = [temp stringByReplacingOccurrencesOfString:@"0.2 Miles" withString:@"a quarter Mile"];
     temp = [temp stringByReplacingOccurrencesOfString:@"0.7 Miles" withString:@"three quarters of a Mile"];
 
-    NSLog(@"%@",temp);
+//    NSLog(@"%@",temp);
     return temp;
 }
 
@@ -2282,7 +2289,7 @@ MKRoute *routeDetails;
             for (int i = 0; i < routeDetails.steps.count; i++) {
                 MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
                 NSString *newStep = step.instructions;
-                NSLog(@"%@, %@",newStep,[self feetOrMiles:step.distance]);
+                NSLog(@"%@, %@",[self expandText:newStep],[self feetOrMiles:step.distance]);
             }
             MKRouteStep *nextStep = [routeDetails.steps objectAtIndex:0];
             MKRouteStep *andThenStep;
