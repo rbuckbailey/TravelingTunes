@@ -559,7 +559,7 @@ MKRoute *routeDetails;
     _gpsDistanceRemaining.textColor = [UIColor blackColor];
     [_gpsDistanceRemaining setAlpha:0.5];
     
-    _gpsNextStepLabel.frame=CGRectMake(10,40,300,100);
+    _gpsNextStepLabel.frame=CGRectMake(10,40,280,100);
     _gpsNextStepLabel.textColor = [UIColor blackColor];
     [_gpsNextStepLabel setAlpha:0.5];
     _gpsNextStepLabel.font = [UIFont systemFontOfSize:30];
@@ -2191,30 +2191,56 @@ MKRoute *routeDetails;
     NSString *temp;
     temp = [words stringByAppendingString:@"."];
     temp = [temp stringByReplacingOccurrencesOfString:@" Ave," withString:@" avenue,"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Ave." withString:@" avenue,"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Br," withString:@" bridge"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Blvd," withString:@" boulevard"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Cir," withString:@" circle"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Expwy," withString:@" expressway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Ter," withString:@" terrace"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Trwy," withString:@" throughway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Pky," withString:@" parkway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Pl," withString:@" place"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Rd," withString:@" road"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" St," withString:@" street"];
+
+    temp = [temp stringByReplacingOccurrencesOfString:@" Ave." withString:@" avenue"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Br." withString:@" bridge"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Blvd." withString:@" boulevard"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Cir." withString:@" circle"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Expwy." withString:@" expressway"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Trwy." withString:@" throughway"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Ter." withString:@" terrace"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Trwy." withString:@" throughway"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Pky." withString:@" parkway"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Pl." withString:@" place"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Rd." withString:@" road"];
     temp = [temp stringByReplacingOccurrencesOfString:@" St." withString:@" street"];
-    temp = [temp stringByReplacingOccurrencesOfString:@" Cir." withString:@" circle"];
+    
+    temp = [temp stringByReplacingOccurrencesOfString:@" Ave " withString:@" avenue "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Br " withString:@" bridge "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Blvd " withString:@" boulevard "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Cir " withString:@" circle "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Expwy " withString:@" expressway "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Ter " withString:@" terrace "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Trwy " withString:@" throughway "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Pky " withString:@" parkway "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Pl " withString:@" place "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Rd " withString:@" road "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" St " withString:@" street "];
 
     temp = [temp stringByReplacingOccurrencesOfString:@" N." withString:@" North"];
     temp = [temp stringByReplacingOccurrencesOfString:@" S." withString:@" South"];
     temp = [temp stringByReplacingOccurrencesOfString:@" E." withString:@" East"];
     temp = [temp stringByReplacingOccurrencesOfString:@" W." withString:@" West"];
+    
     temp = [temp stringByReplacingOccurrencesOfString:@" N," withString:@" North,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" S," withString:@" South,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" E," withString:@" East,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" W," withString:@" West,"];
+    
     temp = [temp stringByReplacingOccurrencesOfString:@" N " withString:@" North "];
     temp = [temp stringByReplacingOccurrencesOfString:@" S " withString:@" South "];
     temp = [temp stringByReplacingOccurrencesOfString:@" E " withString:@" East "];
     temp = [temp stringByReplacingOccurrencesOfString:@" W " withString:@" West "];
+    
     temp = [temp stringByReplacingOccurrencesOfString:@" NE " withString:@" North East "];
     temp = [temp stringByReplacingOccurrencesOfString:@" NW " withString:@" North West "];
     temp = [temp stringByReplacingOccurrencesOfString:@" SE " withString:@" South East "];
