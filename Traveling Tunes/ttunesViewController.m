@@ -2330,12 +2330,13 @@ MKRoute *routeDetails;
                 _onLastStep = NO;
             else _onLastStep = YES;
             
-            _gpsDebugLabel.text = [NSString stringWithFormat:@"%d - %d",20+((((int)(_speedTier/10))*((int)(_speedTier/10)))*10),50+((((int)(_speedTier/10))*((int)(_speedTier/10)))*20)];
             
             _gpsNextStepLabel.text = andThenStep.instructions;
             int mphTenth=(int)(_speedTier/10);
-            int nearDistance = 50+((mphTenth*mphTenth*mphTenth))*10;
-            int atDistance = 20+(mphTenth*mphTenth*mphTenth)*5;
+            int nearDistance = 50+((mphTenth*mphTenth*mphTenth))*5;
+            int atDistance = 20+(mphTenth*mphTenth*mphTenth)*2.5;
+            _gpsDebugLabel.text = [NSString stringWithFormat:@"%d - %d",nearDistance,atDistance];
+
             if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) { //if distance goes up we're going the wrong way so prompt for a u-turn
                 sayWhat = @"Make a u-turn when possible.";
                 if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
