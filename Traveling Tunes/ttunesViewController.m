@@ -2197,6 +2197,15 @@ MKRoute *routeDetails;
     temp = [temp stringByReplacingOccurrencesOfString:@" St" withString:@" street"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Cir" withString:@" circle"];
 
+    temp = [temp stringByReplacingOccurrencesOfString:@" N " withString:@" North "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" S " withString:@" South "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" E " withString:@" East "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" W " withString:@" West "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" NE " withString:@" North East "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" NW " withString:@" North West "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" SE " withString:@" South East "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" SW " withString:@" South West "];
+
     temp = [temp stringByReplacingOccurrencesOfString:@" NY" withString:@" New York"];
 
     temp = [temp stringByReplacingOccurrencesOfString:@"0.5 Miles" withString:@"a half Mile"];
