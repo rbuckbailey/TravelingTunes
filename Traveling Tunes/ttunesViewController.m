@@ -2188,16 +2188,17 @@ MKRoute *routeDetails;
 
 - (NSString*) expandText:(NSString*)words {
     NSString *temp;
-    temp = [words stringByReplacingOccurrencesOfString:@" Ave" withString:@" avenue"];
-    temp = [words stringByReplacingOccurrencesOfString:@" Blvd" withString:@" boulevard"];
-    temp = [words stringByReplacingOccurrencesOfString:@" Trwy" withString:@" throughway"];
-    temp = [words stringByReplacingOccurrencesOfString:@" Pky" withString:@" parkway"];
-    temp = [words stringByReplacingOccurrencesOfString:@" Rd" withString:@" road"];
-    temp = [words stringByReplacingOccurrencesOfString:@" St" withString:@" street"];
-    temp = [words stringByReplacingOccurrencesOfString:@" Cir" withString:@" circle"];
+    temp = [words stringByReplacingOccurrencesOfString:@" Ave " withString:@" avenue"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Ave," withString:@" avenue,"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Blvd" withString:@" boulevard"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Trwy" withString:@" throughway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Pky" withString:@" parkway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Rd" withString:@" road"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" St" withString:@" street"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Cir" withString:@" circle"];
 
-    temp = [words stringByReplacingOccurrencesOfString:@" NY" withString:@" New York"];
-
+    temp = [temp stringByReplacingOccurrencesOfString:@" NY" withString:@" New York"];
+    NSLog(@"%@",temp);
     return temp;
 }
 
