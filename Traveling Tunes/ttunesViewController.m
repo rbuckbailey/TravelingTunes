@@ -2198,6 +2198,11 @@ MKRoute *routeDetails;
     temp = [temp stringByReplacingOccurrencesOfString:@" Cir" withString:@" circle"];
 
     temp = [temp stringByReplacingOccurrencesOfString:@" NY" withString:@" New York"];
+
+    temp = [temp stringByReplacingOccurrencesOfString:@"0.5 Miles" withString:@"a half Mile"];
+    temp = [temp stringByReplacingOccurrencesOfString:@"0.2 Miles" withString:@"a quarter Mile"];
+    temp = [temp stringByReplacingOccurrencesOfString:@"0.7 Miles" withString:@"three quarters of a Mile"];
+
     NSLog(@"%@",temp);
     return temp;
 }
