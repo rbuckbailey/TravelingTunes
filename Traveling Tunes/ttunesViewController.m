@@ -2291,16 +2291,16 @@ MKRoute *routeDetails;
                     _firstStep = NO;
                 }
                 // convert distance in meters to feet before comparison; if < X feet, announce turn
-                else if ((andThenStep.distance/3.28084)<50+(_speedTier*2)) {
+                else if ((andThenStep.distance/3.28084)<50+((((int)(_speedTier/10))*((int)(_speedTier/10)))*20)) {
                     //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                     // only say instructions once between 100 ft,
-                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier*1.25))) {
+                    if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>20+((((int)(_speedTier/10))*((int)(_speedTier/10)))*10))) {
                         if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                         _latestInstructions = andThenStep.instructions;
                         _didSayTurn = NO;
                     }
                     // then say again at <15ft, also only once
-                    if (((andThenStep.distance/3.28084)<(20+(_speedTier*1.25)))&!(_didSayTurn)) {
+                    if (((andThenStep.distance/3.28084)<20+((((int)(_speedTier/10))*((int)(_speedTier/10)))*10))&!(_didSayTurn)) {
                         if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
                         _latestInstructions = andThenStep.instructions;
                         _didSayTurn = YES;
