@@ -33,7 +33,7 @@ BOOL bottomButtons = NO;
 @property UILabel *actionHUD;
 @property UILabel *topLeftRegion,*topCenterRegion,*topRightRegion,*bottomLeftRegion,*bottomCenterRegion,*bottomRightRegion;
 @property UILabel *artistTitle,*songTitle,*albumTitle;
-@property UILabel *gpsDistanceRemaining,*gpsDestination,*gpsDebugLabel;
+@property UILabel *gpsDistanceRemaining,*gpsDestination,*gpsNextStepLabel,*gpsDebugLabel;
 @property int timersRunning;
 @property float adjustedSongFontSize,fadeHUDalpha,fadeActionHUDAlpha;
 @property int activeOrientation;
@@ -419,6 +419,7 @@ MKRoute *routeDetails;
             [_map setAlpha:1];
             [self.view bringSubviewToFront:_gpsDistanceRemaining];
             [self.view bringSubviewToFront:_gpsDestination];
+            [self.view bringSubviewToFront:_gpsNextStepLabel];
             [self.view bringSubviewToFront:_gpsDebugLabel];
         }
         else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
@@ -434,6 +435,7 @@ MKRoute *routeDetails;
     [self clearRoute];
     _gpsDistanceRemaining.text = @"";
     _gpsDestination.text = @"";
+    _gpsNextStepLabel.text = @"";
     [self GPSTimerKiller];
     _latestInstructions = @"";
     _finishedNavigating = YES;
@@ -466,6 +468,7 @@ MKRoute *routeDetails;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if ([[defaults objectForKey:@"showMap"] isEqual:@"NO"]) {
         _gpsDestination.text = @"";
+        _gpsNextStepLabel.text = @"";
         _gpsDistanceRemaining.text = @"";
     }
     else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
@@ -516,6 +519,7 @@ MKRoute *routeDetails;
     
     _gpsDistanceRemaining = [[UILabel alloc] init];
     _gpsDestination = [[UILabel alloc] init];
+    _gpsNextStepLabel = [[UILabel alloc] init];
     _gpsDebugLabel = [[UILabel alloc] init];
     _gpsInstructionsTable = [[UITableView alloc] init];
     _gpsInstructionsTable.dataSource = self;
@@ -546,23 +550,29 @@ MKRoute *routeDetails;
     
     [self.view addSubview:_gpsDistanceRemaining];
     [self.view addSubview:_gpsDestination];
+    [self.view addSubview:_gpsNextStepLabel];
     [self.view addSubview:_gpsDebugLabel];
 
     _gpsDistanceRemaining.frame=CGRectMake(10,10,320,30);
     _gpsDistanceRemaining.textColor = [UIColor blackColor];
     [_gpsDistanceRemaining setAlpha:0.5];
     
+    _gpsNextStepLabel.frame=CGRectMake(10,40,300,100);
+    _gpsNextStepLabel.textColor = [UIColor blackColor];
+    [_gpsNextStepLabel setAlpha:0.5];
+    _gpsNextStepLabel.font = [UIFont systemFontOfSize:30];
+    _gpsNextStepLabel.numberOfLines = 0;
+    
     _gpsDebugLabel.frame=CGRectMake(10,20,320,300);
     _gpsDebugLabel.numberOfLines = 0;
     _gpsDebugLabel.textColor = [UIColor blackColor];
     _gpsDebugLabel.font = [UIFont systemFontOfSize:30];
     [_gpsDebugLabel setAlpha:0.5];
-
     
-    [self fixGPSLabels];
     _gpsDestination.textColor = [UIColor blackColor];
     [_gpsDestination setAlpha:0.5];
     _showingGPSInstructions = NO;
+    [self fixGPSLabels];
 
     _lineView.backgroundColor = [UIColor clearColor];
     _edgeViewBG.backgroundColor = [UIColor clearColor];
@@ -2242,6 +2252,7 @@ MKRoute *routeDetails;
                 _onLastStep = NO;
             else _onLastStep = YES;
             
+            _gpsNextStepLabel.text = andThenStep.instructions;
             _gpsDebugLabel.text = [NSString stringWithFormat:@"%@ %@",_oldStepText,andThenStep.instructions];
             if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) { //if distance goes up we're going the wrong way so prompt for a u-turn
                 sayWhat = @"Make a u-turn when possible.";
@@ -2302,7 +2313,8 @@ MKRoute *routeDetails;
 }
 
 - (NSString*) symbolForDirections:(NSString*)directions {
-    if ([directions rangeOfString:@"left" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u21b0 ";
+    if ([directions rangeOfString:@"destination" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"X\u20dd ";
+    else if ([directions rangeOfString:@"left" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u21b0 ";
     else if ([directions rangeOfString:@"right" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u21b1 ";
     else if ([directions rangeOfString:@"continue" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u2191 ";
     else if ([directions rangeOfString:@"exit" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"γ ";
@@ -2448,7 +2460,8 @@ MKRoute *routeDetails;
             break;
         default:
             step = [routeDetails.steps objectAtIndex:(int)(indexPath.row)-1];
-            cell.textLabel.text = [NSString stringWithFormat:@"%@%@",[self symbolForDirections:step.instructions],step.instructions];
+            if (step.distance>0) cell.textLabel.text = [NSString stringWithFormat:@"%@in %@: %@",[self symbolForDirections:step.instructions],[self feetOrMiles:step.distance],step.instructions];
+            else cell.textLabel.text = [NSString stringWithFormat:@"%@%@",[self symbolForDirections:step.instructions],step.instructions];
             cell.textLabel.textColor=[UIColor blackColor];
             break;
     }
