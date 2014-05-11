@@ -2185,8 +2185,23 @@ MKRoute *routeDetails;
     if (_synth.paused) [_synth continueSpeaking];    
 }
 
+- (NSString*) expandText:(NSString*)words {
+    NSString *temp;
+    temp = [words stringByReplacingOccurrencesOfString:@" Ave" withString:@" avenue"];
+    temp = [words stringByReplacingOccurrencesOfString:@" Blvd" withString:@" boulevard"];
+    temp = [words stringByReplacingOccurrencesOfString:@" Trwy" withString:@" throughway"];
+    temp = [words stringByReplacingOccurrencesOfString:@" Pky" withString:@" parkway"];
+    temp = [words stringByReplacingOccurrencesOfString:@" Rd" withString:@" road"];
+    temp = [words stringByReplacingOccurrencesOfString:@" St" withString:@" street"];
+    temp = [words stringByReplacingOccurrencesOfString:@" Cir" withString:@" circle"];
+
+    temp = [words stringByReplacingOccurrencesOfString:@" NY" withString:@" New York"];
+
+    return temp;
+}
+
 - (void)say:(NSString*)instructions {
-    AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc] initWithString:instructions]; //[instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
+    AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc] initWithString:[self expandText:instructions]]; //[instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
 
     utterance.rate = 0.25;
 //    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
