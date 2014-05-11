@@ -2274,7 +2274,7 @@ MKRoute *routeDetails;
                     _firstStep = NO;
                 }
                 // convert distance in meters to feet before comparison; if < X feet, announce turn
-                else if ((andThenStep.distance/3.28084)<70+(_speedTier*2)) {
+                else if ((andThenStep.distance/3.28084)<50+(_speedTier*2)) {
                     //                sayWhat = [sayWhat stringByAppendingString:nextStep.instructions];
                     // only say instructions once between 100 ft,
                     if ((![_latestInstructions isEqual:andThenStep.instructions])&((andThenStep.distance/3.28084)>(20+_speedTier*1.25))) {
@@ -2319,7 +2319,7 @@ MKRoute *routeDetails;
         [self addressSearch:[defaults objectForKey:@"currentDestination"]];
         _gpsDebugLabel.text = @"refreshing";
     } else {
-        NSDate *currentTime = [NSDate date];
+//        NSDate *currentTime = [NSDate date];
 //        [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
         NSLog(@"not updating gps b/c not moving");
     }
