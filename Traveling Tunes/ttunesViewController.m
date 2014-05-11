@@ -432,6 +432,7 @@ MKRoute *routeDetails;
 }
 
 - (void) cancelNavigation {
+    if (_showingGPSInstructions) [self hideGPSInstructions];
     [self clearRoute];
     _gpsDistanceRemaining.text = @"";
     _gpsDestination.text = @"";
