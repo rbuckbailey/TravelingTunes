@@ -2193,6 +2193,7 @@ MKRoute *routeDetails;
     temp = [temp stringByReplacingOccurrencesOfString:@" Ave," withString:@" avenue,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Blvd" withString:@" boulevard"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Trwy" withString:@" throughway"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Ter" withString:@" terrace"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Pky" withString:@" parkway"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Rd" withString:@" road"];
     temp = [temp stringByReplacingOccurrencesOfString:@" St" withString:@" street"];
