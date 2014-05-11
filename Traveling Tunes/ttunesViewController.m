@@ -1271,6 +1271,7 @@ MKRoute *routeDetails;
     _didSayTurn = NO;
     _latestInstructions = @"";
     _oldDistanceRemaining = 0;
+    if (_showingGPSInstructions) [self hideGPSInstructions];
     self.GPSTimer = [NSTimer scheduledTimerWithTimeInterval: 15.0f
                                                      target: self
                                                    selector: @selector(refreshGPSRoute)
@@ -2211,7 +2212,7 @@ MKRoute *routeDetails;
 }
 
 - (void) dingForUpcomingDirections {
-    [self say:@"ring a ding ding"];
+    [self say:@"aring a ding ding"];
 }
 
 - (NSString*) feetOrMiles:(float)distance {

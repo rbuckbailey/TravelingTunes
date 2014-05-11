@@ -70,12 +70,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421520365.77808"
+            timestampString = "421523109.235483"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2186"
-            endingLineNumber = "2186"
-            landmarkName = "-speechSynthesizer:didStartSpeechUtterance:"
+            startingLineNumber = "2189"
+            endingLineNumber = "2189"
+            landmarkName = "-expandText:"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
@@ -86,11 +86,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421522628.892724"
+            timestampString = "421523109.235483"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2268"
-            endingLineNumber = "2268"
+            startingLineNumber = "2284"
+            endingLineNumber = "2284"
             landmarkName = "-drawRoute"
             landmarkType = "5">
          </BreakpointContent>
@@ -118,11 +118,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421520365.77808"
+            timestampString = "421523109.235483"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1383"
-            endingLineNumber = "1383"
+            startingLineNumber = "1384"
+            endingLineNumber = "1384"
             landmarkName = "-setupHUD"
             landmarkType = "5">
          </BreakpointContent>
@@ -134,11 +134,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "421522605.722423"
+            timestampString = "421523109.235483"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2265"
-            endingLineNumber = "2265"
+            startingLineNumber = "2281"
+            endingLineNumber = "2281"
             landmarkName = "-drawRoute"
             landmarkType = "5">
          </BreakpointContent>
