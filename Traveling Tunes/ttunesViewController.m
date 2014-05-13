@@ -2333,8 +2333,8 @@ MKRoute *routeDetails;
             
             _gpsNextStepLabel.text = andThenStep.instructions;
             int mphTenth=(int)(_speedTier/10);
-            int nearDistance = 50+((mphTenth*mphTenth*mphTenth)*2);
-            int atDistance = 20+((mphTenth*mphTenth*mphTenth)*1.5);
+            int nearDistance = 50+((mphTenth*mphTenth*mphTenth)*3);
+            int atDistance = 30+((mphTenth*mphTenth*mphTenth)*2);
             _gpsDebugLabel.text = [NSString stringWithFormat:@"%d - %d",nearDistance,atDistance];
 
             if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) { //if distance goes up we're going the wrong way so prompt for a u-turn
