@@ -1928,8 +1928,7 @@ MKRoute *routeDetails;
     mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playOrDefault];
     else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
-        [mediaPlayer pause];
-        _playbackPausedByGPS = NO;
+        [self pause];
     } else {
         [mediaPlayer play];
     }
