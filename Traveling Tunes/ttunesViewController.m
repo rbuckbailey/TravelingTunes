@@ -331,8 +331,8 @@ MKRoute *routeDetails;
     [self initMapView];
 
     //disable sleep mode
-    if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) { [[UIApplication sharedApplication] setIdleTimerDisabled:YES]; NSLog(@"sleep off"); }
-    else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; NSLog(@"sleep on"); }
+    if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) { [[UIApplication sharedApplication] setIdleTimerDisabled:YES]; }
+    else { [[UIApplication sharedApplication] setIdleTimerDisabled:NO]; }
     
     //if the contact picker sent an address to navigate to, do that
     NSLog(@"destined for %@",[defaults objectForKey:@"destinationAddress"]);
@@ -2121,6 +2121,7 @@ MKRoute *routeDetails;
     int newRating = (int)[[song valueForKey:@"rating"] floatValue];
     if (newRating<5) newRating++;
     [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
+    AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
 }
 
 -(void) decreaseRating {
@@ -2128,6 +2129,7 @@ MKRoute *routeDetails;
     int newRating = (int)[[song valueForKey:@"rating"] floatValue];
     if (newRating>0) newRating--;
     [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
+    AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
 }
 
 - (void)addressSearch:(NSString *)address {
@@ -2189,8 +2191,7 @@ MKRoute *routeDetails;
 
 - (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer didStartSpeechUtterance:(AVSpeechUtterance *)utterance {
     if ((mediaPlayer.playbackState==MPMusicPlaybackStateInterrupted)||(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)||_playbackPausedByGPS) _playbackPausedByGPS = YES; else _playbackPausedByGPS = NO;
-    NSLog(@"playback state %ld",(long)mediaPlayer.playbackState);
-    if (_synth.paused) [_synth continueSpeaking];    
+    if (_synth.paused) [_synth continueSpeaking];
 }
 
 - (NSString*) expandText:(NSString*)words {
@@ -2327,7 +2328,7 @@ MKRoute *routeDetails;
             for (int i = 0; i < routeDetails.steps.count; i++) {
                 MKRouteStep *step = [routeDetails.steps objectAtIndex:i];
                 NSString *newStep = step.instructions;
-                NSLog(@"%@, %@",[self expandText:newStep],[self feetOrMiles:step.distance]);
+                NSLog(@"%@ %@",[self expandText:newStep],[self feetOrMiles:step.distance]);
             }
             MKRouteStep *nextStep = [routeDetails.steps objectAtIndex:0];
             MKRouteStep *andThenStep;

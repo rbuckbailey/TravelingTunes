@@ -15,6 +15,7 @@
 #import <iAd/iAd.h>
 #import <MapKit/MapKit.h>
 #import <AVFoundation/AVFoundation.h>
+#import <AudioToolbox/AudioToolbox.h>
 
 CGFloat const gestureMinimumTranslation = 20.0;
 
