@@ -43,7 +43,7 @@ BOOL bottomButtons = NO;
 @property UIImageView *albumArt;
 @property AVSpeechSynthesizer *synth;
 @property NSString *latestInstructions;
-@property BOOL didSayTurn,didWarnTurn,finishedNavigating,onFirstStep,onLastStep,playbackPausedByGPS,showingGPSInstructions;
+@property BOOL carIsIdle,didSayTurn,didWarnTurn,finishedNavigating,onFirstStep,onLastStep,playbackPausedByGPS,showingGPSInstructions;
 @property int oldDistanceRemaining;
 @property NSString *oldStepText;
 @property UITableView *gpsInstructionsTable;
@@ -2199,6 +2199,7 @@ MKRoute *routeDetails;
     temp = [temp stringByReplacingOccurrencesOfString:@" Pky," withString:@" Parkway,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Pl," withString:@" Place,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Rd," withString:@" Road,"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Rdg," withString:@" Ridge"];
     temp = [temp stringByReplacingOccurrencesOfString:@" St," withString:@" Street,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Ter," withString:@" Terrace,"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Trwy," withString:@" Throughway,"];
@@ -2212,6 +2213,7 @@ MKRoute *routeDetails;
     temp = [temp stringByReplacingOccurrencesOfString:@" Pky." withString:@" Parkway"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Pl." withString:@" Place"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Rd." withString:@" Road"];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Rdg." withString:@" Ridge"];
     temp = [temp stringByReplacingOccurrencesOfString:@" St." withString:@" Street"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Ter." withString:@" Terrace"];
     temp = [temp stringByReplacingOccurrencesOfString:@" Trwy." withString:@" Throughway"];
@@ -2225,6 +2227,7 @@ MKRoute *routeDetails;
     temp = [temp stringByReplacingOccurrencesOfString:@" Pky " withString:@" Parkway "];
     temp = [temp stringByReplacingOccurrencesOfString:@" Pl " withString:@" Place "];
     temp = [temp stringByReplacingOccurrencesOfString:@" Rd " withString:@" Road "];
+    temp = [temp stringByReplacingOccurrencesOfString:@" Rdg " withString:@" Ridge "];
     temp = [temp stringByReplacingOccurrencesOfString:@" St " withString:@" Street "];
     temp = [temp stringByReplacingOccurrencesOfString:@" Ter " withString:@" Terrace "];
     temp = [temp stringByReplacingOccurrencesOfString:@" Trwy " withString:@" Throughway "];
@@ -2417,12 +2420,18 @@ MKRoute *routeDetails;
  //   [self addressSearch:[defaults objectForKey:@"currentDestination"]];
 
     // refresh route only if moving; else just trigger the timer again in 5s
-    if (_speedTier>5) {
+    if (_speedTier>2) {
         [self addressSearch:[defaults objectForKey:@"currentDestination"]];
+        _carIsIdle = NO;
     } else {
 //        NSDate *currentTime = [NSDate date];
 //        [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
-        NSLog(@"not updating gps b/c not moving");
+        if (_carIsIdle) {
+            NSLog(@"not updating gps b/c not moving");
+        } else { // refresh route once more, then set idle property to stop checking until car moves
+            [self addressSearch:[defaults objectForKey:@"currentDestination"]];
+            _carIsIdle = YES;
+        }
     }
 }
 
