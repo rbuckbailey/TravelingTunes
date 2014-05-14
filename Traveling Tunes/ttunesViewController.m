@@ -1822,7 +1822,7 @@ MKRoute *routeDetails;
     else if ([action isEqual:@"Menu"]) { [self scrubTimerKiller]; if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"NO"]) [self killAdBanner]; [self performSegueWithIdentifier: @"goToSettings" sender: self]; }
     else if ([action isEqual:@"PlayPause"]) [self togglePlayPause];
     else if ([action isEqual:@"Play"]) [self playOrDefault];
-    else if ([action isEqual:@"Pause"]) [mediaPlayer pause];
+    else if ([action isEqual:@"Pause"]) [self pause];
     else if ([action isEqual:@"Next"]) { [self next]; }
     else if ([action isEqual:@"Previous"]) { [self previous]; }
     else if ([action isEqual:@"RestartPrevious"]) { [self restartPrevious]; }
@@ -1916,6 +1916,12 @@ MKRoute *routeDetails;
 - (void) playOrDefault {
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playDefaultPlaylist];
     else [mediaPlayer play];
+    _playbackPausedByGPS = NO;
+}
+
+- (void) pause {
+    [mediaPlayer pause];
+    _playbackPausedByGPS = NO;
 }
 
 - (void) togglePlayPause {
@@ -1923,6 +1929,7 @@ MKRoute *routeDetails;
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playOrDefault];
     else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
         [mediaPlayer pause];
+        _playbackPausedByGPS = NO;
     } else {
         [mediaPlayer play];
     }
