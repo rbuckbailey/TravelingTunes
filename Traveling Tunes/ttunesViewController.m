@@ -2279,7 +2279,7 @@ MKRoute *routeDetails;
 
 - (void) dingForUpcomingDirections {
     //[self say:@"aring a ding ding"];
-    AudioServicesPlayAlertSound(1000);
+    AudioServicesPlayAlertSound(1023);
 }
 
 - (NSString*) feetOrMiles:(float)distance {
