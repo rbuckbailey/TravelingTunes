@@ -2381,18 +2381,26 @@ MKRoute *routeDetails;
                     }
                     _onFirstStep = NO;
                 }
-                // convert distance in meters to feet before comparison; if < X feet, announce turn
+                // if instructions have change, reset announcement bools
+//                else if ((andThenStep.distance/3.28084)>fastCheckDistance) {
+                else if (_latestInstructions != andThenStep.instructions) {
+                    _latestInstructions = andThenStep.instructions;
+                    _didWarnTurn = NO;
+                    _didSayTurn = NO;
+                }
+                // they must be the same instructions, so check distances and say things if necessary
                 else if ((andThenStep.distance/3.28084)<fastCheckDistance) {
                     // first, if under X feet, setFireDate of the timer to 5 seconds instead of 15
                     NSDate *currentTime = [NSDate date];
                     [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
+/*
                     if (((andThenStep.distance/3.28084)>nearDistance)) {
-//                        _latestInstructions = andThenStep.instructions;
                         _didWarnTurn = NO;
                         _didSayTurn = NO;
-                    }
+                }
+ */
                     // only say instructions once between Y ft and Z ft
-                    else if (((andThenStep.distance/3.28084)<nearDistance)&((andThenStep.distance/3.28084)>atDistance)&!(_didWarnTurn)) {
+                    if (((andThenStep.distance/3.28084)<nearDistance)&((andThenStep.distance/3.28084)>atDistance)&!(_didWarnTurn)) {
                         // prepend "in X feet" when speaking a warning
                         if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],sayWhat];
                         if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
