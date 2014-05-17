@@ -464,6 +464,7 @@
     else if (selection == _navigateToWork) [self configure:@"NavigateToWork"];
     else if (selection == _showDirections) [self configure:@"showDirections"];
     else if (selection == _recenterMap) [self configure:@"recenterMap"];
+    else if (selection == _repeatInstructions) [self configure:@"repeatInstructions"];
 
     // "reset" buttons
     else if (selection == _ResetGestureAssignments) [self confirmResetGestures];
@@ -897,6 +898,7 @@
         _navigateToWorkCheck.textColor = [UIColor whiteColor];
         _showDirectionsCheck.textColor = [UIColor whiteColor];
         _recenterMapCheck.textColor = [UIColor whiteColor];
+        _repeatInstructionsCheck.textColor = [UIColor whiteColor];
 
         if ([[defaults objectForKey:fullGesture] isEqual: @"Unassigned"]) _nothingCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"Menu"]) _menuCheck.textColor = [UIColor blackColor];
@@ -925,6 +927,7 @@
         if ([[defaults objectForKey:fullGesture] isEqual: @"NavigateToWork"]) _navigateToWorkCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"showDirections"]) _showDirectionsCheck.textColor = [UIColor blackColor];
         if ([[defaults objectForKey:fullGesture] isEqual: @"recenterMap"]) _recenterMapCheck.textColor = [UIColor blackColor];
+        if ([[defaults objectForKey:fullGesture] isEqual: @"repeatInstructions"]) _repeatInstructionsCheck.textColor = [UIColor blackColor];
     }
 }
 

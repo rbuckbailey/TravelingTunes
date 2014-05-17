@@ -46,6 +46,7 @@ BOOL bottomButtons = NO;
 @property BOOL carIsIdle,didSayTurn,didWarnTurn,finishedNavigating,onFirstStep,onLastStep,playbackPausedByGPS,showingGPSInstructions;
 @property int oldDistanceRemaining;
 @property NSString *oldStepText;
+@property NSString *sayWhat;
 @property UITableView *gpsInstructionsTable;
 @property CLPlacemark *thePlacemark;
 @end
@@ -1845,6 +1846,7 @@ MKRoute *routeDetails;
     else if ([action isEqual:@"NavigateToContact"]) [self pickContactAddress];
     else if ([action isEqual:@"showDirections"]) [self showGPSInstructions];
     else if ([action isEqual:@"recenterMap"]) [self recenterMap];
+    else if ([action isEqual:@"repeatInstructions"]) [self repeatInstructions];
 }
 
 -(void) toggleShuffle {
@@ -2336,7 +2338,6 @@ MKRoute *routeDetails;
             if ([routeDetails.steps count]>1) andThenStep = [routeDetails.steps objectAtIndex:1];
             MKRouteStep *step3Step;
             if ([routeDetails.steps count]>2) step3Step = [routeDetails.steps objectAtIndex:2];
-            NSString *sayWhat;
             if ([routeDetails.steps count]>=3)
                 _onLastStep = NO;
             else _onLastStep = YES;
@@ -2351,33 +2352,33 @@ MKRoute *routeDetails;
             _gpsDebugLabel.text = [NSString stringWithFormat:@"%@ - %@ - %@",[self feetOrMiles:fastCheckDistance],[self feetOrMiles:nearDistance],[self feetOrMiles:atDistance]];
 
             if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) { //if distance goes up we're going the wrong way so prompt for a u-turn
-                sayWhat = @"Make a u-turn when possible.";
-                if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                _sayWhat = @"Make a u-turn when possible.";
+                if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
             } else {
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
                 _oldStepText = andThenStep.instructions;
                 // if there is a step to announce, prepare for announcement
                 if ([routeDetails.steps count]>1) {
-                    if (andThenStep.distance>0) sayWhat = [andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""];
+                    if (andThenStep.distance>0) _sayWhat = [andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""];
 //                    if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
-                    else sayWhat = @"";
+                    else _sayWhat = @"";
                     // if there is a third step (after Proceed & announced step), add that to the queue (if set to do so)
                     if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
                         //step3Step = [routeDetails.steps objectAtIndex:2];
-                        sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:step3Step.distance],[step3Step.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
+                        _sayWhat=[_sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:step3Step.distance],[step3Step.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
                     }
                 }
                 // now announce. first step gets some extra text.
                 if (_onFirstStep) {
                     NSString *currentDestination = [defaults objectForKey:@"currentDestination"];
-                    sayWhat = [NSString stringWithFormat:@"Traveling to %@. %@",[currentDestination stringByReplacingOccurrencesOfString:@"," withString:@""],[nextStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
+                    _sayWhat = [NSString stringWithFormat:@"Traveling to %@. %@",[currentDestination stringByReplacingOccurrencesOfString:@"," withString:@""],[nextStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]];
                     if (([routeDetails.steps count]>2)&[[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) {
-                        sayWhat=[sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
+                        _sayWhat=[_sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:andThenStep.distance],[andThenStep.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
                     }
                     if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) {
                         [_synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
-                        [self say:sayWhat];
+                        [self say:_sayWhat];
                     }
                     _onFirstStep = NO;
                 }
@@ -2402,13 +2403,13 @@ MKRoute *routeDetails;
                     // only say instructions once between Y ft and Z ft
                     if (((andThenStep.distance/3.28084)<nearDistance)&((andThenStep.distance/3.28084)>atDistance)&!(_didWarnTurn)) {
                         // prepend "in X feet" when speaking a warning
-                        if (andThenStep.distance>0) sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],sayWhat];
-                        if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                        if (andThenStep.distance>0) _sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],_sayWhat];
+                        if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
                         _didWarnTurn = YES;
                     }
                     // then say again at <15ft, also only once
                     else if (((andThenStep.distance/3.28084)<atDistance)&!(_didSayTurn)) {
-                        if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:sayWhat];
+                        if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
                         _didSayTurn = YES;
                         if (_onLastStep) _finishedNavigating = YES;
                     }
@@ -2428,6 +2429,10 @@ MKRoute *routeDetails;
     else if ([directions rangeOfString:@"continue" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u2191 ";
     else if ([directions rangeOfString:@"exit" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"γ ";
     else return @" ";
+}
+
+- (void) repeatInstructions {
+    [self say:_sayWhat];
 }
 
 - (void) refreshGPSRoute {
