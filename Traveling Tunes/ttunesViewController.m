@@ -2338,7 +2338,7 @@ MKRoute *routeDetails;
             if ([routeDetails.steps count]>1) andThenStep = [routeDetails.steps objectAtIndex:1];
             MKRouteStep *step3Step;
             if ([routeDetails.steps count]>2) step3Step = [routeDetails.steps objectAtIndex:2];
-            if ([routeDetails.steps count]>=3)
+            if ([routeDetails.steps count]>=2)
                 _onLastStep = NO;
             else _onLastStep = YES;
             
@@ -2349,12 +2349,14 @@ MKRoute *routeDetails;
             int fastCheckDistance = 80+((mphTenth*mphTenth*mphTenth)*4);
             int nearDistance = 50+((mphTenth*mphTenth*mphTenth)*2);
             int atDistance = 25+((mphTenth*mphTenth*mphTenth)*1);
-            _gpsDebugLabel.text = [NSString stringWithFormat:@"%@ - %@ - %@",[self feetOrMiles:fastCheckDistance],[self feetOrMiles:nearDistance],[self feetOrMiles:atDistance]];
+            _gpsDebugLabel.text = [NSString stringWithFormat:@"%d - %d - %d - %d",mphTenth,fastCheckDistance,nearDistance,atDistance];
 
-            if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) { //if distance goes up we're going the wrong way so prompt for a u-turn
+            if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) {
+                // if distance goes up we're going the wrong way so prompt for a u-turn
                 _sayWhat = @"Make a u-turn when possible.";
+                _latestInstructions = _sayWhat;
                 if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
-                _oldDistanceRemaining = andThenStep.distance/3.28084;
+                //_oldDistanceRemaining = andThenStep.distance/3.28084;
             } else {
                 _oldDistanceRemaining = andThenStep.distance/3.28084;
                 _oldStepText = andThenStep.instructions;
@@ -2384,34 +2386,36 @@ MKRoute *routeDetails;
                 }
                 // if instructions have change, reset announcement bools
 //                else if ((andThenStep.distance/3.28084)>fastCheckDistance) {
-                else if (_latestInstructions != andThenStep.instructions) {
-                    _latestInstructions = andThenStep.instructions;
-                    _didWarnTurn = NO;
-                    _didSayTurn = NO;
-                }
-                // they must be the same instructions, so check distances and say things if necessary
-                else if ((andThenStep.distance/3.28084)<fastCheckDistance) {
-                    // first, if under X feet, setFireDate of the timer to 5 seconds instead of 15
-                    NSDate *currentTime = [NSDate date];
-                    [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
-/*
-                    if (((andThenStep.distance/3.28084)>nearDistance)) {
+                else { // not on first step
+                    if (_latestInstructions != andThenStep.instructions) {
+                        _latestInstructions = andThenStep.instructions;
                         _didWarnTurn = NO;
                         _didSayTurn = NO;
-                }
- */
-                    // only say instructions once between Y ft and Z ft
-                    if (((andThenStep.distance/3.28084)<nearDistance)&((andThenStep.distance/3.28084)>atDistance)&!(_didWarnTurn)) {
-                        // prepend "in X feet" when speaking a warning
-                        if (andThenStep.distance>0) _sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],_sayWhat];
-                        if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
-                        _didWarnTurn = YES;
                     }
-                    // then say again at <15ft, also only once
-                    else if (((andThenStep.distance/3.28084)<atDistance)&!(_didSayTurn)) {
-                        if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
-                        _didSayTurn = YES;
-                        if (_onLastStep) _finishedNavigating = YES;
+                    // they must be the same instructions, so check distances and say things if necessary
+                    if ((andThenStep.distance/3.28084)<fastCheckDistance) {
+                        // first, if under X feet, setFireDate of the timer to 5 seconds instead of 15
+                        NSDate *currentTime = [NSDate date];
+                        [_GPSTimer setFireDate:[currentTime dateByAddingTimeInterval:5.0]];
+                        /*
+                         if (((andThenStep.distance/3.28084)>nearDistance)) {
+                         _didWarnTurn = NO;
+                         _didSayTurn = NO;
+                         }
+                         */
+                        // only say instructions once between Y ft and Z ft
+                        if (((andThenStep.distance/3.28084)<nearDistance)&((andThenStep.distance/3.28084)>atDistance)&!(_didWarnTurn)) {
+                            // prepend "in X feet" when speaking a warning
+                            if (andThenStep.distance>0) _sayWhat = [NSString stringWithFormat:@"In %@ %@",[self feetOrMiles:andThenStep.distance],_sayWhat];
+                            if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"nearingTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
+                            _didWarnTurn = YES;
+                        }
+                        // then say again at <15ft, also only once
+                        else if (((andThenStep.distance/3.28084)<atDistance)&!(_didSayTurn)) {
+                            if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
+                            _didSayTurn = YES;
+                            if (_onLastStep) _finishedNavigating = YES;
+                        }
                     }
                 }
             }
