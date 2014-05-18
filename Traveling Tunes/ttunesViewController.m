@@ -1271,6 +1271,7 @@ MKRoute *routeDetails;
     _finishedNavigating = NO;
     _onLastStep = NO;
     _didSayTurn = NO;
+    _didWarnTurn = NO;
     _latestInstructions = @"";
     _oldDistanceRemaining = 0;
     if (_showingGPSInstructions) [self hideGPSInstructions];
@@ -2349,7 +2350,7 @@ MKRoute *routeDetails;
             int fastCheckDistance = 80+((mphTenth*mphTenth*mphTenth)*4);
             int nearDistance = 50+((mphTenth*mphTenth*mphTenth)*2);
             int atDistance = 25+((mphTenth*mphTenth*mphTenth)*1);
-            _gpsDebugLabel.text = [NSString stringWithFormat:@"%d - %d - %d - %d",mphTenth,fastCheckDistance,nearDistance,atDistance];
+            //_gpsDebugLabel.text = [NSString stringWithFormat:@"%d - %d - %d - %d",mphTenth,atDistance,nearDistance,fastCheckDistance];
 
             if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) {
                 // if distance goes up we're going the wrong way so prompt for a u-turn
@@ -2392,6 +2393,7 @@ MKRoute *routeDetails;
                         _didWarnTurn = NO;
                         _didSayTurn = NO;
                     }
+                    _gpsDebugLabel.text = [NSString stringWithFormat:@"%@ %@",_latestInstructions,andThenStep.instructions];
                     // they must be the same instructions, so check distances and say things if necessary
                     if ((andThenStep.distance/3.28084)<fastCheckDistance) {
                         // first, if under X feet, setFireDate of the timer to 5 seconds instead of 15
@@ -2417,6 +2419,7 @@ MKRoute *routeDetails;
                             if (_onLastStep) _finishedNavigating = YES;
                         }
                     }
+
                 }
             }
             _gpsDistanceRemaining.text = [NSString stringWithFormat:@"%@%@",[self symbolForDirections:andThenStep.instructions],[self feetOrMiles:andThenStep.distance]];
