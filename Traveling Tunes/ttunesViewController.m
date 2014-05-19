@@ -1262,6 +1262,7 @@ MKRoute *routeDetails;
 - (void) GPSTimerKiller {
     if ( [[self GPSTimer] isValid]){
         [[self GPSTimer] invalidate];
+        
     }
 }
 
@@ -2350,7 +2351,6 @@ MKRoute *routeDetails;
             int fastCheckDistance = 80+((mphTenth*mphTenth*mphTenth)*4);
             int nearDistance = 50+((mphTenth*mphTenth*mphTenth)*2);
             int atDistance = 25+((mphTenth*mphTenth*mphTenth)*1);
-            //_gpsDebugLabel.text = [NSString stringWithFormat:@"%d - %d - %d - %d",mphTenth,atDistance,nearDistance,fastCheckDistance];
 
             if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) {
                 // if distance goes up we're going the wrong way so prompt for a u-turn
@@ -2372,6 +2372,7 @@ MKRoute *routeDetails;
                         _sayWhat=[_sayWhat stringByAppendingString:[NSString stringWithFormat:@", and then in %@ %@",[self feetOrMiles:step3Step.distance],[step3Step.instructions stringByReplacingOccurrencesOfString:@"," withString:@""]]];
                     }
                 }
+                _gpsDebugLabel.text = [NSString stringWithFormat:@"%lu",(unsigned long)[routeDetails.steps count]];
                 // now announce. first step gets some extra text.
                 if (_onFirstStep) {
                     NSString *currentDestination = [defaults objectForKey:@"currentDestination"];
@@ -2388,12 +2389,13 @@ MKRoute *routeDetails;
                 // if instructions have change, reset announcement bools
 //                else if ((andThenStep.distance/3.28084)>fastCheckDistance) {
                 else { // not on first step
-                    if (_latestInstructions != andThenStep.instructions) {
+                    //_gpsDebugLabel.text = [NSString stringWithFormat:@"%@ %@",_latestInstructions,andThenStep.instructions];
+                    if (![_latestInstructions isEqual:andThenStep.instructions]) {
                         _latestInstructions = andThenStep.instructions;
                         _didWarnTurn = NO;
                         _didSayTurn = NO;
+                        _gpsDebugLabel.text = @"new step";
                     }
-                    _gpsDebugLabel.text = [NSString stringWithFormat:@"%@ %@",_latestInstructions,andThenStep.instructions];
                     // they must be the same instructions, so check distances and say things if necessary
                     if ((andThenStep.distance/3.28084)<fastCheckDistance) {
                         // first, if under X feet, setFireDate of the timer to 5 seconds instead of 15
@@ -2416,7 +2418,7 @@ MKRoute *routeDetails;
                         else if (((andThenStep.distance/3.28084)<atDistance)&!(_didSayTurn)) {
                             if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
                             _didSayTurn = YES;
-                            if (_onLastStep) _finishedNavigating = YES;
+                            if (_onLastStep) [self cancelNavigation];
                         }
                     }
 
@@ -2426,7 +2428,6 @@ MKRoute *routeDetails;
         }
     }];
     [self fixGPSLabels];
-    if (_finishedNavigating) [self cancelNavigation];
 }
 
 - (NSString*) symbolForDirections:(NSString*)directions {
