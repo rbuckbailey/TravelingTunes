@@ -2340,7 +2340,8 @@ MKRoute *routeDetails;
             if ([routeDetails.steps count]>1) andThenStep = [routeDetails.steps objectAtIndex:1];
             MKRouteStep *step3Step;
             if ([routeDetails.steps count]>2) step3Step = [routeDetails.steps objectAtIndex:2];
-            if ([routeDetails.steps count]>=2)
+            //if ([routeDetails.steps count]>=2)
+            if ([andThenStep.instructions rangeOfString:@"estination"].location == NSNotFound)
                 _onLastStep = NO;
             else _onLastStep = YES;
             
