@@ -2358,6 +2358,7 @@ MKRoute *routeDetails;
             _gpsNextStepLabel.text = andThenStep.instructions;
             int mphTenth=(int)(_speedTier/10);
             if (mphTenth<0) mphTenth=0;
+            if (mphTenth>6) mphTenth=6;
             int fastCheckDistance = 80+((mphTenth*mphTenth*mphTenth)*4);
             int nearDistance = 50+((mphTenth*mphTenth*mphTenth)*2);
             int atDistance = 25+((mphTenth*mphTenth*mphTenth)*1);
