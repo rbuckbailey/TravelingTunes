@@ -654,24 +654,26 @@ MKRoute *routeDetails;
     [self scrollingTimerKiller]; [self startMarqueeTimer];
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL)
         [self setGlobalColors];
+    //[self setupHUD];
+    [self setupLabels];
+    /*
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
     if (song) {
         NSString *title = [song valueForProperty:MPMediaItemPropertyTitle];
         NSString *album = [song valueForProperty:MPMediaItemPropertyAlbumTitle];
         NSString *artist = [song valueForProperty:MPMediaItemPropertyArtist];
         NSString *playCount = [song valueForProperty:MPMediaItemPropertyPlayCount];
-/*
+ 
         NSURL* songURL = [song valueForProperty:MPMediaItemPropertyAssetURL];
         AVAsset* songAsset = [AVURLAsset URLAssetWithURL:songURL options:nil];
         NSString* lyrics = [songAsset lyrics];
- */
-        
+     
         NSLog(@"title: %@", title);
         NSLog(@"album: %@", album);
         NSLog(@"artist: %@", artist);
         NSLog(@"playCount: %@", playCount);
-//        NSLog(@"lyrics: %@",lyrics);
-    }
+        NSLog(@"lyrics: %@",lyrics);
+    } */
 }
 
 
@@ -788,7 +790,7 @@ MKRoute *routeDetails;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL) {
-        [self setGlobalColors];
+        //[self setGlobalColors];
 
         float red, green, blue, alpha;
         float red2, green2, blue2, alpha2;
@@ -837,8 +839,8 @@ MKRoute *routeDetails;
     
     // since this runs 5 times a second, update volume per GPS here
     if (_volumeTarget>0) mediaPlayer.volume = _volumeTarget;
-    [self setupHUD];
-    [self setupLabels];
+    //[self setupHUD];
+    //[self setupLabels];
 }
 
 - (void)setupLabels {
@@ -1189,7 +1191,6 @@ MKRoute *routeDetails;
         [self fadeActionHUDTimerKiller];
         _actionHUD.backgroundColor = [UIColor clearColor];
         _actionHUD.textColor = [UIColor clearColor];
-
     }
     //    NSLog(@"fading alpha is %f",_fadeHUDalpha);
     
@@ -2151,6 +2152,7 @@ MKRoute *routeDetails;
     if (newRating<5) newRating++;
     [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
     AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+    [self setupLabels];
 }
 
 -(void) decreaseRating {
@@ -2159,6 +2161,7 @@ MKRoute *routeDetails;
     if (newRating>0) newRating--;
     [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
     AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+    [self setupLabels];
 }
 
 - (void)addressSearch:(NSString *)address {

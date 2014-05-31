@@ -38,11 +38,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Traveling Tunes/ttunesViewController.m"
-            timestampString = "423196329.555231"
+            timestampString = "423197266.072136"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2430"
-            endingLineNumber = "2430"
+            startingLineNumber = "2433"
+            endingLineNumber = "2433"
             landmarkName = "-drawRoute"
             landmarkType = "5">
          </BreakpointContent>
