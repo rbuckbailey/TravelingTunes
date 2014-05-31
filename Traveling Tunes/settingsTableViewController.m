@@ -106,7 +106,16 @@
                     //the user cancelled the payment ;(
                 } else {
                     UIAlertView* alert;
-                    alert = [[UIAlertView alloc] initWithTitle:@"iTunes Store Error" message:[NSString stringWithFormat:@"Payment processor returned error code %@",transaction.error.code] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles: nil];
+                    NSString errorString;
+                    switch (transaction.error.code) {
+                        case SKErrorUnknown: errorString=@"Payment processor returned Unknown Error. Please try again in a few minutes."; break;
+                        case SKErrorClientInvalid: errorString=@"You may have already purchased this item. Press the Restore button."; break;
+                        case SKErrorPaymentCancelled: errorString=@"Payment cancelled."; break;
+                        case SKErrorPaymentInvalid: errorString=@"Payment error. Please verify your payment method in the App Store and try again."; break;
+                        case SKErrorPaymentNotAllowed: errorString=@"Payment not allowed by App Store. You may have Parental Controls enabled."; break;
+                        case SKErrorStoreProductNotAvailable: errorString=@"Product not available. Please e-mail buck@traveling-tunes.com"; break;
+                    }
+                    alert = [[UIAlertView alloc] initWithTitle:@"iTunes Store Error" message:[NSString stringWithFormat:@"%@",errorString] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles: nil];
                     [alert show];
                     NSLog(@"non-cancel failure");
                 }
