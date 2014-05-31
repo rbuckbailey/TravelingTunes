@@ -730,19 +730,32 @@ MKRoute *routeDetails;
                         sgreen=components[1];
                         sblue=components[2];
                     }
+                    components = CGColorGetComponents([colorScheme backgroundColor].CGColor);
+                    float bgred=components[0];
+                    float bggreen=components[1];
+                    float bgblue=components[2];
+                    
                     // calculate perceived brightness of color; if they're too far apart, we don't want a too-neutral average, below
-                    float primaryBrightness,secondaryBrightness;
+                    float primaryBrightness,secondaryBrightness,bgBrightness;
                     primaryBrightness = (0.299*pred + 0.587*pgreen + 0.114*pblue);
                     secondaryBrightness = (0.299*sred + 0.587*sgreen + 0.114*sblue);
+                    bgBrightness = (0.299*bgred + 0.587*bggreen + 0.114*bgblue);
 
+                    
+                    NSLog(@"primary %f secondary %f bg %f",primaryBrightness,secondaryBrightness,bgBrightness);
                     _themeBG = [colorScheme backgroundColor];
-                    _themeColorArtist = [colorScheme primaryTextColor];
+                    
+                    // if contrast between color and BG is low, boost brightness, else, do not
+                    if (fabsf(primaryBrightness-bgBrightness)<0.3) _themeColorArtist = [UIColor colorWithRed: pred+0.65f   green: pgreen+0.65f   blue:pblue+0.65f   alpha:1];
+                    else _themeColorArtist = [colorScheme primaryTextColor];
+                    // if the primary and secondary colors are very different, do not average them which returns neutral colors that may not show up
                     if (fabsf(primaryBrightness-secondaryBrightness)<0.75) {
                         _themeColorSong = [UIColor colorWithRed: (sred+(pred*2))/3   green: (sgreen+(pgreen*2))/3   blue:(sblue+(pblue*2))/3   alpha:1];
-                        NSLog(@"primary %f secondary %f diff %f",primaryBrightness,secondaryBrightness,fabsf(primaryBrightness-secondaryBrightness));
                     }
                     else _themeColorSong = [colorScheme secondaryTextColor];
-                    _themeColorAlbum = [colorScheme secondaryTextColor];
+                    // if contrast between color and BG is low, boost brightness, else, do not
+                    if (fabsf(secondaryBrightness-bgBrightness)<0.3) _themeColorAlbum = [UIColor colorWithRed: sred+0.65f   green: sgreen+0.65f   blue:sblue+0.65f   alpha:1];
+                    else _themeColorAlbum = [colorScheme secondaryTextColor];
                 }
             } else [self setThemeColors];
         } else { _albumArt.alpha = 0.0f; [self setThemeColors]; }
