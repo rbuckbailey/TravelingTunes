@@ -974,12 +974,18 @@ MKRoute *routeDetails;
     _map.frame = CGRectMake(0,0,self.view.bounds.size.width,self.view.bounds.size.height-[self getBannerHeight]);
 }
 
+- (int) statusBarHeight {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([[defaults objectForKey:@"ShowStatusBar"] isEqual:@"NO"]) return 0;
+    else return 10;
+}
+
 - (void) setupFramesAndMargins {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     leftMargin = 20;
     rightMargin = 20;
-    topMargin = 20;
+    topMargin = 20+[self statusBarHeight];
     bottomMargin = 20;
     
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) { // overlay set up is simple
@@ -991,7 +997,7 @@ MKRoute *routeDetails;
         if (![artwork imageWithSize:CGSizeMake(50,50)]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"showMap"] isEqual:@"NO"]) [self setupDefaultFrames];
         else if (UIInterfaceOrientationIsLandscape(_activeOrientation)) { // side by side landscape
             leftMargin = (self.view.bounds.size.width/2)+20;
-            topMargin = 20;
+            topMargin = 20+[self statusBarHeight];
             if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftMargin=leftMargin+40;  //if art scale is "fill" it is wider than "fit" or map view
             else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"1"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftMargin=leftMargin+20;  //if art scale is "fill" it is wider than "fit" or map view
             
@@ -1006,17 +1012,17 @@ MKRoute *routeDetails;
         } else { // side by side portrait
             // the 'full' size produces an odd frame. compensate.
             if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
-                topMargin = (self.view.bounds.size.height/2)+58;
+                topMargin = (self.view.bounds.size.height/2)+58+[self statusBarHeight];
                 _albumArt.frame = CGRectMake(0,18, self.view.bounds.size.width,self.view.bounds.size.height/2);
             }
             else {
-                topMargin = (self.view.bounds.size.height/2)+20;
+                topMargin = (self.view.bounds.size.height/2)+20+[self statusBarHeight];
                 _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
             }
             _map.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
             if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(0,self.view.bounds.size.height/2, self.view.bounds.size.width,self.view.bounds.size.height/2);
-                topMargin = (self.view.bounds.size.height/2)+20;
+                topMargin = (self.view.bounds.size.height/2)+20+[self statusBarHeight];
                 leftMargin = 20;
             }
         }
