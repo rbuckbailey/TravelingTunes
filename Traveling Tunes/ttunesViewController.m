@@ -2144,6 +2144,10 @@ MKRoute *routeDetails;
     [geocoder geocodeAddressString:address completionHandler:^(NSArray *placemarks, NSError *error) {
         if (error) {
             NSLog(@"%@", error);
+            UIAlertView* alert;
+            alert = [[UIAlertView alloc] initWithTitle:@"Error geocoding address" message:[NSString stringWithFormat:@"%@",error] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles: nil];
+            [alert show];
+
         } else {
             _thePlacemark = [placemarks lastObject];
 /*            float spanX = 1.00725;
@@ -2282,9 +2286,9 @@ MKRoute *routeDetails;
 }
 
 - (void) dingForUpcomingDirections {
-    //[self say:@"aring a ding ding"];
-    #define systemSoundID    1005
-    AudioServicesPlaySystemSound (systemSoundID);
+    [self say:@"aring a ding ding"];
+//    #define systemSoundID    1005
+//    AudioServicesPlaySystemSound (systemSoundID);
     
     /*
     NSString *path = [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] pathForResource:@"Tock" ofType:@"aiff"];
@@ -2315,6 +2319,9 @@ MKRoute *routeDetails;
     [eta calculateETAWithCompletionHandler:^(MKETAResponse *response, NSError *error) {
         if (error) {
             NSLog(@"Error %@", error.description);
+            UIAlertView* alert;
+            alert = [[UIAlertView alloc] initWithTitle:@"Error calculating ETA" message:[NSString stringWithFormat:@"%@",error] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles: nil];
+            [alert show];
         } else {
             int minutes = (int)response.expectedTravelTime/60;
             int hours = (int)minutes/60;
@@ -2334,6 +2341,9 @@ MKRoute *routeDetails;
     [directions calculateDirectionsWithCompletionHandler:^(MKDirectionsResponse *response, NSError *error) {
         if (error) {
             NSLog(@"Error %@", error.description);
+            UIAlertView* alert;
+            alert = [[UIAlertView alloc] initWithTitle:@"Error calculating directions" message:[NSString stringWithFormat:@"%@",error] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles: nil];
+            [alert show];
         } else {
             routeDetails = response.routes.lastObject;
             [_map addOverlay:routeDetails.polyline];
@@ -2366,7 +2376,8 @@ MKRoute *routeDetails;
             if ((_oldDistanceRemaining < andThenStep.distance/3.28084)&&(_oldStepText==andThenStep.instructions)) {
                 // if distance goes up we're going the wrong way so prompt for a u-turn
                 _sayWhat = @"Make a u-turn when possible.";
-                _latestInstructions = _sayWhat;
+                _gpsNextStepLabel.text = @"Make a u-turn when possible.";
+                _latestInstructions = @"Make a u-turn when possible.";
                 if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"1"]) [self dingForUpcomingDirections]; else if ([[defaults objectForKey:@"atTurnNoise"] isEqual:@"0"]) [self say:_sayWhat];
                 //_oldDistanceRemaining = andThenStep.distance/3.28084;
             } else {

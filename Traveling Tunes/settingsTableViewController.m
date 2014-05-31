@@ -104,7 +104,12 @@
                 if(transaction.error.code != SKErrorPaymentCancelled){
                     NSLog(@"Transaction state -> Cancelled");
                     //the user cancelled the payment ;(
-                } else NSLog(@"some other failure");
+                } else {
+                    UIAlertView* alert;
+                    alert = [[UIAlertView alloc] initWithTitle:@"iTunes Store Error" message:[NSString stringWithFormat:@"Payment processor returned error code %@",transaction.error.code] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles: nil];
+                    [alert show];
+                    NSLog(@"non-cancel failure");
+                }
                 [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
 //                [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
                 break;
