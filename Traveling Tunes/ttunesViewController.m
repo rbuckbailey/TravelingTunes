@@ -730,9 +730,18 @@ MKRoute *routeDetails;
                         sgreen=components[1];
                         sblue=components[2];
                     }
+                    // calculate perceived brightness of color; if they're too far apart, we don't want a too-neutral average, below
+                    float primaryBrightness,secondaryBrightness;
+                    primaryBrightness = (0.299*pred + 0.587*pgreen + 0.114*pblue);
+                    secondaryBrightness = (0.299*sred + 0.587*sgreen + 0.114*sblue);
+
                     _themeBG = [colorScheme backgroundColor];
                     _themeColorArtist = [colorScheme primaryTextColor];
-                    _themeColorSong = [UIColor colorWithRed: (sred+(pred*2))/3   green: (sgreen+(pgreen*2))/3   blue:(sblue+(pblue*2))/3   alpha:1];
+                    if (fabsf(primaryBrightness-secondaryBrightness)<0.75) {
+                        _themeColorSong = [UIColor colorWithRed: (sred+(pred*2))/3   green: (sgreen+(pgreen*2))/3   blue:(sblue+(pblue*2))/3   alpha:1];
+                        NSLog(@"primary %f secondary %f diff %f",primaryBrightness,secondaryBrightness,fabsf(primaryBrightness-secondaryBrightness));
+                    }
+                    else _themeColorSong = [colorScheme secondaryTextColor];
                     _themeColorAlbum = [colorScheme secondaryTextColor];
                 }
             } else [self setThemeColors];
@@ -1087,8 +1096,8 @@ MKRoute *routeDetails;
     else if ([action isEqual:@"Pause"]) return @"\u05f2\u20DD";
     else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) return @"\u05f2\u20dd"; // @"\u220e\u220e";
     else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) return @"\u25b8\u20DD";
-    else if ([action isEqual:@"VolumeUp"]) return @"\u2191\u20DD";
-    else if ([action isEqual:@"VolumeDown"]) return @"\u2193\u20DD";
+    else if ([action isEqual:@"VolumeUp"]) return @"\u202f\u2191\u20DD";
+    else if ([action isEqual:@"VolumeDown"]) return @"\u202f\u2193\u20DD";
     else if ([action isEqual:@"Next"]) return @"\u21c9\u20DD";
     else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) return @"\u21c7\u20DD";
     else if ([action isEqual:@"Menu"]) return @"\u2699";
@@ -1102,11 +1111,12 @@ MKRoute *routeDetails;
         if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL)
         return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyAlbumTitle] ];
         else return @"Unknown Album";
+        NSLog(@"@%@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]);
     }
     else if ([action isEqual:@"PlayCurrentArtist"]) {
         if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL)
         return [NSString stringWithFormat:@"Play %@",[mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtist] ];
-        else return @"Unkown Artist";
+        else return @"Unknown Artist";
     }
     else if ([action isEqual:@"IncreaseRating"]|[action isEqual:@"DecreaseRating"]) { MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; return [self ratingStars:rating]; }
     else if ([action isEqual:@"ShowQuickStart"]) return @"?\u20DD";
@@ -1295,8 +1305,8 @@ MKRoute *routeDetails;
             else _actionHUD.frame=CGRectMake((self.view.bounds.size.width/2)-80, self.view.bounds.size.height-(self.view.bounds.size.height/4)-80, 160, 160);
             _actionHUD.textAlignment=NSTextAlignmentCenter;
             _actionHUD.font = [UIFont systemFontOfSize:120];
-            _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.4f];
-            _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.4f];
+            _actionHUD.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.5f];
+            _actionHUD.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5f];
             _actionHUD.layer.cornerRadius = 10;
             _actionHUD.lineBreakMode = NSLineBreakByClipping;
             _actionHUD.numberOfLines = 1;
@@ -1929,13 +1939,15 @@ MKRoute *routeDetails;
 }
 
 - (void) togglePlayPause {
-    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+//    mediaPlayer = [MPMusicPlayerController iPodMusicPlayer];
+    NSLog(@"playback state was %ld",(long)[mediaPlayer playbackState]);
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]==NULL) [self playOrDefault];
     else if([mediaPlayer playbackState]==MPMusicPlaybackStatePlaying) {
         [self pause];
     } else {
         [mediaPlayer play];
     }
+    NSLog(@"playback state is %ld",(long)[mediaPlayer playbackState]);
 }
 
 - (void) restartPrevious {
