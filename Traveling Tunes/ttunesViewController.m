@@ -971,7 +971,7 @@ MKRoute *routeDetails;
     albumPosition = 0;
     
     _albumArt.frame = self.view.bounds;
-    _map.frame = CGRectMake(0,0,self.view.bounds.size.width,self.view.bounds.size.height-[self getBannerHeight]);
+    _map.frame = CGRectMake(0,0+[self statusBarHeight],self.view.bounds.size.width,self.view.bounds.size.height-[self getBannerHeight]-[self statusBarHeight]);
 }
 
 - (int) statusBarHeight {
@@ -1004,7 +1004,7 @@ MKRoute *routeDetails;
             artistPosition = topMargin;
             
             _albumArt.frame = CGRectMake(18,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
-            _map.frame = CGRectMake(0,0, self.view.bounds.size.width/2,self.view.bounds.size.height-[self getBannerHeight]);
+            _map.frame = CGRectMake(0,0+[self statusBarHeight], self.view.bounds.size.width/2,self.view.bounds.size.height-[self getBannerHeight]-[self statusBarHeight]);
             if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(self.view.bounds.size.width/2,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
                 leftMargin = (self.view.bounds.size.width/2)+20;
@@ -1019,7 +1019,7 @@ MKRoute *routeDetails;
                 topMargin = (self.view.bounds.size.height/2)+20+[self statusBarHeight];
                 _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
             }
-            _map.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
+            _map.frame = CGRectMake(0,0+[self statusBarHeight], self.view.bounds.size.width,(self.view.bounds.size.height/2)-[self statusBarHeight]);
             if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(0,self.view.bounds.size.height/2, self.view.bounds.size.width,self.view.bounds.size.height/2);
                 topMargin = (self.view.bounds.size.height/2)+20+[self statusBarHeight];
