@@ -977,7 +977,7 @@ MKRoute *routeDetails;
 - (int) statusBarHeight {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if ([[defaults objectForKey:@"ShowStatusBar"] isEqual:@"NO"]) return 0;
-    else return 10;
+    else return 20;
 }
 
 - (void) setupFramesAndMargins {
@@ -1046,7 +1046,7 @@ MKRoute *routeDetails;
     topButtons = NO;
     if (![[defaults objectForKey:@"TopLeft"] isEqual:@"Unassigned"]) {
         _topLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"TopLeft"] ];
-        if ([_topLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topLeftRegion.font = [UIFont systemFontOfSize:18]; else _topLeftRegion.font = [UIFont systemFontOfSize:30];
+        if ([_topLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topLeftRegion.font = [UIFont systemFontOfSize:17]; else _topLeftRegion.font = [UIFont systemFontOfSize:30];
         _topLeftRegion.frame = CGRectMake(leftMargin,topMargin-20,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topLeftRegion.textColor = _themeColorSong;
         _topLeftRegion.numberOfLines=0;
@@ -1056,7 +1056,7 @@ MKRoute *routeDetails;
     } else _topLeftRegion.text = @"";
     if (![[defaults objectForKey:@"TopCenter"] isEqual:@"Unassigned"]) {
         _topCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"TopCenter"] ];
-        if ([_topCenterRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topCenterRegion.font = [UIFont systemFontOfSize:18]; else _topCenterRegion.font = [UIFont systemFontOfSize:30];
+        if ([_topCenterRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topCenterRegion.font = [UIFont systemFontOfSize:17]; else _topCenterRegion.font = [UIFont systemFontOfSize:30];
         _topCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,topMargin-20,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topCenterRegion.textColor = _themeColorSong;
         _topCenterRegion.numberOfLines=0;
@@ -1067,7 +1067,7 @@ MKRoute *routeDetails;
     } else _topCenterRegion.text = @"";
     if (![[defaults objectForKey:@"TopRight"] isEqual:@"Unassigned"]) {
         _topRightRegion.text = [self actionSymbol:[defaults objectForKey:@"TopRight"] ];
-        if ([_topRightRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topRightRegion.font = [UIFont systemFontOfSize:18]; else _topRightRegion.font = [UIFont systemFontOfSize:30];
+        if ([_topRightRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _topRightRegion.font = [UIFont systemFontOfSize:17]; else _topRightRegion.font = [UIFont systemFontOfSize:30];
         _topRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),topMargin-20,(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _topRightRegion.textColor = _themeColorSong;
         _topRightRegion.numberOfLines=0;
@@ -1082,7 +1082,7 @@ MKRoute *routeDetails;
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) playbackBarMargin = 65;
     if (![[defaults objectForKey:@"BottomLeft"] isEqual:@"Unassigned"]) {
         _bottomLeftRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomLeft"] ];
-        if ([_bottomLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomLeftRegion.font = [UIFont systemFontOfSize:18]; else _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
+        if ([_bottomLeftRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomLeftRegion.font = [UIFont systemFontOfSize:17]; else _bottomLeftRegion.font = [UIFont systemFontOfSize:30];
         _bottomLeftRegion.frame = CGRectMake(leftMargin,self.view.bounds.size.height-playbackBarMargin-[self getBannerHeight],(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomLeftRegion.textColor = _themeColorSong;
         _bottomLeftRegion.numberOfLines=0;
@@ -1093,7 +1093,7 @@ MKRoute *routeDetails;
     if (![[defaults objectForKey:@"BottomCenter"] isEqual:@"Unassigned"]) {
         _bottomCenterRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomCenter"] ];
 //        if ((UIInterfaceOrientationIsLandscape(_activeOrientation))) _bottomCenterRegion.font = [UIFont systemFontOfSize:30]; else _bottomCenterRegion.font = [UIFont systemFontOfSize:18];
-        if ([_bottomCenterRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomCenterRegion.font = [UIFont systemFontOfSize:18]; else _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
+        if ([_bottomCenterRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomCenterRegion.font = [UIFont systemFontOfSize:16]; else _bottomCenterRegion.font = [UIFont systemFontOfSize:30];
         
         _bottomCenterRegion.frame = CGRectMake(leftMargin+(self.view.bounds.size.width-(leftMargin+rightMargin))/3,self.view.bounds.size.height-playbackBarMargin-[self getBannerHeight],(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomCenterRegion.textColor = _themeColorSong;
@@ -1105,7 +1105,7 @@ MKRoute *routeDetails;
     } else _bottomCenterRegion.text = @"";
     if (![[defaults objectForKey:@"BottomRight"] isEqual:@"Unassigned"]) {
         _bottomRightRegion.text = [self actionSymbol:[defaults objectForKey:@"BottomRight"] ];
-        if ([_bottomRightRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomRightRegion.font = [UIFont systemFontOfSize:18]; else _bottomRightRegion.font = [UIFont systemFontOfSize:30];
+        if ([_bottomRightRegion.text sizeWithFont:[UIFont systemFontOfSize:30]].width>(self.view.bounds.size.width-(leftMargin+rightMargin))/3) _bottomRightRegion.font = [UIFont systemFontOfSize:17]; else _bottomRightRegion.font = [UIFont systemFontOfSize:30];
         _bottomRightRegion.frame = CGRectMake(self.view.bounds.size.width-((self.view.bounds.size.width-(leftMargin+rightMargin))/3+rightMargin),self.view.bounds.size.height-playbackBarMargin-[self getBannerHeight],(self.view.bounds.size.width-(leftMargin+rightMargin))/3,50);
         _bottomRightRegion.textColor = _themeColorSong;
         _bottomRightRegion.numberOfLines=0;
