@@ -299,6 +299,7 @@
     if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) _showMap.on = YES; else _showMap.on = NO;
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) _disableAutoLock.on = YES; else _disableAutoLock.on = NO;
     if ([[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) _announce3Step.on = YES; else _announce3Step.on = NO;
+    if ([[defaults objectForKey:@"vibrateOnRating"] isEqual:@"YES"]) _vibrateOnRating.on = YES; else _vibrateOnRating.on = NO;
 #ifdef FREE
     if ([[defaults objectForKey:@"disableAdBanners"] isEqual:@"YES"]) _disableAdBanners.on = YES; else _disableAdBanners.on = NO;
 #endif
@@ -1271,6 +1272,14 @@
     else [defaults setObject:@"NO" forKey:@"announce3Step"];
     [defaults synchronize];
 }
+
+- (IBAction)vibrateOnRatingChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_vibrateOnRating.on) [defaults setObject:@"YES" forKey:@"vibrateOnRating"];
+    else [defaults setObject:@"NO" forKey:@"vibrateOnRating"];
+    [defaults synchronize];
+}
+
 
 
 @end

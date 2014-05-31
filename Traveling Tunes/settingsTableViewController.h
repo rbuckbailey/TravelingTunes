@@ -250,6 +250,9 @@
 @property (weak, nonatomic) IBOutlet UILabel *GPSSensivityLabel;
 - (IBAction)disableAutoLockChanged:(id)sender;
 @property (weak, nonatomic) IBOutlet UISwitch *disableAutoLock;
+- (IBAction)vibrateOnRatingChanged:(id)sender;
+@property (weak, nonatomic) IBOutlet UISwitch *vibrateOnRating;
+
 
 #ifdef FREE
 @property (weak, nonatomic) IBOutlet UISwitch *disableAdBanners;

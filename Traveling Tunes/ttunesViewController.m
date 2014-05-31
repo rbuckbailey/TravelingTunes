@@ -2161,20 +2161,22 @@ MKRoute *routeDetails;
 }
 
 -(void) increaseRating {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
     int newRating = (int)[[song valueForKey:@"rating"] floatValue];
     if (newRating<5) newRating++;
     [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
-    AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+    if ([[defaults objectForKey:@"vibrateOnRating"] isEqual:@"YES"]) AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
     [self setupLabels];
 }
 
 -(void) decreaseRating {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
     int newRating = (int)[[song valueForKey:@"rating"] floatValue];
     if (newRating>0) newRating--;
     [song setValue:[NSNumber numberWithInteger:newRating] forKey:@"rating"];
-    AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+    if ([[defaults objectForKey:@"vibrateOnRating"] isEqual:@"YES"]) AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
     [self setupLabels];
 }
 
