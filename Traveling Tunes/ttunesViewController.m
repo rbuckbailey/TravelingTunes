@@ -315,10 +315,6 @@ MKRoute *routeDetails;
     if ([[defaults objectForKey:@"repeat"] isEqual:@"YES"]) mediaPlayer.repeatMode = MPMusicRepeatModeAll; else mediaPlayer.repeatMode = MPMusicRepeatModeNone;
     
     [self startPlaybackWatcher];
-    [self setupLabels];
-    [self setupHUD];
-    [self setupSystemHUD];
-    [self fixGPSLabels];
 
     //reset marquee
     [self scrollingTimerKiller];
@@ -343,6 +339,11 @@ MKRoute *routeDetails;
             [self setupDestinationAddress];
         }
     } else _finishedNavigating = YES;
+
+    [self setupLabels];
+    [self setupHUD];
+    [self setupSystemHUD];
+    [self fixGPSLabels];
 }
 
 - (void)setupDestinationAddress {
@@ -430,6 +431,7 @@ MKRoute *routeDetails;
             [_map setAlpha:mapFade];
         }
     } else { [self cancelNavigation]; [_map removeFromSuperview]; _map=NULL; }
+    [self bringHUDSToFront];
 }
 
 - (void) cancelNavigation {
@@ -748,7 +750,10 @@ MKRoute *routeDetails;
                     _themeBG = [colorScheme backgroundColor];
                     
                     // if contrast between color and BG is low, boost brightness, else, do not
-                    if (fabsf(primaryBrightness-bgBrightness)<0.3) _themeColorArtist = [UIColor colorWithRed: pred+0.65f   green: pgreen+0.65f   blue:pblue+0.65f   alpha:1];
+                    if (fabsf(primaryBrightness-bgBrightness)<0.3) {
+                        if (bgBrightness<0.25f) _themeColorArtist = [UIColor colorWithRed: pred+0.65f   green: pgreen+0.65f   blue:pblue+0.65f   alpha:1];
+                        else if (bgBrightness>0.75f) _themeColorArtist = [UIColor colorWithRed: pred-0.65f   green: pgreen-0.65f   blue:pblue-0.65f   alpha:1];
+                    }
                     else _themeColorArtist = [colorScheme primaryTextColor];
                     // if the primary and secondary colors are very different, do not average them which returns neutral colors that may not show up
                     if (fabsf(primaryBrightness-secondaryBrightness)<0.75) {
@@ -756,7 +761,10 @@ MKRoute *routeDetails;
                     }
                     else _themeColorSong = [colorScheme secondaryTextColor];
                     // if contrast between color and BG is low, boost brightness, else, do not
-                    if (fabsf(secondaryBrightness-bgBrightness)<0.3) _themeColorAlbum = [UIColor colorWithRed: sred+0.65f   green: sgreen+0.65f   blue:sblue+0.65f   alpha:1];
+                    if (fabsf(secondaryBrightness-bgBrightness)<0.3) {
+                        if (bgBrightness<0.25f) _themeColorAlbum = [UIColor colorWithRed: sred+0.65f   green: sgreen+0.65f   blue:sblue+0.65f   alpha:1];
+                        else if (bgBrightness>0.75f) _themeColorAlbum = [UIColor colorWithRed: sred-0.65f   green: sgreen-0.65f   blue:sblue-0.65f   alpha:1];
+                    }
                     else _themeColorAlbum = [colorScheme secondaryTextColor];
                 }
             } else [self setThemeColors];
