@@ -4036,7 +4036,7 @@
                                                     <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.01" minValue="0.0" maxValue="0.050000000000000003" translatesAutoresizingMaskIntoConstraints="NO" id="cdU-ou-r0c">
+                                                <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.0050000000000000001" minValue="0.0" maxValue="0.02" translatesAutoresizingMaskIntoConstraints="NO" id="cdU-ou-r0c">
                                                     <rect key="frame" x="120" y="7" width="182" height="31"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <constraints>
