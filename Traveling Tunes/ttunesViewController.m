@@ -205,9 +205,7 @@ MKRoute *routeDetails;
         _speedTier = (int)(mph);
         _volumeTarget = _volumeBase+((_volumeTenth*_speedTier)*[[defaults objectForKey:@"GPSSensivity"] floatValue]);
     }
-
-//    [self setupHUD];
-    
+    [self setupHUD];    
 /*    NSLog(@"*** gps moved ***");
     NSLog(@"base volume:%f",_volumeBase);
     NSLog(@"real volume:%f",mediaPlayer.volume);
@@ -663,7 +661,7 @@ MKRoute *routeDetails;
     [self scrollingTimerKiller]; [self startMarqueeTimer];
     if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL)
         [self setGlobalColors];
-    //[self setupHUD];
+    [self setupHUD];
     [self setupLabels];
     /*
     MPMediaItem *song = [mediaPlayer nowPlayingItem];
