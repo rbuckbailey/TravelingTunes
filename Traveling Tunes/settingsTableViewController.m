@@ -262,6 +262,7 @@
     _artDisplayLayout.selectedSegmentIndex = (int)[[defaults objectForKey:@"ArtDisplayLayout"] floatValue];
     _nearingTurnNoise.selectedSegmentIndex = (int)[[defaults objectForKey:@"nearingTurnNoise"] floatValue];
     _atTurnNoise.selectedSegmentIndex = (int)[[defaults objectForKey:@"atTurnNoise"] floatValue];
+    _mapOn.selectedSegmentIndex = (int)[[defaults objectForKey:@"mapOn"] floatValue];
     
     // initialize theme previews for Display settings
     [self setThemeLabels];
@@ -296,7 +297,6 @@
     if ([[defaults objectForKey:@"showActions"] isEqual:@"YES"]) _showActions.on = YES; else _showActions.on = NO;
     if ([[defaults objectForKey:@"albumArtColors"] isEqual:@"YES"]) _albumArtColors.on = YES; else _albumArtColors.on = NO;
     if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) _showAlbumArt.on = YES; else _showAlbumArt.on = NO;
-    if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) _showMap.on = YES; else _showMap.on = NO;
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) _disableAutoLock.on = YES; else _disableAutoLock.on = NO;
     if ([[defaults objectForKey:@"announce3Step"] isEqual:@"YES"]) _announce3Step.on = YES; else _announce3Step.on = NO;
     if ([[defaults objectForKey:@"vibrateOnRating"] isEqual:@"YES"]) _vibrateOnRating.on = YES; else _vibrateOnRating.on = NO;
@@ -1218,18 +1218,6 @@
 }
 
 
-- (IBAction)showMapChanged:(id)sender {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if (_showMap.on) {
-        [defaults setObject:@"YES" forKey:@"showMap"];
-/*        if ([[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
-            [defaults setObject:@"NO" forKey:@"showAlbumArt"];
-            [_showAlbumArt setOn:NO];
-        } */
-    } else [defaults setObject:@"NO" forKey:@"showMap"];
-    [defaults synchronize];
-}
-
 - (IBAction)artDisplayLayoutChanged:(id)sender {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
@@ -1280,6 +1268,16 @@
     [defaults synchronize];
 }
 
-
+- (IBAction)mapOnChanged:(id)sender {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (_mapOn.selectedSegmentIndex == 0) {
+        [defaults setObject:@"0" forKey:@"mapOn"];
+    } else if(_mapOn.selectedSegmentIndex == 1) {
+        [defaults setObject:@"1" forKey:@"mapOn"];
+    } else if(_mapOn.selectedSegmentIndex == 2) {
+        [defaults setObject:@"2" forKey:@"mapOn"];
+    }
+    [defaults synchronize];
+}
 
 @end

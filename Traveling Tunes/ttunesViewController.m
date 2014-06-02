@@ -27,6 +27,7 @@ int songPosition = 0;
 int albumPosition = 0;
 BOOL topButtons = NO;
 BOOL bottomButtons = NO;
+BOOL shouldShowMap = NO;
 
 @interface ttunesViewController ()
 @property UIView *lineView,*playbackLineView,*edgeViewBG,*playbackEdgeViewBG,*nightTimeFade,*bgView;
@@ -270,7 +271,6 @@ MKRoute *routeDetails;
 //                                                                    _songTitle.frame = CGRectOffset(_songTitle.frame, 0, -(banner.frame.size.height/2));
 //                                                                    _albumTitle.frame = CGRectOffset(_albumTitle.frame, 0, -banner.frame.size.height);
         [UIView commitAnimations]; self.bannerIsVisible = YES;
-//        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) {
 
 //        }
     }
@@ -323,9 +323,7 @@ MKRoute *routeDetails;
     //start gps if enabled
     if ([[defaults objectForKey:@"GPSVolume"] isEqual:@"YES"])[self.gps startUpdatingLocation];
     else [self.gps stopUpdatingLocation];
-    
-    // initialize map view
-    [self initMapView];
+
 
     //disable sleep mode
     if ([[defaults objectForKey:@"DisableAutoLock"] isEqual:@"YES"]) { [[UIApplication sharedApplication] setIdleTimerDisabled:YES]; }
@@ -339,7 +337,9 @@ MKRoute *routeDetails;
             [self setupDestinationAddress];
         }
     } else _finishedNavigating = YES;
-
+    // initialize map view
+    [self initMapView];
+    
     [self setupLabels];
     [self setupHUD];
     [self setupSystemHUD];
@@ -353,7 +353,7 @@ MKRoute *routeDetails;
     [self addressSearch:[defaults objectForKey:@"destinationAddress"]];
     _onFirstStep = YES;
     [self startGPSTimer];
-    [defaults setObject:@"narf!" forKey:@"destinationAddress"];
+    //[defaults setObject:@"narf!" forKey:@"destinationAddress"];
     [defaults synchronize];    
 }
 
@@ -401,7 +401,10 @@ MKRoute *routeDetails;
 - (void)initMapView{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+    if (([[defaults objectForKey:@"mapOn"] isEqual:@"1"]&!_finishedNavigating)|[[defaults objectForKey:@"mapOn"] isEqual:@"0"])
+        shouldShowMap = YES;
+    else shouldShowMap = NO;
+    if (shouldShowMap) {
         if (_map==NULL) {
             _map = [[MKMapView alloc] initWithFrame: self.view.bounds];
             _map.delegate = self;
@@ -416,25 +419,27 @@ MKRoute *routeDetails;
         [self setMapInteractivity];
         // max opacity of map if there is art
 //        MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
-        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
+        [_map setAlpha:1];
+        if (shouldShowMap&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
             // if both are on display,  left-side map should be at full alpha
-            [_map setAlpha:1];
-            [self.view bringSubviewToFront:_gpsDistanceRemaining];
-            [self.view bringSubviewToFront:_gpsDestination];
-            [self.view bringSubviewToFront:_gpsNextStepLabel];
-            [self.view bringSubviewToFront:_gpsDebugLabel];
-        }
-        else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) [_map setAlpha:1];
-        else {
-            float mapFade = [[defaults objectForKey:@"AlbumArtFade"] floatValue]*3; //*3; //fade map less than art b/c we want to see it
-            if (mapFade>0.75) mapFade = 0.75;  //never completely fade out text
-            [_map setAlpha:mapFade];
+            [self bringGPSTitlesToFront];
         }
     } else { [self cancelNavigation]; [_map removeFromSuperview]; _map=NULL; }
+    [self setupFramesAndMargins];
+    [self fixGPSLabels];
     [self bringHUDSToFront];
 }
 
+- (void) bringGPSTitlesToFront {
+    [self.view bringSubviewToFront:_gpsDistanceRemaining];
+    [self.view bringSubviewToFront:_gpsDestination];
+    [self.view bringSubviewToFront:_gpsNextStepLabel];
+    [self.view bringSubviewToFront:_gpsDebugLabel];
+    
+}
+
 - (void) cancelNavigation {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (_showingGPSInstructions) [self hideGPSInstructions];
     [self clearRoute];
     _gpsDistanceRemaining.text = @"";
@@ -444,6 +449,8 @@ MKRoute *routeDetails;
     [self GPSTimerKiller];
     _latestInstructions = @"";
     _finishedNavigating = YES;
+    [defaults setObject:@"narf!" forKey:@"destinationAddress"];
+    [defaults synchronize];
 }
 
 - (void) bringTitlesToFront {
@@ -470,18 +477,18 @@ MKRoute *routeDetails;
 }
 
 - (void) fixGPSLabels {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if ([[defaults objectForKey:@"showMap"] isEqual:@"NO"]) {
+//    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if (!shouldShowMap) {
         _gpsDestination.text = @"";
         _gpsNextStepLabel.text = @"";
         _gpsDistanceRemaining.text = @"";
     }
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation))
+    else if (!UIInterfaceOrientationIsLandscape(_activeOrientation))
         _gpsDestination.frame=CGRectMake(10,(self.view.bounds.size.height/2)-50,self.view.bounds.size.width-20,30);
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50-[self getBannerHeight],self.view.bounds.size.width/2,50);
-    else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50-[self getBannerHeight],self.view.bounds.size.width-20,50);
+    else _gpsDestination.frame=CGRectMake(10,self.view.bounds.size.height-50-[self getBannerHeight],self.view.bounds.size.width/2,50);
     _gpsDestination.font = [UIFont systemFontOfSize:35];
     _gpsDistanceRemaining.font = [UIFont systemFontOfSize:35];
+    [self bringGPSTitlesToFront];
 }
 
 - (void)viewDidLoad {
@@ -558,11 +565,11 @@ MKRoute *routeDetails;
     [self.view addSubview:_gpsNextStepLabel];
     [self.view addSubview:_gpsDebugLabel];
 
-    _gpsDistanceRemaining.frame=CGRectMake(10,10,320,30);
+    _gpsDistanceRemaining.frame=CGRectMake(10,10+[self statusBarHeight],320,30);
     _gpsDistanceRemaining.textColor = [UIColor blackColor];
     [_gpsDistanceRemaining setAlpha:0.5];
     
-    _gpsNextStepLabel.frame=CGRectMake(10,40,280,100);
+    _gpsNextStepLabel.frame=CGRectMake(10,40+[self statusBarHeight],280,100);
     _gpsNextStepLabel.textColor = [UIColor blackColor];
     [_gpsNextStepLabel setAlpha:0.5];
     _gpsNextStepLabel.font = [UIFont systemFontOfSize:30];
@@ -702,7 +709,7 @@ MKRoute *routeDetails;
         if ([artwork imageWithSize:CGSizeMake(50,50)]) {
             _albumArt.image = [artwork imageWithSize:CGSizeMake(self.view.bounds.size.width,self.view.bounds.size.height)];
 
-            if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
+            if (shouldShowMap&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.alpha = [[defaults objectForKey:@"AlbumArtFade"] floatValue];
             }
             else if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) _albumArt.alpha = 1;
@@ -813,12 +820,12 @@ MKRoute *routeDetails;
         int scrubLeft = 0;
         if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]) {
             if (UIInterfaceOrientationIsLandscape(_activeOrientation)) {
-                if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubLeft = (self.view.bounds.size.width/2);
+                if (shouldShowMap&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubLeft = (self.view.bounds.size.width/2);
                 else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) scrubLeft = (self.view.bounds.size.width/2)+36;
                 else scrubLeft = (self.view.bounds.size.width/2);
                 playbackPosition = ((self.view.bounds.size.width/2)-36)*([mediaPlayer currentPlaybackTime]/totalPlaybackTime) + scrubLeft;
             } else {
-                if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) scrubTop = (self.view.bounds.size.height/2);
+                if (shouldShowMap) scrubTop = (self.view.bounds.size.height/2);
                     else scrubTop = (self.view.bounds.size.height/2)+36;
             }
         }
@@ -971,7 +978,6 @@ MKRoute *routeDetails;
     albumPosition = 0;
     
     _albumArt.frame = self.view.bounds;
-    _map.frame = CGRectMake(0,0+[self statusBarHeight],self.view.bounds.size.width,self.view.bounds.size.height-[self getBannerHeight]-[self statusBarHeight]);
 }
 
 - (int) statusBarHeight {
@@ -988,13 +994,21 @@ MKRoute *routeDetails;
     topMargin = 20+[self statusBarHeight];
     bottomMargin = 20;
     
-    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]) { // overlay set up is simple
+    //setup map frames
+    if (shouldShowMap) {
+        if (UIInterfaceOrientationIsLandscape(_activeOrientation)) _map.frame = CGRectMake(0,0+[self statusBarHeight], self.view.bounds.size.width/2,self.view.bounds.size.height-[self getBannerHeight]-[self statusBarHeight]);
+        else _map.frame = CGRectMake(0,0+[self statusBarHeight], self.view.bounds.size.width,(self.view.bounds.size.height/2)-[self statusBarHeight]);
+    }
+    if (_gpsInstructionsTable!=nil) _gpsInstructionsTable.frame = _map.frame;
+
+    //setup album art frames
+    if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"0"]&!shouldShowMap) {
         [self setupDefaultFrames];
     }
     else { // side by side
         // if artwork on and no artwork, revert to full width
         MPMediaItemArtwork *artwork = [mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyArtwork];
-        if (![artwork imageWithSize:CGSizeMake(50,50)]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&[[defaults objectForKey:@"showMap"] isEqual:@"NO"]) [self setupDefaultFrames];
+        if (![artwork imageWithSize:CGSizeMake(50,50)]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]&!shouldShowMap) [self setupDefaultFrames];
         else if (UIInterfaceOrientationIsLandscape(_activeOrientation)) { // side by side landscape
             leftMargin = (self.view.bounds.size.width/2)+20;
             topMargin = 20+[self statusBarHeight];
@@ -1004,8 +1018,7 @@ MKRoute *routeDetails;
             artistPosition = topMargin;
             
             _albumArt.frame = CGRectMake(18,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
-            _map.frame = CGRectMake(0,0+[self statusBarHeight], self.view.bounds.size.width/2,self.view.bounds.size.height-[self getBannerHeight]-[self statusBarHeight]);
-            if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
+            if (shouldShowMap&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(self.view.bounds.size.width/2,0, self.view.bounds.size.width/2,self.view.bounds.size.height);
                 leftMargin = (self.view.bounds.size.width/2)+20;
             }
@@ -1019,14 +1032,12 @@ MKRoute *routeDetails;
                 topMargin = (self.view.bounds.size.height/2)+20+[self statusBarHeight];
                 _albumArt.frame = CGRectMake(0,0, self.view.bounds.size.width,self.view.bounds.size.height/2);
             }
-            _map.frame = CGRectMake(0,0+[self statusBarHeight], self.view.bounds.size.width,(self.view.bounds.size.height/2)-[self statusBarHeight]);
-            if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
+            if (shouldShowMap&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) {
                 _albumArt.frame = CGRectMake(0,self.view.bounds.size.height/2, self.view.bounds.size.width,self.view.bounds.size.height/2);
                 topMargin = (self.view.bounds.size.height/2)+20+[self statusBarHeight];
                 leftMargin = 20;
             }
         }
-        if (_gpsInstructionsTable!=nil) _gpsInstructionsTable.frame = _map.frame;
     }
     // adjust for edge HUD layouts
     if ([[defaults objectForKey:@"ScrubHUDType"] isEqual:@"2"]) bottomMargin=bottomMargin+15;
@@ -1307,7 +1318,6 @@ MKRoute *routeDetails;
 -(void) startGPSTimer {
 //    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self GPSTimerKiller];
-    _finishedNavigating = NO;
     _onLastStep = NO;
     _didSayTurn = NO;
     _didWarnTurn = NO;
@@ -1383,7 +1393,7 @@ MKRoute *routeDetails;
     float targetVolumeLevel=height-(height*_volumeTarget);
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&!UIInterfaceOrientationIsLandscape(_activeOrientation)) {
         height=(self.view.bounds.size.height/2)-[self getBannerHeight];
-        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+        if (shouldShowMap) {
             volumeLevel=(height-(height*_volumeBase))+(self.view.bounds.size.height/2);
             targetVolumeLevel=(height-(height*_volumeTarget))+(self.view.bounds.size.height/2);
         } else {
@@ -1401,7 +1411,7 @@ MKRoute *routeDetails;
     
     if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&UIInterfaceOrientationIsLandscape(_activeOrientation)) {
         // if fill scale, which is big, swell up 36px
-        if ([[defaults objectForKey:@"showMap"] isEqual:@"YES"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftSide=self.view.bounds.size.width/2;
+        if (shouldShowMap&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftSide=self.view.bounds.size.width/2;
         else if ([[defaults objectForKey:@"AlbumArtScale"] isEqual:@"0"]&[[defaults objectForKey:@"showAlbumArt"] isEqual:@"YES"]) leftSide=self.view.bounds.size.width/2+36;
         else leftSide=self.view.bounds.size.width/2;
     }
@@ -1727,7 +1737,7 @@ MKRoute *routeDetails;
                 gpsInstructionsLeft = 0;
                 gpsInstructionsTop = 0;
                 gpsInstructionsBottom = 50;
-                if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(!UIInterfaceOrientationIsLandscape(_activeOrientation))) {
+                if (([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]|shouldShowMap)&(!UIInterfaceOrientationIsLandscape(_activeOrientation))) {
 //                    checkTopZero = (self.view.bounds.size.height/2)+36;
 //                    checkTop = (self.view.bounds.size.height/2)+76;
                     checkTopZero = topMargin-20;
@@ -1738,7 +1748,7 @@ MKRoute *routeDetails;
                     gpsResetLeft = 0;
                     gpsResetRight = self.view.bounds.size.width;
                 }
-                if ([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]&(UIInterfaceOrientationIsLandscape(_activeOrientation))) {
+                if (([[defaults objectForKey:@"ArtDisplayLayout"] isEqual:@"1"]|shouldShowMap)&(UIInterfaceOrientationIsLandscape(_activeOrientation))) {
 //                    checkLeftZero = (self.view.bounds.size.width/2)+36;
 //                    checkLeft = (self.view.bounds.size.width/2)+136;
                     int activeWidth = self.view.bounds.size.width-leftMargin;
@@ -1754,11 +1764,11 @@ MKRoute *routeDetails;
                 }
                 
                 // check for button zones
-                if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) {
+                if ((location.y>gpsInstructionsTop)&(location.y<gpsInstructionsBottom)&(location.x>gpsInstructionsLeft)&(location.x<gpsInstructionsRight)&&shouldShowMap) {
                     [self performPlayerAction:[defaults objectForKey:@"TopMap"] :@"MapTopButton"];
 //                    [self performPlayerAction:@"showGPSInstructions" :@"MapTopButton"];
                 }
-                else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&[[defaults objectForKey:@"showMap"] isEqual:@"YES"]) { // handle checks for portrait view
+                else if ((location.x>gpsResetLeft)&(location.x<gpsResetRight)&(location.y>gpsResetTop)&(location.y<gpsResetBottom)&shouldShowMap) { // handle checks for portrait view
                     [self performPlayerAction:[defaults objectForKey:@"BottomMap"] :@"MapBottomButton"];
 //                    [self performPlayerAction:@"recenterMap" :@"MapBottomButton"];
                 }
@@ -2202,6 +2212,8 @@ MKRoute *routeDetails;
             region.span = MKCoordinateSpanMake(spanX, spanY);
             [_map setRegion:region animated:YES];
  */
+            _finishedNavigating = NO;
+            [self initMapView];
             [self drawRoute];
             [self addAnnotation:_thePlacemark];
         }
