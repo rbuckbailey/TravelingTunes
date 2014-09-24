@@ -205,7 +205,7 @@ MKRoute *routeDetails;
         _speedTier = (int)(mph);
         _volumeTarget = _volumeBase+((_volumeTenth*_speedTier)*[[defaults objectForKey:@"GPSSensivity"] floatValue]);
     }
-    [self setupHUD];    
+    [self setupHUD];
 /*    NSLog(@"*** gps moved ***");
     NSLog(@"base volume:%f",_volumeBase);
     NSLog(@"real volume:%f",mediaPlayer.volume);
@@ -750,11 +750,9 @@ MKRoute *routeDetails;
                     secondaryBrightness = (0.299*sred + 0.587*sgreen + 0.114*sblue);
                     bgBrightness = (0.299*bgred + 0.587*bggreen + 0.114*bgblue);
 
-                    
-                    NSLog(@"primary %f secondary %f bg %f",primaryBrightness,secondaryBrightness,bgBrightness);
                     _themeBG = [colorScheme backgroundColor];
                     
-                    // if contrast between color and BG is low, boost brightness, else, do not
+                    // if contrast between color and BG is low, modify brightness, else, do not
                     if (fabsf(primaryBrightness-bgBrightness)<0.3) {
                         if (bgBrightness<0.25f) _themeColorArtist = [UIColor colorWithRed: pred+0.65f   green: pgreen+0.65f   blue:pblue+0.65f   alpha:1];
                         else if (bgBrightness>0.75f) _themeColorArtist = [UIColor colorWithRed: pred-0.65f   green: pgreen-0.65f   blue:pblue-0.65f   alpha:1];
