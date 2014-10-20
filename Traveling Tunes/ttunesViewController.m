@@ -1126,22 +1126,22 @@ MKRoute *routeDetails;
 -(NSString*)actionSymbol:(NSString*)action {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    if ([action isEqual:@"Rewind"]) return @"\u2190\u20DD";
-    else if ([action isEqual:@"FastForward"]) return @"\u2192\u20DD";
-    else if ([action isEqual:@"Play"]) return @"\u25b8\u20DD";
-    else if ([action isEqual:@"Pause"]) return @"\u05f2\u20DD";
-    else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) return @"\u05f2\u20dd"; // @"\u220e\u220e";
-    else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) return @"\u25b8\u20DD";
-    else if ([action isEqual:@"VolumeUp"]) return @"\u202f\u2191\u20DD";
-    else if ([action isEqual:@"VolumeDown"]) return @"\u202f\u2193\u20DD";
-    else if ([action isEqual:@"Next"]) return @"\u21c9\u20DD";
-    else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) return @"\u21c7\u20DD";
+    if ([action isEqual:@"Rewind"]) return @"\u2190";
+    else if ([action isEqual:@"FastForward"]) return @"\u2192";
+    else if ([action isEqual:@"Play"]) return @"\u25b8";
+    else if ([action isEqual:@"Pause"]) return @"\u05f2";
+    else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState==MPMusicPlaybackStatePlaying)) return @"\u05f2"; // @"\u220e\u220e";
+    else if ([action isEqual:@"PlayPause"]&(mediaPlayer.playbackState!=MPMusicPlaybackStatePlaying)) return @"\u25b8";
+    else if ([action isEqual:@"VolumeUp"]) return @"\u2191";
+    else if ([action isEqual:@"VolumeDown"]) return @"\u2193";
+    else if ([action isEqual:@"Next"]) return @"\u21c9";
+    else if ([action isEqual:@"Previous"]|[action isEqual:@"RestartPrevious"]) return @"\u21c7";
     else if ([action isEqual:@"Menu"]) return @"\u2699";
-    else if ([action isEqual:@"SongPicker"]) return @"\u23cf\u20DD";
-    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) return @"\u21dd\u20DD";
-    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"NO"]) return @"\u2799\u20DD";
-    else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"YES"]) return @"\u221e\u20DD";
-    else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"NO"]) return @"\u223e\u20DD";
+    else if ([action isEqual:@"SongPicker"]) return @"\u23cf";
+    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"YES"]) return @"\u21dd";
+    else if ([action isEqual:@"ToggleShuffle"]&[[defaults objectForKey:@"shuffle"] isEqual:@"NO"]) return @"\u2799";
+    else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"YES"]) return @"\u221e";
+    else if ([action isEqual:@"ToggleRepeat"]&[[defaults objectForKey:@"repeat"] isEqual:@"NO"]) return @"\u223e";
     else if ([action isEqual:@"StartDefaultPlaylist"]) return [NSString stringWithFormat:@"Play %@",[defaults objectForKey:@"playlist"] ];
     else if ([action isEqual:@"PlayCurrentAlbum"]) {
         if ([mediaPlayer.nowPlayingItem valueForProperty:MPMediaItemPropertyTitle]!=NULL)
@@ -1155,10 +1155,10 @@ MKRoute *routeDetails;
         else return @"Unknown Artist";
     }
     else if ([action isEqual:@"IncreaseRating"]|[action isEqual:@"DecreaseRating"]) { MPMediaItem *song = [mediaPlayer nowPlayingItem]; int rating = (int)[[song valueForKey:@"rating"] floatValue]; return [self ratingStars:rating]; }
-    else if ([action isEqual:@"ShowQuickStart"]) return @"?\u20DD";
-    else if ([action isEqual:@"NavigateHome"]) return @"\u2302\u20DD";
-    else if ([action isEqual:@"NavigateToWork"]) return @"⚒\u20DD";
-    else if ([action isEqual:@"NavigateToContact"]) return @"\u21ac\u20DD";
+    else if ([action isEqual:@"ShowQuickStart"]) return @"?";
+    else if ([action isEqual:@"NavigateHome"]) return @"\u2302";
+    else if ([action isEqual:@"NavigateToWork"]) return @"⚒";
+    else if ([action isEqual:@"NavigateToContact"]) return @"\u21ac";
     return action;
 }
 
@@ -2505,7 +2505,7 @@ MKRoute *routeDetails;
 }
 
 - (NSString*) symbolForDirections:(NSString*)directions {
-    if ([directions rangeOfString:@"destination" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"X\u20dd ";
+    if ([directions rangeOfString:@"destination" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"X ";
     else if ([directions rangeOfString:@"left" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u21b0 ";
     else if ([directions rangeOfString:@"right" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u21b1 ";
     else if ([directions rangeOfString:@"continue" options:NSCaseInsensitiveSearch].location!=NSNotFound) return @"\u2191 ";
