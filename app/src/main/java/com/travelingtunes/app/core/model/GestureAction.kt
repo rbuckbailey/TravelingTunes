@@ -22,13 +22,14 @@ enum class GestureAction(val displayName: String) {
     TOGGLE_SHUFFLE("Toggle Shuffle"),
     INCREASE_RATING("Increase Rating"),
     DECREASE_RATING("Decrease Rating"),
-    SHOW_QUICK_START("Show Quick Start"),
-    NAVIGATE_TO_CONTACT("Navigate to Contact"),
-    NAVIGATE_HOME("Navigate Home"),
-    NAVIGATE_WORK("Navigate to Work"),
-    SHOW_DIRECTIONS("Show Directions"),
-    RECENTER_MAP("Recenter Map"),
-    REPEAT_INSTRUCTIONS("Repeat Navigation Instructions");
+    SHOW_QUICK_START("Show Quick Start");
+    // Navigation actions disabled/commented out:
+    // NAVIGATE_TO_CONTACT("Navigate to Contact"),
+    // NAVIGATE_HOME("Navigate Home"),
+    // NAVIGATE_WORK("Navigate to Work"),
+    // SHOW_DIRECTIONS("Show Directions"),
+    // RECENTER_MAP("Recenter Map"),
+    // REPEAT_INSTRUCTIONS("Repeat Navigation Instructions");
 
     companion object {
         fun fromKey(key: String): GestureAction {

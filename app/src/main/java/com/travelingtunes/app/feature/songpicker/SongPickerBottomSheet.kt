@@ -20,9 +20,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,10 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import com.travelingtunes.app.core.media.MusicScanner
-import com.travelingtunes.app.feature.player.loadSongArtwork
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -61,8 +63,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.database.AlbumInfo
 import com.travelingtunes.app.core.database.MusicDatabase
+import com.travelingtunes.app.core.media.MusicScanner
 import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.model.Song
+import com.travelingtunes.app.feature.player.loadSongArtwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -93,6 +97,12 @@ fun SongPickerBottomSheet(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(PickerCategory.ALL) }
 
+    // Drill-down hierarchy state
+    var selectedGenre by remember { mutableStateOf<String?>(null) }
+    var selectedArtist by remember { mutableStateOf<String?>(null) }
+    var selectedAlbum by remember { mutableStateOf<String?>(null) }
+    var selectedFolder by remember { mutableStateOf<String?>(null) }
+
     var songsList by remember { mutableStateOf<List<Song>>(emptyList()) }
     var albumsList by remember { mutableStateOf<List<AlbumInfo>>(emptyList()) }
     var artistsList by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -101,73 +111,109 @@ fun SongPickerBottomSheet(
 
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
 
-    // Query database when search or category changes or playlist updates
-    LaunchedEffect(searchQuery, selectedCategory, currentPlaylist) {
+    // Query database when search, category, or drill-down selection changes
+    LaunchedEffect(searchQuery, selectedCategory, selectedGenre, selectedArtist, selectedAlbum, selectedFolder, currentPlaylist) {
         withContext(Dispatchers.IO) {
-            // Ensure database is populated if empty but playlist exists
             if (musicDatabase.getAllSongs().isEmpty() && currentPlaylist.isNotEmpty()) {
                 musicDatabase.insertOrReplaceSongs(currentPlaylist)
             }
 
-            when (selectedCategory) {
-                PickerCategory.ALL, PickerCategory.SONGS -> {
-                    val dbSongs = musicDatabase.searchSongs(searchQuery)
-                    val baseList = if (dbSongs.isNotEmpty()) dbSongs else currentPlaylist
-                    songsList = if (searchQuery.isBlank()) {
-                        baseList
-                    } else {
-                        baseList.filter {
-                            it.title.contains(searchQuery, ignoreCase = true) ||
-                                    it.artist.contains(searchQuery, ignoreCase = true) ||
-                                    it.album.contains(searchQuery, ignoreCase = true) ||
-                                    it.genre.contains(searchQuery, ignoreCase = true)
+            // Determine active view level
+            if (selectedAlbum != null) {
+                // Songs in selected Album
+                val albumSongs = musicDatabase.getSongsByAlbum(selectedAlbum!!)
+                val filtered = albumSongs.filter { song ->
+                    (selectedArtist == null || song.artist.equals(selectedArtist, true)) &&
+                    (selectedGenre == null || song.genre.equals(selectedGenre, true))
+                }
+                val base = if (filtered.isNotEmpty()) filtered else albumSongs
+                songsList = if (searchQuery.isBlank()) base else base.filter { it.title.contains(searchQuery, true) }
+            } else if (selectedArtist != null) {
+                // Albums by selected Artist
+                val artistSongs = musicDatabase.getSongsByArtist(selectedArtist!!).filter { song ->
+                    selectedGenre == null || song.genre.equals(selectedGenre, true)
+                }
+                val albumMap = artistSongs.groupBy { it.album }
+                val albums = albumMap.map { (albumName, songs) ->
+                    AlbumInfo(
+                        name = albumName,
+                        artist = selectedArtist!!,
+                        songCount = songs.size,
+                        artworkUri = songs.firstOrNull()?.artworkUri
+                    )
+                }
+                albumsList = if (searchQuery.isBlank()) albums else albums.filter { it.name.contains(searchQuery, true) }
+            } else if (selectedGenre != null) {
+                // Artists in selected Genre
+                val genreSongs = musicDatabase.getSongsByGenre(selectedGenre!!)
+                val artists = genreSongs.map { it.artist }.distinct().sorted()
+                artistsList = if (searchQuery.isBlank()) artists else artists.filter { it.contains(searchQuery, true) }
+            } else if (selectedFolder != null) {
+                // Songs in selected Folder
+                val folderSongs = musicDatabase.getSongsByFolder(selectedFolder!!)
+                songsList = if (searchQuery.isBlank()) folderSongs else folderSongs.filter { it.title.contains(searchQuery, true) }
+            } else {
+                // Category-based top-level display
+                when (selectedCategory) {
+                    PickerCategory.ALL, PickerCategory.SONGS -> {
+                        val dbSongs = musicDatabase.searchSongs(searchQuery)
+                        val baseList = if (dbSongs.isNotEmpty()) dbSongs else currentPlaylist
+                        songsList = if (searchQuery.isBlank()) {
+                            baseList
+                        } else {
+                            baseList.filter {
+                                it.title.contains(searchQuery, ignoreCase = true) ||
+                                        it.artist.contains(searchQuery, ignoreCase = true) ||
+                                        it.album.contains(searchQuery, ignoreCase = true) ||
+                                        it.genre.contains(searchQuery, ignoreCase = true)
+                            }
                         }
                     }
-                }
-                PickerCategory.ALBUMS -> {
-                    val allAlbums = musicDatabase.getAlbums()
-                    albumsList = if (allAlbums.isNotEmpty()) {
-                        if (searchQuery.isBlank()) allAlbums
-                        else allAlbums.filter {
-                            it.name.contains(searchQuery, ignoreCase = true) ||
-                                    it.artist.contains(searchQuery, ignoreCase = true)
+                    PickerCategory.ALBUMS -> {
+                        val allAlbums = musicDatabase.getAlbums()
+                        albumsList = if (allAlbums.isNotEmpty()) {
+                            if (searchQuery.isBlank()) allAlbums
+                            else allAlbums.filter {
+                                it.name.contains(searchQuery, ignoreCase = true) ||
+                                        it.artist.contains(searchQuery, ignoreCase = true)
+                            }
+                        } else {
+                            currentPlaylist.groupBy { it.album }.map { (albumName, songs) ->
+                                AlbumInfo(
+                                    name = albumName,
+                                    artist = songs.firstOrNull()?.artist ?: "Unknown Artist",
+                                    songCount = songs.size,
+                                    artworkUri = songs.firstOrNull()?.artworkUri
+                                )
+                            }
                         }
-                    } else {
-                        currentPlaylist.groupBy { it.album }.map { (albumName, songs) ->
-                            AlbumInfo(
-                                name = albumName,
-                                artist = songs.firstOrNull()?.artist ?: "Unknown Artist",
-                                songCount = songs.size,
-                                artworkUri = songs.firstOrNull()?.artworkUri
-                            )
+                    }
+                    PickerCategory.ARTISTS -> {
+                        val allArtists = musicDatabase.getArtists()
+                        artistsList = if (allArtists.isNotEmpty()) {
+                            if (searchQuery.isBlank()) allArtists
+                            else allArtists.filter { it.contains(searchQuery, ignoreCase = true) }
+                        } else {
+                            currentPlaylist.map { it.artist }.distinct().sorted()
                         }
                     }
-                }
-                PickerCategory.ARTISTS -> {
-                    val allArtists = musicDatabase.getArtists()
-                    artistsList = if (allArtists.isNotEmpty()) {
-                        if (searchQuery.isBlank()) allArtists
-                        else allArtists.filter { it.contains(searchQuery, ignoreCase = true) }
-                    } else {
-                        currentPlaylist.map { it.artist }.distinct().sorted()
+                    PickerCategory.GENRES -> {
+                        val allGenres = musicDatabase.getGenres()
+                        genresList = if (allGenres.isNotEmpty()) {
+                            if (searchQuery.isBlank()) allGenres
+                            else allGenres.filter { it.contains(searchQuery, ignoreCase = true) }
+                        } else {
+                            currentPlaylist.map { it.genre }.distinct().sorted()
+                        }
                     }
-                }
-                PickerCategory.GENRES -> {
-                    val allGenres = musicDatabase.getGenres()
-                    genresList = if (allGenres.isNotEmpty()) {
-                        if (searchQuery.isBlank()) allGenres
-                        else allGenres.filter { it.contains(searchQuery, ignoreCase = true) }
-                    } else {
-                        currentPlaylist.map { it.genre }.distinct().sorted()
-                    }
-                }
-                PickerCategory.FOLDERS -> {
-                    val allFolders = musicDatabase.getFolders()
-                    foldersList = if (allFolders.isNotEmpty()) {
-                        if (searchQuery.isBlank()) allFolders
-                        else allFolders.filter { it.contains(searchQuery, ignoreCase = true) }
-                    } else {
-                        currentPlaylist.map { it.folderPath }.distinct().filter { it.isNotBlank() }.sorted()
+                    PickerCategory.FOLDERS -> {
+                        val allFolders = musicDatabase.getFolders()
+                        foldersList = if (allFolders.isNotEmpty()) {
+                            if (searchQuery.isBlank()) allFolders
+                            else allFolders.filter { it.contains(searchQuery, ignoreCase = true) }
+                        } else {
+                            currentPlaylist.map { it.folderPath }.distinct().filter { it.isNotBlank() }.sorted()
+                        }
                     }
                 }
             }
@@ -266,154 +312,196 @@ fun SongPickerBottomSheet(
             ) {
                 items(PickerCategory.entries.toTypedArray()) { category ->
                     FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = category },
+                        selected = selectedCategory == category && selectedGenre == null && selectedArtist == null && selectedAlbum == null && selectedFolder == null,
+                        onClick = {
+                            selectedCategory = category
+                            selectedGenre = null
+                            selectedArtist = null
+                            selectedAlbum = null
+                            selectedFolder = null
+                        },
                         label = { Text(category.displayName) }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Breadcrumb Navigation Header when drilled down
+            val hasDrillDown = selectedGenre != null || selectedArtist != null || selectedAlbum != null || selectedFolder != null
+            if (hasDrillDown) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    IconButton(
+                        onClick = {
+                            if (selectedAlbum != null) selectedAlbum = null
+                            else if (selectedArtist != null) selectedArtist = null
+                            else if (selectedGenre != null) selectedGenre = null
+                            else if (selectedFolder != null) selectedFolder = null
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                    Text(
+                        text = listOfNotNull(selectedGenre, selectedArtist, selectedAlbum, selectedFolder).joinToString(" > "),
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
 
-            // Content Area according to selected category
-            when (selectedCategory) {
-                PickerCategory.ALL, PickerCategory.SONGS -> {
-                    if (songsList.isEmpty()) {
-                        EmptyListState("No songs found")
-                    } else {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth().weight(1f)
-                        ) {
-                            items(songsList.size) { index ->
-                                val song = songsList[index]
-                                SongItemRow(
-                                    song = song,
-                                    onClick = {
-                                        playbackManager.setPlaylistAndPlay(songsList, index)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Content Area depending on current drill-down level
+            val isSongsView = selectedAlbum != null || selectedFolder != null || (selectedCategory in listOf(PickerCategory.ALL, PickerCategory.SONGS) && !hasDrillDown)
+            val isAlbumsView = selectedArtist != null && selectedAlbum == null
+            val isArtistsView = selectedGenre != null && selectedArtist == null && selectedAlbum == null
+
+            if (isSongsView) {
+                if (songsList.isEmpty()) {
+                    EmptyListState("No songs found")
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    ) {
+                        items(songsList.size) { index ->
+                            val song = songsList[index]
+                            SongItemRow(
+                                song = song,
+                                onPlay = {
+                                    playbackManager.setPlaylistAndPlay(songsList, index)
+                                    onDismiss()
+                                },
+                                onClick = {
+                                    playbackManager.setPlaylistAndPlay(songsList, index)
+                                    onDismiss()
+                                }
+                            )
+                        }
+                    }
+                }
+            } else if (isAlbumsView || (selectedCategory == PickerCategory.ALBUMS && !hasDrillDown)) {
+                if (albumsList.isEmpty()) {
+                    EmptyListState("No albums found")
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    ) {
+                        items(albumsList) { album ->
+                            AlbumItemRow(
+                                album = album,
+                                onPlay = {
+                                    coroutineScope.launch {
+                                        val albumSongs = musicDatabase.getSongsByAlbum(album.name)
+                                        val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
+                                            albumSongs.filter {
+                                                (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
+                                                (selectedArtist == null || it.artist.equals(selectedArtist, true))
+                                            }
+                                        } else albumSongs
+                                        val playSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
+                                        if (playSongs.isNotEmpty()) {
+                                            playbackManager.setPlaylistAndPlay(playSongs, 0)
+                                        }
                                         onDismiss()
                                     }
-                                )
-                            }
+                                },
+                                onClick = {
+                                    selectedAlbum = album.name
+                                }
+                            )
                         }
                     }
                 }
-                PickerCategory.ALBUMS -> {
-                    if (albumsList.isEmpty()) {
-                        EmptyListState("No albums found")
-                    } else {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth().weight(1f)
-                        ) {
-                            items(albumsList) { album ->
-                                AlbumItemRow(
-                                    album = album,
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            val albumSongs = musicDatabase.getSongsByAlbum(album.name)
-                                            val playSongs = if (albumSongs.isNotEmpty()) albumSongs else currentPlaylist.filter { it.album == album.name }
-                                            if (playSongs.isNotEmpty()) {
-                                                playbackManager.setPlaylistAndPlay(playSongs, 0)
-                                            }
-                                            onDismiss()
+            } else if (isArtistsView || (selectedCategory == PickerCategory.ARTISTS && !hasDrillDown)) {
+                if (artistsList.isEmpty()) {
+                    EmptyListState("No artists found")
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    ) {
+                        items(artistsList) { artist ->
+                            ArtistItemRow(
+                                artist = artist,
+                                onPlay = {
+                                    coroutineScope.launch {
+                                        val allSongs = if (selectedGenre != null) {
+                                            musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
+                                        } else {
+                                            musicDatabase.getSongsByArtist(artist)
                                         }
+                                        if (allSongs.isNotEmpty()) {
+                                            playbackManager.setPlaylistAndPlay(allSongs, 0)
+                                        }
+                                        onDismiss()
                                     }
-                                )
-                            }
+                                },
+                                onClick = {
+                                    selectedArtist = artist
+                                }
+                            )
                         }
                     }
                 }
-                PickerCategory.ARTISTS -> {
-                    if (artistsList.isEmpty()) {
-                        EmptyListState("No artists found")
-                    } else {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth().weight(1f)
-                        ) {
-                            items(artistsList) { artist ->
-                                ListItem(
-                                    headlineContent = { Text(artist, fontWeight = FontWeight.SemiBold) },
-                                    leadingContent = {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(48.dp)
-                                                .clip(RoundedCornerShape(24.dp))
-                                                .background(MaterialTheme.colorScheme.primaryContainer),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = artist.take(1).uppercase(),
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                fontWeight = FontWeight.Bold
-                                            )
+            } else if (selectedCategory == PickerCategory.GENRES && !hasDrillDown) {
+                if (genresList.isEmpty()) {
+                    EmptyListState("No genres found")
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    ) {
+                        items(genresList) { genre ->
+                            GenreItemRow(
+                                genre = genre,
+                                onPlay = {
+                                    coroutineScope.launch {
+                                        val genreSongs = musicDatabase.getSongsByGenre(genre)
+                                        if (genreSongs.isNotEmpty()) {
+                                            playbackManager.setPlaylistAndPlay(genreSongs, 0)
                                         }
-                                    },
-                                    modifier = Modifier.clickable {
-                                        coroutineScope.launch {
-                                            val artistSongs = musicDatabase.getSongsByArtist(artist)
-                                            val playSongs = if (artistSongs.isNotEmpty()) artistSongs else currentPlaylist.filter { it.artist == artist }
-                                            if (playSongs.isNotEmpty()) {
-                                                playbackManager.setPlaylistAndPlay(playSongs, 0)
-                                            }
-                                            onDismiss()
-                                        }
+                                        onDismiss()
                                     }
-                                )
-                            }
+                                },
+                                onClick = {
+                                    selectedGenre = genre
+                                }
+                            )
                         }
                     }
                 }
-                PickerCategory.GENRES -> {
-                    if (genresList.isEmpty()) {
-                        EmptyListState("No genres found")
-                    } else {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth().weight(1f)
-                        ) {
-                            items(genresList) { genre ->
-                                ListItem(
-                                    headlineContent = { Text(genre, fontWeight = FontWeight.Medium) },
-                                    modifier = Modifier.clickable {
-                                        coroutineScope.launch {
-                                            val genreSongs = musicDatabase.getSongsByGenre(genre)
-                                            val playSongs = if (genreSongs.isNotEmpty()) genreSongs else currentPlaylist.filter { it.genre == genre }
-                                            if (playSongs.isNotEmpty()) {
-                                                playbackManager.setPlaylistAndPlay(playSongs, 0)
-                                            }
-                                            onDismiss()
+            } else if (selectedCategory == PickerCategory.FOLDERS && !hasDrillDown) {
+                if (foldersList.isEmpty()) {
+                    EmptyListState("No subfolders found")
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    ) {
+                        items(foldersList) { folder ->
+                            FolderItemRow(
+                                folder = folder,
+                                onPlay = {
+                                    coroutineScope.launch {
+                                        val folderSongs = musicDatabase.getSongsByFolder(folder)
+                                        if (folderSongs.isNotEmpty()) {
+                                            playbackManager.setPlaylistAndPlay(folderSongs, 0)
                                         }
+                                        onDismiss()
                                     }
-                                )
-                            }
-                        }
-                    }
-                }
-                PickerCategory.FOLDERS -> {
-                    if (foldersList.isEmpty()) {
-                        EmptyListState("No subfolders found")
-                    } else {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth().weight(1f)
-                        ) {
-                            items(foldersList) { folder ->
-                                ListItem(
-                                    headlineContent = { Text(folder.ifEmpty { "Root Folder" }, fontWeight = FontWeight.Medium) },
-                                    modifier = Modifier.clickable {
-                                        coroutineScope.launch {
-                                            val folderSongs = musicDatabase.getSongsByFolder(folder)
-                                            val playSongs = if (folderSongs.isNotEmpty()) folderSongs else currentPlaylist.filter { it.folderPath == folder }
-                                            if (playSongs.isNotEmpty()) {
-                                                playbackManager.setPlaylistAndPlay(playSongs, 0)
-                                            }
-                                            onDismiss()
-                                        }
-                                    }
-                                )
-                            }
+                                },
+                                onClick = {
+                                    selectedFolder = folder
+                                }
+                            )
                         }
                     }
                 }
@@ -423,8 +511,124 @@ fun SongPickerBottomSheet(
 }
 
 @Composable
+private fun GenreItemRow(
+    genre: String,
+    onPlay: () -> Unit,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = { Text(genre, fontWeight = FontWeight.Medium) },
+        leadingContent = {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Category,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        },
+        trailingContent = {
+            IconButton(onClick = onPlay) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Play Genre",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        modifier = Modifier.clickable { onClick() }
+    )
+}
+
+@Composable
+private fun ArtistItemRow(
+    artist: String,
+    onPlay: () -> Unit,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = { Text(artist, fontWeight = FontWeight.SemiBold) },
+        leadingContent = {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = artist.take(1).uppercase(),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        trailingContent = {
+            IconButton(onClick = onPlay) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Play Artist",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        modifier = Modifier.clickable { onClick() }
+    )
+}
+
+@Composable
+private fun AlbumItemRow(
+    album: AlbumInfo,
+    onPlay: () -> Unit,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = album.name,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        supportingContent = {
+            Text(
+                text = "${album.artist} • ${album.songCount} songs",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        leadingContent = {
+            AlbumArtImage(
+                artworkUri = album.artworkUri,
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+        },
+        trailingContent = {
+            IconButton(onClick = onPlay) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Play Album",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        modifier = Modifier.clickable { onClick() }
+    )
+}
+
+@Composable
 private fun SongItemRow(
     song: Song,
+    onPlay: () -> Unit,
     onClick: () -> Unit
 ) {
     ListItem(
@@ -453,44 +657,64 @@ private fun SongItemRow(
             )
         },
         trailingContent = {
-            Text(
-                text = formatDuration(song.durationMs),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = formatDuration(song.durationMs),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                IconButton(onClick = onPlay) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Song",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         },
         modifier = Modifier.clickable { onClick() }
     )
 }
 
 @Composable
-private fun AlbumItemRow(
-    album: AlbumInfo,
+private fun FolderItemRow(
+    folder: String,
+    onPlay: () -> Unit,
     onClick: () -> Unit
 ) {
     ListItem(
         headlineContent = {
             Text(
-                text = album.name,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        supportingContent = {
-            Text(
-                text = "${album.artist} • ${album.songCount} songs",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                text = folder.ifEmpty { "Root Folder" },
+                fontWeight = FontWeight.Medium
             )
         },
         leadingContent = {
-            AlbumArtImage(
-                artworkUri = album.artworkUri,
+            Box(
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Folder,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        },
+        trailingContent = {
+            IconButton(onClick = onPlay) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Play Folder",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         },
         modifier = Modifier.clickable { onClick() }
     )

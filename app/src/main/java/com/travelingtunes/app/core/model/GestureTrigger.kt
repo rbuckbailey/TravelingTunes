@@ -25,8 +25,8 @@ enum class GestureTrigger(
     SWIPE_1_DOWN("1SwipeDown", "1-Finger Swipe Down", GestureCategory.ONE_FINGER_SWIPE, "VolumeDown", true),
 
     // 2-Finger Swipes
-    SWIPE_2_LEFT("2SwipeLeft", "2-Finger Swipe Left", GestureCategory.TWO_FINGER_SWIPE, "RestartPrevious"),
-    SWIPE_2_RIGHT("2SwipeRight", "2-Finger Swipe Right", GestureCategory.TWO_FINGER_SWIPE, "Next"),
+    SWIPE_2_LEFT("2SwipeLeft", "2-Finger Swipe Left", GestureCategory.TWO_FINGER_SWIPE, "Next"),
+    SWIPE_2_RIGHT("2SwipeRight", "2-Finger Swipe Right", GestureCategory.TWO_FINGER_SWIPE, "RestartPrevious"),
     SWIPE_2_UP("2SwipeUp", "2-Finger Swipe Up", GestureCategory.TWO_FINGER_SWIPE, "IncreaseRating"),
     SWIPE_2_DOWN("2SwipeDown", "2-Finger Swipe Down", GestureCategory.TWO_FINGER_SWIPE, "DecreaseRating"),
 
@@ -51,10 +51,10 @@ enum class GestureTrigger(
 
     // Screen Regions / Corners
     CORNER_TOP_LEFT("TopLeft", "Top-Left Region", GestureCategory.SCREEN_REGION, "ToggleRepeat"),
-    CORNER_TOP_CENTER("TopCenter", "Top-Center Region", GestureCategory.SCREEN_REGION, "NavigateToContact"),
+    CORNER_TOP_CENTER("TopCenter", "Top-Center Region", GestureCategory.SCREEN_REGION, "PlayCurrentAlbum"),
     CORNER_TOP_RIGHT("TopRight", "Top-Right Region", GestureCategory.SCREEN_REGION, "ToggleShuffle"),
-    CORNER_BOTTOM_LEFT("BottomLeft", "Bottom-Left Region", GestureCategory.SCREEN_REGION, "ShowQuickStart"),
-    CORNER_BOTTOM_CENTER("BottomCenter", "Bottom-Center Region", GestureCategory.SCREEN_REGION, "IncreaseRating"),
+    CORNER_BOTTOM_LEFT("BottomLeft", "Bottom-Left Region", GestureCategory.SCREEN_REGION, "SongPicker"),
+    CORNER_BOTTOM_CENTER("BottomCenter", "Bottom-Center Region", GestureCategory.SCREEN_REGION, "Unassigned"),
     CORNER_BOTTOM_RIGHT("BottomRight", "Bottom-Right Region", GestureCategory.SCREEN_REGION, "Menu");
 
     companion object {

@@ -136,8 +136,34 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            LaunchedEffect(displaySettings.disableAutolock) {
+                if (displaySettings.disableAutolock) {
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+
+            var dynamicAlbumArtTheme by remember { mutableStateOf<com.travelingtunes.app.core.model.ColorTheme?>(null) }
+            val currentSong by playbackManager.currentSong.collectAsState()
+
+            LaunchedEffect(currentSong?.id, displaySettings.albumArtColors) {
+                val song = currentSong
+                if (displaySettings.albumArtColors && song != null) {
+                    val bitmap = com.travelingtunes.app.feature.player.loadSongArtwork(applicationContext, song)
+                    if (bitmap != null) {
+                        dynamicAlbumArtTheme = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(bitmap)
+                    } else {
+                        dynamicAlbumArtTheme = null
+                    }
+                } else {
+                    dynamicAlbumArtTheme = null
+                }
+            }
+
             TravelingTunesTheme(
                 themeSettings = themeSettings,
+                dynamicAlbumArtTheme = dynamicAlbumArtTheme,
                 useAlbumArtColors = displaySettings.albumArtColors
             ) {
                 Surface(
@@ -234,7 +260,9 @@ class MainActivity : ComponentActivity() {
                         startIndex = savedState.activeSongIndex,
                         positionMs = savedState.positionMs,
                         shuffle = savedState.isShuffle,
-                        repeat = savedState.isRepeat
+                        repeat = savedState.isRepeat,
+                        repeatMode = savedState.repeatMode,
+                        shuffleMode = savedState.shuffleMode
                     )
                 } else {
                     playbackManager.setPlaylistAndPlay(allSongs, 0, shuffle = true)
@@ -279,6 +307,23 @@ fun TravelingTunesNavHost(
 
     NavHost(navController = navController, startDestination = "player") {
         composable("player") {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val window = (context as? android.app.Activity)?.window
+                if (window != null) {
+                    val insetsController = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+                    insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.statusBars())
+                    insetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                }
+                onDispose {
+                    val window = (context as? android.app.Activity)?.window
+                    if (window != null) {
+                        val insetsController = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+                        insetsController.show(androidx.core.view.WindowInsetsCompat.Type.statusBars())
+                    }
+                }
+            }
+
             PlayerScreen(
                 playbackManager = playbackManager,
                 musicDatabase = musicDatabase,

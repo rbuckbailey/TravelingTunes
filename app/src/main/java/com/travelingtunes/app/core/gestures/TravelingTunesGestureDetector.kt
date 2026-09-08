@@ -28,7 +28,7 @@ fun Modifier.travelingTunesGestures(listener: GestureEventListener): Modifier =
     }
 
 suspend fun PointerInputScope.detectTravelingTunesGestures(listener: GestureEventListener) {
-    val minTranslationPx = 10f * density
+    val minTranslationPx = 28f * density
 
     awaitEachGesture {
         val firstDown = awaitFirstDown(requireUnconsumed = false)
@@ -65,7 +65,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(listener: GestureEven
                             else -> GestureTrigger.LONG_PRESS_1
                         }
                         listener.onGestureTriggered(trigger)
-                    } else if (abs(totalDx) < minTranslationPx && abs(totalDy) < minTranslationPx) {
+                    } else {
                         // Check if corner tap or standard single tap
                         val cornerTrigger = detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat())
                         if (cornerTrigger != null) {
@@ -153,13 +153,22 @@ private fun detectCornerRegion(pos: Offset, width: Float, height: Float): Gestur
     val relX = pos.x / width
     val relY = pos.y / height
 
-    return when {
-        relY < 0.20f && relX < 0.30f -> GestureTrigger.CORNER_TOP_LEFT
-        relY < 0.20f && relX in 0.35f..0.65f -> GestureTrigger.CORNER_TOP_CENTER
-        relY < 0.20f && relX > 0.70f -> GestureTrigger.CORNER_TOP_RIGHT
-        relY > 0.80f && relX < 0.30f -> GestureTrigger.CORNER_BOTTOM_LEFT
-        relY > 0.80f && relX in 0.35f..0.65f -> GestureTrigger.CORNER_BOTTOM_CENTER
-        relY > 0.80f && relX > 0.70f -> GestureTrigger.CORNER_BOTTOM_RIGHT
-        else -> null
+    val isTop = relY < 0.28f
+    val isBottom = relY > 0.72f
+
+    if (isTop) {
+        return when {
+            relX < 0.33f -> GestureTrigger.CORNER_TOP_LEFT
+            relX <= 0.67f -> GestureTrigger.CORNER_TOP_CENTER
+            else -> GestureTrigger.CORNER_TOP_RIGHT
+        }
+    } else if (isBottom) {
+        return when {
+            relX < 0.33f -> GestureTrigger.CORNER_BOTTOM_LEFT
+            relX <= 0.67f -> GestureTrigger.CORNER_BOTTOM_CENTER
+            else -> GestureTrigger.CORNER_BOTTOM_RIGHT
+        }
     }
+
+    return null
 }

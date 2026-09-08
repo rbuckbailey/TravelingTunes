@@ -8,8 +8,19 @@ enum class TextAlignmentOption(val displayName: String) {
 
 enum class ArtScaleOption(val displayName: String) {
     FILL_SCREEN("Fill Screen"),
-    ASPECT_FIT("Aspect Fit"),
-    ASPECT_FILL("Aspect Fill")
+    ASPECT_FIT("Fit Screen")
+}
+
+enum class ArtAlignmentPortrait(val displayName: String) {
+    TOP("Top"),
+    MIDDLE("Middle"),
+    BOTTOM("Bottom")
+}
+
+enum class ArtAlignmentLandscape(val displayName: String) {
+    LEFT("Left"),
+    MIDDLE("Middle"),
+    RIGHT("Right")
 }
 
 enum class ArtLayoutOption(val displayName: String) {
@@ -46,6 +57,8 @@ data class DisplaySettings(
     val showAlbumArt: Boolean = true,
     val albumArtColors: Boolean = true,
     val albumArtScale: ArtScaleOption = ArtScaleOption.FILL_SCREEN,
+    val artAlignmentPortrait: ArtAlignmentPortrait = ArtAlignmentPortrait.MIDDLE,
+    val artAlignmentLandscape: ArtAlignmentLandscape = ArtAlignmentLandscape.MIDDLE,
     val albumArtFade: Float = 0.35f,
     val artDisplayLayout: ArtLayoutOption = ArtLayoutOption.OVERLAY,
     val mapOn: Int = 1, // 0 = off, 1 = show map when navigating, 2 = show map always
@@ -54,5 +67,6 @@ data class DisplaySettings(
     val volumeAlwaysOn: Boolean = true,
     val showStatusBar: Boolean = false,
     val showActions: Boolean = true,
-    val hudLineThickness: Float = 16f
+    val hudLineThickness: Float = 16f,
+    val disableAutolock: Boolean = true
 )

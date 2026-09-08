@@ -30,10 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import com.travelingtunes.app.core.datastore.SettingsDataStore
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureTrigger
+import com.travelingtunes.app.feature.player.ActionIcon
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,21 +103,45 @@ private fun GestureAssignmentItem(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = trigger.displayName, fontWeight = FontWeight.SemiBold)
-            Text(
-                text = binding.action.displayName,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ActionIcon(
+                    action = binding.action,
+                    iconSize = 20.dp,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = binding.action.displayName,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
 
         Box {
+            ActionIcon(
+                action = binding.action,
+                iconSize = 28.dp,
+                tint = MaterialTheme.colorScheme.primary
+            )
+
             DropdownMenu(
                 expanded = isDropdownExpanded,
                 onDismissRequest = { isDropdownExpanded = false }
             ) {
                 GestureAction.entries.forEach { action ->
                     DropdownMenuItem(
-                        text = { Text(action.displayName) },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                ActionIcon(
+                                    action = action,
+                                    iconSize = 22.dp,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(action.displayName)
+                            }
+                        },
                         onClick = {
                             onActionSelected(action)
                             isDropdownExpanded = false
