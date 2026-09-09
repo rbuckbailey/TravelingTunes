@@ -84,6 +84,7 @@ class MusicScanner(
                 if (supportedExtensions.contains(ext)) {
                     val song = processAudioFile(
                         file = file,
+                        currentDir = currentDir,
                         relativePath = relativePath,
                         artworkCacheDir = artworkCacheDir,
                         idSeed = foundSongs.size + 1L
@@ -100,12 +101,19 @@ class MusicScanner(
 
     private fun processAudioFile(
         file: DocumentFile,
+        currentDir: DocumentFile,
         relativePath: String,
         artworkCacheDir: File,
         idSeed: Long
     ): Song? {
         val contentUri = file.uri
         val fileName = file.name ?: "Unknown"
+        val cleanFileName = fileName.substringBeforeLast('.').ifBlank { fileName }
+        val folderName = when {
+            relativePath.isNotBlank() -> relativePath.substringAfterLast('/')
+            !currentDir.name.isNullOrBlank() -> currentDir.name!!
+            else -> "Music"
+        }
         val mmr = MediaMetadataRetriever()
 
         return try {
@@ -115,14 +123,34 @@ class MusicScanner(
                 mmr.setDataSource(context, contentUri)
             }
 
-            val title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-                ?.takeIf { it.isNotBlank() } ?: fileName.substringBeforeLast('.')
-            val artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
-                ?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
-            val album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
-                ?.takeIf { it.isNotBlank() } ?: "Unknown Album"
-            val genre = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)
-                ?.takeIf { it.isNotBlank() } ?: "Unknown Genre"
+            val rawTitle = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)?.trim()
+            val rawArtist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)?.trim()
+            val rawAlbum = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)?.trim()
+            val rawGenre = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)?.trim()
+
+            val title = if (!rawTitle.isNullOrBlank() && !rawTitle.equals("Unknown", ignoreCase = true) && !rawTitle.equals("Unknown Title", ignoreCase = true) && !rawTitle.equals("<unknown>", ignoreCase = true)) {
+                rawTitle
+            } else {
+                cleanFileName
+            }
+
+            val album = if (!rawAlbum.isNullOrBlank() && !rawAlbum.equals("Unknown", ignoreCase = true) && !rawAlbum.equals("Unknown Album", ignoreCase = true) && !rawAlbum.equals("<unknown>", ignoreCase = true)) {
+                rawAlbum
+            } else {
+                folderName
+            }
+
+            val artist = if (!rawArtist.isNullOrBlank() && !rawArtist.equals("Unknown", ignoreCase = true) && !rawArtist.equals("Unknown Artist", ignoreCase = true) && !rawArtist.equals("<unknown>", ignoreCase = true)) {
+                rawArtist
+            } else {
+                if (relativePath.contains('/')) {
+                    relativePath.substringBeforeLast('/').substringAfterLast('/')
+                } else {
+                    "Unknown Artist"
+                }
+            }
+
+            val genre = if (!rawGenre.isNullOrBlank() && !rawGenre.equals("Unknown", ignoreCase = true) && !rawGenre.equals("Unknown Genre", ignoreCase = true)) rawGenre else "Unknown Genre"
             val durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                 ?.toLongOrNull() ?: 0L
             val trackStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
@@ -156,10 +184,10 @@ class MusicScanner(
             // Fallback Song
             Song(
                 id = kotlin.math.abs(contentUri.toString().hashCode().toLong()),
-                title = fileName.substringBeforeLast('.'),
+                title = cleanFileName,
                 artist = "Unknown Artist",
-                album = "Unknown Album",
-                albumId = 0L,
+                album = folderName,
+                albumId = folderName.hashCode().toLong(),
                 durationMs = 0L,
                 contentUri = contentUri,
                 artworkUri = null,

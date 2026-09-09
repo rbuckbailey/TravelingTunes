@@ -5,5 +5,6 @@ enum class RepeatMode(val displayName: String) {
     SONG("Repeat Song"),
     ALBUM("Repeat Album"),
     ARTIST("Repeat Artist"),
-    GENRE("Repeat Genre")
+    GENRE("Repeat Genre"),
+    FOLDER("Repeat Folder")
 }

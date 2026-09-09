@@ -11,13 +11,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,7 +29,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
@@ -40,8 +42,13 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -63,9 +71,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.database.AlbumInfo
 import com.travelingtunes.app.core.database.MusicDatabase
+import com.travelingtunes.app.core.datastore.SettingsDataStore
 import com.travelingtunes.app.core.media.MusicScanner
 import com.travelingtunes.app.core.media.PlaybackManager
+import com.travelingtunes.app.core.media.StreamingCatalogRepository
 import com.travelingtunes.app.core.model.Song
+import com.travelingtunes.app.core.model.StreamingAccount
+import com.travelingtunes.app.core.model.StreamingServiceId
+import com.travelingtunes.app.core.model.StreamingTrack
 import com.travelingtunes.app.feature.player.loadSongArtwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -86,9 +99,29 @@ fun SongPickerBottomSheet(
     musicDatabase: MusicDatabase,
     playbackManager: PlaybackManager,
     musicScanner: MusicScanner? = null,
+    settingsDataStore: SettingsDataStore? = null,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    /*
+    // Streaming state placeholder (Commented out for future development)
+    val effectiveDataStore = remember(settingsDataStore, context) {
+        settingsDataStore ?: SettingsDataStore(context)
+    }
+    val streamingAccounts by effectiveDataStore.streamingAccountsFlow.collectAsState(initial = emptyMap())
+    val signedInServicesList = remember(streamingAccounts) {
+        StreamingServiceId.entries.filter { streamingAccounts.containsKey(it.id) }
+    }
+    var activeTopTab by remember { mutableStateOf("local") }
+
+    LaunchedEffect(signedInServicesList) {
+        if (activeTopTab != "local" && signedInServicesList.none { it.id == activeTopTab }) {
+            activeTopTab = "local"
+        }
+    }
+    */
 
     val isScanning by musicScanner?.isScanning?.collectAsState() ?: remember { mutableStateOf(false) }
     val scanStatusMessage by musicScanner?.statusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
@@ -120,7 +153,6 @@ fun SongPickerBottomSheet(
 
             // Determine active view level
             if (selectedAlbum != null) {
-                // Songs in selected Album
                 val albumSongs = musicDatabase.getSongsByAlbum(selectedAlbum!!)
                 val filtered = albumSongs.filter { song ->
                     (selectedArtist == null || song.artist.equals(selectedArtist, true)) &&
@@ -129,7 +161,6 @@ fun SongPickerBottomSheet(
                 val base = if (filtered.isNotEmpty()) filtered else albumSongs
                 songsList = if (searchQuery.isBlank()) base else base.filter { it.title.contains(searchQuery, true) }
             } else if (selectedArtist != null) {
-                // Albums by selected Artist
                 val artistSongs = musicDatabase.getSongsByArtist(selectedArtist!!).filter { song ->
                     selectedGenre == null || song.genre.equals(selectedGenre, true)
                 }
@@ -144,16 +175,18 @@ fun SongPickerBottomSheet(
                 }
                 albumsList = if (searchQuery.isBlank()) albums else albums.filter { it.name.contains(searchQuery, true) }
             } else if (selectedGenre != null) {
-                // Artists in selected Genre
                 val genreSongs = musicDatabase.getSongsByGenre(selectedGenre!!)
                 val artists = genreSongs.map { it.artist }.distinct().sorted()
                 artistsList = if (searchQuery.isBlank()) artists else artists.filter { it.contains(searchQuery, true) }
             } else if (selectedFolder != null) {
-                // Songs in selected Folder
-                val folderSongs = musicDatabase.getSongsByFolder(selectedFolder!!)
+                val targetFolder = selectedFolder!!
+                val dbSongs = musicDatabase.getAllSongs()
+                val folderSongs = dbSongs.filter {
+                    it.folderPath.equals(targetFolder, ignoreCase = true) ||
+                    it.folderPath.startsWith(targetFolder, ignoreCase = true)
+                }
                 songsList = if (searchQuery.isBlank()) folderSongs else folderSongs.filter { it.title.contains(searchQuery, true) }
             } else {
-                // Category-based top-level display
                 when (selectedCategory) {
                     PickerCategory.ALL, PickerCategory.SONGS -> {
                         val dbSongs = musicDatabase.searchSongs(searchQuery)
@@ -220,13 +253,16 @@ fun SongPickerBottomSheet(
         }
     }
 
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxHeight(0.9f)
+        sheetState = sheetState,
+        modifier = Modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
             // Header Row
@@ -246,269 +282,517 @@ fun SongPickerBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Search Bar
+            // Local Library Storage View
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search title, artist, album, genre...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search local title, artist, album, genre...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp)
+                )
+
+                if (isScanning) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Text(
+                                    text = "Library scan in progress ($scannedCount songs)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            if (!scanStatusMessage.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = scanStatusMessage ?: "",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp)
-            )
+                }
 
-            if (isScanning) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+
+                // Category Filter Chips
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    items(PickerCategory.entries.toTypedArray()) { category ->
+                        FilterChip(
+                            selected = selectedCategory == category && selectedGenre == null && selectedArtist == null && selectedAlbum == null && selectedFolder == null,
+                            onClick = {
+                                selectedCategory = category
+                                selectedGenre = null
+                                selectedArtist = null
+                                selectedAlbum = null
+                                selectedFolder = null
+                            },
+                            label = { Text(category.displayName) }
+                        )
+                    }
+                }
+
+                // Breadcrumb Navigation Header when drilled down
+                val hasDrillDown = selectedGenre != null || selectedArtist != null || selectedAlbum != null || selectedFolder != null
+                if (hasDrillDown) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        IconButton(
+                            onClick = {
+                                if (selectedAlbum != null) selectedAlbum = null
+                                else if (selectedArtist != null) selectedArtist = null
+                                else if (selectedGenre != null) selectedGenre = null
+                                else if (selectedFolder != null) selectedFolder = null
+                            }
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = "Library scan in progress ($scannedCount songs)",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                        if (!scanStatusMessage.isNullOrBlank()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = scanStatusMessage ?: "",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
+                        Text(
+                            text = listOfNotNull(selectedGenre, selectedArtist, selectedAlbum, selectedFolder).joinToString(" > "),
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            // Category Filter Chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(PickerCategory.entries.toTypedArray()) { category ->
-                    FilterChip(
-                        selected = selectedCategory == category && selectedGenre == null && selectedArtist == null && selectedAlbum == null && selectedFolder == null,
-                        onClick = {
-                            selectedCategory = category
-                            selectedGenre = null
-                            selectedArtist = null
-                            selectedAlbum = null
-                            selectedFolder = null
-                        },
-                        label = { Text(category.displayName) }
-                    )
-                }
-            }
+                // Content Area depending on current drill-down level
+                val isSongsView = selectedAlbum != null || selectedFolder != null || (selectedCategory in listOf(PickerCategory.ALL, PickerCategory.SONGS) && !hasDrillDown)
+                val isAlbumsView = selectedArtist != null && selectedAlbum == null
+                val isArtistsView = selectedGenre != null && selectedArtist == null && selectedAlbum == null
 
-            // Breadcrumb Navigation Header when drilled down
-            val hasDrillDown = selectedGenre != null || selectedArtist != null || selectedAlbum != null || selectedFolder != null
-            if (hasDrillDown) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    IconButton(
-                        onClick = {
-                            if (selectedAlbum != null) selectedAlbum = null
-                            else if (selectedArtist != null) selectedArtist = null
-                            else if (selectedGenre != null) selectedGenre = null
-                            else if (selectedFolder != null) selectedFolder = null
-                        }
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                    Text(
-                        text = listOfNotNull(selectedGenre, selectedArtist, selectedAlbum, selectedFolder).joinToString(" > "),
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Content Area depending on current drill-down level
-            val isSongsView = selectedAlbum != null || selectedFolder != null || (selectedCategory in listOf(PickerCategory.ALL, PickerCategory.SONGS) && !hasDrillDown)
-            val isAlbumsView = selectedArtist != null && selectedAlbum == null
-            val isArtistsView = selectedGenre != null && selectedArtist == null && selectedAlbum == null
-
-            if (isSongsView) {
-                if (songsList.isEmpty()) {
-                    EmptyListState("No songs found")
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth().weight(1f)
-                    ) {
-                        items(songsList.size) { index ->
-                            val song = songsList[index]
-                            SongItemRow(
-                                song = song,
-                                onPlay = {
-                                    playbackManager.setPlaylistAndPlay(songsList, index)
-                                    onDismiss()
-                                },
-                                onClick = {
-                                    playbackManager.setPlaylistAndPlay(songsList, index)
-                                    onDismiss()
-                                }
-                            )
+                if (isSongsView) {
+                    if (songsList.isEmpty()) {
+                        EmptyListState("No songs found")
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth().weight(1f)
+                        ) {
+                            items(songsList.size) { index ->
+                                val song = songsList[index]
+                                SongItemRow(
+                                    song = song,
+                                    onPlay = {
+                                        playbackManager.setPlaylistAndPlay(songsList, index)
+                                        onDismiss()
+                                    },
+                                    onClick = {
+                                        playbackManager.setPlaylistAndPlay(songsList, index)
+                                        onDismiss()
+                                    }
+                                )
+                            }
                         }
                     }
-                }
-            } else if (isAlbumsView || (selectedCategory == PickerCategory.ALBUMS && !hasDrillDown)) {
-                if (albumsList.isEmpty()) {
-                    EmptyListState("No albums found")
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth().weight(1f)
-                    ) {
-                        items(albumsList) { album ->
-                            AlbumItemRow(
-                                album = album,
-                                onPlay = {
-                                    coroutineScope.launch {
-                                        val albumSongs = musicDatabase.getSongsByAlbum(album.name)
-                                        val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
-                                            albumSongs.filter {
-                                                (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
-                                                (selectedArtist == null || it.artist.equals(selectedArtist, true))
+                } else if (isAlbumsView || (selectedCategory == PickerCategory.ALBUMS && !hasDrillDown)) {
+                    if (albumsList.isEmpty()) {
+                        EmptyListState("No albums found")
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth().weight(1f)
+                        ) {
+                            items(albumsList) { album ->
+                                AlbumItemRow(
+                                    album = album,
+                                    onPlay = {
+                                        coroutineScope.launch {
+                                            val albumSongs = musicDatabase.getSongsByAlbum(album.name)
+                                            val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
+                                                albumSongs.filter {
+                                                    (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
+                                                    (selectedArtist == null || it.artist.equals(selectedArtist, true))
+                                                }
+                                            } else albumSongs
+                                            val playSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
+                                            if (playSongs.isNotEmpty()) {
+                                                playbackManager.setPlaylistAndPlay(playSongs, 0)
                                             }
-                                        } else albumSongs
-                                        val playSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
-                                        if (playSongs.isNotEmpty()) {
-                                            playbackManager.setPlaylistAndPlay(playSongs, 0)
+                                            onDismiss()
                                         }
-                                        onDismiss()
+                                    },
+                                    onClick = {
+                                        selectedAlbum = album.name
                                     }
-                                },
-                                onClick = {
-                                    selectedAlbum = album.name
-                                }
-                            )
+                                )
+                            }
                         }
                     }
-                }
-            } else if (isArtistsView || (selectedCategory == PickerCategory.ARTISTS && !hasDrillDown)) {
-                if (artistsList.isEmpty()) {
-                    EmptyListState("No artists found")
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth().weight(1f)
-                    ) {
-                        items(artistsList) { artist ->
-                            ArtistItemRow(
-                                artist = artist,
-                                onPlay = {
-                                    coroutineScope.launch {
-                                        val allSongs = if (selectedGenre != null) {
-                                            musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
-                                        } else {
-                                            musicDatabase.getSongsByArtist(artist)
+                } else if (isArtistsView || (selectedCategory == PickerCategory.ARTISTS && !hasDrillDown)) {
+                    if (artistsList.isEmpty()) {
+                        EmptyListState("No artists found")
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth().weight(1f)
+                        ) {
+                            items(artistsList) { artist ->
+                                ArtistItemRow(
+                                    artist = artist,
+                                    onPlay = {
+                                        coroutineScope.launch {
+                                            val allSongs = if (selectedGenre != null) {
+                                                musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
+                                            } else {
+                                                musicDatabase.getSongsByArtist(artist)
+                                            }
+                                            if (allSongs.isNotEmpty()) {
+                                                playbackManager.setPlaylistAndPlay(allSongs, 0)
+                                            }
+                                            onDismiss()
                                         }
-                                        if (allSongs.isNotEmpty()) {
-                                            playbackManager.setPlaylistAndPlay(allSongs, 0)
-                                        }
-                                        onDismiss()
+                                    },
+                                    onClick = {
+                                        selectedArtist = artist
                                     }
-                                },
-                                onClick = {
-                                    selectedArtist = artist
-                                }
-                            )
+                                )
+                            }
                         }
                     }
-                }
-            } else if (selectedCategory == PickerCategory.GENRES && !hasDrillDown) {
-                if (genresList.isEmpty()) {
-                    EmptyListState("No genres found")
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth().weight(1f)
-                    ) {
-                        items(genresList) { genre ->
-                            GenreItemRow(
-                                genre = genre,
-                                onPlay = {
-                                    coroutineScope.launch {
-                                        val genreSongs = musicDatabase.getSongsByGenre(genre)
-                                        if (genreSongs.isNotEmpty()) {
-                                            playbackManager.setPlaylistAndPlay(genreSongs, 0)
+                } else if (selectedCategory == PickerCategory.GENRES && !hasDrillDown) {
+                    if (genresList.isEmpty()) {
+                        EmptyListState("No genres found")
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth().weight(1f)
+                        ) {
+                            items(genresList) { genre ->
+                                GenreItemRow(
+                                    genre = genre,
+                                    onPlay = {
+                                        coroutineScope.launch {
+                                            val genreSongs = musicDatabase.getSongsByGenre(genre)
+                                            if (genreSongs.isNotEmpty()) {
+                                                playbackManager.setPlaylistAndPlay(genreSongs, 0)
+                                            }
+                                            onDismiss()
                                         }
-                                        onDismiss()
+                                    },
+                                    onClick = {
+                                        selectedGenre = genre
                                     }
-                                },
-                                onClick = {
-                                    selectedGenre = genre
-                                }
-                            )
+                                )
+                            }
                         }
                     }
-                }
-            } else if (selectedCategory == PickerCategory.FOLDERS && !hasDrillDown) {
-                if (foldersList.isEmpty()) {
-                    EmptyListState("No subfolders found")
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth().weight(1f)
-                    ) {
-                        items(foldersList) { folder ->
-                            FolderItemRow(
-                                folder = folder,
-                                onPlay = {
-                                    coroutineScope.launch {
-                                        val folderSongs = musicDatabase.getSongsByFolder(folder)
-                                        if (folderSongs.isNotEmpty()) {
-                                            playbackManager.setPlaylistAndPlay(folderSongs, 0)
+                } else if (selectedCategory == PickerCategory.FOLDERS && !hasDrillDown) {
+                    if (foldersList.isEmpty()) {
+                        EmptyListState("No subfolders found")
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth().weight(1f)
+                        ) {
+                            items(foldersList) { folder ->
+                                FolderItemRow(
+                                    folder = folder,
+                                    onPlay = {
+                                        coroutineScope.launch {
+                                            val dbSongs = musicDatabase.getAllSongs()
+                                            val folderSongs = dbSongs.filter {
+                                                it.folderPath.equals(folder, ignoreCase = true) ||
+                                                it.folderPath.startsWith(folder, ignoreCase = true)
+                                            }
+                                            if (folderSongs.isNotEmpty()) {
+                                                playbackManager.setPlaylistAndPlay(folderSongs, 0)
+                                            }
+                                            onDismiss()
                                         }
-                                        onDismiss()
+                                    },
+                                    onClick = {
+                                        selectedFolder = folder
                                     }
-                                },
-                                onClick = {
-                                    selectedFolder = folder
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
             }
         }
     }
+
+/*
+@Composable
+fun StreamingPlatformView(
+    serviceId: String,
+    account: StreamingAccount?,
+    playbackManager: PlaybackManager,
+    onDismiss: () -> Unit
+) {
+    val service = remember(serviceId) { StreamingServiceId.fromId(serviceId) }
+    var streamingSearchQuery by remember { mutableStateOf("") }
+    var selectedPlaylistFilter by remember { mutableStateOf<String?>(null) }
+
+    val tracks = remember(serviceId, streamingSearchQuery) {
+        StreamingCatalogRepository.getTracksForService(serviceId, streamingSearchQuery)
+    }
+
+    val playlists = remember(serviceId) {
+        StreamingCatalogRepository.getPlaylistsForService(serviceId)
+    }
+
+    val filteredTracks = if (selectedPlaylistFilter != null) {
+        tracks.take(3)
+    } else tracks
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(12.dp)
+            ) {
+                if (service != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(service.brandColorHex)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = service.displayName.take(1),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "${service?.displayName ?: serviceId} Catalog",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        text = if (account != null) "Signed in: ${account.username} (${account.accountType})"
+                               else "Connected via Open API",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = "LIVE API",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        OutlinedTextField(
+            value = streamingSearchQuery,
+            onValueChange = { streamingSearchQuery = it },
+            placeholder = { Text("Search ${service?.displayName ?: "streaming"} tracks...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+            trailingIcon = {
+                if (streamingSearchQuery.isNotEmpty()) {
+                    IconButton(onClick = { streamingSearchQuery = "" }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    }
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Featured Playlists & Stations",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        ) {
+            item {
+                FilterChip(
+                    selected = selectedPlaylistFilter == null,
+                    onClick = { selectedPlaylistFilter = null },
+                    label = { Text("All Tracks") }
+                )
+            }
+            items(playlists) { playlist ->
+                FilterChip(
+                    selected = selectedPlaylistFilter == playlist,
+                    onClick = {
+                        selectedPlaylistFilter = if (selectedPlaylistFilter == playlist) null else playlist
+                    },
+                    label = { Text(playlist) }
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${filteredTracks.size} Tracks Available",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp
+            )
+            TextButton(
+                onClick = {
+                    if (filteredTracks.isNotEmpty()) {
+                        val songs = filteredTracks.map { it.toSong() }
+                        playbackManager.setPlaylistAndPlay(songs, 0)
+                        onDismiss()
+                    }
+                }
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Play All")
+            }
+        }
+
+        if (filteredTracks.isEmpty()) {
+            EmptyListState("No streaming tracks found")
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            ) {
+                items(filteredTracks.size) { index ->
+                    val track = filteredTracks[index]
+                    StreamingTrackRow(
+                        track = track,
+                        onPlay = {
+                            val songs = filteredTracks.map { it.toSong() }
+                            playbackManager.setPlaylistAndPlay(songs, index)
+                            onDismiss()
+                        }
+                    )
+                }
+            }
+        }
+    }
 }
+
+@Composable
+private fun StreamingTrackRow(
+    track: StreamingTrack,
+    onPlay: () -> Unit
+) {
+    val service = remember(track.serviceId) { StreamingServiceId.fromId(track.serviceId) }
+
+    ListItem(
+        headlineContent = {
+            Text(
+                text = track.title,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        supportingContent = {
+            Text(
+                text = "${track.artist} • ${track.album} • ${track.genre}",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        leadingContent = {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (service != null) Color(service.brandColorHex).copy(alpha = 0.2f)
+                        else MaterialTheme.colorScheme.primaryContainer
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = if (service != null) Color(service.brandColorHex) else MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        trailingContent = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = formatDuration(track.durationMs),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                IconButton(onClick = onPlay) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Track",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        },
+        modifier = Modifier.clickable { onPlay() }
+    )
+}
+*/
 
 @Composable
 private fun GenreItemRow(

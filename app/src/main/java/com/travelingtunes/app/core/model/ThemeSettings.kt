@@ -16,11 +16,12 @@ data class ColorTheme(
         val LAVENDER = ColorTheme("Lavender", Color(0xFFC3C0FF), Color(0xFFFFFFFF))
         val BLUSH = ColorTheme("Blush", Color(0xFFFFBCC4), Color(0xFFFFEFF2))
         val HOT_DOG_STAND = ColorTheme("Hot Dog Stand", Color(0xFFFFFF00), Color(0xFFFF0000))
+        val AUTO_BY_ART = ColorTheme("Auto By Art", Color(0xFF1E1E2C), Color(0xFFE0E0E0))
         val CUSTOM = ColorTheme("Custom", Color(0xFFC8C864), Color(0xFF1616B4))
 
         val PRESETS = listOf(
             WHITE_ON_GREY, GREY_ON_BLACK, LEAF, OLD_WEST,
-            PERIWINKLE_BLUE, LAVENDER, BLUSH, HOT_DOG_STAND, CUSTOM
+            PERIWINKLE_BLUE, LAVENDER, BLUSH, HOT_DOG_STAND, AUTO_BY_ART, CUSTOM
         )
 
         fun getByName(name: String): ColorTheme {

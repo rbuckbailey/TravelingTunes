@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Mic
@@ -288,6 +289,15 @@ fun RepeatModeIcon(
                 )
             }
 
+            RepeatMode.FOLDER -> {
+                Icon(
+                    imageVector = Icons.Default.Folder,
+                    contentDescription = "Repeat Folder",
+                    tint = tint,
+                    modifier = Modifier.size(overlaySize)
+                )
+            }
+
             RepeatMode.OFF -> {}
         }
     }
@@ -313,37 +323,25 @@ fun ShuffleModeIcon(
         )
 
         when (shuffleMode) {
-            ShuffleMode.GENRE -> {
-                Text(
-                    text = "*",
-                    color = tint,
-                    fontSize = (iconSize.value * 0.6f).sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (2).dp, y = (-4).dp)
-                )
-            }
-
-            ShuffleMode.ARTIST -> {
+            ShuffleMode.SONGS -> {
                 Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Shuffle Artist",
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = "Shuffle Songs",
                     tint = tint,
                     modifier = Modifier.size(overlaySize)
                 )
             }
 
-            ShuffleMode.ALBUM -> {
+            ShuffleMode.ALBUMS -> {
                 Icon(
                     imageVector = Icons.Default.Album,
-                    contentDescription = "Shuffle Album",
+                    contentDescription = "Shuffle Albums",
                     tint = tint,
                     modifier = Modifier.size(overlaySize)
                 )
             }
 
-            ShuffleMode.ALL, ShuffleMode.OFF -> {}
+            ShuffleMode.OFF -> {}
         }
     }
 }

@@ -31,12 +31,10 @@ import com.travelingtunes.app.core.database.LibraryStats
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.datastore.SettingsDataStore
 import com.travelingtunes.app.core.location.SpeedVolumeManager
-import com.travelingtunes.app.core.location.TtsNavigationManager
 import com.travelingtunes.app.core.media.MediaStoreRepository
 import com.travelingtunes.app.core.media.MusicScanner
 import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.theme.TravelingTunesTheme
-import com.travelingtunes.app.feature.contacts.ContactsPickerScreen
 import com.travelingtunes.app.feature.player.PlayerScreen
 import com.travelingtunes.app.feature.quickstart.QuickStartScreen
 import com.travelingtunes.app.feature.settings.GestureAssignmentScreen
@@ -50,7 +48,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var playbackManager: PlaybackManager
     private lateinit var mediaStoreRepository: MediaStoreRepository
     private lateinit var speedVolumeManager: SpeedVolumeManager
-    private lateinit var ttsNavigationManager: TtsNavigationManager
     private lateinit var musicDatabase: MusicDatabase
     private lateinit var musicScanner: MusicScanner
 
@@ -99,10 +96,9 @@ class MainActivity : ComponentActivity() {
         settingsDataStore = SettingsDataStore(applicationContext)
         mediaStoreRepository = MediaStoreRepository(applicationContext)
         speedVolumeManager = SpeedVolumeManager(applicationContext)
-        ttsNavigationManager = TtsNavigationManager(applicationContext)
         musicDatabase = MusicDatabase(applicationContext)
         musicScanner = MusicScanner(applicationContext, musicDatabase)
-        playbackManager = PlaybackManager(applicationContext, settingsDataStore)
+        playbackManager = PlaybackManager(applicationContext, settingsDataStore, musicDatabase)
 
         requestRequiredPermissions()
 
@@ -110,8 +106,6 @@ class MainActivity : ComponentActivity() {
             val displaySettings by settingsDataStore.displaySettingsFlow.collectAsState(initial = com.travelingtunes.app.core.model.DisplaySettings())
             val themeSettings by settingsDataStore.themeSettingsFlow.collectAsState(initial = com.travelingtunes.app.core.model.ThemeSettings())
             val gestureBindings by settingsDataStore.gestureBindingsFlow.collectAsState(initial = emptyMap())
-            val homeAddress by settingsDataStore.homeAddressFlow.collectAsState(initial = "")
-            val workAddress by settingsDataStore.workAddressFlow.collectAsState(initial = "")
             val gpsVolumeEnabled by settingsDataStore.gpsVolumeEnabledFlow.collectAsState(initial = false)
             val gpsSensitivity by settingsDataStore.gpsSensitivityFlow.collectAsState(initial = 0.5f)
 
@@ -137,9 +131,42 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            LaunchedEffect(displaySettings.keepScreenOn) {
+                if (displaySettings.keepScreenOn) {
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+
+            val currentSong by playbackManager.currentSong.collectAsState()
+            var dynamicAlbumArtTheme by remember { mutableStateOf<com.travelingtunes.app.core.model.ColorTheme?>(null) }
+            var lastExtractedTheme by remember { mutableStateOf<com.travelingtunes.app.core.model.ColorTheme?>(null) }
+
+            LaunchedEffect(currentSong?.id, currentSong?.artworkUri) {
+                val song = currentSong
+                if (song != null) {
+                    val bitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        com.travelingtunes.app.feature.player.loadSongArtwork(applicationContext, song)
+                    }
+                    if (bitmap != null) {
+                        val extracted = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(bitmap)
+                        lastExtractedTheme = extracted
+                        dynamicAlbumArtTheme = extracted
+                    } else {
+                        dynamicAlbumArtTheme = lastExtractedTheme
+                    }
+                } else {
+                    dynamicAlbumArtTheme = lastExtractedTheme
+                }
+            }
+
+            val isAutoByArt = themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true) || displaySettings.albumArtColors
+
             TravelingTunesTheme(
                 themeSettings = themeSettings,
-                useAlbumArtColors = displaySettings.albumArtColors
+                dynamicAlbumArtTheme = dynamicAlbumArtTheme,
+                useAlbumArtColors = isAutoByArt
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -153,8 +180,6 @@ class MainActivity : ComponentActivity() {
                         displaySettings = displaySettings,
                         themeSettings = themeSettings,
                         gestureBindings = gestureBindings,
-                        homeAddress = homeAddress,
-                        workAddress = workAddress,
                         musicFolderUri = musicFolderUri,
                         musicFolderName = musicFolderName,
                         lastScanTime = lastScanTime,
@@ -203,10 +228,6 @@ class MainActivity : ComponentActivity() {
             permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.READ_CONTACTS)
-        }
-
         if (permissionsToRequest.isNotEmpty()) {
             permissionLauncher.launch(permissionsToRequest.toTypedArray())
         } else {
@@ -246,7 +267,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         speedVolumeManager.stopTracking()
-        ttsNavigationManager.release()
         playbackManager.release()
         musicDatabase.close()
         super.onDestroy()
@@ -262,8 +282,6 @@ fun TravelingTunesNavHost(
     displaySettings: com.travelingtunes.app.core.model.DisplaySettings,
     themeSettings: com.travelingtunes.app.core.model.ThemeSettings,
     gestureBindings: Map<com.travelingtunes.app.core.model.GestureTrigger, com.travelingtunes.app.core.model.GestureBinding>,
-    homeAddress: String,
-    workAddress: String,
     musicFolderUri: String?,
     musicFolderName: String?,
     lastScanTime: Long,
@@ -286,13 +304,13 @@ fun TravelingTunesNavHost(
                 displaySettings = displaySettings,
                 gestureBindings = gestureBindings,
                 musicScanner = musicScanner,
+                settingsDataStore = settingsDataStore,
                 themeSettings = themeSettings,
                 showFirstRunPrompt = showFirstRunPrompt,
                 onDismissFirstRunPrompt = onDismissFirstRunPrompt,
                 onPickMusicFolder = onPickMusicFolder,
                 onOpenSettings = { navController.navigate("settings") },
-                onOpenQuickStart = { navController.navigate("quickstart") },
-                onOpenContacts = { navController.navigate("contacts") }
+                onOpenQuickStart = { navController.navigate("quickstart") }
             )
         }
         composable("settings") {
@@ -300,8 +318,6 @@ fun TravelingTunesNavHost(
                 settingsDataStore = settingsDataStore,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
-                homeAddress = homeAddress,
-                workAddress = workAddress,
                 musicFolderName = musicFolderName,
                 lastScanTime = lastScanTime,
                 libraryStats = libraryStats,
@@ -311,20 +327,13 @@ fun TravelingTunesNavHost(
                 onRescanMusicFolder = onRescanMusicFolder,
                 onNavigateBack = { navController.popBackStack() },
                 onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
-                onOpenQuickStart = { navController.navigate("quickstart") },
-                onOpenContacts = { navController.navigate("contacts") }
+                onOpenQuickStart = { navController.navigate("quickstart") }
             )
         }
         composable("gesture_assignments") {
             GestureAssignmentScreen(
                 settingsDataStore = settingsDataStore,
                 gestureBindings = gestureBindings,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-        composable("contacts") {
-            ContactsPickerScreen(
-                settingsDataStore = settingsDataStore,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

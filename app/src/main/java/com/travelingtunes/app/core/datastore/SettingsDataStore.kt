@@ -10,6 +10,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.travelingtunes.app.core.model.ArtAlignmentLandscape
+import com.travelingtunes.app.core.model.ArtAlignmentPortrait
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
 import com.travelingtunes.app.core.model.DisplaySettings
@@ -17,7 +19,10 @@ import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
+import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
+import com.travelingtunes.app.core.model.ShuffleMode
+import com.travelingtunes.app.core.model.StreamingAccount
 import com.travelingtunes.app.core.model.TextAlignmentOption
 import com.travelingtunes.app.core.model.ThemeSettings
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +36,9 @@ data class SavedPlaybackState(
     val activeSongIndex: Int = 0,
     val positionMs: Long = 0L,
     val isShuffle: Boolean = false,
-    val isRepeat: Boolean = false
+    val isRepeat: Boolean = false,
+    val repeatMode: RepeatMode = RepeatMode.OFF,
+    val shuffleMode: ShuffleMode = ShuffleMode.OFF
 )
 
 class SettingsDataStore(private val context: Context) {
@@ -43,11 +50,6 @@ class SettingsDataStore(private val context: Context) {
         val KEY_MUSIC_FOLDER_NAME = stringPreferencesKey("musicFolderName")
         val KEY_LAST_SCAN_TIME = longPreferencesKey("lastScanTime")
         val KEY_FIRST_RUN_PROMPTED = booleanPreferencesKey("firstRunPrompted")
-
-        val KEY_HOME_ADDRESS = stringPreferencesKey("homeAddress")
-        val KEY_WORK_ADDRESS = stringPreferencesKey("workAddress")
-        val KEY_DESTINATION_ADDRESS = stringPreferencesKey("destinationAddress")
-        val KEY_DESTINATION_NAME = stringPreferencesKey("destinationName")
 
         val KEY_VOLUME_SENSITIVITY = floatPreferencesKey("volumeSensitivity")
         val KEY_SEEK_SENSITIVITY = floatPreferencesKey("seekSensitivity")
@@ -72,9 +74,10 @@ class SettingsDataStore(private val context: Context) {
         val KEY_SHOW_ALBUM_ART = booleanPreferencesKey("showAlbumArt")
         val KEY_ALBUM_ART_COLORS = booleanPreferencesKey("albumArtColors")
         val KEY_ALBUM_ART_SCALE = intPreferencesKey("albumArtScale")
+        val KEY_ART_ALIGNMENT_PORTRAIT = stringPreferencesKey("artAlignmentPortrait")
+        val KEY_ART_ALIGNMENT_LANDSCAPE = stringPreferencesKey("artAlignmentLandscape")
         val KEY_ALBUM_ART_FADE = floatPreferencesKey("albumArtFade")
         val KEY_ART_DISPLAY_LAYOUT = intPreferencesKey("artDisplayLayout")
-        val KEY_MAP_ON = intPreferencesKey("mapOn")
         val KEY_HUD_TYPE = intPreferencesKey("hudType")
         val KEY_SCRUB_HUD_TYPE = intPreferencesKey("scrubHudType")
         val KEY_VOLUME_ALWAYS_ON = booleanPreferencesKey("volumeAlwaysOn")
@@ -84,6 +87,8 @@ class SettingsDataStore(private val context: Context) {
         val KEY_ARTIST_FONT_KEY = stringPreferencesKey("artistFontKey")
         val KEY_SONG_FONT_KEY = stringPreferencesKey("songFontKey")
         val KEY_ALBUM_FONT_KEY = stringPreferencesKey("albumFontKey")
+        val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
+        val KEY_IMMERSIVE_MODE = booleanPreferencesKey("immersiveMode")
 
         // Theme
         val KEY_CURRENT_THEME = stringPreferencesKey("currentTheme")
@@ -107,6 +112,11 @@ class SettingsDataStore(private val context: Context) {
         val KEY_PLAYBACK_POSITION_MS = longPreferencesKey("playbackPositionMs")
         val KEY_SAVED_SHUFFLE = booleanPreferencesKey("savedShuffle")
         val KEY_SAVED_REPEAT = booleanPreferencesKey("savedRepeat")
+        val KEY_SAVED_REPEAT_MODE = stringPreferencesKey("savedRepeatMode")
+        val KEY_SAVED_SHUFFLE_MODE = stringPreferencesKey("savedShuffleMode")
+
+        // Streaming Accounts
+        val KEY_STREAMING_ACCOUNTS = stringPreferencesKey("streamingAccounts")
     }
 
     val displaySettingsFlow: Flow<DisplaySettings> = context.dataStore.data.map { prefs ->
@@ -130,9 +140,14 @@ class SettingsDataStore(private val context: Context) {
             showAlbumArt = prefs[KEY_SHOW_ALBUM_ART] ?: true,
             albumArtColors = prefs[KEY_ALBUM_ART_COLORS] ?: true,
             albumArtScale = ArtScaleOption.entries.getOrElse(prefs[KEY_ALBUM_ART_SCALE] ?: 0) { ArtScaleOption.FILL_SCREEN },
+            artAlignmentPortrait = ArtAlignmentPortrait.entries.find {
+                it.name.equals(prefs[KEY_ART_ALIGNMENT_PORTRAIT], true)
+            } ?: ArtAlignmentPortrait.MIDDLE,
+            artAlignmentLandscape = ArtAlignmentLandscape.entries.find {
+                it.name.equals(prefs[KEY_ART_ALIGNMENT_LANDSCAPE], true)
+            } ?: ArtAlignmentLandscape.CENTER,
             albumArtFade = prefs[KEY_ALBUM_ART_FADE] ?: 0.35f,
             artDisplayLayout = ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY },
-            mapOn = prefs[KEY_MAP_ON] ?: 1,
             hudType = HudTypeOption.entries.find { it.value == (prefs[KEY_HUD_TYPE] ?: 1) } ?: HudTypeOption.BAR_VOLUME,
             scrubHudType = ScrubHudTypeOption.entries.find { it.value == (prefs[KEY_SCRUB_HUD_TYPE] ?: 2) } ?: ScrubHudTypeOption.EDGE_HUD,
             volumeAlwaysOn = prefs[KEY_VOLUME_ALWAYS_ON] ?: true,
@@ -141,7 +156,9 @@ class SettingsDataStore(private val context: Context) {
             hudLineThickness = prefs[KEY_HUD_LINE_THICKNESS] ?: 16f,
             artistFontKey = prefs[KEY_ARTIST_FONT_KEY] ?: "DEFAULT",
             songFontKey = prefs[KEY_SONG_FONT_KEY] ?: "DEFAULT",
-            albumFontKey = prefs[KEY_ALBUM_FONT_KEY] ?: "DEFAULT"
+            albumFontKey = prefs[KEY_ALBUM_FONT_KEY] ?: "DEFAULT",
+            keepScreenOn = prefs[KEY_KEEP_SCREEN_ON] ?: prefs[KEY_DISABLE_AUTOLOCK] ?: true,
+            immersiveMode = prefs[KEY_IMMERSIVE_MODE] ?: true
         )
     }
 
@@ -171,18 +188,6 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    val homeAddressFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_HOME_ADDRESS] ?: "14 N Moore St, New York, NY"
-    }
-
-    val workAddressFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_WORK_ADDRESS] ?: "14 N Moore St, New York, NY"
-    }
-
-    val destinationAddressFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[KEY_DESTINATION_ADDRESS]
-    }
-
     val gpsVolumeEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_GPS_VOLUME] ?: false
     }
@@ -210,14 +215,73 @@ class SettingsDataStore(private val context: Context) {
     val savedPlaybackStateFlow: Flow<SavedPlaybackState> = context.dataStore.data.map { prefs ->
         val queueStr = prefs[KEY_SAVED_QUEUE_IDS] ?: ""
         val queueIds = queueStr.split(",").mapNotNull { it.trim().toLongOrNull() }
+        val isShuffle = prefs[KEY_SAVED_SHUFFLE] ?: false
+        val isRepeat = prefs[KEY_SAVED_REPEAT] ?: false
+
+        val repeatModeName = prefs[KEY_SAVED_REPEAT_MODE]
+        val repeatMode = if (repeatModeName != null) {
+            RepeatMode.entries.find { it.name.equals(repeatModeName, true) } ?: RepeatMode.OFF
+        } else {
+            if (isRepeat) RepeatMode.SONG else RepeatMode.OFF
+        }
+
+        val shuffleModeName = prefs[KEY_SAVED_SHUFFLE_MODE]
+        val shuffleMode = if (shuffleModeName != null) {
+            ShuffleMode.entries.find { it.name.equals(shuffleModeName, true) } ?: ShuffleMode.OFF
+        } else {
+            if (isShuffle) ShuffleMode.SONGS else ShuffleMode.OFF
+        }
+
         SavedPlaybackState(
             queueIds = queueIds,
             activeSongId = prefs[KEY_ACTIVE_SONG_ID] ?: -1L,
             activeSongIndex = prefs[KEY_ACTIVE_SONG_INDEX] ?: 0,
             positionMs = prefs[KEY_PLAYBACK_POSITION_MS] ?: 0L,
-            isShuffle = prefs[KEY_SAVED_SHUFFLE] ?: false,
-            isRepeat = prefs[KEY_SAVED_REPEAT] ?: false
+            isShuffle = isShuffle,
+            isRepeat = isRepeat,
+            repeatMode = repeatMode,
+            shuffleMode = shuffleMode
         )
+    }
+
+    val streamingAccountsFlow: Flow<Map<String, StreamingAccount>> = context.dataStore.data.map { prefs ->
+        parseStreamingAccounts(prefs[KEY_STREAMING_ACCOUNTS] ?: "")
+    }
+
+    suspend fun signInStreamingService(serviceId: String, username: String, accountType: String = "Premium") {
+        context.dataStore.edit { prefs ->
+            val currentMap = parseStreamingAccounts(prefs[KEY_STREAMING_ACCOUNTS] ?: "").toMutableMap()
+            currentMap[serviceId] = StreamingAccount(serviceId, username, accountType, System.currentTimeMillis())
+            prefs[KEY_STREAMING_ACCOUNTS] = serializeStreamingAccounts(currentMap)
+        }
+    }
+
+    suspend fun signOutStreamingService(serviceId: String) {
+        context.dataStore.edit { prefs ->
+            val currentMap = parseStreamingAccounts(prefs[KEY_STREAMING_ACCOUNTS] ?: "").toMutableMap()
+            currentMap.remove(serviceId)
+            prefs[KEY_STREAMING_ACCOUNTS] = serializeStreamingAccounts(currentMap)
+        }
+    }
+
+    private fun parseStreamingAccounts(raw: String): Map<String, StreamingAccount> {
+        if (raw.isBlank()) return emptyMap()
+        return raw.split(";").mapNotNull { entry ->
+            val parts = entry.split("::")
+            if (parts.size >= 3) {
+                val serviceId = parts[0]
+                val username = parts[1]
+                val accountType = parts[2]
+                val signedInAt = parts.getOrNull(3)?.toLongOrNull() ?: System.currentTimeMillis()
+                serviceId to StreamingAccount(serviceId, username, accountType, signedInAt)
+            } else null
+        }.toMap()
+    }
+
+    private fun serializeStreamingAccounts(map: Map<String, StreamingAccount>): String {
+        return map.values.joinToString(";") { account ->
+            "${account.serviceId}::${account.username}::${account.accountType}::${account.signedInAt}"
+        }
     }
 
     suspend fun savePlaybackState(
@@ -226,7 +290,9 @@ class SettingsDataStore(private val context: Context) {
         activeSongIndex: Int,
         positionMs: Long,
         isShuffle: Boolean,
-        isRepeat: Boolean
+        isRepeat: Boolean,
+        repeatMode: RepeatMode = if (isRepeat) RepeatMode.SONG else RepeatMode.OFF,
+        shuffleMode: ShuffleMode = if (isShuffle) ShuffleMode.SONGS else ShuffleMode.OFF
     ) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SAVED_QUEUE_IDS] = queueIds.joinToString(",")
@@ -235,6 +301,8 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_PLAYBACK_POSITION_MS] = positionMs
             prefs[KEY_SAVED_SHUFFLE] = isShuffle
             prefs[KEY_SAVED_REPEAT] = isRepeat
+            prefs[KEY_SAVED_REPEAT_MODE] = repeatMode.name
+            prefs[KEY_SAVED_SHUFFLE_MODE] = shuffleMode.name
         }
     }
 
@@ -279,9 +347,10 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_SHOW_ALBUM_ART] = update.showAlbumArt
             prefs[KEY_ALBUM_ART_COLORS] = update.albumArtColors
             prefs[KEY_ALBUM_ART_SCALE] = update.albumArtScale.ordinal
+            prefs[KEY_ART_ALIGNMENT_PORTRAIT] = update.artAlignmentPortrait.name
+            prefs[KEY_ART_ALIGNMENT_LANDSCAPE] = update.artAlignmentLandscape.name
             prefs[KEY_ALBUM_ART_FADE] = update.albumArtFade
             prefs[KEY_ART_DISPLAY_LAYOUT] = update.artDisplayLayout.ordinal
-            prefs[KEY_MAP_ON] = update.mapOn
             prefs[KEY_HUD_TYPE] = update.hudType.value
             prefs[KEY_SCRUB_HUD_TYPE] = update.scrubHudType.value
             prefs[KEY_VOLUME_ALWAYS_ON] = update.volumeAlwaysOn
@@ -291,6 +360,8 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_ARTIST_FONT_KEY] = update.artistFontKey
             prefs[KEY_SONG_FONT_KEY] = update.songFontKey
             prefs[KEY_ALBUM_FONT_KEY] = update.albumFontKey
+            prefs[KEY_KEEP_SCREEN_ON] = update.keepScreenOn
+            prefs[KEY_IMMERSIVE_MODE] = update.immersiveMode
         }
     }
 
@@ -318,15 +389,6 @@ class SettingsDataStore(private val context: Context) {
                 prefs[stringPreferencesKey(trigger.key)] = trigger.defaultActionKey
                 prefs[booleanPreferencesKey("${trigger.key}Continuous")] = trigger.isContinuousDefault
             }
-        }
-    }
-
-    suspend fun setAddresses(home: String? = null, work: String? = null, destination: String? = null, destName: String? = null) {
-        context.dataStore.edit { prefs ->
-            home?.let { prefs[KEY_HOME_ADDRESS] = it }
-            work?.let { prefs[KEY_WORK_ADDRESS] = it }
-            destination?.let { prefs[KEY_DESTINATION_ADDRESS] = it }
-            destName?.let { prefs[KEY_DESTINATION_NAME] = it }
         }
     }
 }

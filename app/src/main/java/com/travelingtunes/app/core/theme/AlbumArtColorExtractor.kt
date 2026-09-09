@@ -11,7 +11,12 @@ import kotlinx.coroutines.withContext
 object AlbumArtColorExtractor {
 
     suspend fun extractThemeFromBitmap(bitmap: Bitmap): ColorTheme = withContext(Dispatchers.Default) {
-        val palette = Palette.from(bitmap).generate()
+        val safeBmp = if (bitmap.config == Bitmap.Config.HARDWARE) {
+            bitmap.copy(Bitmap.Config.ARGB_8888, false)
+        } else {
+            bitmap
+        }
+        val palette = Palette.from(safeBmp ?: bitmap).generate()
 
         val allSwatches = palette.swatches.sortedByDescending { it.population }
         if (allSwatches.isEmpty()) {
