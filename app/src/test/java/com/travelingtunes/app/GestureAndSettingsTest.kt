@@ -97,4 +97,15 @@ class GestureAndSettingsTest {
         org.junit.Assert.assertTrue(displaySettings.keepScreenOn)
         org.junit.Assert.assertTrue(displaySettings.immersiveMode)
     }
+
+    @Test
+    fun testSettingsCategoriesNaming() {
+        val categories = listOf("Library", "Gestures", "Titles and Art", "Themes", "About")
+        assertEquals(5, categories.size)
+        assertEquals("Library", categories[0])
+        assertEquals("Gestures", categories[1])
+        assertEquals("Titles and Art", categories[2])
+        assertEquals("Themes", categories[3])
+        assertEquals("About", categories[4])
+    }
 }

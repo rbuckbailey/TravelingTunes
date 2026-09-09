@@ -209,22 +209,10 @@ fun PlayerScreen(
 
             when (action) {
                 GestureAction.NEXT -> {
-                    coroutineScope.launch {
-                        if (pagerState.currentPage < pageCount - 1) {
-                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                        } else {
-                            playbackManager.next()
-                        }
-                    }
+                    playbackManager.next()
                 }
                 GestureAction.PREVIOUS -> {
-                    coroutineScope.launch {
-                        if (pagerState.currentPage > 0) {
-                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                        } else {
-                            playbackManager.previous()
-                        }
-                    }
+                    playbackManager.previous()
                 }
                 else -> {
                     handleGestureAction(

@@ -84,7 +84,13 @@ class MusicPlaybackService : MediaLibraryService() {
         val session = MediaLibrarySession.Builder(this, player, sessionCallback)
             .setSessionActivity(pendingIntent)
             .build()
+        addSession(session)
         sharedSession = session
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        return START_STICKY
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
@@ -92,9 +98,10 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
-        sharedSession?.run {
-            player.release()
-            release()
+        sharedSession?.let { session ->
+            removeSession(session)
+            session.player.release()
+            session.release()
             sharedSession = null
         }
         sharedPlayer = null

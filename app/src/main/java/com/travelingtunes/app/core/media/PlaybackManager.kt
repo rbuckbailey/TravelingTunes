@@ -72,9 +72,27 @@ class PlaybackManager(
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                val mediaId = mediaItem?.mediaId?.toLongOrNull()
-                _currentSong.value = _currentPlaylist.value.find { it.id == mediaId }
+                val playlist = _currentPlaylist.value
+                val currentIndex = player.currentMediaItemIndex
+                val song = if (currentIndex in playlist.indices) {
+                    playlist[currentIndex]
+                } else {
+                    val mediaId = mediaItem?.mediaId?.toLongOrNull()
+                    playlist.find { it.id == mediaId }
+                }
+                _currentSong.value = song
                 _durationMs.value = player.duration.coerceAtLeast(0L)
+            }
+
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                android.util.Log.e("PlaybackManager", "Player error encountered: ${error.message}", error)
+                if (player.hasNextMediaItem()) {
+                    player.seekToNextMediaItem()
+                    player.prepare()
+                    player.play()
+                } else {
+                    _isPlaying.value = false
+                }
             }
         })
 
@@ -426,17 +444,10 @@ class PlaybackManager(
         val activeQueue = listOf(current) + upcomingSongs
         _currentPlaylist.value = activeQueue
 
-        // Update ExoPlayer's upcoming media items without interrupting or changing the currently playing song
-        val currMediaIndex = player.currentMediaItemIndex.coerceAtLeast(0)
-        val itemCount = player.mediaItemCount
-
-        if (itemCount > currMediaIndex + 1) {
-            player.removeMediaItems(currMediaIndex + 1, itemCount)
-        }
-
-        if (upcomingSongs.isNotEmpty()) {
-            player.addMediaItems(upcomingSongs.map { songToMediaItem(it) })
-        }
+        // Seamlessly update ExoPlayer's queue so index 0 in ExoPlayer matches activeQueue[0]
+        val currentPos = player.currentPosition.coerceAtLeast(0L)
+        val mediaItems = activeQueue.map { songToMediaItem(it) }
+        player.setMediaItems(mediaItems, 0, currentPos)
     }
 
     fun playCurrentAlbum() {
