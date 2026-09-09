@@ -1,7 +1,7 @@
+package com.travelingtunes.app
+
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureTrigger
-import com.travelingtunes.app.core.model.RepeatMode
-import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.ThemeSettings
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -27,34 +27,20 @@ class GestureAndSettingsTest {
         assertEquals("White on Grey", themeSettings.currentThemeName)
         assertEquals(6, themeSettings.sunRiseHour)
         assertEquals(19, themeSettings.sunSetHour)
+        assertEquals(false, themeSettings.isRounded)
+        assertEquals(false, themeSettings.isGlass)
     }
 
     @Test
-    fun testRepeatModes() {
-        assertEquals("Repeat Off", RepeatMode.OFF.displayName)
-        assertEquals("Repeat Song", RepeatMode.SONG.displayName)
-        assertEquals("Repeat Album", RepeatMode.ALBUM.displayName)
-        assertEquals("Repeat Artist", RepeatMode.ARTIST.displayName)
-        assertEquals("Repeat Genre", RepeatMode.GENRE.displayName)
+    fun testThemeSettingsRoundedAndGlass() {
+        val themeSettings = ThemeSettings(isRounded = true, isGlass = true)
+        assertEquals(true, themeSettings.isRounded)
+        assertEquals(true, themeSettings.isGlass)
     }
 
     @Test
-    fun testShuffleModes() {
-        assertEquals("Shuffle Off", ShuffleMode.OFF.displayName)
-        assertEquals("Shuffle All", ShuffleMode.ALL.displayName)
-        assertEquals("Shuffle Genre", ShuffleMode.GENRE.displayName)
-        assertEquals("Shuffle Artist", ShuffleMode.ARTIST.displayName)
-        assertEquals("Shuffle Album", ShuffleMode.ALBUM.displayName)
-    }
-
-    @Test
-    fun testScreenRegionTriggers() {
-        val topLeft = GestureTrigger.fromKey("TopLeft")
-        assertEquals(GestureTrigger.CORNER_TOP_LEFT, topLeft)
-        assertEquals("ToggleRepeat", topLeft?.defaultActionKey)
-
-        val topRight = GestureTrigger.fromKey("TopRight")
-        assertEquals(GestureTrigger.CORNER_TOP_RIGHT, topRight)
-        assertEquals("ToggleShuffle", topRight?.defaultActionKey)
+    fun testArtLayoutOptions() {
+        assertEquals("Behind Titles", com.travelingtunes.app.core.model.ArtLayoutOption.OVERLAY.displayName)
+        assertEquals("Docked (Displace Titles)", com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED.displayName)
     }
 }

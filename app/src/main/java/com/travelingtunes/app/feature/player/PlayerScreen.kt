@@ -11,8 +11,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -25,11 +24,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
@@ -52,10 +51,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -72,14 +73,12 @@ import com.travelingtunes.app.core.model.ArtScaleOption
 import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
-import com.travelingtunes.app.core.model.GestureCategory
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
-import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
-import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.Song
 import com.travelingtunes.app.core.model.TextAlignmentOption
+import com.travelingtunes.app.core.model.ThemeSettings
 import com.travelingtunes.app.feature.songpicker.SongPickerBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -95,6 +94,7 @@ fun PlayerScreen(
     displaySettings: DisplaySettings,
     gestureBindings: Map<GestureTrigger, GestureBinding>,
     musicScanner: MusicScanner? = null,
+    themeSettings: ThemeSettings = ThemeSettings(),
     showFirstRunPrompt: Boolean = false,
     onDismissFirstRunPrompt: () -> Unit = {},
     onPickMusicFolder: () -> Unit = {},
@@ -103,38 +103,40 @@ fun PlayerScreen(
     onOpenContacts: () -> Unit
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
+
     val currentSong by playbackManager.currentSong.collectAsState()
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
     val currentPositionMs by playbackManager.currentPositionMs.collectAsState()
     val durationMs by playbackManager.durationMs.collectAsState()
     val currentVolumeRatio by playbackManager.currentVolumeRatio.collectAsState()
     val actionHudText by playbackManager.actionHudText.collectAsState()
-    val isPlaying by playbackManager.isPlaying.collectAsState()
-    val repeatMode by playbackManager.repeatMode.collectAsState()
-    val shuffleMode by playbackManager.shuffleMode.collectAsState()
 
     var showSongPicker by remember { mutableStateOf(false) }
-    var showRepeatOptionsDialog by remember { mutableStateOf(false) }
-    var showShuffleOptionsDialog by remember { mutableStateOf(false) }
+    var dragOffsetPx by remember { mutableStateOf(0f) }
+
     val pageCount = currentPlaylist.size.coerceAtLeast(1)
     val songIndex = currentPlaylist.indexOfFirst { it.id == currentSong?.id }.coerceAtLeast(0)
 
     val pagerState = rememberPagerState(initialPage = songIndex) { pageCount }
     val coroutineScope = rememberCoroutineScope()
 
-    // Sync pagerState -> PlaybackManager when user swipes pager to a settled page
-    LaunchedEffect(pagerState.settledPage) {
-        if (currentPlaylist.isNotEmpty() && pagerState.settledPage in currentPlaylist.indices) {
-            val selectedSong = currentPlaylist[pagerState.settledPage]
+    // Sync pagerState -> PlaybackManager when user swipes pager
+    LaunchedEffect(pagerState.currentPage) {
+        if (currentPlaylist.isNotEmpty() && pagerState.currentPage in currentPlaylist.indices) {
+            val selectedSong = currentPlaylist[pagerState.currentPage]
             if (selectedSong.id != currentSong?.id) {
-                playbackManager.playSongAtIndex(pagerState.settledPage)
+                playbackManager.playSongAtIndex(pagerState.currentPage)
             }
         }
     }
 
     // Sync PlaybackManager -> pagerState when song changes externally
     LaunchedEffect(currentSong?.id) {
-        if (songIndex in 0 until pageCount && pagerState.settledPage != songIndex) {
+        if (songIndex in 0 until pageCount && pagerState.currentPage != songIndex) {
             pagerState.animateScrollToPage(songIndex)
         }
     }
@@ -152,111 +154,116 @@ fun PlayerScreen(
         }
     }
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        val screenHeightPx = this.constraints.maxHeight.toFloat()
-
-        val gestureListener = object : GestureEventListener {
-            override fun onGestureTriggered(trigger: GestureTrigger) {
-                var binding = gestureBindings[trigger]
-                var action = binding?.action ?: GestureAction.UNASSIGNED
-
-                // When a touch region is unassigned, pass the tap through to the standard tap action
-                if (action == GestureAction.UNASSIGNED && trigger.category == GestureCategory.SCREEN_REGION) {
-                    val fallbackTrigger = GestureTrigger.TAP_1_1
-                    binding = gestureBindings[fallbackTrigger]
-                    action = binding?.action ?: GestureAction.UNASSIGNED
-                }
-
-                if (action == GestureAction.UNASSIGNED) return
-
-                if (trigger.category == GestureCategory.LONG_PRESS) {
-                    if (action == GestureAction.TOGGLE_REPEAT) {
-                        showRepeatOptionsDialog = true
-                        return
-                    } else if (action == GestureAction.TOGGLE_SHUFFLE) {
-                        showShuffleOptionsDialog = true
-                        return
-                    }
-                }
-
-                when (action) {
-                    GestureAction.NEXT -> {
-                        coroutineScope.launch {
-                            if (pagerState.currentPage < pageCount - 1) {
-                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            } else {
-                                playbackManager.next()
-                            }
-                        }
-                    }
-                    GestureAction.PREVIOUS -> {
-                        coroutineScope.launch {
-                            if (pagerState.currentPage > 0) {
-                                pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                            } else {
-                                playbackManager.previous()
-                            }
-                        }
-                    }
-                    else -> {
-                        handleGestureAction(
-                            action = action,
-                            playbackManager = playbackManager,
-                            onOpenSongPicker = { showSongPicker = true },
-                            onOpenSettings = onOpenSettings,
-                            onOpenQuickStart = onOpenQuickStart,
-                            onOpenContacts = onOpenContacts
-                        )
-                    }
-                }
-            }
-
-            override fun onContinuousGesture(
-                trigger: GestureTrigger,
-                delta: Float,
-                deltaX: Float,
-                deltaY: Float,
-                totalDx: Float,
-                totalDy: Float
-            ) {
-                val binding = gestureBindings[trigger]
-                val action = binding?.action ?: GestureAction.UNASSIGNED
-
-                when (action) {
-                    GestureAction.VOLUME_UP, GestureAction.VOLUME_DOWN -> {
-                        playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
-                    }
-                    GestureAction.FAST_FORWARD -> {
-                        playbackManager.fastForward(2000L)
-                    }
-                    GestureAction.REWIND -> {
-                        playbackManager.rewind(2000L)
-                    }
-                    else -> {
-                        if (trigger.name.contains("SWIPE") && (trigger.name.contains("UP") || trigger.name.contains("DOWN"))) {
-                            playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
+    val gestureListener = object : GestureEventListener {
+        override fun onGestureTriggered(trigger: GestureTrigger) {
+            val binding = gestureBindings[trigger] ?: return
+            when (binding.action) {
+                GestureAction.NEXT -> {
+                    coroutineScope.launch {
+                        if (pagerState.currentPage < pageCount - 1) {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        } else {
+                            playbackManager.next()
                         }
                     }
                 }
-            }
-
-            override fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int) {
-                if (kotlin.math.abs(totalDy) > 20f && kotlin.math.abs(totalDy) > kotlin.math.abs(totalDx)) {
-                    val volPct = (playbackManager.currentVolumeRatio.value * 100).toInt()
-                    playbackManager.showHudAction("Volume: $volPct%")
+                GestureAction.PREVIOUS -> {
+                    coroutineScope.launch {
+                        if (pagerState.currentPage > 0) {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        } else {
+                            playbackManager.previous()
+                        }
+                    }
+                }
+                else -> {
+                    handleGestureAction(
+                        action = binding.action,
+                        playbackManager = playbackManager,
+                        onOpenSongPicker = { showSongPicker = true },
+                        onOpenSettings = onOpenSettings,
+                        onOpenQuickStart = onOpenQuickStart,
+                        onOpenContacts = onOpenContacts
+                    )
                 }
             }
         }
 
+        override fun onContinuousGesture(
+            trigger: GestureTrigger,
+            delta: Float,
+            deltaX: Float,
+            deltaY: Float,
+            totalDx: Float,
+            totalDy: Float
+        ) {
+            val binding = gestureBindings[trigger]
+            val action = binding?.action ?: GestureAction.UNASSIGNED
+
+            when (action) {
+                GestureAction.NEXT, GestureAction.PREVIOUS -> {
+                    dragOffsetPx += deltaX
+                }
+                GestureAction.VOLUME_UP, GestureAction.VOLUME_DOWN -> {
+                    playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
+                }
+                GestureAction.FAST_FORWARD -> {
+                    playbackManager.fastForward(2000L)
+                }
+                GestureAction.REWIND -> {
+                    playbackManager.rewind(2000L)
+                }
+                else -> {
+                    if (trigger.name.contains("SWIPE") && (trigger.name.contains("UP") || trigger.name.contains("DOWN"))) {
+                        playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
+                    }
+                }
+            }
+        }
+
+        override fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int) {
+            val threshold = screenWidthPx * 0.15f
+            if (dragOffsetPx != 0f) {
+                if (dragOffsetPx < -threshold) {
+                    coroutineScope.launch {
+                        dragOffsetPx = 0f
+                        if (pagerState.currentPage < pageCount - 1) {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        } else {
+                            playbackManager.next()
+                        }
+                    }
+                } else if (dragOffsetPx > threshold) {
+                    coroutineScope.launch {
+                        dragOffsetPx = 0f
+                        if (pagerState.currentPage > 0) {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        } else {
+                            playbackManager.previous()
+                        }
+                    }
+                } else {
+                    dragOffsetPx = 0f
+                }
+            } else if (kotlin.math.abs(totalDy) > 20f) {
+                val volPct = (playbackManager.currentVolumeRatio.value * 100).toInt()
+                playbackManager.showHudAction("Volume: $volPct%")
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         // 1. Sliding Page Transition (Album Art + Song Titles & Labels)
         HorizontalPager(
             state = pagerState,
-            beyondViewportPageCount = 1,
-            modifier = Modifier.fillMaxSize()
+            beyondViewportPageCount = 3,
+            modifier = Modifier
+                .fillMaxSize()
+                .offset { IntOffset(dragOffsetPx.roundToInt(), 0) }
         ) { page ->
             val pageSong = currentPlaylist.getOrNull(page) ?: currentSong
 
@@ -269,9 +276,7 @@ fun PlayerScreen(
 
                 // Main Song Labels Container for this page
                 SongLabelsLayout(
-                    artist = pageSong?.artist ?: "Traveling Tunes",
-                    title = pageSong?.title ?: "Swipe or Tap Screen to Play",
-                    album = pageSong?.album ?: "No Song Selected",
+                    currentSong = pageSong,
                     displaySettings = displaySettings
                 )
             }
@@ -288,6 +293,7 @@ fun PlayerScreen(
         VolumeHudOverlay(
             volumeRatio = currentVolumeRatio,
             displaySettings = displaySettings,
+            themeSettings = themeSettings,
             modifier = Modifier.align(Alignment.BottomStart)
         )
 
@@ -296,25 +302,57 @@ fun PlayerScreen(
             currentPositionMs = currentPositionMs,
             durationMs = durationMs,
             displaySettings = displaySettings,
+            themeSettings = themeSettings,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
-        // 5. Screen Region Icons Overlay
-        ScreenRegionIconsOverlay(
-            gestureBindings = gestureBindings,
-            playbackManager = playbackManager,
-            repeatMode = repeatMode,
-            shuffleMode = shuffleMode,
-            isPlaying = isPlaying,
-            onOpenSongPicker = { showSongPicker = true },
-            onOpenSettings = onOpenSettings,
-            onOpenQuickStart = onOpenQuickStart,
-            onOpenContacts = onOpenContacts,
-            onShowRepeatOptions = { showRepeatOptionsDialog = true },
-            onShowShuffleOptions = { showShuffleOptionsDialog = true }
-        )
+        // 5. Top Navigation Buttons (Song Picker & Settings)
+        val settingsButtonShape = if (themeSettings.isRounded) CircleShape else RoundedCornerShape(8.dp)
+        val settingsButtonGlassModifier = if (themeSettings.isGlass) {
+            Modifier.border(1.dp, Color.White.copy(alpha = 0.40f), settingsButtonShape)
+        } else Modifier
 
-        // 7. Action HUD Banner Overlay
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            IconButton(
+                onClick = { showSongPicker = true },
+                modifier = Modifier
+                    .clip(settingsButtonShape)
+                    .background(
+                        if (themeSettings.isGlass) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                        else Color.Transparent
+                    )
+                    .then(settingsButtonGlassModifier)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                    contentDescription = "Song Picker",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(
+                onClick = onOpenSettings,
+                modifier = Modifier
+                    .clip(settingsButtonShape)
+                    .background(
+                        if (themeSettings.isGlass) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                        else Color.Transparent
+                    )
+                    .then(settingsButtonGlassModifier)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        // 6. Action HUD Banner Overlay
         AnimatedVisibility(
             visible = actionHudText != null,
             enter = fadeIn(),
@@ -322,9 +360,19 @@ fun PlayerScreen(
             modifier = Modifier.align(Alignment.Center)
         ) {
             actionHudText?.let { text ->
+                val bannerShape = if (themeSettings.isRounded) RoundedCornerShape(24.dp) else RectangleShape
+                val bannerGlassModifier = if (themeSettings.isGlass) {
+                    Modifier.border(1.dp, Color.White.copy(alpha = 0.45f), bannerShape)
+                } else Modifier
+
                 Box(
                     modifier = Modifier
-                        .background(Color.Black.copy(alpha = 0.8f))
+                        .clip(bannerShape)
+                        .background(
+                            if (themeSettings.isGlass) Color.Black.copy(alpha = 0.45f)
+                            else Color.Black.copy(alpha = 0.80f)
+                        )
+                        .then(bannerGlassModifier)
                         .padding(horizontal = 32.dp, vertical = 20.dp)
                 ) {
                     Text(
@@ -369,116 +417,66 @@ fun PlayerScreen(
                 }
             )
         }
-
-        // 9. Repeat & Shuffle Options Dialogs
-        if (showRepeatOptionsDialog) {
-            RepeatOptionsDialog(
-                currentRepeatMode = repeatMode,
-                onSelectRepeatMode = { mode ->
-                    playbackManager.setRepeatMode(mode)
-                },
-                onDismiss = { showRepeatOptionsDialog = false }
-            )
-        }
-
-        if (showShuffleOptionsDialog) {
-            ShuffleOptionsDialog(
-                currentShuffleMode = shuffleMode,
-                onSelectShuffleMode = { mode ->
-                    playbackManager.setShuffleMode(mode)
-                },
-                onDismiss = { showShuffleOptionsDialog = false }
-            )
-        }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ScreenRegionIconsOverlay(
-    gestureBindings: Map<GestureTrigger, GestureBinding>,
-    playbackManager: PlaybackManager,
-    repeatMode: RepeatMode,
-    shuffleMode: ShuffleMode,
-    isPlaying: Boolean,
-    onOpenSongPicker: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenQuickStart: () -> Unit,
-    onOpenContacts: () -> Unit,
-    onShowRepeatOptions: () -> Unit,
-    onShowShuffleOptions: () -> Unit,
+fun SongLabelsLayout(
+    currentSong: Song?,
+    displaySettings: DisplaySettings,
     modifier: Modifier = Modifier
 ) {
-    val regionTriggers = listOf(
-        GestureTrigger.CORNER_TOP_LEFT to Alignment.TopStart,
-        GestureTrigger.CORNER_TOP_CENTER to Alignment.TopCenter,
-        GestureTrigger.CORNER_TOP_RIGHT to Alignment.TopEnd,
-        GestureTrigger.CORNER_BOTTOM_LEFT to Alignment.BottomStart,
-        GestureTrigger.CORNER_BOTTOM_CENTER to Alignment.BottomCenter,
-        GestureTrigger.CORNER_BOTTOM_RIGHT to Alignment.BottomEnd
-    )
+    val artistFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.artistFontKey)
+    val songFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.songFontKey)
+    val albumFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.albumFontKey)
 
-    Box(modifier = modifier.fillMaxSize()) {
-        for ((trigger, alignment) in regionTriggers) {
-            val binding = gestureBindings[trigger]
-            val action = binding?.action ?: GestureAction.UNASSIGNED
-            if (action != GestureAction.UNASSIGNED) {
-                val paddingModifier = when (alignment) {
-                    Alignment.TopStart -> Modifier.padding(top = 8.dp, start = 8.dp)
-                    Alignment.TopCenter -> Modifier.padding(top = 8.dp)
-                    Alignment.TopEnd -> Modifier.padding(top = 8.dp, end = 8.dp)
-                    Alignment.BottomStart -> Modifier.padding(bottom = 16.dp, start = 8.dp)
-                    Alignment.BottomCenter -> Modifier.padding(bottom = 16.dp)
-                    Alignment.BottomEnd -> Modifier.padding(bottom = 16.dp, end = 8.dp)
-                    else -> Modifier.padding(8.dp)
-                }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 48.dp)
+    ) {
+        // Artist Name Label
+        Text(
+            text = currentSong?.artist ?: "Traveling Tunes",
+            fontSize = displaySettings.artistFontSize.sp,
+            fontFamily = artistFont,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium,
+            textAlign = displaySettings.artistAlignment.toComposeAlignment(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
+        )
 
-                Box(
-                    modifier = Modifier
-                        .align(alignment)
-                        .then(paddingModifier)
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .combinedClickable(
-                            onClick = {
-                                handleGestureAction(
-                                    action = action,
-                                    playbackManager = playbackManager,
-                                    onOpenSongPicker = onOpenSongPicker,
-                                    onOpenSettings = onOpenSettings,
-                                    onOpenQuickStart = onOpenQuickStart,
-                                    onOpenContacts = onOpenContacts
-                                )
-                            },
-                            onLongClick = {
-                                if (action == GestureAction.TOGGLE_REPEAT) {
-                                    onShowRepeatOptions()
-                                } else if (action == GestureAction.TOGGLE_SHUFFLE) {
-                                    onShowShuffleOptions()
-                                } else {
-                                    handleGestureAction(
-                                        action = action,
-                                        playbackManager = playbackManager,
-                                        onOpenSongPicker = onOpenSongPicker,
-                                        onOpenSettings = onOpenSettings,
-                                        onOpenQuickStart = onOpenQuickStart,
-                                        onOpenContacts = onOpenContacts
-                                    )
-                                }
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ActionIcon(
-                        action = action,
-                        repeatMode = repeatMode,
-                        shuffleMode = shuffleMode,
-                        isPlaying = isPlaying,
-                        iconSize = 36.dp
-                    )
-                }
-            }
-        }
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Song Title Label
+        Text(
+            text = currentSong?.title ?: "Swipe or Tap Screen to Play",
+            fontSize = displaySettings.songFontSize.sp,
+            fontFamily = songFont,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            textAlign = displaySettings.songAlignment.toComposeAlignment(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Album Name Label
+        Text(
+            text = currentSong?.album ?: "No Song Selected",
+            fontSize = displaySettings.albumFontSize.sp,
+            fontFamily = albumFont,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Normal,
+            textAlign = displaySettings.albumAlignment.toComposeAlignment(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
+        )
     }
 }
 
@@ -491,13 +489,9 @@ fun PlayerAlbumArtBackground(
     if (!displaySettings.showAlbumArt || song == null) return
 
     val context = LocalContext.current
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-
     var bitmap by remember(song.id, song.artworkUri) {
         mutableStateOf(AlbumArtCache.instance.get(song.id))
     }
-    var dominantBgColor by remember(song.id) { mutableStateOf<Color?>(null) }
 
     LaunchedEffect(song.id, song.artworkUri, song.contentUri) {
         val cached = AlbumArtCache.instance.get(song.id)
@@ -515,61 +509,24 @@ fun PlayerAlbumArtBackground(
         }
     }
 
-    LaunchedEffect(bitmap) {
-        val imgBmp = bitmap
-        if (imgBmp != null) {
-            withContext(Dispatchers.Default) {
-                try {
-                    val palette = androidx.palette.graphics.Palette.from(imgBmp.asAndroidBitmap()).generate()
-                    val domSwatch = palette.dominantSwatch
-                    if (domSwatch != null) {
-                        dominantBgColor = Color(domSwatch.rgb)
-                    }
-                } catch (ignored: Exception) {}
-            }
-        }
-    }
-
     val imgBitmap = bitmap ?: return
 
     val contentScale = when (displaySettings.albumArtScale) {
         ArtScaleOption.FILL_SCREEN -> ContentScale.Crop
         ArtScaleOption.ASPECT_FIT -> ContentScale.Fit
-    }
-
-    val imageAlignment = if (isLandscape) {
-        when (displaySettings.artAlignmentLandscape) {
-            com.travelingtunes.app.core.model.ArtAlignmentLandscape.LEFT -> Alignment.CenterStart
-            com.travelingtunes.app.core.model.ArtAlignmentLandscape.MIDDLE -> Alignment.Center
-            com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> Alignment.CenterEnd
-        }
-    } else {
-        when (displaySettings.artAlignmentPortrait) {
-            com.travelingtunes.app.core.model.ArtAlignmentPortrait.TOP -> Alignment.TopCenter
-            com.travelingtunes.app.core.model.ArtAlignmentPortrait.MIDDLE -> Alignment.Center
-            com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> Alignment.BottomCenter
-        }
+        ArtScaleOption.ASPECT_FILL -> ContentScale.Crop
     }
 
     val layoutModifier = when (displaySettings.artDisplayLayout) {
-        ArtLayoutOption.OVERLAY, ArtLayoutOption.BACKGROUND -> Modifier.fillMaxSize()
-        ArtLayoutOption.SPLIT -> Modifier.fillMaxWidth().fillMaxHeight(0.5f)
+        ArtLayoutOption.OVERLAY -> Modifier.fillMaxSize()
+        ArtLayoutOption.DOCKED -> Modifier.fillMaxWidth().fillMaxHeight(0.5f)
     }
 
-    Box(
-        modifier = modifier
-            .then(layoutModifier)
-            .then(
-                if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT && dominantBgColor != null) {
-                    Modifier.background(dominantBgColor!!.copy(alpha = displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)))
-                } else Modifier
-            )
-    ) {
+    Box(modifier = modifier.then(layoutModifier)) {
         Image(
             bitmap = imgBitmap,
             contentDescription = "Album Art Background",
             contentScale = contentScale,
-            alignment = imageAlignment,
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(displaySettings.albumArtFade.coerceIn(0.1f, 1.0f))
@@ -581,6 +538,7 @@ fun PlayerAlbumArtBackground(
 fun VolumeHudOverlay(
     volumeRatio: Float,
     displaySettings: DisplaySettings,
+    themeSettings: ThemeSettings = ThemeSettings(),
     modifier: Modifier = Modifier
 ) {
     if (displaySettings.hudType == HudTypeOption.NONE) return
@@ -602,17 +560,27 @@ fun VolumeHudOverlay(
     val primaryColor = MaterialTheme.colorScheme.primary
     val lineThicknessDp = displaySettings.hudLineThickness.dp
 
+    val shape = if (themeSettings.isRounded) RoundedCornerShape(lineThicknessDp / 2f) else RectangleShape
+    val glassModifier = if (themeSettings.isGlass) {
+        Modifier.border(1.dp, Color.White.copy(alpha = 0.45f), shape)
+    } else Modifier
+
     when (displaySettings.hudType) {
         HudTypeOption.EDGE_HUD -> {
             // Geometric Vertical Strip along right edge
             BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-                val filledHeight = maxHeight * volumeRatio.coerceIn(0.01f, 1f)
+                val filledHeight = this.maxHeight * volumeRatio.coerceIn(0.01f, 1f)
                 Box(
                     modifier = Modifier
                         .width(lineThicknessDp)
                         .height(filledHeight)
                         .align(Alignment.BottomEnd)
-                        .background(primaryColor.copy(alpha = 0.50f))
+                        .clip(shape)
+                        .background(
+                            if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
+                            else primaryColor.copy(alpha = 0.50f)
+                        )
+                        .then(glassModifier)
                 )
             }
         }
@@ -623,19 +591,37 @@ fun VolumeHudOverlay(
                 Box(
                     modifier = Modifier
                         .offset(y = topOffsetDp)
+                        .then(if (themeSettings.isRounded) Modifier.padding(horizontal = 12.dp) else Modifier)
                         .fillMaxWidth()
                         .height(lineThicknessDp)
-                        .background(primaryColor.copy(alpha = 0.70f))
+                        .clip(shape)
+                        .background(
+                            if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
+                            else primaryColor.copy(alpha = 0.70f)
+                        )
+                        .then(glassModifier)
                 )
             }
         }
         HudTypeOption.BAR_VOLUME -> {
             // Full width rectangular block filling from bottom to current volume level
+            val barShape = if (themeSettings.isRounded) RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) else RectangleShape
+            val barGlassModifier = if (themeSettings.isGlass) {
+                Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), barShape)
+            } else Modifier
+            val barPadding = if (themeSettings.isRounded) Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp) else Modifier
+
             Box(
                 modifier = modifier
                     .fillMaxWidth()
                     .fillMaxHeight(volumeRatio.coerceIn(0.01f, 1f))
-                    .background(primaryColor.copy(alpha = 0.20f))
+                    .then(barPadding)
+                    .clip(barShape)
+                    .background(
+                        if (themeSettings.isGlass) primaryColor.copy(alpha = 0.25f)
+                        else primaryColor.copy(alpha = 0.20f)
+                    )
+                    .then(barGlassModifier)
             )
         }
         HudTypeOption.NONE -> {}
@@ -647,6 +633,7 @@ fun ProgressHudOverlay(
     currentPositionMs: Long,
     durationMs: Long,
     displaySettings: DisplaySettings,
+    themeSettings: ThemeSettings = ThemeSettings(),
     modifier: Modifier = Modifier
 ) {
     if (displaySettings.scrubHudType == ScrubHudTypeOption.NONE || durationMs <= 0L) return
@@ -655,20 +642,36 @@ fun ProgressHudOverlay(
     val primaryColor = MaterialTheme.colorScheme.primary
     val lineThicknessDp = displaySettings.hudLineThickness.dp
 
+    val shape = if (themeSettings.isRounded) RoundedCornerShape(lineThicknessDp / 2f) else RectangleShape
+    val glassModifier = if (themeSettings.isGlass) {
+        Modifier.border(1.dp, Color.White.copy(alpha = 0.45f), shape)
+    } else Modifier
+    val roundedPadding = if (themeSettings.isRounded) Modifier.padding(horizontal = 12.dp, vertical = 8.dp) else Modifier
+
     when (displaySettings.scrubHudType) {
         ScrubHudTypeOption.EDGE_HUD -> {
             // Geometric Edge/Bottom Progress Bar
             Box(
                 modifier = modifier
+                    .then(roundedPadding)
                     .fillMaxWidth()
                     .height(lineThicknessDp)
-                    .background(primaryColor.copy(alpha = 0.15f))
+                    .clip(shape)
+                    .background(
+                        if (themeSettings.isGlass) primaryColor.copy(alpha = 0.15f)
+                        else primaryColor.copy(alpha = 0.15f)
+                    )
+                    .then(glassModifier)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth(progressRatio)
-                        .background(primaryColor.copy(alpha = 0.85f))
+                        .clip(shape)
+                        .background(
+                            if (themeSettings.isGlass) primaryColor.copy(alpha = 0.50f)
+                            else primaryColor.copy(alpha = 0.85f)
+                        )
                 )
             }
         }
@@ -679,9 +682,15 @@ fun ProgressHudOverlay(
                 Box(
                     modifier = Modifier
                         .offset(x = leftOffsetDp)
+                        .then(if (themeSettings.isRounded) Modifier.padding(vertical = 12.dp) else Modifier)
                         .fillMaxHeight()
                         .width(lineThicknessDp)
-                        .background(primaryColor.copy(alpha = 0.85f))
+                        .clip(shape)
+                        .background(
+                            if (themeSettings.isGlass) primaryColor.copy(alpha = 0.50f)
+                            else primaryColor.copy(alpha = 0.85f)
+                        )
+                        .then(glassModifier)
                 )
             }
         }
@@ -725,8 +734,6 @@ private fun handleGestureAction(
         GestureAction.SONG_PICKER -> onOpenSongPicker()
         GestureAction.MENU -> onOpenSettings()
         GestureAction.SHOW_QUICK_START -> onOpenQuickStart()
-        GestureAction.PLAY_CURRENT_ALBUM -> playbackManager.playCurrentAlbum()
-        GestureAction.PLAY_CURRENT_ARTIST -> playbackManager.playCurrentArtist()
         GestureAction.UNASSIGNED -> {}
         else -> playbackManager.showHudAction(action.displayName)
     }
@@ -738,193 +745,6 @@ private fun TextAlignmentOption.toComposeAlignment(): TextAlign {
         TextAlignmentOption.CENTER -> TextAlign.Center
         TextAlignmentOption.RIGHT -> TextAlign.Right
     }
-}
-
-@Composable
-fun SongLabelsLayout(
-    artist: String,
-    title: String,
-    album: String,
-    displaySettings: DisplaySettings,
-    modifier: Modifier = Modifier
-) {
-    val minFontSize = displaySettings.minimumFontSize.coerceAtLeast(12f)
-    var scaleFactor by remember(artist, title, album, displaySettings) {
-        mutableStateOf(1.0f)
-    }
-
-    val artistFontSize = (displaySettings.artistFontSize * scaleFactor).coerceAtLeast(minFontSize).sp
-    val songFontSize = (displaySettings.songFontSize * scaleFactor).coerceAtLeast(minFontSize).sp
-    val albumFontSize = (displaySettings.albumFontSize * scaleFactor).coerceAtLeast(minFontSize).sp
-
-    val artistLineHeight = (artistFontSize.value * 1.25f).sp
-    val songLineHeight = (songFontSize.value * 1.25f).sp
-    val albumLineHeight = (albumFontSize.value * 1.25f).sp
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 48.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Artist Name Label
-        Text(
-            text = artist,
-            fontSize = artistFontSize,
-            lineHeight = artistLineHeight,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Medium,
-            textAlign = displaySettings.artistAlignment.toComposeAlignment(),
-            onTextLayout = { result ->
-                if (result.didOverflowHeight && scaleFactor > (minFontSize / displaySettings.artistFontSize.coerceAtLeast(1f))) {
-                    scaleFactor = (scaleFactor * 0.9f).coerceAtLeast(minFontSize / displaySettings.artistFontSize.coerceAtLeast(1f))
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Song Title Label
-        Text(
-            text = title,
-            fontSize = songFontSize,
-            lineHeight = songLineHeight,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-            textAlign = displaySettings.songAlignment.toComposeAlignment(),
-            onTextLayout = { result ->
-                if (result.didOverflowHeight && scaleFactor > (minFontSize / displaySettings.songFontSize.coerceAtLeast(1f))) {
-                    scaleFactor = (scaleFactor * 0.9f).coerceAtLeast(minFontSize / displaySettings.songFontSize.coerceAtLeast(1f))
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Album Name Label
-        Text(
-            text = album,
-            fontSize = albumFontSize,
-            lineHeight = albumLineHeight,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Normal,
-            textAlign = displaySettings.albumAlignment.toComposeAlignment(),
-            onTextLayout = { result ->
-                if (result.didOverflowHeight && scaleFactor > (minFontSize / displaySettings.albumFontSize.coerceAtLeast(1f))) {
-                    scaleFactor = (scaleFactor * 0.9f).coerceAtLeast(minFontSize / displaySettings.albumFontSize.coerceAtLeast(1f))
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
-        )
-    }
-}
-
-@Composable
-fun RepeatOptionsDialog(
-    currentRepeatMode: RepeatMode,
-    onSelectRepeatMode: (RepeatMode) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Repeat Options", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                RepeatMode.entries.forEach { mode ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onSelectRepeatMode(mode)
-                                onDismiss()
-                            }
-                            .padding(vertical = 12.dp, horizontal = 8.dp)
-                    ) {
-                        ActionIcon(
-                            action = GestureAction.TOGGLE_REPEAT,
-                            repeatMode = mode,
-                            iconSize = 28.dp,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = mode.displayName,
-                            fontWeight = if (mode == currentRepeatMode) FontWeight.Bold else FontWeight.Normal,
-                            color = if (mode == currentRepeatMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (mode == currentRepeatMode) {
-                            Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
-}
-
-@Composable
-fun ShuffleOptionsDialog(
-    currentShuffleMode: ShuffleMode,
-    onSelectShuffleMode: (ShuffleMode) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Shuffle Options", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                ShuffleMode.entries.forEach { mode ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onSelectShuffleMode(mode)
-                                onDismiss()
-                            }
-                            .padding(vertical = 12.dp, horizontal = 8.dp)
-                    ) {
-                        ActionIcon(
-                            action = GestureAction.TOGGLE_SHUFFLE,
-                            shuffleMode = mode,
-                            iconSize = 28.dp,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = mode.displayName,
-                            fontWeight = if (mode == currentShuffleMode) FontWeight.Bold else FontWeight.Normal,
-                            color = if (mode == currentShuffleMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (mode == currentShuffleMode) {
-                            Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
 }
 
 suspend fun loadSongArtwork(context: android.content.Context, song: Song): android.graphics.Bitmap? = withContext(Dispatchers.IO) {

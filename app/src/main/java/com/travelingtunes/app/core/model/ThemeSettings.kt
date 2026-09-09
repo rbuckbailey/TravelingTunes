@@ -40,5 +40,7 @@ data class ThemeSettings(
     val dimAtNight: Boolean = true,
     val invertAtNight: Boolean = false,
     val sunRiseHour: Int = 6,
-    val sunSetHour: Int = 19
+    val sunSetHour: Int = 19,
+    val isRounded: Boolean = false,
+    val isGlass: Boolean = false
 )

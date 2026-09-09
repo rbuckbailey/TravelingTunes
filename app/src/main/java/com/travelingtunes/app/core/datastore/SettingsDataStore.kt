@@ -10,8 +10,6 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.travelingtunes.app.core.model.ArtAlignmentLandscape
-import com.travelingtunes.app.core.model.ArtAlignmentPortrait
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
 import com.travelingtunes.app.core.model.DisplaySettings
@@ -19,9 +17,7 @@ import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
-import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
-import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.TextAlignmentOption
 import com.travelingtunes.app.core.model.ThemeSettings
 import kotlinx.coroutines.flow.Flow
@@ -35,9 +31,7 @@ data class SavedPlaybackState(
     val activeSongIndex: Int = 0,
     val positionMs: Long = 0L,
     val isShuffle: Boolean = false,
-    val isRepeat: Boolean = false,
-    val repeatMode: RepeatMode = RepeatMode.OFF,
-    val shuffleMode: ShuffleMode = ShuffleMode.OFF
+    val isRepeat: Boolean = false
 )
 
 class SettingsDataStore(private val context: Context) {
@@ -78,8 +72,6 @@ class SettingsDataStore(private val context: Context) {
         val KEY_SHOW_ALBUM_ART = booleanPreferencesKey("showAlbumArt")
         val KEY_ALBUM_ART_COLORS = booleanPreferencesKey("albumArtColors")
         val KEY_ALBUM_ART_SCALE = intPreferencesKey("albumArtScale")
-        val KEY_ART_ALIGNMENT_PORTRAIT = stringPreferencesKey("artAlignmentPortrait")
-        val KEY_ART_ALIGNMENT_LANDSCAPE = stringPreferencesKey("artAlignmentLandscape")
         val KEY_ALBUM_ART_FADE = floatPreferencesKey("albumArtFade")
         val KEY_ART_DISPLAY_LAYOUT = intPreferencesKey("artDisplayLayout")
         val KEY_MAP_ON = intPreferencesKey("mapOn")
@@ -89,6 +81,9 @@ class SettingsDataStore(private val context: Context) {
         val KEY_SHOW_STATUS_BAR = booleanPreferencesKey("showStatusBar")
         val KEY_SHOW_ACTIONS = booleanPreferencesKey("showActions")
         val KEY_HUD_LINE_THICKNESS = floatPreferencesKey("hudLineThickness")
+        val KEY_ARTIST_FONT_KEY = stringPreferencesKey("artistFontKey")
+        val KEY_SONG_FONT_KEY = stringPreferencesKey("songFontKey")
+        val KEY_ALBUM_FONT_KEY = stringPreferencesKey("albumFontKey")
 
         // Theme
         val KEY_CURRENT_THEME = stringPreferencesKey("currentTheme")
@@ -102,16 +97,16 @@ class SettingsDataStore(private val context: Context) {
         val KEY_INVERT_AT_NIGHT = booleanPreferencesKey("invertAtNight")
         val KEY_SUNRISE_HOUR = intPreferencesKey("sunRiseHour")
         val KEY_SUNSET_HOUR = intPreferencesKey("sunSetHour")
+        val KEY_THEME_ROUNDED = booleanPreferencesKey("themeRounded")
+        val KEY_THEME_GLASS = booleanPreferencesKey("themeGlass")
 
-        // Playback State Persistence
+        // Playback Persistence
         val KEY_SAVED_QUEUE_IDS = stringPreferencesKey("savedQueueIds")
         val KEY_ACTIVE_SONG_ID = longPreferencesKey("activeSongId")
         val KEY_ACTIVE_SONG_INDEX = intPreferencesKey("activeSongIndex")
         val KEY_PLAYBACK_POSITION_MS = longPreferencesKey("playbackPositionMs")
         val KEY_SAVED_SHUFFLE = booleanPreferencesKey("savedShuffle")
         val KEY_SAVED_REPEAT = booleanPreferencesKey("savedRepeat")
-        val KEY_SAVED_REPEAT_MODE = stringPreferencesKey("savedRepeatMode")
-        val KEY_SAVED_SHUFFLE_MODE = stringPreferencesKey("savedShuffleMode")
     }
 
     val displaySettingsFlow: Flow<DisplaySettings> = context.dataStore.data.map { prefs ->
@@ -135,12 +130,6 @@ class SettingsDataStore(private val context: Context) {
             showAlbumArt = prefs[KEY_SHOW_ALBUM_ART] ?: true,
             albumArtColors = prefs[KEY_ALBUM_ART_COLORS] ?: true,
             albumArtScale = ArtScaleOption.entries.getOrElse(prefs[KEY_ALBUM_ART_SCALE] ?: 0) { ArtScaleOption.FILL_SCREEN },
-            artAlignmentPortrait = ArtAlignmentPortrait.entries.find {
-                it.name.equals(prefs[KEY_ART_ALIGNMENT_PORTRAIT], true)
-            } ?: ArtAlignmentPortrait.MIDDLE,
-            artAlignmentLandscape = ArtAlignmentLandscape.entries.find {
-                it.name.equals(prefs[KEY_ART_ALIGNMENT_LANDSCAPE], true)
-            } ?: ArtAlignmentLandscape.MIDDLE,
             albumArtFade = prefs[KEY_ALBUM_ART_FADE] ?: 0.35f,
             artDisplayLayout = ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY },
             mapOn = prefs[KEY_MAP_ON] ?: 1,
@@ -150,7 +139,9 @@ class SettingsDataStore(private val context: Context) {
             showStatusBar = prefs[KEY_SHOW_STATUS_BAR] ?: false,
             showActions = prefs[KEY_SHOW_ACTIONS] ?: true,
             hudLineThickness = prefs[KEY_HUD_LINE_THICKNESS] ?: 16f,
-            disableAutolock = prefs[KEY_DISABLE_AUTOLOCK] ?: true
+            artistFontKey = prefs[KEY_ARTIST_FONT_KEY] ?: "DEFAULT",
+            songFontKey = prefs[KEY_SONG_FONT_KEY] ?: "DEFAULT",
+            albumFontKey = prefs[KEY_ALBUM_FONT_KEY] ?: "DEFAULT"
         )
     }
 
@@ -166,7 +157,9 @@ class SettingsDataStore(private val context: Context) {
             dimAtNight = prefs[KEY_DIM_AT_NIGHT] ?: true,
             invertAtNight = prefs[KEY_INVERT_AT_NIGHT] ?: false,
             sunRiseHour = prefs[KEY_SUNRISE_HOUR] ?: 6,
-            sunSetHour = prefs[KEY_SUNSET_HOUR] ?: 19
+            sunSetHour = prefs[KEY_SUNSET_HOUR] ?: 19,
+            isRounded = prefs[KEY_THEME_ROUNDED] ?: false,
+            isGlass = prefs[KEY_THEME_GLASS] ?: false
         )
     }
 
@@ -198,6 +191,72 @@ class SettingsDataStore(private val context: Context) {
         prefs[KEY_GPS_SENSITIVITY] ?: 0.5f
     }
 
+    val musicFolderUriFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_MUSIC_FOLDER_URI]
+    }
+
+    val musicFolderNameFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_MUSIC_FOLDER_NAME]
+    }
+
+    val lastScanTimeFlow: Flow<Long> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LAST_SCAN_TIME] ?: 0L
+    }
+
+    val firstRunPromptedFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_FIRST_RUN_PROMPTED] ?: false
+    }
+
+    val savedPlaybackStateFlow: Flow<SavedPlaybackState> = context.dataStore.data.map { prefs ->
+        val queueStr = prefs[KEY_SAVED_QUEUE_IDS] ?: ""
+        val queueIds = queueStr.split(",").mapNotNull { it.trim().toLongOrNull() }
+        SavedPlaybackState(
+            queueIds = queueIds,
+            activeSongId = prefs[KEY_ACTIVE_SONG_ID] ?: -1L,
+            activeSongIndex = prefs[KEY_ACTIVE_SONG_INDEX] ?: 0,
+            positionMs = prefs[KEY_PLAYBACK_POSITION_MS] ?: 0L,
+            isShuffle = prefs[KEY_SAVED_SHUFFLE] ?: false,
+            isRepeat = prefs[KEY_SAVED_REPEAT] ?: false
+        )
+    }
+
+    suspend fun savePlaybackState(
+        queueIds: List<Long>,
+        activeSongId: Long,
+        activeSongIndex: Int,
+        positionMs: Long,
+        isShuffle: Boolean,
+        isRepeat: Boolean
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SAVED_QUEUE_IDS] = queueIds.joinToString(",")
+            prefs[KEY_ACTIVE_SONG_ID] = activeSongId
+            prefs[KEY_ACTIVE_SONG_INDEX] = activeSongIndex
+            prefs[KEY_PLAYBACK_POSITION_MS] = positionMs
+            prefs[KEY_SAVED_SHUFFLE] = isShuffle
+            prefs[KEY_SAVED_REPEAT] = isRepeat
+        }
+    }
+
+    suspend fun setMusicFolder(uri: String?, name: String?) {
+        context.dataStore.edit { prefs ->
+            if (uri != null) prefs[KEY_MUSIC_FOLDER_URI] = uri else prefs.remove(KEY_MUSIC_FOLDER_URI)
+            if (name != null) prefs[KEY_MUSIC_FOLDER_NAME] = name else prefs.remove(KEY_MUSIC_FOLDER_NAME)
+        }
+    }
+
+    suspend fun setLastScanTime(time: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_LAST_SCAN_TIME] = time
+        }
+    }
+
+    suspend fun setFirstRunPrompted(prompted: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_FIRST_RUN_PROMPTED] = prompted
+        }
+    }
+
     suspend fun updateGestureBinding(trigger: GestureTrigger, action: GestureAction, isContinuous: Boolean = false) {
         context.dataStore.edit { prefs ->
             prefs[stringPreferencesKey(trigger.key)] = action.name
@@ -220,8 +279,6 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_SHOW_ALBUM_ART] = update.showAlbumArt
             prefs[KEY_ALBUM_ART_COLORS] = update.albumArtColors
             prefs[KEY_ALBUM_ART_SCALE] = update.albumArtScale.ordinal
-            prefs[KEY_ART_ALIGNMENT_PORTRAIT] = update.artAlignmentPortrait.name
-            prefs[KEY_ART_ALIGNMENT_LANDSCAPE] = update.artAlignmentLandscape.name
             prefs[KEY_ALBUM_ART_FADE] = update.albumArtFade
             prefs[KEY_ART_DISPLAY_LAYOUT] = update.artDisplayLayout.ordinal
             prefs[KEY_MAP_ON] = update.mapOn
@@ -231,7 +288,9 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_SHOW_STATUS_BAR] = update.showStatusBar
             prefs[KEY_SHOW_ACTIONS] = update.showActions
             prefs[KEY_HUD_LINE_THICKNESS] = update.hudLineThickness
-            prefs[KEY_DISABLE_AUTOLOCK] = update.disableAutolock
+            prefs[KEY_ARTIST_FONT_KEY] = update.artistFontKey
+            prefs[KEY_SONG_FONT_KEY] = update.songFontKey
+            prefs[KEY_ALBUM_FONT_KEY] = update.albumFontKey
         }
     }
 
@@ -248,6 +307,8 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_INVERT_AT_NIGHT] = update.invertAtNight
             prefs[KEY_SUNRISE_HOUR] = update.sunRiseHour
             prefs[KEY_SUNSET_HOUR] = update.sunSetHour
+            prefs[KEY_THEME_ROUNDED] = update.isRounded
+            prefs[KEY_THEME_GLASS] = update.isGlass
         }
     }
 
@@ -257,95 +318,6 @@ class SettingsDataStore(private val context: Context) {
                 prefs[stringPreferencesKey(trigger.key)] = trigger.defaultActionKey
                 prefs[booleanPreferencesKey("${trigger.key}Continuous")] = trigger.isContinuousDefault
             }
-        }
-    }
-
-    val musicFolderUriFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[KEY_MUSIC_FOLDER_URI]
-    }
-
-    val musicFolderNameFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[KEY_MUSIC_FOLDER_NAME]
-    }
-
-    val lastScanTimeFlow: Flow<Long> = context.dataStore.data.map { prefs ->
-        prefs[KEY_LAST_SCAN_TIME] ?: 0L
-    }
-
-    val firstRunPromptedFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[KEY_FIRST_RUN_PROMPTED] ?: false
-    }
-
-    val savedPlaybackStateFlow: Flow<SavedPlaybackState> = context.dataStore.data.map { prefs ->
-        val queueStr = prefs[KEY_SAVED_QUEUE_IDS] ?: ""
-        val queueIds = queueStr.split(",").mapNotNull { it.trim().toLongOrNull() }
-        val isShuffle = prefs[KEY_SAVED_SHUFFLE] ?: false
-        val isRepeat = prefs[KEY_SAVED_REPEAT] ?: false
-
-        val repeatModeName = prefs[KEY_SAVED_REPEAT_MODE]
-        val repeatMode = if (repeatModeName != null) {
-            RepeatMode.entries.find { it.name.equals(repeatModeName, true) } ?: RepeatMode.OFF
-        } else {
-            if (isRepeat) RepeatMode.SONG else RepeatMode.OFF
-        }
-
-        val shuffleModeName = prefs[KEY_SAVED_SHUFFLE_MODE]
-        val shuffleMode = if (shuffleModeName != null) {
-            ShuffleMode.entries.find { it.name.equals(shuffleModeName, true) } ?: ShuffleMode.OFF
-        } else {
-            if (isShuffle) ShuffleMode.ALL else ShuffleMode.OFF
-        }
-
-        SavedPlaybackState(
-            queueIds = queueIds,
-            activeSongId = prefs[KEY_ACTIVE_SONG_ID] ?: -1L,
-            activeSongIndex = prefs[KEY_ACTIVE_SONG_INDEX] ?: 0,
-            positionMs = prefs[KEY_PLAYBACK_POSITION_MS] ?: 0L,
-            isShuffle = isShuffle,
-            isRepeat = isRepeat,
-            repeatMode = repeatMode,
-            shuffleMode = shuffleMode
-        )
-    }
-
-    suspend fun savePlaybackState(
-        queueIds: List<Long>,
-        activeSongId: Long,
-        activeSongIndex: Int,
-        positionMs: Long,
-        isShuffle: Boolean,
-        isRepeat: Boolean,
-        repeatMode: RepeatMode = if (isRepeat) RepeatMode.SONG else RepeatMode.OFF,
-        shuffleMode: ShuffleMode = if (isShuffle) ShuffleMode.ALL else ShuffleMode.OFF
-    ) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_SAVED_QUEUE_IDS] = queueIds.joinToString(",")
-            prefs[KEY_ACTIVE_SONG_ID] = activeSongId
-            prefs[KEY_ACTIVE_SONG_INDEX] = activeSongIndex
-            prefs[KEY_PLAYBACK_POSITION_MS] = positionMs
-            prefs[KEY_SAVED_SHUFFLE] = isShuffle
-            prefs[KEY_SAVED_REPEAT] = isRepeat
-            prefs[KEY_SAVED_REPEAT_MODE] = repeatMode.name
-            prefs[KEY_SAVED_SHUFFLE_MODE] = shuffleMode.name
-        }
-    }
-
-    suspend fun setMusicFolder(uri: String?, name: String?) {
-        context.dataStore.edit { prefs ->
-            if (uri != null) prefs[KEY_MUSIC_FOLDER_URI] = uri else prefs.remove(KEY_MUSIC_FOLDER_URI)
-            if (name != null) prefs[KEY_MUSIC_FOLDER_NAME] = name else prefs.remove(KEY_MUSIC_FOLDER_NAME)
-        }
-    }
-
-    suspend fun setLastScanTime(time: Long) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_LAST_SCAN_TIME] = time
-        }
-    }
-
-    suspend fun setFirstRunPrompted(prompted: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_FIRST_RUN_PROMPTED] = prompted
         }
     }
 

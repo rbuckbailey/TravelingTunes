@@ -8,25 +8,19 @@ enum class TextAlignmentOption(val displayName: String) {
 
 enum class ArtScaleOption(val displayName: String) {
     FILL_SCREEN("Fill Screen"),
-    ASPECT_FIT("Fit Screen")
-}
-
-enum class ArtAlignmentPortrait(val displayName: String) {
-    TOP("Top"),
-    MIDDLE("Middle"),
-    BOTTOM("Bottom")
-}
-
-enum class ArtAlignmentLandscape(val displayName: String) {
-    LEFT("Left"),
-    MIDDLE("Middle"),
-    RIGHT("Right")
+    ASPECT_FIT("Aspect Fit"),
+    ASPECT_FILL("Aspect Fill")
 }
 
 enum class ArtLayoutOption(val displayName: String) {
-    OVERLAY("Overlay"),
-    BACKGROUND("Background"),
-    SPLIT("Split")
+    OVERLAY("Behind Titles"),
+    DOCKED("Docked (Displace Titles)");
+
+    companion object {
+        fun fromOrdinal(ordinal: Int): ArtLayoutOption {
+            return entries.getOrNull(ordinal) ?: OVERLAY
+        }
+    }
 }
 
 enum class HudTypeOption(val value: Int, val displayName: String) {
@@ -57,8 +51,6 @@ data class DisplaySettings(
     val showAlbumArt: Boolean = true,
     val albumArtColors: Boolean = true,
     val albumArtScale: ArtScaleOption = ArtScaleOption.FILL_SCREEN,
-    val artAlignmentPortrait: ArtAlignmentPortrait = ArtAlignmentPortrait.MIDDLE,
-    val artAlignmentLandscape: ArtAlignmentLandscape = ArtAlignmentLandscape.MIDDLE,
     val albumArtFade: Float = 0.35f,
     val artDisplayLayout: ArtLayoutOption = ArtLayoutOption.OVERLAY,
     val mapOn: Int = 1, // 0 = off, 1 = show map when navigating, 2 = show map always
@@ -68,5 +60,7 @@ data class DisplaySettings(
     val showStatusBar: Boolean = false,
     val showActions: Boolean = true,
     val hudLineThickness: Float = 16f,
-    val disableAutolock: Boolean = true
+    val artistFontKey: String = "DEFAULT",
+    val songFontKey: String = "DEFAULT",
+    val albumFontKey: String = "DEFAULT"
 )
