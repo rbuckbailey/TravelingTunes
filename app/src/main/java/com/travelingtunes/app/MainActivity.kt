@@ -430,6 +430,7 @@ fun TravelingTunesNavHost(
                 musicDatabase = musicDatabase,
                 albumArtDownloader = musicScanner.albumArtDownloader,
                 playbackManager = playbackManager,
+                musicScanner = musicScanner,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -39,6 +40,83 @@ class MusicScanner(
 
     suspend fun downloadMissingArtwork(): Int = albumArtDownloader.downloadMissingArtwork()
     fun cancelDownloadArt() = albumArtDownloader.cancelDownload()
+
+    private val _isEmbeddingArt = MutableStateFlow(false)
+    val isEmbeddingArt: StateFlow<Boolean> = _isEmbeddingArt.asStateFlow()
+
+    private val _embeddingStatusMessage = MutableStateFlow<String?>(null)
+    val embeddingStatusMessage: StateFlow<String?> = _embeddingStatusMessage.asStateFlow()
+
+    private val _embeddingProgressCurrent = MutableStateFlow(0)
+    val embeddingProgressCurrent: StateFlow<Int> = _embeddingProgressCurrent.asStateFlow()
+
+    private val _embeddingProgressTotal = MutableStateFlow(0)
+    val embeddingProgressTotal: StateFlow<Int> = _embeddingProgressTotal.asStateFlow()
+
+    private val _embeddingResultSummary = MutableStateFlow<String?>(null)
+    val embeddingResultSummary: StateFlow<String?> = _embeddingResultSummary.asStateFlow()
+
+    @Volatile
+    private var isEmbeddingCancelled = false
+    private var activeEmbeddingJob: kotlinx.coroutines.Job? = null
+
+    fun cancelEmbedding() {
+        isEmbeddingCancelled = true
+        activeEmbeddingJob?.cancel()
+        _isEmbeddingArt.value = false
+        _embeddingStatusMessage.value = "ID3 artwork embedding cancelled"
+    }
+
+    suspend fun embedArtworkInBackground(
+        targets: List<Pair<String, String>>,
+        artworkUris: Map<Pair<String, String>, Uri?> = emptyMap(),
+        playbackManager: PlaybackManager? = null
+    ): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        if (_isEmbeddingArt.value || targets.isEmpty()) return@withContext Pair(0, 0)
+        _isEmbeddingArt.value = true
+        isEmbeddingCancelled = false
+        activeEmbeddingJob = coroutineContext[kotlinx.coroutines.Job]
+
+        _embeddingProgressCurrent.value = 0
+        _embeddingProgressTotal.value = targets.size
+        _embeddingStatusMessage.value = "Starting ID3 artwork embedding..."
+        _embeddingResultSummary.value = null
+
+        var totalEmbedded = 0
+        var totalFailed = 0
+
+        for ((index, pair) in targets.withIndex()) {
+            if (isEmbeddingCancelled || !coroutineContext.isActive) {
+                _embeddingStatusMessage.value = "Embedding stopped ($totalEmbedded songs updated)"
+                break
+            }
+
+            val (album, artist) = pair
+            _embeddingProgressCurrent.value = index + 1
+            _embeddingStatusMessage.value = "Embedding artwork: \"$album\" (${index + 1}/${targets.size})"
+
+            val songs = musicDatabase.getSongsByAlbumAndArtist(album, artist)
+            val uri = artworkUris[pair] ?: songs.firstOrNull()?.artworkUri
+            if (uri != null) {
+                val (succ, fail) = Id3ArtworkEmbedder.embedArtworkIntoAlbum(context, songs, uri)
+                totalEmbedded += succ
+                totalFailed += fail
+            } else {
+                totalFailed += songs.size
+            }
+        }
+
+        val summary = "Embedded artwork into $totalEmbedded tracks across ${targets.size} albums ($totalFailed failed)."
+        _embeddingResultSummary.value = summary
+        _embeddingStatusMessage.value = summary
+        _isEmbeddingArt.value = false
+        playbackManager?.refreshCurrentSongArtwork()
+        Pair(totalEmbedded, totalFailed)
+    }
+
+    fun clearEmbeddingResultSummary() {
+        _embeddingResultSummary.value = null
+    }
 
     private val supportedExtensions = setOf("mp3", "m4a", "flac", "wav", "aac", "ogg", "opus", "wma")
 

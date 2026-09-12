@@ -403,51 +403,69 @@ class AlbumArtDownloader(
 
     enum class SearchMode { BOTH, ALBUM_ONLY, ARTIST_ONLY }
 
+    enum class SearchEngine(val displayName: String) {
+        DEEZER("Deezer"),
+        ITUNES("iTunes"),
+        COVER_ART_ARCHIVE("Cover Art Archive"),
+        WEB_SEARCH("Web Search")
+    }
+
     private suspend fun fetchCandidatesInParallel(
         cleanArtist: String,
         cleanAlbum: String,
         useQuotes: Boolean,
-        searchMode: SearchMode
+        searchMode: SearchMode,
+        enabledEngines: Set<SearchEngine> = SearchEngine.entries.toSet()
     ): List<ArtworkCandidate> = coroutineScope {
-        val deezerDeferred = async(Dispatchers.IO) {
-            try {
-                when (searchMode) {
-                    SearchMode.ALBUM_ONLY -> queryDeezerAlbumArt("", cleanAlbum, useQuotes)
-                    SearchMode.ARTIST_ONLY -> queryDeezerAlbumArt(cleanArtist, "", useQuotes)
-                    SearchMode.BOTH -> queryDeezerAlbumArt(cleanArtist, cleanAlbum, useQuotes)
-                }
-            } catch (e: Exception) { emptyList() }
+        val tasks = mutableListOf<kotlinx.coroutines.Deferred<List<ArtworkCandidate>>>()
+
+        if (enabledEngines.contains(SearchEngine.DEEZER)) {
+            tasks.add(async(Dispatchers.IO) {
+                try {
+                    when (searchMode) {
+                        SearchMode.ALBUM_ONLY -> queryDeezerAlbumArt("", cleanAlbum, useQuotes)
+                        SearchMode.ARTIST_ONLY -> queryDeezerAlbumArt(cleanArtist, "", useQuotes)
+                        SearchMode.BOTH -> queryDeezerAlbumArt(cleanArtist, cleanAlbum, useQuotes)
+                    }
+                } catch (e: Exception) { emptyList() }
+            })
         }
 
-        val itunesDeferred = async(Dispatchers.IO) {
-            try {
-                when (searchMode) {
-                    SearchMode.ALBUM_ONLY -> queryItunesAlbumArt("", cleanAlbum, useQuotes, entityFilter = true)
-                    SearchMode.ARTIST_ONLY -> queryItunesAlbumArt(cleanArtist, "", useQuotes, entityFilter = false)
-                    SearchMode.BOTH -> queryItunesAlbumArt(cleanArtist, cleanAlbum, useQuotes, entityFilter = true)
-                }
-            } catch (e: Exception) { emptyList() }
+        if (enabledEngines.contains(SearchEngine.ITUNES)) {
+            tasks.add(async(Dispatchers.IO) {
+                try {
+                    when (searchMode) {
+                        SearchMode.ALBUM_ONLY -> queryItunesAlbumArt("", cleanAlbum, useQuotes, entityFilter = true)
+                        SearchMode.ARTIST_ONLY -> queryItunesAlbumArt(cleanArtist, "", useQuotes, entityFilter = false)
+                        SearchMode.BOTH -> queryItunesAlbumArt(cleanArtist, cleanAlbum, useQuotes, entityFilter = true)
+                    }
+                } catch (e: Exception) { emptyList() }
+            })
         }
 
-        val caaDeferred = async(Dispatchers.IO) {
-            try {
-                if (searchMode == SearchMode.BOTH && cleanArtist.isNotBlank()) {
-                    queryCoverArtArchive(cleanArtist, cleanAlbum)
-                } else emptyList()
-            } catch (e: Exception) { emptyList() }
+        if (enabledEngines.contains(SearchEngine.COVER_ART_ARCHIVE)) {
+            tasks.add(async(Dispatchers.IO) {
+                try {
+                    if (searchMode == SearchMode.BOTH && cleanArtist.isNotBlank()) {
+                        queryCoverArtArchive(cleanArtist, cleanAlbum)
+                    } else emptyList()
+                } catch (e: Exception) { emptyList() }
+            })
         }
 
-        val ddgDeferred = async(Dispatchers.IO) {
-            try {
-                when (searchMode) {
-                    SearchMode.ALBUM_ONLY -> queryFreeImageSearchEngine("", cleanAlbum)
-                    SearchMode.ARTIST_ONLY -> queryFreeImageSearchEngine(cleanArtist, "")
-                    SearchMode.BOTH -> queryFreeImageSearchEngine(cleanArtist, cleanAlbum)
-                }
-            } catch (e: Exception) { emptyList() }
+        if (enabledEngines.contains(SearchEngine.WEB_SEARCH)) {
+            tasks.add(async(Dispatchers.IO) {
+                try {
+                    when (searchMode) {
+                        SearchMode.ALBUM_ONLY -> queryFreeImageSearchEngine("", cleanAlbum)
+                        SearchMode.ARTIST_ONLY -> queryFreeImageSearchEngine(cleanArtist, "")
+                        SearchMode.BOTH -> queryFreeImageSearchEngine(cleanArtist, cleanAlbum)
+                    }
+                } catch (e: Exception) { emptyList() }
+            })
         }
 
-        val results = awaitAll(deezerDeferred, itunesDeferred, caaDeferred, ddgDeferred)
+        val results = tasks.awaitAll()
         results.flatten()
     }
 
@@ -722,19 +740,48 @@ class AlbumArtDownloader(
         }
     }
 
-    suspend fun searchCandidatesWithQuery(query: String): List<ArtworkCandidate> = withContext(Dispatchers.IO) {
+    suspend fun searchCandidatesWithQuery(
+        query: String,
+        enabledEngines: Set<SearchEngine> = SearchEngine.entries.toSet()
+    ): List<ArtworkCandidate> = withContext(Dispatchers.IO) {
         if (query.isBlank()) return@withContext emptyList()
         val sanitized = sanitizeMetadata(query)
         val candidates = fetchCandidatesInParallel(
             cleanArtist = "",
             cleanAlbum = sanitized,
             useQuotes = false,
-            searchMode = SearchMode.ALBUM_ONLY
+            searchMode = SearchMode.ALBUM_ONLY,
+            enabledEngines = enabledEngines
         )
         candidates.sortedWith(
             compareByDescending<ArtworkCandidate> { it.squareness }
                 .thenByDescending { it.resolution }
         )
+    }
+
+    suspend fun copyArtworkToAlbums(
+        sourceUri: Uri,
+        targetAlbums: List<Pair<String, String>>
+    ): Int = withContext(Dispatchers.IO) {
+        if (targetAlbums.isEmpty()) return@withContext 0
+        val imageBytes = try {
+            if (sourceUri.scheme == "file") {
+                File(sourceUri.path ?: "").readBytes()
+            } else {
+                context.contentResolver.openInputStream(sourceUri)?.use { it.readBytes() }
+            }
+        } catch (e: Exception) {
+            null
+        }
+        if (imageBytes == null || imageBytes.isEmpty()) return@withContext 0
+
+        var count = 0
+        for ((album, artist) in targetAlbums) {
+            val songs = musicDatabase.getSongsByAlbumAndArtist(album, artist)
+            val uri = saveCustomArtworkForAlbum(album, artist, imageBytes, songs)
+            if (uri != null) count++
+        }
+        count
     }
 
     suspend fun applyCandidateToAlbum(

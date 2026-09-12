@@ -113,4 +113,48 @@ class DownloadedArtAndEmbeddingTest {
         // Picture block type header is 0x06
         assertEquals(0x06.toByte(), outputBytes[4])
     }
+
+    @Test
+    fun testAlbumArtBrowserInfoModelAndArtworkTypes() {
+        val mockUri = Mockito.mock(Uri::class.java)
+        val downloadedInfo = com.travelingtunes.app.core.database.AlbumArtBrowserInfo(
+            album = "Dark Side of the Moon",
+            artist = "Pink Floyd",
+            songCount = 10,
+            artworkUri = mockUri,
+            artType = com.travelingtunes.app.core.database.ArtworkType.DOWNLOADED
+        )
+        assertEquals("Dark Side of the Moon", downloadedInfo.album)
+        assertEquals("Pink Floyd", downloadedInfo.artist)
+        assertEquals(10, downloadedInfo.songCount)
+        assertEquals(com.travelingtunes.app.core.database.ArtworkType.DOWNLOADED, downloadedInfo.artType)
+
+        val embeddedInfo = com.travelingtunes.app.core.database.AlbumArtBrowserInfo(
+            album = "The Wall",
+            artist = "Pink Floyd",
+            songCount = 26,
+            artworkUri = mockUri,
+            artType = com.travelingtunes.app.core.database.ArtworkType.EMBEDDED
+        )
+        assertEquals(com.travelingtunes.app.core.database.ArtworkType.EMBEDDED, embeddedInfo.artType)
+
+        val missingInfo = com.travelingtunes.app.core.database.AlbumArtBrowserInfo(
+            album = "Unknown",
+            artist = "Unknown",
+            songCount = 1,
+            artworkUri = null,
+            artType = com.travelingtunes.app.core.database.ArtworkType.MISSING
+        )
+        assertEquals(com.travelingtunes.app.core.database.ArtworkType.MISSING, missingInfo.artType)
+    }
+
+    @Test
+    fun testSearchEngineEnumValues() {
+        val engines = com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.entries
+        assertEquals(4, engines.size)
+        assertTrue(engines.contains(com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.DEEZER))
+        assertTrue(engines.contains(com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.ITUNES))
+        assertTrue(engines.contains(com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.COVER_ART_ARCHIVE))
+        assertTrue(engines.contains(com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.WEB_SEARCH))
+    }
 }
