@@ -6,6 +6,9 @@ import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.model.getSlideDirection
 import com.travelingtunes.app.core.model.getReverseTrigger
 import com.travelingtunes.app.core.model.ThemeSettings
+import com.travelingtunes.app.feature.settings.GestureSubmenu
+import com.travelingtunes.app.feature.settings.getSubmenu
+import com.travelingtunes.app.feature.settings.getTriggersForSubmenu
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -472,5 +475,88 @@ class GestureAndSettingsTest {
         assertTrue(jsonStr.contains("\"artDisplayLayout\": \"DOCKED\""))
         assertTrue(jsonStr.contains("\"1SwipeUp\""))
         assertTrue(jsonStr.contains("\"autoRescan\": true"))
+    }
+
+    @Test
+    fun testGestureSubmenuCategories() {
+        val submenus = com.travelingtunes.app.feature.settings.GestureSubmenu.entries
+        assertEquals(4, submenus.size)
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.SWIPE, submenus[0])
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.TAP, submenus[1])
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.BUTTON, submenus[2])
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.RADIAL_MENU, submenus[3])
+
+        assertEquals("Swipe Actions", submenus[0].title)
+        assertEquals("Tap Actions", submenus[1].title)
+        assertEquals("Button Actions", submenus[2].title)
+        assertEquals("Radial Menu Actions", submenus[3].title)
+    }
+
+    @Test
+    fun testGetSubmenuForTriggers() {
+        // Swipes -> SWIPE
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.SWIPE, GestureTrigger.SWIPE_1_UP.getSubmenu())
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.SWIPE, GestureTrigger.SWIPE_2_LEFT.getSubmenu())
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.SWIPE, GestureTrigger.SWIPE_3_DOWN.getSubmenu())
+
+        // Taps & Long Presses -> TAP
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.TAP, GestureTrigger.TAP_1_1.getSubmenu())
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.TAP, GestureTrigger.TAP_2_3.getSubmenu())
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.TAP, GestureTrigger.LONG_PRESS_1.getSubmenu())
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.TAP, GestureTrigger.LONG_PRESS_3.getSubmenu())
+
+        // Edge Regions -> BUTTON
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.BUTTON, GestureTrigger.CORNER_TOP_LEFT.getSubmenu())
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.BUTTON, GestureTrigger.CORNER_BOTTOM_RIGHT.getSubmenu())
+    }
+
+    @Test
+    fun testGetTriggersForSubmenuSections() {
+        val swipeMap = com.travelingtunes.app.feature.settings.getTriggersForSubmenu(
+            com.travelingtunes.app.feature.settings.GestureSubmenu.SWIPE, 3
+        )
+        assertEquals(3, swipeMap.size)
+        assertTrue(swipeMap.containsKey("1-Finger Swipes"))
+        assertTrue(swipeMap.containsKey("2-Finger Swipes"))
+        assertTrue(swipeMap.containsKey("3-Finger Swipes"))
+        assertEquals(4, swipeMap["1-Finger Swipes"]?.size)
+
+        val tapMap = com.travelingtunes.app.feature.settings.getTriggersForSubmenu(
+            com.travelingtunes.app.feature.settings.GestureSubmenu.TAP, 3
+        )
+        assertEquals(4, tapMap.size)
+        assertTrue(tapMap.containsKey("1-Finger Taps"))
+        assertTrue(tapMap.containsKey("2-Finger Taps"))
+        assertTrue(tapMap.containsKey("3-Finger Taps"))
+        assertTrue(tapMap.containsKey("Long Presses"))
+        assertEquals(3, tapMap["Long Presses"]?.size)
+
+        val buttonMap = com.travelingtunes.app.feature.settings.getTriggersForSubmenu(
+            com.travelingtunes.app.feature.settings.GestureSubmenu.BUTTON, 3
+        )
+        assertEquals(2, buttonMap.size)
+        assertTrue(buttonMap.containsKey("Top Edge Regions"))
+        assertTrue(buttonMap.containsKey("Bottom Edge Regions"))
+        assertEquals(3, buttonMap["Top Edge Regions"]?.size)
+        assertEquals(3, buttonMap["Bottom Edge Regions"]?.size)
+    }
+
+    @Test
+    fun testRadialMenuActionResolution() {
+        val action = GestureAction.fromKey("RadialMenu")
+        assertEquals(GestureAction.RADIAL_MENU, action)
+        assertEquals("Radial Menu", GestureAction.RADIAL_MENU.displayName)
+    }
+
+    @Test
+    fun testShortestAngleDiff() {
+        val diff0 = com.travelingtunes.app.feature.player.shortestAngleDiff(0f, 0f)
+        assertEquals(0f, diff0, 0.001f)
+
+        val diffPi = com.travelingtunes.app.feature.player.shortestAngleDiff(0f, Math.PI.toFloat())
+        assertEquals(Math.PI.toFloat(), diffPi, 0.001f)
+
+        val diffWrap = com.travelingtunes.app.feature.player.shortestAngleDiff(-Math.PI.toFloat() + 0.1f, Math.PI.toFloat() - 0.1f)
+        assertEquals(0.2f, diffWrap, 0.01f)
     }
 }

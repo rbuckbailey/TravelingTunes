@@ -54,6 +54,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -215,6 +216,21 @@ fun PlayerScreen(
     var showDownloadedArtBrowser by remember { mutableStateOf(false) }
     var showGestureAssignments by remember { mutableStateOf(false) }
 
+    var showRadialMenu by remember { mutableStateOf(false) }
+    var activeRadialTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
+    var activeRadialTouchOffset by remember { mutableStateOf(Offset.Unspecified) }
+    var activeRadialDragOffset by remember { mutableStateOf<Offset?>(null) }
+    var activeRadialSelectedAction by remember { mutableStateOf<GestureAction?>(null) }
+
+    val activeRadialActionsFlow = remember(activeRadialTrigger) {
+        val trigKey = activeRadialTrigger?.key
+        if (trigKey != null && settingsDataStore != null) {
+            settingsDataStore.getRadialMenuActionsFlow(trigKey)
+        } else null
+    }
+    val activeRadialActions by (activeRadialActionsFlow?.collectAsState(initial = SettingsDataStore.DEFAULT_RADIAL_ACTIONS)
+        ?: remember { mutableStateOf(SettingsDataStore.DEFAULT_RADIAL_ACTIONS) })
+
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
 
@@ -337,11 +353,11 @@ fun PlayerScreen(
     }
 
     val gestureListener = object : GestureEventListener {
-        override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean): Boolean {
+        override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean, touchOffset: Offset): Boolean {
             var binding = resolveGestureBinding(trigger, gestureBindings)
             var action = binding.action
 
-            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments
+            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showRadialMenu
 
             if (isAnyOverlayOpen) {
                 val activeSlideDirection = when {
@@ -374,6 +390,7 @@ fun PlayerScreen(
                     if (showMenu) showMenu = false
                     if (showDownloadedArtBrowser) showDownloadedArtBrowser = false
                     if (showGestureAssignments) showGestureAssignments = false
+                    if (showRadialMenu) showRadialMenu = false
                     return true
                 } else {
                     return false
@@ -388,6 +405,15 @@ fun PlayerScreen(
             }
 
             if (action == GestureAction.UNASSIGNED) return true
+
+            if (action == GestureAction.RADIAL_MENU) {
+                activeRadialTrigger = trigger
+                activeRadialTouchOffset = touchOffset
+                activeRadialDragOffset = touchOffset
+                activeRadialSelectedAction = null
+                showRadialMenu = true
+                return true
+            }
 
             val isCurrentSongDownloadedArt = musicScanner?.albumArtDownloader?.isDownloadedArtwork(currentSong) == true
             if (action == GestureAction.DELETE_DOWNLOADED_ART && !isCurrentSongDownloadedArt) {
@@ -436,6 +462,34 @@ fun PlayerScreen(
                 }
             }
             return true
+        }
+
+        override fun onGesturePointerMove(touchOffset: Offset) {
+            if (showRadialMenu) {
+                activeRadialDragOffset = touchOffset
+            }
+        }
+
+        override fun onGesturePointerUp(touchOffset: Offset) {
+            if (showRadialMenu) {
+                val selectedAction = activeRadialSelectedAction
+                showRadialMenu = false
+                if (selectedAction != null) {
+                    val trig = activeRadialTrigger ?: GestureTrigger.TAP_1_1
+                    handleGestureAction(
+                        action = selectedAction,
+                        trigger = trig,
+                        playbackManager = playbackManager,
+                        musicScanner = musicScanner,
+                        musicDatabase = musicDatabase,
+                        coroutineScope = coroutineScope,
+                        onOpenSongPicker = { dir -> openSongPicker(dir, trig) },
+                        onOpenQueue = { dir -> openQueue(dir, trig) },
+                        onOpenSettings = { dir -> openMenu(dir, trig) },
+                        onOpenQuickStart = onOpenQuickStart
+                    )
+                }
+            }
         }
 
         override fun onContinuousGesture(
@@ -743,6 +797,40 @@ fun PlayerScreen(
                 settingsDataStore = settingsDataStore ?: SettingsDataStore(context),
                 gestureBindings = gestureBindings,
                 onNavigateBack = { showGestureAssignments = false }
+            )
+        }
+
+        // 12. Radial Menu Overlay
+        if (showRadialMenu && activeRadialTrigger != null) {
+            RadialMenuOverlay(
+                centerOffset = activeRadialTouchOffset,
+                actions = activeRadialActions,
+                dragOffset = activeRadialDragOffset,
+                repeatMode = repeatMode,
+                shuffleMode = shuffleMode,
+                isPlaying = isPlaying,
+                onSelectedActionChanged = { selected ->
+                    activeRadialSelectedAction = selected
+                },
+                onSelectAction = { selectedRadialAction ->
+                    showRadialMenu = false
+                    val trig = activeRadialTrigger ?: GestureTrigger.TAP_1_1
+                    handleGestureAction(
+                        action = selectedRadialAction,
+                        trigger = trig,
+                        playbackManager = playbackManager,
+                        musicScanner = musicScanner,
+                        musicDatabase = musicDatabase,
+                        coroutineScope = coroutineScope,
+                        onOpenSongPicker = { dir -> openSongPicker(dir, trig) },
+                        onOpenQueue = { dir -> openQueue(dir, trig) },
+                        onOpenSettings = { dir -> openMenu(dir, trig) },
+                        onOpenQuickStart = onOpenQuickStart
+                    )
+                },
+                onDismiss = {
+                    showRadialMenu = false
+                }
             )
         }
 
@@ -1612,6 +1700,7 @@ private fun handleGestureAction(
                 }
             }
         }
+        GestureAction.RADIAL_MENU -> {}
         GestureAction.UNASSIGNED -> {}
     }
 }

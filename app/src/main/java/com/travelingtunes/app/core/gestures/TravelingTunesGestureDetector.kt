@@ -22,7 +22,7 @@ import kotlin.math.abs
 import kotlin.math.hypot
 
 interface GestureEventListener {
-    fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean = false): Boolean
+    fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean = false, touchOffset: Offset = Offset.Unspecified): Boolean
     fun onContinuousGesture(
         trigger: GestureTrigger,
         delta: Float,
@@ -31,6 +31,8 @@ interface GestureEventListener {
         totalDx: Float,
         totalDy: Float
     )
+    fun onGesturePointerMove(touchOffset: Offset) {}
+    fun onGesturePointerUp(touchOffset: Offset) {}
     fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int)
 }
 
@@ -172,6 +174,8 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
     val startTime = System.currentTimeMillis()
     val startPosition = firstDown.position
     val multiTouchWindowMs = 120L
+    val longPressThresholdMs = 380L
+    val longPressSlopPx = 32f * density
 
     val seenPointerIds = mutableSetOf<PointerId>()
     seenPointerIds.add(firstDown.id)
@@ -192,7 +196,46 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
     var trackedPointerId: PointerId? = firstDown.id
 
     while (true) {
-        val event = awaitPointerEvent(PointerEventPass.Initial)
+        val currentTime = System.currentTimeMillis()
+        val duration = currentTime - startTime
+
+        val event = if (!isSwipeHandled && !isLongPressHandled && duration < longPressThresholdMs) {
+            val timeoutRemaining = longPressThresholdMs - duration
+            try {
+                withTimeout(timeoutRemaining) {
+                    awaitPointerEvent(PointerEventPass.Initial)
+                }
+            } catch (_: PointerEventTimeoutCancellationException) {
+                null
+            }
+        } else {
+            awaitPointerEvent(PointerEventPass.Initial)
+        }
+
+        // Long press timeout expired while finger is still held down
+        if (event == null) {
+            val currDuration = System.currentTimeMillis() - startTime
+            if (!isSwipeHandled && !isLongPressHandled && currDuration >= longPressThresholdMs) {
+                val totalDist = hypot(totalDx, totalDy)
+                if (totalDist < longPressSlopPx) {
+                    val trigger = if (maxFingers == 1) {
+                        detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds) ?: GestureTrigger.LONG_PRESS_1
+                    } else {
+                        when (maxFingers) {
+                            2 -> GestureTrigger.LONG_PRESS_2
+                            3 -> GestureTrigger.LONG_PRESS_3
+                            else -> GestureTrigger.LONG_PRESS_1
+                        }
+                    }
+                    val handled = listener.onGestureTriggered(trigger, isLongPress = true, touchOffset = startPosition)
+                    if (handled) {
+                        isLongPressHandled = true
+                    }
+                }
+            }
+            continue
+        }
+
         val activePointers = event.changes.filter { it.pressed }
 
         activePointers.forEach {
@@ -206,10 +249,20 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
             maxFingers = activePointers.size.coerceAtMost(3)
         }
 
-        val currentTime = System.currentTimeMillis()
-        val duration = currentTime - startTime
-
         if (activePointers.isEmpty()) {
+            if (isLongPressHandled) {
+                listener.onGesturePointerUp(lastPosition)
+                return TapPressResult(
+                    fingers = maxFingers,
+                    startPosition = startPosition,
+                    durationMs = duration,
+                    totalDx = totalDx,
+                    totalDy = totalDy,
+                    isSwipe = false,
+                    isLongPress = true
+                )
+            }
+
             if (duration < multiTouchWindowMs && maxFingers == 1) {
                 val remainingMs = multiTouchWindowMs - duration
                 val extraEvent = try {
@@ -268,6 +321,11 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
                 lastPosition = currentPointer.position
             }
 
+            if (isLongPressHandled) {
+                listener.onGesturePointerMove(currentPointer.position)
+                event.changes.forEach { it.consume() }
+            }
+
             if (!isSwipeHandled && !isLongPressHandled) {
                 val hasMovedPastMin = abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx
                 val canCommitSwipe = hasMovedPastMin
@@ -275,7 +333,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
                 if (canCommitSwipe) {
                     swipedTrigger = determineSwipeTrigger(maxFingers, totalDx, totalDy)
                     if (swipedTrigger != null) {
-                        val handled = listener.onGestureTriggered(swipedTrigger, isLongPress = false)
+                        val handled = listener.onGestureTriggered(swipedTrigger, isLongPress = false, touchOffset = startPosition)
                         if (handled) {
                             isSwipeHandled = true
                             event.changes.forEach { it.consume() }
@@ -306,8 +364,9 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
             }
         }
 
-        if (!isSwipeHandled && !isLongPressHandled && duration >= 500L) {
-            if (abs(totalDx) < minTranslationPx && abs(totalDy) < minTranslationPx) {
+        if (!isSwipeHandled && !isLongPressHandled && duration >= longPressThresholdMs) {
+            val totalDist = hypot(totalDx, totalDy)
+            if (totalDist < longPressSlopPx) {
                 val trigger = if (maxFingers == 1) {
                     detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds) ?: GestureTrigger.LONG_PRESS_1
                 } else {
@@ -317,11 +376,10 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
                         else -> GestureTrigger.LONG_PRESS_1
                     }
                 }
-                val handled = listener.onGestureTriggered(trigger, isLongPress = true)
+                val handled = listener.onGestureTriggered(trigger, isLongPress = true, touchOffset = startPosition)
                 if (handled) {
                     isLongPressHandled = true
                     event.changes.forEach { it.consume() }
-                } else {
                     return TapPressResult(
                         fingers = maxFingers,
                         startPosition = startPosition,
@@ -329,7 +387,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
                         totalDx = totalDx,
                         totalDy = totalDy,
                         isSwipe = false,
-                        isLongPress = false
+                        isLongPress = true
                     )
                 }
             }
@@ -381,7 +439,7 @@ private fun emitSingleTap(
     if (fingers == 1) {
         val cornerTrigger = detectCornerRegion(startPosition, width, height, numEdgeRegions, regionBounds)
         if (cornerTrigger != null) {
-            return listener.onGestureTriggered(cornerTrigger)
+            return listener.onGestureTriggered(cornerTrigger, touchOffset = startPosition)
         }
     }
     val trigger = when (fingers) {
@@ -390,7 +448,7 @@ private fun emitSingleTap(
         3 -> GestureTrigger.TAP_3_1
         else -> GestureTrigger.TAP_1_1
     }
-    return listener.onGestureTriggered(trigger)
+    return listener.onGestureTriggered(trigger, touchOffset = startPosition)
 }
 
 private fun emitDoubleTap(

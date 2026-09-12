@@ -144,6 +144,17 @@ class SettingsDataStore(private val context: Context) {
 
         // Streaming Accounts
         val KEY_STREAMING_ACCOUNTS = stringPreferencesKey("streamingAccounts")
+
+        val DEFAULT_RADIAL_ACTIONS = listOf(
+            GestureAction.PLAY_PAUSE,
+            GestureAction.NEXT,
+            GestureAction.PREVIOUS,
+            GestureAction.VOLUME_UP,
+            GestureAction.VOLUME_DOWN,
+            GestureAction.FAST_FORWARD,
+            GestureAction.REWIND,
+            GestureAction.SONG_PICKER
+        )
     }
 
     val displaySettingsFlow: Flow<DisplaySettings> = context.dataStore.data.map { prefs ->
@@ -241,6 +252,28 @@ class SettingsDataStore(private val context: Context) {
             val isContinuous = prefs[booleanPreferencesKey("${trigger.key}Continuous")] ?: trigger.isContinuousDefault
             GestureBinding(trigger, GestureAction.fromKey(actionKey), isContinuous)
         }
+    }
+
+    fun getRadialMenuActionsFlow(triggerKey: String): Flow<List<GestureAction>> {
+        return context.dataStore.data.map { prefs ->
+            val rawStr = prefs[stringPreferencesKey("radial_actions_$triggerKey")]
+            if (rawStr.isNullOrEmpty()) {
+                DEFAULT_RADIAL_ACTIONS
+            } else {
+                rawStr.split(",").map { GestureAction.fromKey(it) }
+            }
+        }
+    }
+
+    val allRadialMenuActionsFlow: Flow<Map<String, List<GestureAction>>> = context.dataStore.data.map { prefs ->
+        val result = mutableMapOf<String, List<GestureAction>>()
+        GestureTrigger.entries.forEach { trigger ->
+            val rawStr = prefs[stringPreferencesKey("radial_actions_${trigger.key}")]
+            if (!rawStr.isNullOrEmpty()) {
+                result[trigger.key] = rawStr.split(",").map { GestureAction.fromKey(it) }
+            }
+        }
+        result
     }
 
     val gpsVolumeEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -487,7 +520,22 @@ class SettingsDataStore(private val context: Context) {
             GestureTrigger.entries.forEach { trigger ->
                 prefs[stringPreferencesKey(trigger.key)] = trigger.defaultActionKey
                 prefs[booleanPreferencesKey("${trigger.key}Continuous")] = trigger.isContinuousDefault
+                prefs.remove(stringPreferencesKey("radial_actions_${trigger.key}"))
             }
+        }
+    }
+
+    suspend fun updateRadialMenuActions(triggerKey: String, actions: List<GestureAction>) {
+        val validActions = actions.take(12)
+        val strValue = validActions.joinToString(",") { it.name }
+        context.dataStore.edit { prefs ->
+            prefs[stringPreferencesKey("radial_actions_$triggerKey")] = strValue
+        }
+    }
+
+    suspend fun resetRadialMenuActions(triggerKey: String) {
+        context.dataStore.edit { prefs ->
+            prefs.remove(stringPreferencesKey("radial_actions_$triggerKey"))
         }
     }
 
