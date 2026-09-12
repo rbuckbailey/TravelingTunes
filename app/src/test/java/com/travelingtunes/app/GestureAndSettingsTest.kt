@@ -4,6 +4,7 @@ import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.model.getSlideDirection
+import com.travelingtunes.app.core.model.getReverseTrigger
 import com.travelingtunes.app.core.model.ThemeSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -419,5 +420,57 @@ class GestureAndSettingsTest {
         val whitePercentage = (whiteRegions.toDouble() / totalRegions.toDouble()) * 100.0
         // Expecting white percentage to be roughly 40% - 60%
         org.junit.Assert.assertTrue("White percentage $whitePercentage% should be between 35% and 65%", whitePercentage in 35.0..65.0)
+    }
+
+    @Test
+    fun testReverseTriggerMapping() {
+        assertEquals(GestureTrigger.SWIPE_1_DOWN, GestureTrigger.SWIPE_1_UP.getReverseTrigger())
+        assertEquals(GestureTrigger.SWIPE_1_UP, GestureTrigger.SWIPE_1_DOWN.getReverseTrigger())
+        assertEquals(GestureTrigger.SWIPE_1_RIGHT, GestureTrigger.SWIPE_1_LEFT.getReverseTrigger())
+        assertEquals(GestureTrigger.SWIPE_1_LEFT, GestureTrigger.SWIPE_1_RIGHT.getReverseTrigger())
+
+        assertEquals(GestureTrigger.SWIPE_2_DOWN, GestureTrigger.SWIPE_2_UP.getReverseTrigger())
+        assertEquals(GestureTrigger.SWIPE_2_UP, GestureTrigger.SWIPE_2_DOWN.getReverseTrigger())
+        assertEquals(GestureTrigger.SWIPE_2_RIGHT, GestureTrigger.SWIPE_2_LEFT.getReverseTrigger())
+        assertEquals(GestureTrigger.SWIPE_2_LEFT, GestureTrigger.SWIPE_2_RIGHT.getReverseTrigger())
+
+        assertEquals(GestureTrigger.SWIPE_3_DOWN, GestureTrigger.SWIPE_3_UP.getReverseTrigger())
+        assertEquals(GestureTrigger.SWIPE_3_UP, GestureTrigger.SWIPE_3_DOWN.getReverseTrigger())
+
+        // Taps, long presses, region buttons return themselves
+        assertEquals(GestureTrigger.TAP_1_1, GestureTrigger.TAP_1_1.getReverseTrigger())
+        assertEquals(GestureTrigger.LONG_PRESS_1, GestureTrigger.LONG_PRESS_1.getReverseTrigger())
+        assertEquals(GestureTrigger.CORNER_TOP_LEFT, GestureTrigger.CORNER_TOP_LEFT.getReverseTrigger())
+    }
+
+    @Test
+    fun testSettingsBackupJsonStructure() {
+        val display = com.travelingtunes.app.core.model.DisplaySettings(
+            artistFontSize = 50f,
+            artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED
+        )
+        val theme = ThemeSettings()
+        val bindings = mapOf(
+            GestureTrigger.SWIPE_1_UP to com.travelingtunes.app.core.model.GestureBinding(
+                GestureTrigger.SWIPE_1_UP,
+                GestureAction.VOLUME_UP,
+                true
+            )
+        )
+
+        val jsonStr = com.travelingtunes.app.core.datastore.SettingsBackupHelper.exportToJson(
+            display = display,
+            theme = theme,
+            bindings = bindings,
+            gpsVolume = false,
+            gpsSens = 0.5f,
+            autoRescan = true
+        )
+
+        assertTrue(jsonStr.contains("\"version\": 1"))
+        assertTrue(jsonStr.contains("\"artistFontSize\": 50.0") || jsonStr.contains("\"artistFontSize\": 50"))
+        assertTrue(jsonStr.contains("\"artDisplayLayout\": \"DOCKED\""))
+        assertTrue(jsonStr.contains("\"1SwipeUp\""))
+        assertTrue(jsonStr.contains("\"autoRescan\": true"))
     }
 }

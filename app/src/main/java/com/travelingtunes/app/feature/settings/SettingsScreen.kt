@@ -94,6 +94,7 @@ import com.travelingtunes.app.core.theme.FontOption
 import com.travelingtunes.app.core.theme.luminance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -170,6 +171,57 @@ fun SettingsScreen(
     var availableFonts by remember { mutableStateOf(FontHelper.getAvailableFonts(context)) }
     var activeColorPicker by remember { mutableStateOf<String?>(null) }
     var showAuditDialog by remember { mutableStateOf(false) }
+    var statusToastMessage by remember { mutableStateOf<String?>(null) }
+
+    val createBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    val jsonString = settingsDataStore.exportSettingsToJson()
+                    context.contentResolver.openOutputStream(uri)?.use { stream ->
+                        stream.write(jsonString.toByteArray(Charsets.UTF_8))
+                    }
+                    withContext(Dispatchers.Main) {
+                        statusToastMessage = "Settings backed up successfully."
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) {
+                        statusToastMessage = "Failed to backup settings."
+                    }
+                }
+            }
+        }
+    }
+
+    val restoreBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    val jsonString = context.contentResolver.openInputStream(uri)?.use { stream ->
+                        stream.bufferedReader().readText()
+                    } ?: ""
+                    val success = settingsDataStore.importSettingsFromJson(jsonString)
+                    withContext(Dispatchers.Main) {
+                        if (success) {
+                            statusToastMessage = "Settings restored successfully."
+                        } else {
+                            statusToastMessage = "Failed to restore settings: Invalid file format."
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) {
+                        statusToastMessage = "Failed to restore settings."
+                    }
+                }
+            }
+        }
+    }
 
     val savedSubmenuName by settingsDataStore.lastSettingsSubmenuFlow.collectAsState(initial = null)
     val selectedSubmenu = SettingsSubmenu.entries.find { it.name == savedSubmenuName }
@@ -357,7 +409,9 @@ fun SettingsScreen(
                         onOpenSongPicker = { activeColorPicker = "SONG" },
                         onOpenArtistPicker = { activeColorPicker = "ARTIST" },
                         onOpenAlbumPicker = { activeColorPicker = "ALBUM" },
-                        onOpenQuickStart = onOpenQuickStart
+                        onOpenQuickStart = onOpenQuickStart,
+                        onBackupSettings = { createBackupLauncher.launch("traveling_tunes_settings.json") },
+                        onRestoreSettings = { restoreBackupLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }
                     )
                 }
             }
@@ -492,11 +546,26 @@ fun SettingsScreen(
                         onOpenSongPicker = { activeColorPicker = "SONG" },
                         onOpenArtistPicker = { activeColorPicker = "ARTIST" },
                         onOpenAlbumPicker = { activeColorPicker = "ALBUM" },
-                        onOpenQuickStart = onOpenQuickStart
+                        onOpenQuickStart = onOpenQuickStart,
+                        onBackupSettings = { createBackupLauncher.launch("traveling_tunes_settings.json") },
+                        onRestoreSettings = { restoreBackupLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }
                     )
                 }
             }
         }
+    }
+
+    if (statusToastMessage != null) {
+        AlertDialog(
+            onDismissRequest = { statusToastMessage = null },
+            title = { Text("Settings Backup & Restore") },
+            text = { Text(statusToastMessage ?: "") },
+            confirmButton = {
+                TextButton(onClick = { statusToastMessage = null }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     val currentAuditReport = lastAuditReport
@@ -599,7 +668,9 @@ private fun SubmenuContent(
     onOpenArtistPicker: () -> Unit,
     onOpenAlbumPicker: () -> Unit,
     onOpenQuickStart: () -> Unit,
-    onOpenDownloadedArtBrowser: () -> Unit = {}
+    onOpenDownloadedArtBrowser: () -> Unit = {},
+    onBackupSettings: () -> Unit = {},
+    onRestoreSettings: () -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -642,7 +713,9 @@ private fun SubmenuContent(
                     onDownloadMissingArt = onDownloadMissingArt,
                     onCancelDownloadArt = onCancelDownloadArt,
                     onViewAudit = onViewAudit,
-                    onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser
+                    onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
+                    onBackupSettings = onBackupSettings,
+                    onRestoreSettings = onRestoreSettings
                 )
 
                 SettingsSubmenu.TYPOGRAPHY_HUD -> TypographyHudSettingsContent(
@@ -700,7 +773,9 @@ private fun LibrarySettingsContent(
     onDownloadMissingArt: () -> Unit = {},
     onCancelDownloadArt: () -> Unit = {},
     onViewAudit: () -> Unit = {},
-    onOpenDownloadedArtBrowser: () -> Unit = {}
+    onOpenDownloadedArtBrowser: () -> Unit = {},
+    onBackupSettings: () -> Unit = {},
+    onRestoreSettings: () -> Unit = {}
 ) {
     Column {
         ListItem(
@@ -825,6 +900,46 @@ private fun LibrarySettingsContent(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("${libraryStats.totalSongs} Songs • ${libraryStats.totalAlbums} Albums")
                 Text("${libraryStats.totalArtists} Artists • ${libraryStats.totalGenres} Genres")
+            }
+        }
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Backup & Restore Settings",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Backup your theme, layout, and gesture configurations to a JSON file, or restore from a backup.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = onBackupSettings,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Backup")
+                    }
+                    OutlinedButton(
+                        onClick = onRestoreSettings,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Restore")
+                    }
+                }
             }
         }
     }
@@ -1116,16 +1231,28 @@ private fun TypographyHudSettingsContent(
             }
         }
 
-        val portraitOptions = if (displaySettings.albumArtScale == ArtScaleOption.FILL_SCREEN) {
+        val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
+
+        val rawPortraitOptions = if (displaySettings.albumArtScale == ArtScaleOption.FILL_SCREEN) {
             listOf(ArtAlignmentPortrait.LEFT, ArtAlignmentPortrait.CENTER, ArtAlignmentPortrait.RIGHT)
         } else {
             listOf(ArtAlignmentPortrait.TOP, ArtAlignmentPortrait.MIDDLE, ArtAlignmentPortrait.BOTTOM)
         }
+        val portraitOptions = if (isDocked) {
+            rawPortraitOptions.filter { it != ArtAlignmentPortrait.CENTER && it != ArtAlignmentPortrait.MIDDLE }
+        } else {
+            rawPortraitOptions
+        }
 
-        val landscapeOptions = if (displaySettings.albumArtScale == ArtScaleOption.FILL_SCREEN) {
+        val rawLandscapeOptions = if (displaySettings.albumArtScale == ArtScaleOption.FILL_SCREEN) {
             listOf(ArtAlignmentLandscape.TOP, ArtAlignmentLandscape.MIDDLE, ArtAlignmentLandscape.BOTTOM)
         } else {
             listOf(ArtAlignmentLandscape.LEFT, ArtAlignmentLandscape.CENTER, ArtAlignmentLandscape.RIGHT)
+        }
+        val landscapeOptions = if (isDocked) {
+            rawLandscapeOptions.filter { it != ArtAlignmentLandscape.CENTER && it != ArtAlignmentLandscape.MIDDLE }
+        } else {
+            rawLandscapeOptions
         }
 
         Text("Portrait Alignment", fontWeight = FontWeight.Bold)
@@ -1169,7 +1296,21 @@ private fun TypographyHudSettingsContent(
                 FilterChip(
                     selected = displaySettings.artDisplayLayout == option,
                     onClick = {
-                        onUpdateDisplaySettings(displaySettings.copy(artDisplayLayout = option))
+                        var newPortrait = displaySettings.artAlignmentPortrait
+                        var newLandscape = displaySettings.artAlignmentLandscape
+                        if (option == ArtLayoutOption.DOCKED) {
+                            if (newPortrait == ArtAlignmentPortrait.CENTER || newPortrait == ArtAlignmentPortrait.MIDDLE) {
+                                newPortrait = ArtAlignmentPortrait.LEFT
+                            }
+                            if (newLandscape == ArtAlignmentLandscape.CENTER || newLandscape == ArtAlignmentLandscape.MIDDLE) {
+                                newLandscape = ArtAlignmentLandscape.LEFT
+                            }
+                        }
+                        onUpdateDisplaySettings(displaySettings.copy(
+                            artDisplayLayout = option,
+                            artAlignmentPortrait = newPortrait,
+                            artAlignmentLandscape = newLandscape
+                        ))
                     },
                     label = { Text(option.displayName) }
                 )

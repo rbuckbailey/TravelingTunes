@@ -34,10 +34,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -112,6 +114,7 @@ import com.travelingtunes.app.core.theme.MondrianBackground
 import com.travelingtunes.app.core.theme.MondrianMaskedLayout
 import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.model.getSlideDirection
+import com.travelingtunes.app.core.model.getReverseTrigger
 import com.travelingtunes.app.core.ui.SlidingOverlay
 import com.travelingtunes.app.feature.queue.QueueBottomSheet
 import com.travelingtunes.app.feature.settings.DownloadedArtBrowserScreen
@@ -199,12 +202,15 @@ fun PlayerScreen(
 
     var showSongPicker by remember { mutableStateOf(false) }
     var songPickerSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
+    var pickerOpeningTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
 
     var showQueue by remember { mutableStateOf(false) }
     var queueSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
+    var queueOpeningTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
 
     var showMenu by remember { mutableStateOf(false) }
     var menuSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
+    var menuOpeningTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
 
     var showDownloadedArtBrowser by remember { mutableStateOf(false) }
     var showGestureAssignments by remember { mutableStateOf(false) }
@@ -242,18 +248,21 @@ fun PlayerScreen(
         activeLibraryStats = musicDatabase.getLibraryStats()
     }
 
-    fun openSongPicker(direction: SlideDirection = SlideDirection.BOTTOM) {
+    fun openSongPicker(direction: SlideDirection = SlideDirection.BOTTOM, trigger: GestureTrigger? = null) {
         songPickerSlideDirection = direction
+        pickerOpeningTrigger = trigger
         showSongPicker = true
     }
 
-    fun openQueue(direction: SlideDirection = SlideDirection.BOTTOM) {
+    fun openQueue(direction: SlideDirection = SlideDirection.BOTTOM, trigger: GestureTrigger? = null) {
         queueSlideDirection = direction
+        queueOpeningTrigger = trigger
         showQueue = true
     }
 
-    fun openMenu(direction: SlideDirection = SlideDirection.BOTTOM) {
+    fun openMenu(direction: SlideDirection = SlideDirection.BOTTOM, trigger: GestureTrigger? = null) {
         menuSlideDirection = direction
+        menuOpeningTrigger = trigger
         showMenu = true
     }
 
@@ -328,9 +337,48 @@ fun PlayerScreen(
     }
 
     val gestureListener = object : GestureEventListener {
-        override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean) {
+        override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean): Boolean {
             var binding = resolveGestureBinding(trigger, gestureBindings)
             var action = binding.action
+
+            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments
+
+            if (isAnyOverlayOpen) {
+                val activeSlideDirection = when {
+                    showSongPicker -> songPickerSlideDirection
+                    showQueue -> queueSlideDirection
+                    else -> menuSlideDirection
+                }
+                val activeOpeningTrigger = when {
+                    showSongPicker -> pickerOpeningTrigger
+                    showQueue -> queueOpeningTrigger
+                    else -> menuOpeningTrigger
+                }
+                val activeAction = when {
+                    showSongPicker -> GestureAction.SONG_PICKER
+                    showQueue -> GestureAction.SHOW_QUEUE
+                    else -> GestureAction.MENU
+                }
+
+                val isReverseAction = isReverseActionForOpenOverlay(
+                    trigger = trigger,
+                    action = action,
+                    activeOpeningTrigger = activeOpeningTrigger,
+                    activeSlideDirection = activeSlideDirection,
+                    activeAction = activeAction
+                )
+
+                if (isReverseAction) {
+                    if (showSongPicker) showSongPicker = false
+                    if (showQueue) showQueue = false
+                    if (showMenu) showMenu = false
+                    if (showDownloadedArtBrowser) showDownloadedArtBrowser = false
+                    if (showGestureAssignments) showGestureAssignments = false
+                    return true
+                } else {
+                    return false
+                }
+            }
 
             // When a touch region is unassigned, pass the tap through to the standard tap action
             if (action == GestureAction.UNASSIGNED && trigger.category == GestureCategory.SCREEN_REGION) {
@@ -339,11 +387,11 @@ fun PlayerScreen(
                 action = binding.action
             }
 
-            if (action == GestureAction.UNASSIGNED) return
+            if (action == GestureAction.UNASSIGNED) return true
 
             val isCurrentSongDownloadedArt = musicScanner?.albumArtDownloader?.isDownloadedArtwork(currentSong) == true
             if (action == GestureAction.DELETE_DOWNLOADED_ART && !isCurrentSongDownloadedArt) {
-                return
+                return true
             }
 
             val slideDir = trigger.getSlideDirection()
@@ -354,15 +402,15 @@ fun PlayerScreen(
                 } else if (action == GestureAction.TOGGLE_SHUFFLE) {
                     showShuffleOptionsDialog = true
                 } else if (action == GestureAction.MENU) {
-                    openMenu(slideDir)
+                    openMenu(slideDir, trigger)
                 } else if (action == GestureAction.SHOW_QUICK_START) {
                     onOpenQuickStart()
                 } else if (action == GestureAction.SONG_PICKER) {
-                    openSongPicker(slideDir)
+                    openSongPicker(slideDir, trigger)
                 } else if (action == GestureAction.SHOW_QUEUE) {
-                    openQueue(slideDir)
+                    openQueue(slideDir, trigger)
                 }
-                return
+                return true
             }
 
             when (action) {
@@ -380,13 +428,14 @@ fun PlayerScreen(
                         musicScanner = musicScanner,
                         musicDatabase = musicDatabase,
                         coroutineScope = coroutineScope,
-                        onOpenSongPicker = { dir -> openSongPicker(dir) },
-                        onOpenQueue = { dir -> openQueue(dir) },
-                        onOpenSettings = { dir -> openMenu(dir) },
+                        onOpenSongPicker = { dir -> openSongPicker(dir, trigger) },
+                        onOpenQueue = { dir -> openQueue(dir, trigger) },
+                        onOpenSettings = { dir -> openMenu(dir, trigger) },
                         onOpenQuickStart = onOpenQuickStart
                     )
                 }
             }
+            return true
         }
 
         override fun onContinuousGesture(
@@ -397,6 +446,9 @@ fun PlayerScreen(
             totalDx: Float,
             totalDy: Float
         ) {
+            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments
+            if (isAnyOverlayOpen) return
+
             val binding = resolveGestureBinding(trigger, gestureBindings)
             val action = binding.action
 
@@ -421,7 +473,10 @@ fun PlayerScreen(
         }
 
         override fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int) {
-            playbackManager.persistCurrentPlaybackState()
+            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments
+            if (!isAnyOverlayOpen) {
+                playbackManager.persistCurrentPlaybackState()
+            }
         }
     }
 
@@ -491,15 +546,23 @@ fun PlayerScreen(
             )
         }
 
-        // 2. Gesture Detector Touch Overlay
+        // 2. Gesture Detector Configuration
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian
 
         val screenWidth = configuration.screenWidthDp.toFloat()
         val screenHeight = configuration.screenHeightDp.toFloat()
-        val artFractionY = if (screenHeight > 0f) (screenWidth / screenHeight).coerceAtMost(0.6f) else 0.5f
-        val artFractionX = if (screenWidth > 0f) (screenHeight / screenWidth).coerceAtMost(0.6f) else 0.5f
+        val artFractionX = if (isLandscape) {
+            if (screenWidth > 0f) (screenHeight / screenWidth).coerceIn(0.2f, 0.45f) else 0.45f
+        } else {
+            0.45f
+        }
+        val artFractionY = if (!isLandscape) {
+            if (screenHeight > 0f) (screenWidth / screenHeight).coerceIn(0.2f, 0.45f) else 0.45f
+        } else {
+            0.45f
+        }
 
         val regionBounds = if (isDockedScreen) {
             if (isLandscape) {
@@ -528,7 +591,8 @@ fun PlayerScreen(
                     listener = gestureListener,
                     gestureBindings = gestureBindings,
                     numEdgeRegions = displaySettings.numEdgeRegions,
-                    regionBounds = regionBounds
+                    regionBounds = regionBounds,
+                    isOverlayOpen = false
                 )
         )
 
@@ -596,6 +660,7 @@ fun PlayerScreen(
         SongPickerBottomSheet(
             visible = showSongPicker,
             slideDirection = songPickerSlideDirection,
+            openingTrigger = pickerOpeningTrigger,
             musicDatabase = musicDatabase,
             playbackManager = playbackManager,
             musicScanner = musicScanner,
@@ -607,6 +672,7 @@ fun PlayerScreen(
         QueueBottomSheet(
             visible = showQueue,
             slideDirection = queueSlideDirection,
+            openingTrigger = queueOpeningTrigger,
             playbackManager = playbackManager,
             onOpenSongPicker = { dir -> openSongPicker(dir) },
             onDismiss = { showQueue = false }
@@ -616,6 +682,7 @@ fun PlayerScreen(
         SlidingOverlay(
             visible = showMenu,
             slideDirection = menuSlideDirection,
+            openingTrigger = menuOpeningTrigger,
             onDismiss = { showMenu = false }
         ) {
             SettingsScreen(
@@ -654,6 +721,7 @@ fun PlayerScreen(
         SlidingOverlay(
             visible = showDownloadedArtBrowser,
             slideDirection = menuSlideDirection,
+            openingTrigger = menuOpeningTrigger,
             onDismiss = { showDownloadedArtBrowser = false }
         ) {
             DownloadedArtBrowserScreen(
@@ -668,6 +736,7 @@ fun PlayerScreen(
         SlidingOverlay(
             visible = showGestureAssignments,
             slideDirection = menuSlideDirection,
+            openingTrigger = menuOpeningTrigger,
             onDismiss = { showGestureAssignments = false }
         ) {
             GestureAssignmentScreen(
@@ -720,6 +789,32 @@ fun PlayerScreen(
             )
         }
     }
+}
+
+private fun isReverseActionForOpenOverlay(
+    trigger: GestureTrigger,
+    action: GestureAction,
+    activeOpeningTrigger: GestureTrigger?,
+    activeSlideDirection: SlideDirection,
+    activeAction: GestureAction
+): Boolean {
+    if (activeOpeningTrigger != null) {
+        val reverseTrigger = activeOpeningTrigger.getReverseTrigger()
+        if (trigger == reverseTrigger || trigger == activeOpeningTrigger) {
+            return true
+        }
+    }
+
+    if (action == activeAction) {
+        return true
+    }
+
+    val isMultiFingerSwipe = trigger.category == GestureCategory.TWO_FINGER_SWIPE || trigger.category == GestureCategory.THREE_FINGER_SWIPE
+    if (isMultiFingerSwipe && trigger.getSlideDirection() != activeSlideDirection) {
+        return true
+    }
+
+    return false
 }
 
 enum class DockAdjacentEdge {
@@ -886,24 +981,46 @@ fun PlayerPageContent(
             }
         }
 
+        val screenWidthDp = configuration.screenWidthDp.toFloat()
+        val screenHeightDp = configuration.screenHeightDp.toFloat()
+
+        val artFractionX = if (isLandscape) {
+            if (screenWidthDp > 0f) (screenHeightDp / screenWidthDp).coerceIn(0.2f, 0.45f) else 0.45f
+        } else {
+            0.45f
+        }
+        val artFractionY = if (!isLandscape) {
+            if (screenHeightDp > 0f) (screenWidthDp / screenHeightDp).coerceIn(0.2f, 0.45f) else 0.45f
+        } else {
+            0.45f
+        }
+
         if (isRow) {
             Row(modifier = Modifier.fillMaxSize()) {
+                val artMod = Modifier
+                    .fillMaxHeight()
+                    .widthIn(max = (screenWidthDp * artFractionX).dp)
+                    .aspectRatio(1f)
                 if (dockEdge == DockAdjacentEdge.LEFT) {
-                    albumArtContainer(Modifier.fillMaxHeight().aspectRatio(1f))
+                    albumArtContainer(artMod)
                     titlesContainer(Modifier.weight(1f).fillMaxHeight())
                 } else {
                     titlesContainer(Modifier.weight(1f).fillMaxHeight())
-                    albumArtContainer(Modifier.fillMaxHeight().aspectRatio(1f))
+                    albumArtContainer(artMod)
                 }
             }
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
+                val artMod = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = (screenHeightDp * artFractionY).dp)
+                    .aspectRatio(1f)
                 if (dockEdge == DockAdjacentEdge.TOP) {
-                    albumArtContainer(Modifier.fillMaxWidth().aspectRatio(1f))
+                    albumArtContainer(artMod)
                     titlesContainer(Modifier.weight(1f).fillMaxWidth())
                 } else {
                     titlesContainer(Modifier.weight(1f).fillMaxWidth())
-                    albumArtContainer(Modifier.fillMaxWidth().aspectRatio(1f))
+                    albumArtContainer(artMod)
                 }
             }
         }

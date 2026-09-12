@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.model.Song
+import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.feature.songpicker.AlbumArtImage
 import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.ui.SlidingOverlay
@@ -66,6 +67,7 @@ import com.travelingtunes.app.core.ui.SlidingOverlay
 fun QueueBottomSheet(
     visible: Boolean,
     slideDirection: SlideDirection = SlideDirection.BOTTOM,
+    openingTrigger: GestureTrigger? = null,
     playbackManager: PlaybackManager,
     onOpenSongPicker: (SlideDirection) -> Unit = {},
     onDismiss: () -> Unit
@@ -82,6 +84,7 @@ fun QueueBottomSheet(
     SlidingOverlay(
         visible = visible,
         slideDirection = slideDirection,
+        openingTrigger = openingTrigger,
         onDismiss = onDismiss
     ) {
         Column(

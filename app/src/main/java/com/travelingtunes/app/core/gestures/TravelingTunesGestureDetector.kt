@@ -22,7 +22,7 @@ import kotlin.math.abs
 import kotlin.math.hypot
 
 interface GestureEventListener {
-    fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean = false)
+    fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean = false): Boolean
     fun onContinuousGesture(
         trigger: GestureTrigger,
         delta: Float,
@@ -39,15 +39,17 @@ fun Modifier.travelingTunesGestures(
     listener: GestureEventListener,
     gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
     numEdgeRegions: Int = 3,
-    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f),
+    isOverlayOpen: Boolean = false
 ): Modifier {
     val currentListener by rememberUpdatedState(listener)
     val currentBindings by rememberUpdatedState(gestureBindings)
     val currentNumEdgeRegions by rememberUpdatedState(numEdgeRegions)
     val currentRegionBounds by rememberUpdatedState(regionBounds)
+    val currentIsOverlayOpen by rememberUpdatedState(isOverlayOpen)
 
-    return this.pointerInput(Unit) {
-        detectTravelingTunesGestures(currentListener, currentBindings, currentNumEdgeRegions, currentRegionBounds)
+    return this.pointerInput(isOverlayOpen) {
+        detectTravelingTunesGestures(currentListener, currentBindings, currentNumEdgeRegions, currentRegionBounds, currentIsOverlayOpen)
     }
 }
 
@@ -55,7 +57,8 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
     listener: GestureEventListener,
     gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
     numEdgeRegions: Int = 3,
-    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f),
+    isOverlayOpen: Boolean = false
 ) {
     val minTranslationPx = 12f * density
     val slopPx = 40f * density
@@ -66,6 +69,10 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
         val tap1 = awaitPressResult(firstDown, minTranslationPx, listener, numEdgeRegions, regionBounds)
 
         if (tap1.isSwipe || tap1.isLongPress) {
+            return@awaitEachGesture
+        }
+
+        if (isOverlayOpen && tap1.fingers == 1) {
             return@awaitEachGesture
         }
 
@@ -87,13 +94,17 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
         }
 
         if (secondDown == null) {
-            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
+            if (!isOverlayOpen || tap1.fingers > 1) {
+                emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
+            }
             return@awaitEachGesture
         }
 
         val dist12 = hypot(secondDown.position.x - tap1.startPosition.x, secondDown.position.y - tap1.startPosition.y)
         if (dist12 > slopPx) {
-            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
+            if (!isOverlayOpen || tap1.fingers > 1) {
+                emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
+            }
             return@awaitEachGesture
         }
 
@@ -262,11 +273,25 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
                 val canCommitSwipe = hasMovedPastMin
 
                 if (canCommitSwipe) {
-                    isSwipeHandled = true
-                    event.changes.forEach { it.consume() }
                     swipedTrigger = determineSwipeTrigger(maxFingers, totalDx, totalDy)
                     if (swipedTrigger != null) {
-                        listener.onGestureTriggered(swipedTrigger)
+                        val handled = listener.onGestureTriggered(swipedTrigger, isLongPress = false)
+                        if (handled) {
+                            isSwipeHandled = true
+                            event.changes.forEach { it.consume() }
+                        } else {
+                            // Gesture was NOT handled (e.g., overlay is open and gesture is NOT a reverse close action).
+                            // Return early without consuming event so it passes through to menu layer!
+                            return TapPressResult(
+                                fingers = maxFingers,
+                                startPosition = startPosition,
+                                durationMs = duration,
+                                totalDx = totalDx,
+                                totalDy = totalDy,
+                                isSwipe = false,
+                                isLongPress = false
+                            )
+                        }
                     }
                 }
             }
@@ -283,22 +308,29 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
 
         if (!isSwipeHandled && !isLongPressHandled && duration >= 500L) {
             if (abs(totalDx) < minTranslationPx && abs(totalDy) < minTranslationPx) {
-                isLongPressHandled = true
-                event.changes.forEach { it.consume() }
-                if (maxFingers == 1) {
-                    val cornerTrigger = detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds)
-                    if (cornerTrigger != null) {
-                        listener.onGestureTriggered(cornerTrigger, isLongPress = true)
-                    } else {
-                        listener.onGestureTriggered(GestureTrigger.LONG_PRESS_1, isLongPress = true)
-                    }
+                val trigger = if (maxFingers == 1) {
+                    detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds) ?: GestureTrigger.LONG_PRESS_1
                 } else {
-                    val trigger = when (maxFingers) {
+                    when (maxFingers) {
                         2 -> GestureTrigger.LONG_PRESS_2
                         3 -> GestureTrigger.LONG_PRESS_3
                         else -> GestureTrigger.LONG_PRESS_1
                     }
-                    listener.onGestureTriggered(trigger, isLongPress = true)
+                }
+                val handled = listener.onGestureTriggered(trigger, isLongPress = true)
+                if (handled) {
+                    isLongPressHandled = true
+                    event.changes.forEach { it.consume() }
+                } else {
+                    return TapPressResult(
+                        fingers = maxFingers,
+                        startPosition = startPosition,
+                        durationMs = duration,
+                        totalDx = totalDx,
+                        totalDy = totalDy,
+                        isSwipe = false,
+                        isLongPress = false
+                    )
                 }
             }
         }
@@ -345,12 +377,11 @@ private fun emitSingleTap(
     listener: GestureEventListener,
     numEdgeRegions: Int = 3,
     regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
-) {
+): Boolean {
     if (fingers == 1) {
         val cornerTrigger = detectCornerRegion(startPosition, width, height, numEdgeRegions, regionBounds)
         if (cornerTrigger != null) {
-            listener.onGestureTriggered(cornerTrigger)
-            return
+            return listener.onGestureTriggered(cornerTrigger)
         }
     }
     val trigger = when (fingers) {
@@ -359,33 +390,33 @@ private fun emitSingleTap(
         3 -> GestureTrigger.TAP_3_1
         else -> GestureTrigger.TAP_1_1
     }
-    listener.onGestureTriggered(trigger)
+    return listener.onGestureTriggered(trigger)
 }
 
 private fun emitDoubleTap(
     fingers: Int,
     listener: GestureEventListener
-) {
+): Boolean {
     val trigger = when (fingers) {
         1 -> GestureTrigger.TAP_1_2
         2 -> GestureTrigger.TAP_2_2
         3 -> GestureTrigger.TAP_3_2
         else -> GestureTrigger.TAP_1_2
     }
-    listener.onGestureTriggered(trigger)
+    return listener.onGestureTriggered(trigger)
 }
 
 private fun emitTripleTap(
     fingers: Int,
     listener: GestureEventListener
-) {
+): Boolean {
     val trigger = when (fingers) {
         1 -> GestureTrigger.TAP_1_3
         2 -> GestureTrigger.TAP_2_3
         3 -> GestureTrigger.TAP_3_3
         else -> GestureTrigger.TAP_1_3
     }
-    listener.onGestureTriggered(trigger)
+    return listener.onGestureTriggered(trigger)
 }
 
 private fun determineSwipeTrigger(fingers: Int, dx: Float, dy: Float): GestureTrigger? {

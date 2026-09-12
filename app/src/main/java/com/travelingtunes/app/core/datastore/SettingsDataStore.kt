@@ -28,6 +28,7 @@ import com.travelingtunes.app.core.model.TextAlignmentOption
 import com.travelingtunes.app.core.model.ThemeSettings
 import com.travelingtunes.app.core.model.TitleRowType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "traveling_tunes_settings")
@@ -489,4 +490,139 @@ class SettingsDataStore(private val context: Context) {
             }
         }
     }
+
+    suspend fun exportSettingsToJson(): String {
+        val display = displaySettingsFlow.first()
+        val theme = themeSettingsFlow.first()
+        val bindings = gestureBindingsFlow.first()
+        val gpsVolume = gpsVolumeEnabledFlow.first()
+        val gpsSens = gpsSensitivityFlow.first()
+        val autoRescan = autoRescanFlow.first()
+
+        return SettingsBackupHelper.exportToJson(
+            display = display,
+            theme = theme,
+            bindings = bindings,
+            gpsVolume = gpsVolume,
+            gpsSens = gpsSens,
+            autoRescan = autoRescan
+        )
+    }
+
+    suspend fun importSettingsFromJson(jsonString: String): Boolean {
+        return try {
+            val json = org.json.JSONObject(jsonString)
+
+            if (json.has("displaySettings")) {
+                val dJson = json.getJSONObject("displaySettings")
+                val currentDisplay = displaySettingsFlow.first()
+                val newDisplay = currentDisplay.copy(
+                    artistFontSize = dJson.optDouble("artistFontSize", currentDisplay.artistFontSize.toDouble()).toFloat(),
+                    songFontSize = dJson.optDouble("songFontSize", currentDisplay.songFontSize.toDouble()).toFloat(),
+                    albumFontSize = dJson.optDouble("albumFontSize", currentDisplay.albumFontSize.toDouble()).toFloat(),
+                    artistAlignment = runCatching { TextAlignmentOption.valueOf(dJson.getString("artistAlignment")) }.getOrDefault(currentDisplay.artistAlignment),
+                    songAlignment = runCatching { TextAlignmentOption.valueOf(dJson.getString("songAlignment")) }.getOrDefault(currentDisplay.songAlignment),
+                    albumAlignment = runCatching { TextAlignmentOption.valueOf(dJson.getString("albumAlignment")) }.getOrDefault(currentDisplay.albumAlignment),
+                    minimumFontSize = dJson.optDouble("minimumFontSize", currentDisplay.minimumFontSize.toDouble()).toFloat(),
+                    titleShrinkInPortrait = dJson.optBoolean("titleShrinkInPortrait", currentDisplay.titleShrinkInPortrait),
+                    titleShrinkLong = dJson.optBoolean("titleShrinkLong", currentDisplay.titleShrinkLong),
+                    titleScrollLong = dJson.optBoolean("titleScrollLong", currentDisplay.titleScrollLong),
+                    showAlbumArt = dJson.optBoolean("showAlbumArt", currentDisplay.showAlbumArt),
+                    albumArtColors = dJson.optBoolean("albumArtColors", currentDisplay.albumArtColors),
+                    albumArtScale = runCatching { ArtScaleOption.valueOf(dJson.getString("albumArtScale")) }.getOrDefault(currentDisplay.albumArtScale),
+                    artAlignmentPortrait = runCatching { ArtAlignmentPortrait.valueOf(dJson.getString("artAlignmentPortrait")) }.getOrDefault(currentDisplay.artAlignmentPortrait),
+                    artAlignmentLandscape = runCatching { ArtAlignmentLandscape.valueOf(dJson.getString("artAlignmentLandscape")) }.getOrDefault(currentDisplay.artAlignmentLandscape),
+                    albumArtFade = dJson.optDouble("albumArtFade", currentDisplay.albumArtFade.toDouble()).toFloat(),
+                    artDisplayLayout = runCatching { ArtLayoutOption.valueOf(dJson.getString("artDisplayLayout")) }.getOrDefault(currentDisplay.artDisplayLayout),
+                    hudType = runCatching { HudTypeOption.valueOf(dJson.getString("hudType")) }.getOrDefault(currentDisplay.hudType),
+                    scrubHudType = runCatching { ScrubHudTypeOption.valueOf(dJson.getString("scrubHudType")) }.getOrDefault(currentDisplay.scrubHudType),
+                    volumeAlwaysOn = dJson.optBoolean("volumeAlwaysOn", currentDisplay.volumeAlwaysOn),
+                    showStatusBar = dJson.optBoolean("showStatusBar", currentDisplay.showStatusBar),
+                    showActions = dJson.optBoolean("showActions", currentDisplay.showActions),
+                    hudLineThickness = dJson.optDouble("hudLineThickness", currentDisplay.hudLineThickness.toDouble()).toFloat(),
+                    artistFontKey = dJson.optString("artistFontKey", currentDisplay.artistFontKey),
+                    songFontKey = dJson.optString("songFontKey", currentDisplay.songFontKey),
+                    albumFontKey = dJson.optString("albumFontKey", currentDisplay.albumFontKey),
+                    artistBold = dJson.optBoolean("artistBold", currentDisplay.artistBold),
+                    artistItalic = dJson.optBoolean("artistItalic", currentDisplay.artistItalic),
+                    artistUnderline = dJson.optBoolean("artistUnderline", currentDisplay.artistUnderline),
+                    songBold = dJson.optBoolean("songBold", currentDisplay.songBold),
+                    songItalic = dJson.optBoolean("songItalic", currentDisplay.songItalic),
+                    songUnderline = dJson.optBoolean("songUnderline", currentDisplay.songUnderline),
+                    albumBold = dJson.optBoolean("albumBold", currentDisplay.albumBold),
+                    albumItalic = dJson.optBoolean("albumItalic", currentDisplay.albumItalic),
+                    albumUnderline = dJson.optBoolean("albumUnderline", currentDisplay.albumUnderline),
+                    keepScreenOn = dJson.optBoolean("keepScreenOn", currentDisplay.keepScreenOn),
+                    immersiveMode = dJson.optBoolean("immersiveMode", currentDisplay.immersiveMode),
+                    numEdgeRegions = dJson.optInt("numEdgeRegions", currentDisplay.numEdgeRegions),
+                    titleOrder = dJson.optString("titleOrder", "")
+                        .split(",")
+                        .mapNotNull { name -> runCatching { TitleRowType.valueOf(name.trim()) }.getOrNull() }
+                        .ifEmpty { currentDisplay.titleOrder }
+                )
+                updateDisplaySettings(newDisplay)
+            }
+
+            if (json.has("themeSettings")) {
+                val tJson = json.getJSONObject("themeSettings")
+                val currentTheme = themeSettingsFlow.first()
+                val newTheme = currentTheme.copy(
+                    currentThemeName = tJson.optString("currentThemeName", currentTheme.currentThemeName),
+                    customTextRed = tJson.optDouble("customTextRed", currentTheme.customTextRed.toDouble()).toFloat(),
+                    customTextGreen = tJson.optDouble("customTextGreen", currentTheme.customTextGreen.toDouble()).toFloat(),
+                    customTextBlue = tJson.optDouble("customTextBlue", currentTheme.customTextBlue.toDouble()).toFloat(),
+                    customSongTitleRed = tJson.optDouble("customSongTitleRed", currentTheme.customSongTitleRed.toDouble()).toFloat(),
+                    customSongTitleGreen = tJson.optDouble("customSongTitleGreen", currentTheme.customSongTitleGreen.toDouble()).toFloat(),
+                    customSongTitleBlue = tJson.optDouble("customSongTitleBlue", currentTheme.customSongTitleBlue.toDouble()).toFloat(),
+                    customArtistTitleRed = tJson.optDouble("customArtistTitleRed", currentTheme.customArtistTitleRed.toDouble()).toFloat(),
+                    customArtistTitleGreen = tJson.optDouble("customArtistTitleGreen", currentTheme.customArtistTitleGreen.toDouble()).toFloat(),
+                    customArtistTitleBlue = tJson.optDouble("customArtistTitleBlue", currentTheme.customArtistTitleBlue.toDouble()).toFloat(),
+                    customAlbumTitleRed = tJson.optDouble("customAlbumTitleRed", currentTheme.customAlbumTitleRed.toDouble()).toFloat(),
+                    customAlbumTitleGreen = tJson.optDouble("customAlbumTitleGreen", currentTheme.customAlbumTitleGreen.toDouble()).toFloat(),
+                    customAlbumTitleBlue = tJson.optDouble("customAlbumTitleBlue", currentTheme.customAlbumTitleBlue.toDouble()).toFloat(),
+                    customBGRed = tJson.optDouble("customBGRed", currentTheme.customBGRed.toDouble()).toFloat(),
+                    customBGGreen = tJson.optDouble("customBGGreen", currentTheme.customBGGreen.toDouble()).toFloat(),
+                    customBGBlue = tJson.optDouble("customBGBlue", currentTheme.customBGBlue.toDouble()).toFloat(),
+                    dimAtNight = tJson.optBoolean("dimAtNight", currentTheme.dimAtNight),
+                    invertAtNight = tJson.optBoolean("invertAtNight", currentTheme.invertAtNight),
+                    sunRiseHour = tJson.optInt("sunRiseHour", currentTheme.sunRiseHour),
+                    sunSetHour = tJson.optInt("sunSetHour", currentTheme.sunSetHour),
+                    isRounded = tJson.optBoolean("isRounded", currentTheme.isRounded),
+                    isGlass = tJson.optBoolean("isGlass", currentTheme.isGlass)
+                )
+                updateThemeSettings(newTheme)
+            }
+
+            if (json.has("gestureBindings")) {
+                val gJson = json.getJSONObject("gestureBindings")
+                GestureTrigger.entries.forEach { trigger ->
+                    if (gJson.has(trigger.key)) {
+                        val bJson = gJson.getJSONObject(trigger.key)
+                        val actionName = bJson.optString("action", trigger.defaultActionKey)
+                        val action = GestureAction.fromKey(actionName)
+                        val isContinuous = bJson.optBoolean("isContinuous", trigger.isContinuousDefault)
+                        updateGestureBinding(trigger, action, isContinuous)
+                    }
+                }
+            }
+
+            if (json.has("gpsVolumeEnabled")) {
+                val gpsVolume = json.getBoolean("gpsVolumeEnabled")
+                context.dataStore.edit { prefs -> prefs[KEY_GPS_VOLUME] = gpsVolume }
+            }
+            if (json.has("gpsSensitivity")) {
+                val gpsSens = json.getDouble("gpsSensitivity").toFloat()
+                context.dataStore.edit { prefs -> prefs[KEY_GPS_SENSITIVITY] = gpsSens }
+            }
+            if (json.has("autoRescan")) {
+                setAutoRescan(json.getBoolean("autoRescan"))
+            }
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }
+

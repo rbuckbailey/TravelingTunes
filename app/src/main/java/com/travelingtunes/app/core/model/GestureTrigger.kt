@@ -176,3 +176,25 @@ fun GestureTrigger.getSlideDirection(): SlideDirection {
     }
 }
 
+fun GestureTrigger.getReverseTrigger(): GestureTrigger {
+    return when (this) {
+        GestureTrigger.SWIPE_1_LEFT -> GestureTrigger.SWIPE_1_RIGHT
+        GestureTrigger.SWIPE_1_RIGHT -> GestureTrigger.SWIPE_1_LEFT
+        GestureTrigger.SWIPE_1_UP -> GestureTrigger.SWIPE_1_DOWN
+        GestureTrigger.SWIPE_1_DOWN -> GestureTrigger.SWIPE_1_UP
+
+        GestureTrigger.SWIPE_2_LEFT -> GestureTrigger.SWIPE_2_RIGHT
+        GestureTrigger.SWIPE_2_RIGHT -> GestureTrigger.SWIPE_2_LEFT
+        GestureTrigger.SWIPE_2_UP -> GestureTrigger.SWIPE_2_DOWN
+        GestureTrigger.SWIPE_2_DOWN -> GestureTrigger.SWIPE_2_UP
+
+        GestureTrigger.SWIPE_3_LEFT -> GestureTrigger.SWIPE_3_RIGHT
+        GestureTrigger.SWIPE_3_RIGHT -> GestureTrigger.SWIPE_3_LEFT
+        GestureTrigger.SWIPE_3_UP -> GestureTrigger.SWIPE_3_DOWN
+        GestureTrigger.SWIPE_3_DOWN -> GestureTrigger.SWIPE_3_UP
+
+        else -> this
+    }
+}
+
+

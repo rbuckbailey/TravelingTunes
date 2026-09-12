@@ -84,6 +84,7 @@ import com.travelingtunes.app.core.datastore.SettingsDataStore
 import com.travelingtunes.app.core.media.MusicScanner
 import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.media.StreamingCatalogRepository
+import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.Song
 import com.travelingtunes.app.core.model.StreamingAccount
 import com.travelingtunes.app.core.model.StreamingServiceId
@@ -106,6 +107,7 @@ enum class PickerCategory(val displayName: String) {
 fun SongPickerBottomSheet(
     visible: Boolean,
     slideDirection: SlideDirection = SlideDirection.BOTTOM,
+    openingTrigger: GestureTrigger? = null,
     musicDatabase: MusicDatabase,
     playbackManager: PlaybackManager,
     musicScanner: MusicScanner? = null,
@@ -274,6 +276,7 @@ fun SongPickerBottomSheet(
     SlidingOverlay(
         visible = visible,
         slideDirection = slideDirection,
+        openingTrigger = openingTrigger,
         onDismiss = onDismiss
     ) {
         Column(
