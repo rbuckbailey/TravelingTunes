@@ -775,6 +775,10 @@ fun PlayerScreen(
         val isEmbeddingCddb by (musicScanner?.isEmbeddingCddb ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState()
         val cddbEmbeddingStatus by (musicScanner?.cddbStatusMessage ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
 
+        val normalizationMode by (settingsDataStore?.normalizationModeFlow ?: kotlinx.coroutines.flow.flowOf(com.travelingtunes.app.core.model.NormalizationMode.ALBUM)).collectAsState(initial = com.travelingtunes.app.core.model.NormalizationMode.ALBUM)
+        val isAnalyzingVolume by (musicScanner?.isAnalyzingVolume ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState()
+        val volumeAnalysisStatusMessage by (musicScanner?.volumeAnalysisStatusMessage ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
+
         // 9. Menu / Settings Overlay
         SlidingOverlay(
             visible = showMenu,
@@ -803,6 +807,19 @@ fun PlayerScreen(
                 cddbOverridesCount = cddbOverridesCount,
                 isEmbeddingCddb = isEmbeddingCddb,
                 cddbEmbeddingStatus = cddbEmbeddingStatus,
+                normalizationMode = normalizationMode,
+                isAnalyzingVolume = isAnalyzingVolume,
+                volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                onSelectNormalizationMode = { mode ->
+                    coroutineScope.launch {
+                        effectiveSettingsDataStore.setNormalizationMode(mode)
+                    }
+                },
+                onAnalyzeVolumeLevels = {
+                    coroutineScope.launch {
+                        musicScanner?.analyzeLibraryVolumeLevels()
+                    }
+                },
                 onToggleAutoRescan = { enabled ->
                     coroutineScope.launch {
                         effectiveSettingsDataStore.setAutoRescan(enabled)

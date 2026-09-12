@@ -7,6 +7,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.datastore.SettingsDataStore
+import com.travelingtunes.app.core.model.NormalizationMode
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.Song
@@ -60,6 +61,9 @@ class PlaybackManager(
     private val _shuffleMode = MutableStateFlow(ShuffleMode.OFF)
     val shuffleMode: StateFlow<ShuffleMode> = _shuffleMode.asStateFlow()
 
+    private val _normalizationMode = MutableStateFlow(NormalizationMode.ALBUM)
+    val normalizationMode: StateFlow<NormalizationMode> = _normalizationMode.asStateFlow()
+
     private var unshuffledPlaylist: List<Song> = emptyList()
     private var masterPlaylist: List<Song> = emptyList()
 
@@ -67,6 +71,14 @@ class PlaybackManager(
 
     init {
         updateVolumeRatio()
+        if (settingsDataStore != null) {
+            scope.launch {
+                settingsDataStore.normalizationModeFlow.collect { mode ->
+                    _normalizationMode.value = mode
+                    applyNormalizationModifier()
+                }
+            }
+        }
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _isPlaying.value = isPlaying
@@ -83,6 +95,7 @@ class PlaybackManager(
                 }
                 _currentSong.value = song
                 _durationMs.value = player.duration.coerceAtLeast(0L)
+                applyNormalizationModifier(song)
             }
 
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
@@ -98,6 +111,19 @@ class PlaybackManager(
         })
 
         launchTicker()
+    }
+
+    fun applyNormalizationModifier(song: Song? = _currentSong.value, mode: NormalizationMode = _normalizationMode.value) {
+        if (song == null) {
+            player.volume = 1.0f
+            return
+        }
+        val modifier = when (mode) {
+            NormalizationMode.ALBUM -> if (song.albumGain > 0.001f) song.albumGain else 1.0f
+            NormalizationMode.TRACK -> if (song.trackGain > 0.001f) song.trackGain else 1.0f
+            NormalizationMode.OFF -> 1.0f
+        }
+        player.volume = modifier.coerceIn(0.0f, 2.0f)
     }
 
     private fun launchTicker() {

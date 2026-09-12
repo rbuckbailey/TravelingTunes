@@ -22,6 +22,7 @@ import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
+import com.travelingtunes.app.core.model.NormalizationMode
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
 import com.travelingtunes.app.core.model.ShuffleMode
@@ -56,6 +57,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_LAST_SCAN_TIME = longPreferencesKey("lastScanTime")
         val KEY_FIRST_RUN_PROMPTED = booleanPreferencesKey("firstRunPrompted")
         val KEY_AUTO_RESCAN = booleanPreferencesKey("autoRescan")
+        val KEY_NORMALIZATION_MODE = stringPreferencesKey("normalizationMode")
 
         val KEY_VOLUME_SENSITIVITY = floatPreferencesKey("volumeSensitivity")
         val KEY_SEEK_SENSITIVITY = floatPreferencesKey("seekSensitivity")
@@ -343,6 +345,21 @@ class SettingsDataStore(private val context: Context) {
 
     val autoRescanFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_AUTO_RESCAN] ?: false
+    }
+
+    val normalizationModeFlow: Flow<NormalizationMode> = context.dataStore.data.map { prefs ->
+        val modeName = prefs[KEY_NORMALIZATION_MODE]
+        if (modeName != null) {
+            NormalizationMode.entries.find { it.name.equals(modeName, ignoreCase = true) } ?: NormalizationMode.ALBUM
+        } else {
+            NormalizationMode.ALBUM
+        }
+    }
+
+    suspend fun setNormalizationMode(mode: NormalizationMode) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_NORMALIZATION_MODE] = mode.name
+        }
     }
 
     val lastSettingsSubmenuFlow: Flow<String?> = context.dataStore.data.map { prefs ->

@@ -37,6 +37,7 @@ import com.travelingtunes.app.core.location.SpeedVolumeManager
 import com.travelingtunes.app.core.media.MediaStoreRepository
 import com.travelingtunes.app.core.media.MusicScanner
 import com.travelingtunes.app.core.media.PlaybackManager
+import com.travelingtunes.app.core.model.NormalizationMode
 import com.travelingtunes.app.core.theme.TravelingTunesTheme
 import com.travelingtunes.app.feature.player.PlayerScreen
 import com.travelingtunes.app.feature.quickstart.QuickStartScreen
@@ -409,7 +410,12 @@ fun TravelingTunesNavHost(
     onDismissFirstRunPrompt: () -> Unit
 ) {
     val navController = rememberNavController()
+    val coroutineScope = rememberCoroutineScope()
     val showFirstRunPrompt = musicFolderUri.isNullOrEmpty() && !firstRunPrompted
+
+    val normalizationMode by settingsDataStore.normalizationModeFlow.collectAsState(initial = NormalizationMode.ALBUM)
+    val isAnalyzingVolume by musicScanner.isAnalyzingVolume.collectAsState()
+    val volumeAnalysisStatusMessage by musicScanner.volumeAnalysisStatusMessage.collectAsState()
 
     NavHost(navController = navController, startDestination = "player") {
         composable("player") {
@@ -465,6 +471,11 @@ fun TravelingTunesNavHost(
                 cddbOverridesCount = cddbOverridesCount,
                 isEmbeddingCddb = isEmbeddingCddb,
                 cddbEmbeddingStatus = cddbEmbeddingStatus,
+                normalizationMode = normalizationMode,
+                isAnalyzingVolume = isAnalyzingVolume,
+                volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                onSelectNormalizationMode = { mode -> coroutineScope.launch { settingsDataStore.setNormalizationMode(mode) } },
+                onAnalyzeVolumeLevels = { coroutineScope.launch { musicScanner.analyzeLibraryVolumeLevels() } },
                 onToggleAutoRescan = onToggleAutoRescan,
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = onRescanMusicFolder,

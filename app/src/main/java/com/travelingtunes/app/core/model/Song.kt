@@ -17,5 +17,9 @@ data class Song(
     val fileName: String = "",
     val trackNumber: Int = 0,
     val discNumber: Int = 0,
-    val year: Int = 0
+    val year: Int = 0,
+    val avgVolume: Float = 0f,
+    val peakVolume: Float = 0f,
+    val trackGain: Float = 1f,
+    val albumGain: Float = 1f
 )

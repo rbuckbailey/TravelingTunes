@@ -52,11 +52,46 @@ class MusicScanner(
     val isEmbeddingCddb: StateFlow<Boolean> = cddbManager.isEmbeddingCddb
     val cddbStatusMessage: StateFlow<String?> = cddbManager.embeddingCddbStatusMessage
 
+    private val _isAnalyzingVolume = MutableStateFlow(false)
+    val isAnalyzingVolume: StateFlow<Boolean> = _isAnalyzingVolume.asStateFlow()
+
+    private val _volumeAnalysisStatusMessage = MutableStateFlow<String?>(null)
+    val volumeAnalysisStatusMessage: StateFlow<String?> = _volumeAnalysisStatusMessage.asStateFlow()
+
+    private val _volumeAnalysisProgressCurrent = MutableStateFlow(0)
+    val volumeAnalysisProgressCurrent: StateFlow<Int> = _volumeAnalysisProgressCurrent.asStateFlow()
+
+    private val _volumeAnalysisProgressTotal = MutableStateFlow(0)
+    val volumeAnalysisProgressTotal: StateFlow<Int> = _volumeAnalysisProgressTotal.asStateFlow()
+
     suspend fun getCddbOverridesCount(): Int = cddbManager.getCddbOverridesCount()
     suspend fun embedCddbOverrides(): Pair<Int, Int> = cddbManager.embedAllCddbOverrides()
 
     suspend fun downloadMissingArtwork(): Int = albumArtDownloader.downloadMissingArtwork()
     fun cancelDownloadArt() = albumArtDownloader.cancelDownload()
+
+    suspend fun analyzeLibraryVolumeLevels(): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        if (_isAnalyzingVolume.value) return@withContext Pair(0, 0)
+        _isAnalyzingVolume.value = true
+        _volumeAnalysisStatusMessage.value = "Starting volume level analysis..."
+        _volumeAnalysisProgressCurrent.value = 0
+        _volumeAnalysisProgressTotal.value = 0
+
+        val (succ, fail) = AudioVolumeAnalyzer.analyzeAllSongsInDatabase(
+            context = context,
+            database = musicDatabase,
+            onProgress = { current, total, status ->
+                _volumeAnalysisProgressCurrent.value = current
+                _volumeAnalysisProgressTotal.value = total
+                _volumeAnalysisStatusMessage.value = status
+            }
+        )
+
+        val summary = "Analyzed volume for $succ songs ($fail failed)."
+        _volumeAnalysisStatusMessage.value = summary
+        _isAnalyzingVolume.value = false
+        Pair(succ, fail)
+    }
 
     private val _isAutoRescanWaiting = MutableStateFlow(false)
     val isAutoRescanWaiting: StateFlow<Boolean> = _isAutoRescanWaiting.asStateFlow()
@@ -303,6 +338,8 @@ class MusicScanner(
         musicDatabase.clearDatabase()
         if (foundSongs.isNotEmpty()) {
             musicDatabase.insertOrReplaceSongs(foundSongs)
+            _statusMessage.value = "Scanned ${foundSongs.size} songs successfully. Analyzing volume levels..."
+            analyzeLibraryVolumeLevels()
             _statusMessage.value = "Scanned ${foundSongs.size} songs successfully"
         } else {
             _statusMessage.value = "No audio files found in selected folder"

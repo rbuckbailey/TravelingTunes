@@ -54,7 +54,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
 
     companion object {
         private const val DATABASE_NAME = "traveling_tunes_music.db"
-        private const val DATABASE_VERSION = 2
+        private const val DATABASE_VERSION = 3
 
         private const val TABLE_SONGS = "songs"
         private const val TABLE_CDDB_OVERRIDES = "cddb_overrides"
@@ -74,6 +74,10 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         private const val COL_DISC_NUMBER = "disc_number"
         private const val COL_YEAR = "year"
         private const val COL_USER_RATING = "user_rating"
+        private const val COL_AVG_VOLUME = "avg_volume"
+        private const val COL_PEAK_VOLUME = "peak_volume"
+        private const val COL_TRACK_GAIN = "track_gain"
+        private const val COL_ALBUM_GAIN = "album_gain"
 
         private const val COL_SONG_ID = "song_id"
         private const val COL_CDDB_ID = "cddb_id"
@@ -96,7 +100,11 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                 $COL_TRACK_NUMBER INTEGER NOT NULL DEFAULT 0,
                 $COL_DISC_NUMBER INTEGER NOT NULL DEFAULT 0,
                 $COL_YEAR INTEGER NOT NULL DEFAULT 0,
-                $COL_USER_RATING INTEGER NOT NULL DEFAULT 0
+                $COL_USER_RATING INTEGER NOT NULL DEFAULT 0,
+                $COL_AVG_VOLUME REAL NOT NULL DEFAULT 0.0,
+                $COL_PEAK_VOLUME REAL NOT NULL DEFAULT 0.0,
+                $COL_TRACK_GAIN REAL NOT NULL DEFAULT 1.0,
+                $COL_ALBUM_GAIN REAL NOT NULL DEFAULT 1.0
             )
         """.trimIndent()
         db.execSQL(createSongsTable)
@@ -118,9 +126,22 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_SONGS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_CDDB_OVERRIDES")
-        onCreate(db)
+        if (oldVersion < 3) {
+            try {
+                db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_AVG_VOLUME REAL NOT NULL DEFAULT 0.0")
+                db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_PEAK_VOLUME REAL NOT NULL DEFAULT 0.0")
+                db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_TRACK_GAIN REAL NOT NULL DEFAULT 1.0")
+                db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_ALBUM_GAIN REAL NOT NULL DEFAULT 1.0")
+            } catch (_: Exception) {
+                db.execSQL("DROP TABLE IF EXISTS $TABLE_SONGS")
+                db.execSQL("DROP TABLE IF EXISTS $TABLE_CDDB_OVERRIDES")
+                onCreate(db)
+            }
+        } else {
+            db.execSQL("DROP TABLE IF EXISTS $TABLE_SONGS")
+            db.execSQL("DROP TABLE IF EXISTS $TABLE_CDDB_OVERRIDES")
+            onCreate(db)
+        }
     }
 
     suspend fun insertOrReplaceSongs(songs: List<Song>) = withContext(Dispatchers.IO) {
@@ -144,6 +165,10 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                     put(COL_DISC_NUMBER, song.discNumber)
                     put(COL_YEAR, song.year)
                     put(COL_USER_RATING, song.userRating)
+                    put(COL_AVG_VOLUME, song.avgVolume)
+                    put(COL_PEAK_VOLUME, song.peakVolume)
+                    put(COL_TRACK_GAIN, song.trackGain)
+                    put(COL_ALBUM_GAIN, song.albumGain)
                 }
                 db.insertWithOnConflict(TABLE_SONGS, null, cv, SQLiteDatabase.CONFLICT_REPLACE)
             }
@@ -540,6 +565,40 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         LibraryStats(totalSongs, totalAlbums, totalArtists, totalGenres)
     }
 
+    suspend fun updateSongVolumeAnalysis(
+        songId: Long,
+        avgVolume: Float,
+        peakVolume: Float,
+        trackGain: Float,
+        albumGain: Float = 1f
+    ) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            put(COL_AVG_VOLUME, avgVolume)
+            put(COL_PEAK_VOLUME, peakVolume)
+            put(COL_TRACK_GAIN, trackGain)
+            put(COL_ALBUM_GAIN, albumGain)
+        }
+        db.update(TABLE_SONGS, cv, "$COL_ID = ?", arrayOf(songId.toString()))
+    }
+
+    suspend fun updateAlbumGain(
+        albumName: String,
+        artistName: String,
+        albumGain: Float
+    ) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            put(COL_ALBUM_GAIN, albumGain)
+        }
+        db.update(
+            TABLE_SONGS,
+            cv,
+            "$COL_ALBUM = ? AND $COL_ARTIST = ?",
+            arrayOf(albumName, artistName)
+        )
+    }
+
     private fun cursorToSong(c: android.database.Cursor): Song {
         val id = c.getLong(c.getColumnIndexOrThrow(COL_ID))
         val title = c.getString(c.getColumnIndexOrThrow(COL_TITLE))
@@ -558,6 +617,15 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         val year = c.getInt(c.getColumnIndexOrThrow(COL_YEAR))
         val userRating = c.getInt(c.getColumnIndexOrThrow(COL_USER_RATING))
 
+        val avgVolIdx = c.getColumnIndex(COL_AVG_VOLUME)
+        val avgVolume = if (avgVolIdx != -1) c.getFloat(avgVolIdx) else 0f
+        val peakVolIdx = c.getColumnIndex(COL_PEAK_VOLUME)
+        val peakVolume = if (peakVolIdx != -1) c.getFloat(peakVolIdx) else 0f
+        val trackGainIdx = c.getColumnIndex(COL_TRACK_GAIN)
+        val trackGain = if (trackGainIdx != -1) c.getFloat(trackGainIdx) else 1f
+        val albumGainIdx = c.getColumnIndex(COL_ALBUM_GAIN)
+        val albumGain = if (albumGainIdx != -1) c.getFloat(albumGainIdx) else 1f
+
         return Song(
             id = id,
             title = title,
@@ -573,7 +641,11 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             fileName = fileName,
             trackNumber = trackNumber,
             discNumber = discNumber,
-            year = year
+            year = year,
+            avgVolume = avgVolume,
+            peakVolume = peakVolume,
+            trackGain = trackGain,
+            albumGain = albumGain
         )
     }
 }

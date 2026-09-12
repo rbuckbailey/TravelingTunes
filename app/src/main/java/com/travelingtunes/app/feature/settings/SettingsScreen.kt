@@ -58,6 +58,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import com.travelingtunes.app.core.model.NormalizationMode
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -195,6 +197,11 @@ fun SettingsScreen(
     cddbOverridesCount: Int = 0,
     isEmbeddingCddb: Boolean = false,
     cddbEmbeddingStatus: String? = null,
+    normalizationMode: NormalizationMode = NormalizationMode.ALBUM,
+    isAnalyzingVolume: Boolean = false,
+    volumeAnalysisStatusMessage: String? = null,
+    onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
+    onAnalyzeVolumeLevels: () -> Unit = {},
     onPickMusicFolder: () -> Unit = {},
     onRescanMusicFolder: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
@@ -472,6 +479,11 @@ fun SettingsScreen(
                                 cddbOverridesCount = cddbOverridesCount,
                                 isEmbeddingCddb = isEmbeddingCddb,
                                 cddbEmbeddingStatus = cddbEmbeddingStatus,
+                                normalizationMode = normalizationMode,
+                                isAnalyzingVolume = isAnalyzingVolume,
+                                volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                                onSelectNormalizationMode = onSelectNormalizationMode,
+                                onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
                                 onToggleAutoRescan = onToggleAutoRescan,
                                 availableFonts = availableFonts,
                                 onPickMusicFolder = onPickMusicFolder,
@@ -691,6 +703,11 @@ fun SettingsScreen(
                         cddbOverridesCount = cddbOverridesCount,
                         isEmbeddingCddb = isEmbeddingCddb,
                         cddbEmbeddingStatus = cddbEmbeddingStatus,
+                        normalizationMode = normalizationMode,
+                        isAnalyzingVolume = isAnalyzingVolume,
+                        volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                        onSelectNormalizationMode = onSelectNormalizationMode,
+                        onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
                         onToggleAutoRescan = onToggleAutoRescan,
                         availableFonts = availableFonts,
                         onPickMusicFolder = onPickMusicFolder,
@@ -836,6 +853,11 @@ private fun SubmenuContent(
     cddbOverridesCount: Int = 0,
     isEmbeddingCddb: Boolean = false,
     cddbEmbeddingStatus: String? = null,
+    normalizationMode: NormalizationMode = NormalizationMode.ALBUM,
+    isAnalyzingVolume: Boolean = false,
+    volumeAnalysisStatusMessage: String? = null,
+    onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
+    onAnalyzeVolumeLevels: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
     availableFonts: List<FontOption>,
     onPickMusicFolder: () -> Unit,
@@ -896,6 +918,11 @@ private fun SubmenuContent(
                     cddbOverridesCount = cddbOverridesCount,
                     isEmbeddingCddb = isEmbeddingCddb,
                     cddbEmbeddingStatus = cddbEmbeddingStatus,
+                    normalizationMode = normalizationMode,
+                    isAnalyzingVolume = isAnalyzingVolume,
+                    volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                    onSelectNormalizationMode = onSelectNormalizationMode,
+                    onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
                     onToggleAutoRescan = onToggleAutoRescan,
                     libraryStats = libraryStats,
                     onPickMusicFolder = onPickMusicFolder,
@@ -977,6 +1004,11 @@ private fun LibrarySettingsContent(
     cddbOverridesCount: Int = 0,
     isEmbeddingCddb: Boolean = false,
     cddbEmbeddingStatus: String? = null,
+    normalizationMode: NormalizationMode = NormalizationMode.ALBUM,
+    isAnalyzingVolume: Boolean = false,
+    volumeAnalysisStatusMessage: String? = null,
+    onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
+    onAnalyzeVolumeLevels: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
@@ -1127,6 +1159,94 @@ private fun LibrarySettingsContent(
                     ) {
                         Text(
                             text = if (isEmbeddingCddb) (cddbEmbeddingStatus ?: "Embedding ID3 tags...") else "Embed CDDB Overrides as ID3 Tags",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Volume Normalization",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Automatically adjust playback gain so quiet tracks are audible and loud tracks don't blow out speakers.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                NormalizationMode.entries.forEach { mode ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelectNormalizationMode(mode) }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = (normalizationMode == mode),
+                            onClick = { onSelectNormalizationMode(mode) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = mode.displayName,
+                                fontWeight = if (normalizationMode == mode) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 14.sp
+                            )
+                            val desc = when (mode) {
+                                NormalizationMode.ALBUM -> "Preserves album dynamic range (default)"
+                                NormalizationMode.TRACK -> "Equalizes every track to standard volume"
+                                NormalizationMode.OFF -> "Disables volume gain adjustment"
+                            }
+                            Text(text = desc, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Volume Analysis",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                        if (!volumeAnalysisStatusMessage.isNullOrBlank()) {
+                            Text(
+                                text = volumeAnalysisStatusMessage,
+                                fontSize = 12.sp,
+                                color = if (isAnalyzingVolume) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Text(
+                                text = "Analyze track RMS and peak volume levels",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    TextButton(
+                        onClick = onAnalyzeVolumeLevels,
+                        enabled = !isAnalyzingVolume
+                    ) {
+                        Text(
+                            text = if (isAnalyzingVolume) "Analyzing..." else "Analyze",
                             fontWeight = FontWeight.Bold
                         )
                     }
