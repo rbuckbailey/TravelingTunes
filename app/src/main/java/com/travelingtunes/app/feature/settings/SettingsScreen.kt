@@ -98,6 +98,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -228,6 +229,12 @@ fun SettingsScreen(
                         GesturesSettingsCard(
                             expanded = gesturesExpanded,
                             onExpandToggle = { gesturesExpanded = !gesturesExpanded },
+                            displaySettings = displaySettings,
+                            onUpdateDisplaySettings = { newSettings ->
+                                coroutineScope.launch {
+                                    settingsDataStore.updateDisplaySettings(newSettings)
+                                }
+                            },
                             onOpenGestureAssignments = onOpenGestureAssignments,
                             onResetGestureAssignments = {
                                 coroutineScope.launch {
@@ -279,6 +286,12 @@ fun SettingsScreen(
                     GesturesSettingsCard(
                         expanded = gesturesExpanded,
                         onExpandToggle = { gesturesExpanded = !gesturesExpanded },
+                        displaySettings = displaySettings,
+                        onUpdateDisplaySettings = { newSettings ->
+                            coroutineScope.launch {
+                                settingsDataStore.updateDisplaySettings(newSettings)
+                            }
+                        },
                         onOpenGestureAssignments = onOpenGestureAssignments,
                         onResetGestureAssignments = {
                             coroutineScope.launch {
@@ -572,6 +585,8 @@ private fun LibrarySettingsCard(
 private fun GesturesSettingsCard(
     expanded: Boolean,
     onExpandToggle: () -> Unit,
+    displaySettings: DisplaySettings,
+    onUpdateDisplaySettings: (DisplaySettings) -> Unit,
     onOpenGestureAssignments: () -> Unit,
     onResetGestureAssignments: () -> Unit,
     modifier: Modifier = Modifier
@@ -583,9 +598,31 @@ private fun GesturesSettingsCard(
         onExpandToggle = onExpandToggle,
         modifier = modifier
     ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Text(
+                text = "Number of Edge Regions: ${displaySettings.numEdgeRegions}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Configures active region slots (1 to 7) along top & bottom screen edges",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Slider(
+                value = displaySettings.numEdgeRegions.toFloat(),
+                onValueChange = { newValue ->
+                    onUpdateDisplaySettings(displaySettings.copy(numEdgeRegions = newValue.roundToInt()))
+                },
+                valueRange = 1f..7f,
+                steps = 5
+            )
+        }
+        Divider()
         ListItem(
             headlineContent = { Text("Reconfigure Gesture Assignments") },
-            supportingContent = { Text("Customize 1/2/3 finger swipes, taps, long presses, and corners") },
+            supportingContent = { Text("Customize 1/2/3 finger swipes, taps, long presses, and edge regions") },
             modifier = Modifier.clickable { onOpenGestureAssignments() }
         )
         ListItem(

@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -34,19 +35,25 @@ interface GestureEventListener {
 @Composable
 fun Modifier.travelingTunesGestures(
     listener: GestureEventListener,
-    gestureBindings: Map<GestureTrigger, GestureBinding>? = null
+    gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
+    numEdgeRegions: Int = 3,
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
 ): Modifier {
     val currentListener by rememberUpdatedState(listener)
     val currentBindings by rememberUpdatedState(gestureBindings)
+    val currentNumEdgeRegions by rememberUpdatedState(numEdgeRegions)
+    val currentRegionBounds by rememberUpdatedState(regionBounds)
 
     return this.pointerInput(Unit) {
-        detectTravelingTunesGestures(currentListener, currentBindings)
+        detectTravelingTunesGestures(currentListener, currentBindings, currentNumEdgeRegions, currentRegionBounds)
     }
 }
 
 suspend fun PointerInputScope.detectTravelingTunesGestures(
     listener: GestureEventListener,
-    gestureBindings: Map<GestureTrigger, GestureBinding>? = null
+    gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
+    numEdgeRegions: Int = 3,
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
 ) {
     val minTranslationPx = 28f * density
     val slopPx = 40f * density
@@ -64,7 +71,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
         val canTriple1 = hasTripleTap(tap1.fingers, gestureBindings)
 
         if (!canDouble1 && !canTriple1) {
-            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener)
+            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
             return@awaitEachGesture
         }
 
@@ -78,13 +85,13 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
         }
 
         if (secondDown == null) {
-            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener)
+            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
             return@awaitEachGesture
         }
 
         val dist12 = hypot(secondDown.position.x - tap1.startPosition.x, secondDown.position.y - tap1.startPosition.y)
         if (dist12 > slopPx) {
-            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener)
+            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
             return@awaitEachGesture
         }
 
@@ -273,10 +280,12 @@ private fun emitSingleTap(
     startPosition: Offset,
     width: Float,
     height: Float,
-    listener: GestureEventListener
+    listener: GestureEventListener,
+    numEdgeRegions: Int = 3,
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
 ) {
     if (fingers == 1) {
-        val cornerTrigger = detectCornerRegion(startPosition, width, height)
+        val cornerTrigger = detectCornerRegion(startPosition, width, height, numEdgeRegions, regionBounds)
         if (cornerTrigger != null) {
             listener.onGestureTriggered(cornerTrigger)
             return
@@ -339,27 +348,43 @@ private fun determineSwipeTrigger(fingers: Int, dx: Float, dy: Float): GestureTr
     }
 }
 
-private fun detectCornerRegion(pos: Offset, width: Float, height: Float): GestureTrigger? {
+private fun detectCornerRegion(
+    pos: Offset,
+    width: Float,
+    height: Float,
+    numEdgeRegions: Int = 3,
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
+): GestureTrigger? {
     if (width <= 0 || height <= 0) return null
-    val relX = pos.x / width
-    val relY = pos.y / height
+
+    val normX = pos.x / width
+    val normY = pos.y / height
+
+    if (normX < regionBounds.left || normX > regionBounds.right ||
+        normY < regionBounds.top || normY > regionBounds.bottom) {
+        return null
+    }
+
+    val containerWidthNorm = regionBounds.width
+    val containerHeightNorm = regionBounds.height
+    if (containerWidthNorm <= 0f || containerHeightNorm <= 0f) return null
+
+    val relX = (normX - regionBounds.left) / containerWidthNorm
+    val relY = (normY - regionBounds.top) / containerHeightNorm
 
     val isTop = relY < 0.15f
     val isBottom = relY > 0.85f
 
-    if (isTop) {
-        return when {
-            relX < 0.33f -> GestureTrigger.CORNER_TOP_LEFT
-            relX <= 0.67f -> GestureTrigger.CORNER_TOP_CENTER
-            else -> GestureTrigger.CORNER_TOP_RIGHT
-        }
-    } else if (isBottom) {
-        return when {
-            relX < 0.33f -> GestureTrigger.CORNER_BOTTOM_LEFT
-            relX <= 0.67f -> GestureTrigger.CORNER_BOTTOM_CENTER
-            else -> GestureTrigger.CORNER_BOTTOM_RIGHT
-        }
-    }
+    if (!isTop && !isBottom) return null
 
-    return null
+    val n = numEdgeRegions.coerceIn(1, 7)
+    val regionIndex = (relX * n).toInt().coerceIn(0, n - 1)
+    val activeSlots = GestureTrigger.getActiveRegionSlots(n)
+    val slotIndex = activeSlots[regionIndex]
+
+    return if (isTop) {
+        GestureTrigger.TOP_REGION_SLOTS[slotIndex]
+    } else {
+        GestureTrigger.BOTTOM_REGION_SLOTS[slotIndex]
+    }
 }

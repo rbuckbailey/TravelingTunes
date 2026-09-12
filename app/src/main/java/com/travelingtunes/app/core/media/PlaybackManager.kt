@@ -104,10 +104,12 @@ class PlaybackManager(
         scope.launch {
             var tickCount = 0
             while (isActive) {
-                if (player.isPlaying) {
-                    _currentPositionMs.value = player.currentPosition.coerceAtLeast(0L)
-                    _durationMs.value = player.duration.coerceAtLeast(0L)
+                val pos = player.currentPosition.coerceAtLeast(0L)
+                val dur = player.duration.coerceAtLeast(0L)
+                if (player.isPlaying || kotlin.math.abs(pos - _currentPositionMs.value) > 1000L) {
+                    _currentPositionMs.value = pos
                 }
+                _durationMs.value = dur
                 updateVolumeRatio()
 
                 tickCount++
@@ -327,14 +329,36 @@ class PlaybackManager(
         }
     }
 
+    fun seekByDelta(deltaMs: Long) {
+        val duration = _durationMs.value.coerceAtLeast(0L)
+        val currentPos = _currentPositionMs.value
+        val targetPos = (currentPos + deltaMs).coerceIn(0L, duration)
+
+        _currentPositionMs.value = targetPos
+        player.seekTo(targetPos)
+
+        if (duration > 0L) {
+            val currentSec = targetPos / 1000L
+            val durSec = duration / 1000L
+            val formatted = String.format(java.util.Locale.US, "%02d:%02d / %02d:%02d", currentSec / 60, currentSec % 60, durSec / 60, durSec % 60)
+            showHudAction(formatted)
+        }
+    }
+
+    fun seekToPosition(positionMs: Long) {
+        val duration = _durationMs.value.coerceAtLeast(0L)
+        val targetPos = positionMs.coerceIn(0L, duration)
+
+        _currentPositionMs.value = targetPos
+        player.seekTo(targetPos)
+    }
+
     fun fastForward(deltaMs: Long = 10000L) {
-        val newPos = (player.currentPosition + deltaMs).coerceAtMost(player.duration.coerceAtLeast(0L))
-        player.seekTo(newPos)
+        seekByDelta(deltaMs)
     }
 
     fun rewind(deltaMs: Long = 10000L) {
-        val newPos = (player.currentPosition - deltaMs).coerceAtLeast(0L)
-        player.seekTo(newPos)
+        seekByDelta(-deltaMs)
     }
 
     fun increaseVolume() {

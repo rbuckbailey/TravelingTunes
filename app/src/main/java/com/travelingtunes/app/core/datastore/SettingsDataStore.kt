@@ -89,6 +89,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_ALBUM_FONT_KEY = stringPreferencesKey("albumFontKey")
         val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
         val KEY_IMMERSIVE_MODE = booleanPreferencesKey("immersiveMode")
+        val KEY_NUM_EDGE_REGIONS = intPreferencesKey("numEdgeRegions")
 
         // Theme
         val KEY_CURRENT_THEME = stringPreferencesKey("currentTheme")
@@ -167,7 +168,8 @@ class SettingsDataStore(private val context: Context) {
             songFontKey = prefs[KEY_SONG_FONT_KEY] ?: "DEFAULT",
             albumFontKey = prefs[KEY_ALBUM_FONT_KEY] ?: "DEFAULT",
             keepScreenOn = prefs[KEY_KEEP_SCREEN_ON] ?: prefs[KEY_DISABLE_AUTOLOCK] ?: true,
-            immersiveMode = prefs[KEY_IMMERSIVE_MODE] ?: true
+            immersiveMode = prefs[KEY_IMMERSIVE_MODE] ?: true,
+            numEdgeRegions = prefs[KEY_NUM_EDGE_REGIONS] ?: 3
         )
     }
 
@@ -383,6 +385,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_ALBUM_FONT_KEY] = update.albumFontKey
             prefs[KEY_KEEP_SCREEN_ON] = update.keepScreenOn
             prefs[KEY_IMMERSIVE_MODE] = update.immersiveMode
+            prefs[KEY_NUM_EDGE_REGIONS] = update.numEdgeRegions
         }
     }
 

@@ -52,15 +52,66 @@ enum class GestureTrigger(
     LONG_PRESS_2("2LongPress", "2-Finger Long Press", GestureCategory.LONG_PRESS, "Unassigned"),
     LONG_PRESS_3("3LongPress", "3-Finger Long Press", GestureCategory.LONG_PRESS, "ShuffleAllSongs"),
 
-    // Screen Regions / Corners
-    CORNER_TOP_LEFT("TopLeft", "Top-Left Region", GestureCategory.SCREEN_REGION, "ToggleRepeat"),
-    CORNER_TOP_CENTER("TopCenter", "Top-Center Region", GestureCategory.SCREEN_REGION, "PlayCurrentAlbum"),
-    CORNER_TOP_RIGHT("TopRight", "Top-Right Region", GestureCategory.SCREEN_REGION, "ToggleShuffle"),
-    CORNER_BOTTOM_LEFT("BottomLeft", "Bottom-Left Region", GestureCategory.SCREEN_REGION, "SongPicker"),
-    CORNER_BOTTOM_CENTER("BottomCenter", "Bottom-Center Region", GestureCategory.SCREEN_REGION, "Unassigned"),
-    CORNER_BOTTOM_RIGHT("BottomRight", "Bottom-Right Region", GestureCategory.SCREEN_REGION, "Menu");
+    // Screen Regions / Edge Region Slots (1 to 7)
+    CORNER_TOP_LEFT("TopLeft", "Top Region 1", GestureCategory.SCREEN_REGION, "ToggleRepeat"),
+    CORNER_TOP_2("TopRegion2", "Top Region 2", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_TOP_3("TopRegion3", "Top Region 3", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_TOP_CENTER("TopCenter", "Top Region 4", GestureCategory.SCREEN_REGION, "PlayCurrentAlbum"),
+    CORNER_TOP_5("TopRegion5", "Top Region 5", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_TOP_6("TopRegion6", "Top Region 6", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_TOP_RIGHT("TopRight", "Top Region 7", GestureCategory.SCREEN_REGION, "ToggleShuffle"),
+
+    CORNER_BOTTOM_LEFT("BottomLeft", "Bottom Region 1", GestureCategory.SCREEN_REGION, "SongPicker"),
+    CORNER_BOTTOM_2("BottomRegion2", "Bottom Region 2", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_BOTTOM_3("BottomRegion3", "Bottom Region 3", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_BOTTOM_CENTER("BottomCenter", "Bottom Region 4", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_BOTTOM_5("BottomRegion5", "Bottom Region 5", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_BOTTOM_6("BottomRegion6", "Bottom Region 6", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_BOTTOM_RIGHT("BottomRight", "Bottom Region 7", GestureCategory.SCREEN_REGION, "Menu");
 
     companion object {
+        val TOP_REGION_SLOTS = listOf(
+            CORNER_TOP_LEFT,
+            CORNER_TOP_2,
+            CORNER_TOP_3,
+            CORNER_TOP_CENTER,
+            CORNER_TOP_5,
+            CORNER_TOP_6,
+            CORNER_TOP_RIGHT
+        )
+
+        val BOTTOM_REGION_SLOTS = listOf(
+            CORNER_BOTTOM_LEFT,
+            CORNER_BOTTOM_2,
+            CORNER_BOTTOM_3,
+            CORNER_BOTTOM_CENTER,
+            CORNER_BOTTOM_5,
+            CORNER_BOTTOM_6,
+            CORNER_BOTTOM_RIGHT
+        )
+
+        fun getActiveRegionSlots(numRegions: Int): List<Int> {
+            val n = numRegions.coerceIn(1, 7)
+            if (n == 1) return listOf(3)
+            if (n == 2) return listOf(0, 6)
+            val slots = mutableListOf<Int>()
+            for (i in 0 until n) {
+                val slotIndex = kotlin.math.round(i * 6.0 / (n - 1)).toInt()
+                if (!slots.contains(slotIndex)) {
+                    slots.add(slotIndex)
+                }
+            }
+            return slots
+        }
+
+        fun getActiveTopTriggers(numRegions: Int): List<GestureTrigger> {
+            return getActiveRegionSlots(numRegions).map { TOP_REGION_SLOTS[it] }
+        }
+
+        fun getActiveBottomTriggers(numRegions: Int): List<GestureTrigger> {
+            return getActiveRegionSlots(numRegions).map { BOTTOM_REGION_SLOTS[it] }
+        }
+
         fun fromKey(key: String): GestureTrigger? = entries.find { it.key.equals(key, ignoreCase = true) }
     }
 }

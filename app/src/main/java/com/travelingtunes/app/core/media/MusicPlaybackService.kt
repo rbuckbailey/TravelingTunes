@@ -192,14 +192,7 @@ class MusicPlaybackService : MediaLibraryService() {
         session: MediaLibrarySession,
         bindings: Map<GestureTrigger, GestureBinding>
     ) {
-        val regionTriggers = listOf(
-            GestureTrigger.CORNER_TOP_LEFT,
-            GestureTrigger.CORNER_TOP_CENTER,
-            GestureTrigger.CORNER_TOP_RIGHT,
-            GestureTrigger.CORNER_BOTTOM_LEFT,
-            GestureTrigger.CORNER_BOTTOM_CENTER,
-            GestureTrigger.CORNER_BOTTOM_RIGHT
-        )
+        val regionTriggers = GestureTrigger.TOP_REGION_SLOTS + GestureTrigger.BOTTOM_REGION_SLOTS
 
         val assignedActions = mutableSetOf<GestureAction>()
         val buttons = mutableListOf<CommandButton>()

@@ -82,5 +82,6 @@ data class DisplaySettings(
     val songFontKey: String = "DEFAULT",
     val albumFontKey: String = "DEFAULT",
     val keepScreenOn: Boolean = true,
-    val immersiveMode: Boolean = true
+    val immersiveMode: Boolean = true,
+    val numEdgeRegions: Int = 3
 )

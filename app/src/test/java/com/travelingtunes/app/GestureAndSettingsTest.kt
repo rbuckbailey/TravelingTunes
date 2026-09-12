@@ -179,4 +179,28 @@ class GestureAndSettingsTest {
         )
         assertEquals(com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED, displaySettings.artDisplayLayout)
     }
+
+    @Test
+    fun testDefaultNumEdgeRegions() {
+        val displaySettings = com.travelingtunes.app.core.model.DisplaySettings()
+        assertEquals(3, displaySettings.numEdgeRegions)
+    }
+
+    @Test
+    fun testGetActiveRegionSlots() {
+        // N = 1: 1 alone in center (slot index 3 -> slot 4)
+        assertEquals(listOf(3), GestureTrigger.getActiveRegionSlots(1))
+
+        // N = 2: 2 in corners (slots 0 and 6 -> slots 1 and 7)
+        assertEquals(listOf(0, 6), GestureTrigger.getActiveRegionSlots(2))
+
+        // N = 3: first and last corners, middle center (slots 0, 3, 6 -> slots 1, 4, 7)
+        assertEquals(listOf(0, 3, 6), GestureTrigger.getActiveRegionSlots(3))
+
+        // N = 4: slots 0, 2, 4, 6
+        assertEquals(listOf(0, 2, 4, 6), GestureTrigger.getActiveRegionSlots(4))
+
+        // N = 7: all slots 0..6
+        assertEquals(listOf(0, 1, 2, 3, 4, 5, 6), GestureTrigger.getActiveRegionSlots(7))
+    }
 }

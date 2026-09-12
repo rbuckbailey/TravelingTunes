@@ -50,6 +50,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -248,25 +250,35 @@ fun PlayerScreen(
             val binding = resolveGestureBinding(trigger, gestureBindings)
             val action = binding.action
 
+            val msPerPixel = ((playbackManager.durationMs.value.coerceAtLeast(30000L)).toFloat() / screenWidthPx.coerceAtLeast(1f) * 0.5f).coerceIn(20f, 250f)
+
             when (action) {
                 GestureAction.VOLUME_UP, GestureAction.VOLUME_DOWN -> {
                     playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
                 }
                 GestureAction.FAST_FORWARD -> {
-                    playbackManager.fastForward(2000L)
+                    val deltaMs = (deltaX * msPerPixel).toLong()
+                    playbackManager.seekByDelta(deltaMs)
                 }
                 GestureAction.REWIND -> {
-                    playbackManager.rewind(2000L)
+                    val deltaMs = (deltaX * msPerPixel).toLong()
+                    playbackManager.seekByDelta(deltaMs)
                 }
                 else -> {
-                    if (trigger.name.contains("SWIPE") && (trigger.name.contains("UP") || trigger.name.contains("DOWN"))) {
-                        playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
+                    if (trigger.name.contains("SWIPE")) {
+                        if (trigger.name.contains("UP") || trigger.name.contains("DOWN")) {
+                            playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
+                        } else if (trigger.name.contains("RIGHT") || trigger.name.contains("LEFT")) {
+                            val deltaMs = (deltaX * msPerPixel).toLong()
+                            playbackManager.seekByDelta(deltaMs)
+                        }
                     }
                 }
             }
         }
 
         override fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int) {
+            playbackManager.persistCurrentPlaybackState()
             if (kotlin.math.abs(totalDy) > 20f && kotlin.math.abs(totalDy) > kotlin.math.abs(totalDx)) {
                 val volPct = (playbackManager.currentVolumeRatio.value * 100).toInt()
                 playbackManager.showHudAction("Volume: $volPct%")
@@ -287,31 +299,56 @@ fun PlayerScreen(
         ) { page ->
             val pageSong = currentPlaylist.getOrNull(page) ?: currentSong
 
-            val hasTopButtons = listOf(
-                GestureTrigger.CORNER_TOP_LEFT,
-                GestureTrigger.CORNER_TOP_CENTER,
-                GestureTrigger.CORNER_TOP_RIGHT
-            ).any { resolveGestureBinding(it, gestureBindings).action != GestureAction.UNASSIGNED }
+            val activeTopTriggers = GestureTrigger.getActiveTopTriggers(displaySettings.numEdgeRegions)
+            val activeBottomTriggers = GestureTrigger.getActiveBottomTriggers(displaySettings.numEdgeRegions)
 
-            val hasBottomButtons = listOf(
-                GestureTrigger.CORNER_BOTTOM_LEFT,
-                GestureTrigger.CORNER_BOTTOM_CENTER,
-                GestureTrigger.CORNER_BOTTOM_RIGHT
-            ).any { resolveGestureBinding(it, gestureBindings).action != GestureAction.UNASSIGNED }
+            val hasTopButtons = activeTopTriggers.any { resolveGestureBinding(it, gestureBindings).action != GestureAction.UNASSIGNED }
+            val hasBottomButtons = activeBottomTriggers.any { resolveGestureBinding(it, gestureBindings).action != GestureAction.UNASSIGNED }
 
             PlayerPageContent(
                 pageSong = pageSong,
                 displaySettings = displaySettings,
                 hasTopButtons = hasTopButtons,
-                hasBottomButtons = hasBottomButtons
+                hasBottomButtons = hasBottomButtons,
+                gestureBindings = gestureBindings,
+                playbackManager = playbackManager,
+                repeatMode = repeatMode,
+                shuffleMode = shuffleMode,
+                isPlaying = isPlaying,
+                onOpenSongPicker = { showSongPicker = true },
+                onOpenSettings = onOpenSettings,
+                onOpenQuickStart = onOpenQuickStart,
+                onShowRepeatOptions = { showRepeatOptionsDialog = true },
+                onShowShuffleOptions = { showShuffleOptionsDialog = true }
             )
         }
 
         // 2. Gesture Detector Touch Overlay
+        val configuration = LocalConfiguration.current
+        val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && currentSong != null
+
+        val regionBounds = if (isDockedScreen) {
+            if (isLandscape) {
+                val isDockedRight = displaySettings.artAlignmentLandscape == com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT
+                if (isDockedRight) Rect(0f, 0f, 0.5f, 1f) else Rect(0.5f, 0f, 1f, 1f)
+            } else {
+                val isDockedBottom = displaySettings.artAlignmentPortrait == com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM
+                if (isDockedBottom) Rect(0f, 0f, 1f, 0.5f) else Rect(0f, 0.5f, 1f, 1f)
+            }
+        } else {
+            Rect(0f, 0f, 1f, 1f)
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .travelingTunesGestures(gestureListener, gestureBindings)
+                .travelingTunesGestures(
+                    listener = gestureListener,
+                    gestureBindings = gestureBindings,
+                    numEdgeRegions = displaySettings.numEdgeRegions,
+                    regionBounds = regionBounds
+                )
         )
 
         // 3. Geometric Volume HUD Overlay (Bar / Line / Edge)
@@ -331,19 +368,22 @@ fun PlayerScreen(
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
-        // 5. Screen Region Icons Overlay
-        ScreenRegionIconsOverlay(
-            gestureBindings = gestureBindings,
-            playbackManager = playbackManager,
-            repeatMode = repeatMode,
-            shuffleMode = shuffleMode,
-            isPlaying = isPlaying,
-            onOpenSongPicker = { showSongPicker = true },
-            onOpenSettings = onOpenSettings,
-            onOpenQuickStart = onOpenQuickStart,
-            onShowRepeatOptions = { showRepeatOptionsDialog = true },
-            onShowShuffleOptions = { showShuffleOptionsDialog = true }
-        )
+        // 5. Screen Region Icons Overlay (only if not docked)
+        if (!isDockedScreen) {
+            ScreenRegionIconsOverlay(
+                gestureBindings = gestureBindings,
+                playbackManager = playbackManager,
+                repeatMode = repeatMode,
+                shuffleMode = shuffleMode,
+                isPlaying = isPlaying,
+                onOpenSongPicker = { showSongPicker = true },
+                onOpenSettings = onOpenSettings,
+                onOpenQuickStart = onOpenQuickStart,
+                onShowRepeatOptions = { showRepeatOptionsDialog = true },
+                onShowShuffleOptions = { showShuffleOptionsDialog = true },
+                numEdgeRegions = displaySettings.numEdgeRegions
+            )
+        }
 
         /* Action HUD Banner Overlay disabled per user requirement (no pop-up announcements needed)
         AnimatedVisibility(
@@ -437,11 +477,61 @@ fun PlayerScreen(
 }
 
 @Composable
+private fun TitleAndButtonsContainer(
+    pageSong: Song?,
+    displaySettings: DisplaySettings,
+    hasTopButtons: Boolean,
+    hasBottomButtons: Boolean,
+    gestureBindings: Map<GestureTrigger, GestureBinding>,
+    playbackManager: PlaybackManager,
+    repeatMode: RepeatMode,
+    shuffleMode: ShuffleMode,
+    isPlaying: Boolean,
+    onOpenSongPicker: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenQuickStart: () -> Unit,
+    onShowRepeatOptions: () -> Unit,
+    onShowShuffleOptions: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        SongLabelsLayout(
+            currentSong = pageSong,
+            displaySettings = displaySettings,
+            hasTopButtons = hasTopButtons,
+            hasBottomButtons = hasBottomButtons
+        )
+        ScreenRegionIconsOverlay(
+            gestureBindings = gestureBindings,
+            playbackManager = playbackManager,
+            repeatMode = repeatMode,
+            shuffleMode = shuffleMode,
+            isPlaying = isPlaying,
+            onOpenSongPicker = onOpenSongPicker,
+            onOpenSettings = onOpenSettings,
+            onOpenQuickStart = onOpenQuickStart,
+            onShowRepeatOptions = onShowRepeatOptions,
+            onShowShuffleOptions = onShowShuffleOptions
+        )
+    }
+}
+
+@Composable
 fun PlayerPageContent(
     pageSong: Song?,
     displaySettings: DisplaySettings,
     hasTopButtons: Boolean,
-    hasBottomButtons: Boolean
+    hasBottomButtons: Boolean,
+    gestureBindings: Map<GestureTrigger, GestureBinding>,
+    playbackManager: PlaybackManager,
+    repeatMode: RepeatMode,
+    shuffleMode: ShuffleMode,
+    isPlaying: Boolean,
+    onOpenSongPicker: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenQuickStart: () -> Unit,
+    onShowRepeatOptions: () -> Unit,
+    onShowShuffleOptions: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -453,14 +543,23 @@ fun PlayerPageContent(
             val isDockedRight = displaySettings.artAlignmentLandscape == com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT
             Row(modifier = Modifier.fillMaxSize()) {
                 if (isDockedRight) {
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        SongLabelsLayout(
-                            currentSong = pageSong,
-                            displaySettings = displaySettings,
-                            hasTopButtons = hasTopButtons,
-                            hasBottomButtons = hasBottomButtons
-                        )
-                    }
+                    TitleAndButtonsContainer(
+                        pageSong = pageSong,
+                        displaySettings = displaySettings,
+                        hasTopButtons = hasTopButtons,
+                        hasBottomButtons = hasBottomButtons,
+                        gestureBindings = gestureBindings,
+                        playbackManager = playbackManager,
+                        repeatMode = repeatMode,
+                        shuffleMode = shuffleMode,
+                        isPlaying = isPlaying,
+                        onOpenSongPicker = onOpenSongPicker,
+                        onOpenSettings = onOpenSettings,
+                        onOpenQuickStart = onOpenQuickStart,
+                        onShowRepeatOptions = onShowRepeatOptions,
+                        onShowShuffleOptions = onShowShuffleOptions,
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    )
                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                         PlayerAlbumArtBackground(
                             song = pageSong,
@@ -474,28 +573,46 @@ fun PlayerPageContent(
                             displaySettings = displaySettings
                         )
                     }
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        SongLabelsLayout(
-                            currentSong = pageSong,
-                            displaySettings = displaySettings,
-                            hasTopButtons = hasTopButtons,
-                            hasBottomButtons = hasBottomButtons
-                        )
-                    }
+                    TitleAndButtonsContainer(
+                        pageSong = pageSong,
+                        displaySettings = displaySettings,
+                        hasTopButtons = hasTopButtons,
+                        hasBottomButtons = hasBottomButtons,
+                        gestureBindings = gestureBindings,
+                        playbackManager = playbackManager,
+                        repeatMode = repeatMode,
+                        shuffleMode = shuffleMode,
+                        isPlaying = isPlaying,
+                        onOpenSongPicker = onOpenSongPicker,
+                        onOpenSettings = onOpenSettings,
+                        onOpenQuickStart = onOpenQuickStart,
+                        onShowRepeatOptions = onShowRepeatOptions,
+                        onShowShuffleOptions = onShowShuffleOptions,
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    )
                 }
             }
         } else {
             val isDockedBottom = displaySettings.artAlignmentPortrait == com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM
             Column(modifier = Modifier.fillMaxSize()) {
                 if (isDockedBottom) {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        SongLabelsLayout(
-                            currentSong = pageSong,
-                            displaySettings = displaySettings,
-                            hasTopButtons = hasTopButtons,
-                            hasBottomButtons = hasBottomButtons
-                        )
-                    }
+                    TitleAndButtonsContainer(
+                        pageSong = pageSong,
+                        displaySettings = displaySettings,
+                        hasTopButtons = hasTopButtons,
+                        hasBottomButtons = hasBottomButtons,
+                        gestureBindings = gestureBindings,
+                        playbackManager = playbackManager,
+                        repeatMode = repeatMode,
+                        shuffleMode = shuffleMode,
+                        isPlaying = isPlaying,
+                        onOpenSongPicker = onOpenSongPicker,
+                        onOpenSettings = onOpenSettings,
+                        onOpenQuickStart = onOpenQuickStart,
+                        onShowRepeatOptions = onShowRepeatOptions,
+                        onShowShuffleOptions = onShowShuffleOptions,
+                        modifier = Modifier.weight(1f).fillMaxWidth()
+                    )
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         PlayerAlbumArtBackground(
                             song = pageSong,
@@ -509,14 +626,23 @@ fun PlayerPageContent(
                             displaySettings = displaySettings
                         )
                     }
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        SongLabelsLayout(
-                            currentSong = pageSong,
-                            displaySettings = displaySettings,
-                            hasTopButtons = hasTopButtons,
-                            hasBottomButtons = hasBottomButtons
-                        )
-                    }
+                    TitleAndButtonsContainer(
+                        pageSong = pageSong,
+                        displaySettings = displaySettings,
+                        hasTopButtons = hasTopButtons,
+                        hasBottomButtons = hasBottomButtons,
+                        gestureBindings = gestureBindings,
+                        playbackManager = playbackManager,
+                        repeatMode = repeatMode,
+                        shuffleMode = shuffleMode,
+                        isPlaying = isPlaying,
+                        onOpenSongPicker = onOpenSongPicker,
+                        onOpenSettings = onOpenSettings,
+                        onOpenQuickStart = onOpenQuickStart,
+                        onShowRepeatOptions = onShowRepeatOptions,
+                        onShowShuffleOptions = onShowShuffleOptions,
+                        modifier = Modifier.weight(1f).fillMaxWidth()
+                    )
                 }
             }
         }
@@ -726,6 +852,8 @@ fun PlayerAlbumArtBackground(
         }
     }
 
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
+    val artAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
     val letterboxBgColor = MaterialTheme.colorScheme.background
 
     Box(
@@ -733,7 +861,8 @@ fun PlayerAlbumArtBackground(
             .fillMaxSize()
             .then(
                 if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
-                    Modifier.background(letterboxBgColor.copy(alpha = displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)))
+                    val bgAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
+                    Modifier.background(letterboxBgColor.copy(alpha = bgAlpha))
                 } else Modifier
             )
     ) {
@@ -742,9 +871,10 @@ fun PlayerAlbumArtBackground(
             contentDescription = "Album Art Background",
             contentScale = contentScale,
             alignment = imageAlignment,
+            colorFilter = null,
             modifier = Modifier
                 .fillMaxSize()
-                .alpha(displaySettings.albumArtFade.coerceIn(0.1f, 1.0f))
+                .alpha(artAlpha)
         )
     }
 }
@@ -1023,37 +1153,36 @@ fun ScreenRegionIconsOverlay(
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
+    numEdgeRegions: Int = 3,
     modifier: Modifier = Modifier
 ) {
-    val regionTriggers = listOf(
-        GestureTrigger.CORNER_TOP_LEFT to Alignment.TopStart,
-        GestureTrigger.CORNER_TOP_CENTER to Alignment.TopCenter,
-        GestureTrigger.CORNER_TOP_RIGHT to Alignment.TopEnd,
-        GestureTrigger.CORNER_BOTTOM_LEFT to Alignment.BottomStart,
-        GestureTrigger.CORNER_BOTTOM_CENTER to Alignment.BottomCenter,
-        GestureTrigger.CORNER_BOTTOM_RIGHT to Alignment.BottomEnd
-    )
+    val activeSlotIndices = GestureTrigger.getActiveRegionSlots(numEdgeRegions)
+    val n = activeSlotIndices.size
+
+    val iconBoxSize = when {
+        n > 5 -> 48.dp
+        n > 3 -> 60.dp
+        else -> 72.dp
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
-        for ((trigger, alignment) in regionTriggers) {
+        // Top Edge Regions
+        for ((index, slotIdx) in activeSlotIndices.withIndex()) {
+            val trigger = GestureTrigger.TOP_REGION_SLOTS[slotIdx]
             val binding = resolveGestureBinding(trigger, gestureBindings)
             val action = binding.action
             if (action != GestureAction.UNASSIGNED) {
-                val paddingModifier = when (alignment) {
-                    Alignment.TopStart -> Modifier.padding(top = 8.dp, start = 8.dp)
-                    Alignment.TopCenter -> Modifier.padding(top = 8.dp)
-                    Alignment.TopEnd -> Modifier.padding(top = 8.dp, end = 8.dp)
-                    Alignment.BottomStart -> Modifier.padding(bottom = 16.dp, start = 8.dp)
-                    Alignment.BottomCenter -> Modifier.padding(bottom = 16.dp)
-                    Alignment.BottomEnd -> Modifier.padding(bottom = 16.dp, end = 8.dp)
-                    else -> Modifier.padding(8.dp)
-                }
+                val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
+                val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = -1.0f)
+
+                val startPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
+                val endPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
 
                 Box(
                     modifier = Modifier
                         .align(alignment)
-                        .then(paddingModifier)
-                        .size(72.dp)
+                        .padding(top = 8.dp, start = startPadding, end = endPadding)
+                        .size(iconBoxSize)
                         .clip(CircleShape)
                         .combinedClickable(
                             onClick = {
@@ -1088,7 +1217,64 @@ fun ScreenRegionIconsOverlay(
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
-                        iconSize = 36.dp
+                        iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
+                    )
+                }
+            }
+        }
+
+        // Bottom Edge Regions
+        for ((index, slotIdx) in activeSlotIndices.withIndex()) {
+            val trigger = GestureTrigger.BOTTOM_REGION_SLOTS[slotIdx]
+            val binding = resolveGestureBinding(trigger, gestureBindings)
+            val action = binding.action
+            if (action != GestureAction.UNASSIGNED) {
+                val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
+                val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = 1.0f)
+
+                val startPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
+                val endPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+
+                Box(
+                    modifier = Modifier
+                        .align(alignment)
+                        .padding(bottom = 16.dp, start = startPadding, end = endPadding)
+                        .size(iconBoxSize)
+                        .clip(CircleShape)
+                        .combinedClickable(
+                            onClick = {
+                                handleGestureAction(
+                                    action = action,
+                                    playbackManager = playbackManager,
+                                    onOpenSongPicker = onOpenSongPicker,
+                                    onOpenSettings = onOpenSettings,
+                                    onOpenQuickStart = onOpenQuickStart
+                                )
+                            },
+                            onLongClick = {
+                                if (action == GestureAction.TOGGLE_REPEAT) {
+                                    onShowRepeatOptions()
+                                } else if (action == GestureAction.TOGGLE_SHUFFLE) {
+                                    onShowShuffleOptions()
+                                } else {
+                                    handleGestureAction(
+                                        action = action,
+                                        playbackManager = playbackManager,
+                                        onOpenSongPicker = onOpenSongPicker,
+                                        onOpenSettings = onOpenSettings,
+                                        onOpenQuickStart = onOpenQuickStart
+                                    )
+                                }
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ActionIcon(
+                        action = action,
+                        repeatMode = repeatMode,
+                        shuffleMode = shuffleMode,
+                        isPlaying = isPlaying,
+                        iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
                     )
                 }
             }
