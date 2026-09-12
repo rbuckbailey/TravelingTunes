@@ -97,6 +97,7 @@ import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.datastore.SettingsDataStore
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
+import com.travelingtunes.app.core.model.ConfigOption
 import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
@@ -124,6 +125,7 @@ import com.travelingtunes.app.feature.settings.SettingsScreen
 import com.travelingtunes.app.feature.songpicker.SongPickerBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
@@ -225,6 +227,7 @@ fun PlayerScreen(
     var activeRadialTouchOffset by remember { mutableStateOf(Offset.Unspecified) }
     var activeRadialDragOffset by remember { mutableStateOf<Offset?>(null) }
     var activeRadialSelectedAction by remember { mutableStateOf<GestureAction?>(null) }
+    var activeRadialSelectedIndex by remember { mutableStateOf<Int?>(null) }
 
     val activeRadialActionsFlow = remember(activeRadialTrigger) {
         val trigKey = activeRadialTrigger?.key
@@ -466,7 +469,9 @@ fun PlayerScreen(
                         onOpenSongPicker = { dir -> openSongPicker(dir, trigger) },
                         onOpenQueue = { dir -> openQueue(dir, trigger) },
                         onOpenSettings = { dir -> openMenu(dir, trigger) },
-                        onOpenQuickStart = onOpenQuickStart
+                        onOpenQuickStart = onOpenQuickStart,
+                        settingsDataStore = effectiveSettingsDataStore,
+                        gestureBindings = gestureBindings
                     )
                 }
             }
@@ -495,7 +500,9 @@ fun PlayerScreen(
                         onOpenSongPicker = { dir -> openSongPicker(dir, trig) },
                         onOpenQueue = { dir -> openQueue(dir, trig) },
                         onOpenSettings = { dir -> openMenu(dir, trig) },
-                        onOpenQuickStart = onOpenQuickStart
+                        onOpenQuickStart = onOpenQuickStart,
+                        settingsDataStore = effectiveSettingsDataStore,
+                        gestureBindings = gestureBindings
                     )
                 }
             }
@@ -840,6 +847,9 @@ fun PlayerScreen(
                 onSelectedActionChanged = { selected ->
                     activeRadialSelectedAction = selected
                 },
+                onSelectedIndexChanged = { idx ->
+                    activeRadialSelectedIndex = idx
+                },
                 onSelectAction = { selectedRadialAction ->
                     showRadialMenu = false
                     val trig = activeRadialTrigger ?: GestureTrigger.TAP_1_1
@@ -853,7 +863,10 @@ fun PlayerScreen(
                         onOpenSongPicker = { dir -> openSongPicker(dir, trig) },
                         onOpenQueue = { dir -> openQueue(dir, trig) },
                         onOpenSettings = { dir -> openMenu(dir, trig) },
-                        onOpenQuickStart = onOpenQuickStart
+                        onOpenQuickStart = onOpenQuickStart,
+                        settingsDataStore = effectiveSettingsDataStore,
+                        gestureBindings = gestureBindings,
+                        radialSlotIndex = activeRadialSelectedIndex
                     )
                 },
                 onDismiss = {
@@ -1692,7 +1705,10 @@ private fun handleGestureAction(
     onOpenSongPicker: (SlideDirection) -> Unit,
     onOpenQueue: (SlideDirection) -> Unit = {},
     onOpenSettings: (SlideDirection) -> Unit,
-    onOpenQuickStart: () -> Unit
+    onOpenQuickStart: () -> Unit,
+    settingsDataStore: SettingsDataStore? = null,
+    gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
+    radialSlotIndex: Int? = null
 ) {
     val direction = trigger?.getSlideDirection() ?: SlideDirection.BOTTOM
     when (action) {
@@ -1725,6 +1741,25 @@ private fun handleGestureAction(
                     val songsInAlbum = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
                     musicScanner.albumArtDownloader.deleteDownloadedArtworkForAlbum(song.album, song.artist, songsInAlbum)
                     playbackManager.refreshCurrentSongArtwork()
+                }
+            }
+        }
+        GestureAction.OTHER_OPTION -> {
+            if (settingsDataStore != null && coroutineScope != null) {
+                val trig = trigger ?: GestureTrigger.TAP_1_1
+                val binding = gestureBindings?.get(trig)
+                if (binding?.action == GestureAction.OTHER_OPTION && binding.otherOptionKey != null) {
+                    val otherKey = binding.otherOptionKey
+                    coroutineScope.launch {
+                        settingsDataStore.toggleOtherOption(trig.key, otherKey)
+                    }
+                } else {
+                    val slotIndex = radialSlotIndex ?: 0
+                    coroutineScope.launch {
+                        val radialTargetKey = settingsDataStore.getRadialOtherOptionFlow(trig.key, slotIndex).first()
+                            ?: ConfigOption.ALL_OPTIONS.first().key
+                        settingsDataStore.toggleOtherOption("${trig.key}_radial_$slotIndex", radialTargetKey)
+                    }
                 }
             }
         }
@@ -1858,7 +1893,7 @@ fun ScreenRegionIconsOverlay(
                     .padding(top = topPadding, start = startPadding, end = endPadding)
                     .size(iconBoxSize)
                     .clip(CircleShape)
-                    .pointerInput(action) {
+                    .pointerInput(trigger, binding, action) {
                         detectTapGestures(
                             onTap = {
                                 if (action == GestureAction.TOGGLE_REPEAT) {
@@ -1945,7 +1980,7 @@ fun ScreenRegionIconsOverlay(
                     .padding(bottom = bottomPadding, start = startPadding, end = endPadding)
                     .size(iconBoxSize)
                     .clip(CircleShape)
-                    .pointerInput(action) {
+                    .pointerInput(trigger, binding, action) {
                         detectTapGestures(
                             onTap = {
                                 if (action == GestureAction.TOGGLE_REPEAT) {

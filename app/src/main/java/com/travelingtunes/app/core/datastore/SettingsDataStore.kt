@@ -15,6 +15,7 @@ import com.travelingtunes.app.core.model.ArtAlignmentPortrait
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
 import com.travelingtunes.app.core.model.ColorTheme
+import com.travelingtunes.app.core.model.ConfigOption
 import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
@@ -250,7 +251,8 @@ class SettingsDataStore(private val context: Context) {
         GestureTrigger.entries.associateWith { trigger ->
             val actionKey = prefs[stringPreferencesKey(trigger.key)] ?: trigger.defaultActionKey
             val isContinuous = prefs[booleanPreferencesKey("${trigger.key}Continuous")] ?: trigger.isContinuousDefault
-            GestureBinding(trigger, GestureAction.fromKey(actionKey), isContinuous)
+            val otherOptionKey = prefs[stringPreferencesKey("${trigger.key}_other_target")]
+            GestureBinding(trigger, GestureAction.fromKey(actionKey), isContinuous, otherOptionKey)
         }
     }
 
@@ -437,10 +439,206 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    suspend fun updateGestureBinding(trigger: GestureTrigger, action: GestureAction, isContinuous: Boolean = false) {
+    suspend fun updateGestureBinding(
+        trigger: GestureTrigger,
+        action: GestureAction,
+        isContinuous: Boolean = false,
+        otherOptionKey: String? = null
+    ) {
         context.dataStore.edit { prefs ->
             prefs[stringPreferencesKey(trigger.key)] = action.name
             prefs[booleanPreferencesKey("${trigger.key}Continuous")] = isContinuous
+            if (otherOptionKey != null) {
+                prefs[stringPreferencesKey("${trigger.key}_other_target")] = otherOptionKey
+            } else {
+                prefs.remove(stringPreferencesKey("${trigger.key}_other_target"))
+            }
+        }
+    }
+
+    fun getRadialOtherOptionFlow(triggerKey: String, slotIndex: Int): Flow<String?> {
+        return context.dataStore.data.map { prefs ->
+            prefs[stringPreferencesKey("radial_target_${triggerKey}_$slotIndex")]
+        }
+    }
+
+    suspend fun updateRadialOtherOption(triggerKey: String, slotIndex: Int, targetKey: String?) {
+        context.dataStore.edit { prefs ->
+            if (targetKey != null) {
+                prefs[stringPreferencesKey("radial_target_${triggerKey}_$slotIndex")] = targetKey
+            } else {
+                prefs.remove(stringPreferencesKey("radial_target_${triggerKey}_$slotIndex"))
+            }
+        }
+    }
+
+    suspend fun toggleOtherOption(triggerKey: String, optionKey: String) {
+        val option = ConfigOption.findByKey(optionKey) ?: return
+        context.dataStore.edit { prefs ->
+            if (option.isBooleanToggle) {
+                when (option.key) {
+                    "DISPLAY_showAlbumArt" -> prefs[KEY_SHOW_ALBUM_ART] = !(prefs[KEY_SHOW_ALBUM_ART] ?: true)
+                    "DISPLAY_albumArtColors" -> prefs[KEY_ALBUM_ART_COLORS] = !(prefs[KEY_ALBUM_ART_COLORS] ?: true)
+                    "DISPLAY_titleShrinkInPortrait" -> prefs[KEY_TITLE_SHRINK_PORTRAIT] = !(prefs[KEY_TITLE_SHRINK_PORTRAIT] ?: true)
+                    "DISPLAY_titleShrinkLong" -> prefs[KEY_TITLE_SHRINK_LONG] = !(prefs[KEY_TITLE_SHRINK_LONG] ?: true)
+                    "DISPLAY_titleScrollLong" -> prefs[KEY_TITLE_SCROLL_LONG] = !(prefs[KEY_TITLE_SCROLL_LONG] ?: false)
+                    "DISPLAY_volumeAlwaysOn" -> prefs[KEY_VOLUME_ALWAYS_ON] = !(prefs[KEY_VOLUME_ALWAYS_ON] ?: true)
+                    "DISPLAY_showStatusBar" -> prefs[KEY_SHOW_STATUS_BAR] = !(prefs[KEY_SHOW_STATUS_BAR] ?: false)
+                    "DISPLAY_showActions" -> prefs[KEY_SHOW_ACTIONS] = !(prefs[KEY_SHOW_ACTIONS] ?: true)
+                    "DISPLAY_keepScreenOn" -> prefs[KEY_KEEP_SCREEN_ON] = !(prefs[KEY_KEEP_SCREEN_ON] ?: true)
+                    "DISPLAY_immersiveMode" -> prefs[KEY_IMMERSIVE_MODE] = !(prefs[KEY_IMMERSIVE_MODE] ?: true)
+                    "DISPLAY_artistBold" -> prefs[KEY_ARTIST_BOLD] = !(prefs[KEY_ARTIST_BOLD] ?: true)
+                    "DISPLAY_artistItalic" -> prefs[KEY_ARTIST_ITALIC] = !(prefs[KEY_ARTIST_ITALIC] ?: false)
+                    "DISPLAY_artistUnderline" -> prefs[KEY_ARTIST_UNDERLINE] = !(prefs[KEY_ARTIST_UNDERLINE] ?: false)
+                    "DISPLAY_songBold" -> prefs[KEY_SONG_BOLD] = !(prefs[KEY_SONG_BOLD] ?: true)
+                    "DISPLAY_songItalic" -> prefs[KEY_SONG_ITALIC] = !(prefs[KEY_SONG_ITALIC] ?: false)
+                    "DISPLAY_songUnderline" -> prefs[KEY_SONG_UNDERLINE] = !(prefs[KEY_SONG_UNDERLINE] ?: false)
+                    "DISPLAY_albumBold" -> prefs[KEY_ALBUM_BOLD] = !(prefs[KEY_ALBUM_BOLD] ?: false)
+                    "DISPLAY_albumItalic" -> prefs[KEY_ALBUM_ITALIC] = !(prefs[KEY_ALBUM_ITALIC] ?: false)
+                    "DISPLAY_albumUnderline" -> prefs[KEY_ALBUM_UNDERLINE] = !(prefs[KEY_ALBUM_UNDERLINE] ?: false)
+                    "THEME_dimAtNight" -> prefs[KEY_DIM_AT_NIGHT] = !(prefs[KEY_DIM_AT_NIGHT] ?: true)
+                    "THEME_invertAtNight" -> prefs[KEY_INVERT_AT_NIGHT] = !(prefs[KEY_INVERT_AT_NIGHT] ?: false)
+                    "THEME_isRounded" -> prefs[KEY_THEME_ROUNDED] = !(prefs[KEY_THEME_ROUNDED] ?: false)
+                    "THEME_isGlass" -> prefs[KEY_THEME_GLASS] = !(prefs[KEY_THEME_GLASS] ?: false)
+                    "LIBRARY_autoRescan" -> prefs[KEY_AUTO_RESCAN] = !(prefs[KEY_AUTO_RESCAN] ?: false)
+                    "LIBRARY_gpsVolume" -> prefs[KEY_GPS_VOLUME] = !(prefs[KEY_GPS_VOLUME] ?: false)
+                }
+            } else {
+                val priorKey = stringPreferencesKey("${triggerKey}_prior_value")
+                val priorArtColorsKey = booleanPreferencesKey("${triggerKey}_prior_art_colors")
+                val targetVal = option.targetValue ?: return@edit
+
+                when {
+                    option.key.startsWith("THEME_") -> {
+                        val currentVal = prefs[KEY_CURRENT_THEME] ?: ColorTheme.MATCH_ALBUM_ART.name
+                        val currentArtColors = prefs[KEY_ALBUM_ART_COLORS] ?: true
+                        if (currentVal.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: ColorTheme.MATCH_ALBUM_ART.name
+                            val priorArtColors = prefs[priorArtColorsKey] ?: true
+                            prefs[KEY_CURRENT_THEME] = priorVal
+                            prefs[KEY_ALBUM_ART_COLORS] = priorArtColors
+                            prefs[priorKey] = currentVal
+                            prefs[priorArtColorsKey] = currentArtColors
+                        } else {
+                            prefs[priorKey] = currentVal
+                            prefs[priorArtColorsKey] = currentArtColors
+                            prefs[KEY_CURRENT_THEME] = targetVal
+                            prefs[KEY_ALBUM_ART_COLORS] = (targetVal.equals("Match Album Art", true) || targetVal.equals("Auto By Art", true))
+                        }
+                    }
+                    option.key.startsWith("ALIGN_ARTIST_") -> {
+                        val currentVal = prefs[KEY_ARTIST_ALIGNMENT] ?: TextAlignmentOption.LEFT.name
+                        if (currentVal.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: TextAlignmentOption.LEFT.name
+                            prefs[KEY_ARTIST_ALIGNMENT] = priorVal
+                            prefs[priorKey] = currentVal
+                        } else {
+                            prefs[priorKey] = currentVal
+                            prefs[KEY_ARTIST_ALIGNMENT] = targetVal
+                        }
+                    }
+                    option.key.startsWith("ALIGN_SONG_") -> {
+                        val currentVal = prefs[KEY_SONG_ALIGNMENT] ?: TextAlignmentOption.CENTER.name
+                        if (currentVal.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: TextAlignmentOption.CENTER.name
+                            prefs[KEY_SONG_ALIGNMENT] = priorVal
+                            prefs[priorKey] = currentVal
+                        } else {
+                            prefs[priorKey] = currentVal
+                            prefs[KEY_SONG_ALIGNMENT] = targetVal
+                        }
+                    }
+                    option.key.startsWith("ALIGN_ALBUM_") -> {
+                        val currentVal = prefs[KEY_ALBUM_ALIGNMENT] ?: TextAlignmentOption.RIGHT.name
+                        if (currentVal.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: TextAlignmentOption.RIGHT.name
+                            prefs[KEY_ALBUM_ALIGNMENT] = priorVal
+                            prefs[priorKey] = currentVal
+                        } else {
+                            prefs[priorKey] = currentVal
+                            prefs[KEY_ALBUM_ALIGNMENT] = targetVal
+                        }
+                    }
+                    option.key.startsWith("ART_SCALE_") -> {
+                        val currentOrdinal = prefs[KEY_ALBUM_ART_SCALE] ?: 0
+                        val currentName = ArtScaleOption.entries.getOrNull(currentOrdinal)?.name ?: ArtScaleOption.FILL_SCREEN.name
+                        if (currentName.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: ArtScaleOption.FILL_SCREEN.name
+                            val newOrdinal = ArtScaleOption.entries.find { it.name.equals(priorVal, true) }?.ordinal ?: 0
+                            prefs[KEY_ALBUM_ART_SCALE] = newOrdinal
+                            prefs[priorKey] = currentName
+                        } else {
+                            prefs[priorKey] = currentName
+                            val newOrdinal = ArtScaleOption.entries.find { it.name.equals(targetVal, true) }?.ordinal ?: 0
+                            prefs[KEY_ALBUM_ART_SCALE] = newOrdinal
+                        }
+                    }
+                    option.key.startsWith("ART_LAYOUT_") -> {
+                        val currentOrdinal = prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0
+                        val currentName = ArtLayoutOption.entries.getOrNull(currentOrdinal)?.name ?: ArtLayoutOption.OVERLAY.name
+                        if (currentName.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: ArtLayoutOption.OVERLAY.name
+                            val newOrdinal = ArtLayoutOption.entries.find { it.name.equals(priorVal, true) }?.ordinal ?: 0
+                            prefs[KEY_ART_DISPLAY_LAYOUT] = newOrdinal
+                            prefs[priorKey] = currentName
+                        } else {
+                            prefs[priorKey] = currentName
+                            val newOrdinal = ArtLayoutOption.entries.find { it.name.equals(targetVal, true) }?.ordinal ?: 0
+                            prefs[KEY_ART_DISPLAY_LAYOUT] = newOrdinal
+                        }
+                    }
+                    option.key.startsWith("ART_ALIGN_PORT_") -> {
+                        val currentVal = prefs[KEY_ART_ALIGNMENT_PORTRAIT] ?: ArtAlignmentPortrait.MIDDLE.name
+                        if (currentVal.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: ArtAlignmentPortrait.MIDDLE.name
+                            prefs[KEY_ART_ALIGNMENT_PORTRAIT] = priorVal
+                            prefs[priorKey] = currentVal
+                        } else {
+                            prefs[priorKey] = currentVal
+                            prefs[KEY_ART_ALIGNMENT_PORTRAIT] = targetVal
+                        }
+                    }
+                    option.key.startsWith("ART_ALIGN_LAND_") -> {
+                        val currentVal = prefs[KEY_ART_ALIGNMENT_LANDSCAPE] ?: ArtAlignmentLandscape.CENTER.name
+                        if (currentVal.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: ArtAlignmentLandscape.CENTER.name
+                            prefs[KEY_ART_ALIGNMENT_LANDSCAPE] = priorVal
+                            prefs[priorKey] = currentVal
+                        } else {
+                            prefs[priorKey] = currentVal
+                            prefs[KEY_ART_ALIGNMENT_LANDSCAPE] = targetVal
+                        }
+                    }
+                    option.key.startsWith("HUD_TYPE_") -> {
+                        val currentValInt = prefs[KEY_HUD_TYPE] ?: 1
+                        val currentOption = HudTypeOption.entries.find { it.value == currentValInt } ?: HudTypeOption.BAR_VOLUME
+                        if (currentOption.name.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: HudTypeOption.BAR_VOLUME.name
+                            val targetHud = HudTypeOption.entries.find { it.name.equals(priorVal, true) } ?: HudTypeOption.BAR_VOLUME
+                            prefs[KEY_HUD_TYPE] = targetHud.value
+                            prefs[priorKey] = currentOption.name
+                        } else {
+                            prefs[priorKey] = currentOption.name
+                            val targetHud = HudTypeOption.entries.find { it.name.equals(targetVal, true) } ?: HudTypeOption.BAR_VOLUME
+                            prefs[KEY_HUD_TYPE] = targetHud.value
+                        }
+                    }
+                    option.key.startsWith("SCRUB_HUD_TYPE_") -> {
+                        val currentValInt = prefs[KEY_SCRUB_HUD_TYPE] ?: 2
+                        val currentOption = ScrubHudTypeOption.entries.find { it.value == currentValInt } ?: ScrubHudTypeOption.EDGE_HUD
+                        if (currentOption.name.equals(targetVal, ignoreCase = true)) {
+                            val priorVal = prefs[priorKey] ?: ScrubHudTypeOption.EDGE_HUD.name
+                            val targetHud = ScrubHudTypeOption.entries.find { it.name.equals(priorVal, true) } ?: ScrubHudTypeOption.EDGE_HUD
+                            prefs[KEY_SCRUB_HUD_TYPE] = targetHud.value
+                            prefs[priorKey] = currentOption.name
+                        } else {
+                            prefs[priorKey] = currentOption.name
+                            val targetHud = ScrubHudTypeOption.entries.find { it.name.equals(targetVal, true) } ?: ScrubHudTypeOption.EDGE_HUD
+                            prefs[KEY_SCRUB_HUD_TYPE] = targetHud.value
+                        }
+                    }
+                }
+            }
         }
     }
 

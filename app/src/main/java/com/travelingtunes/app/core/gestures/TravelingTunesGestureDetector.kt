@@ -46,12 +46,15 @@ fun Modifier.travelingTunesGestures(
 ): Modifier {
     val currentListener by rememberUpdatedState(listener)
     val currentBindings by rememberUpdatedState(gestureBindings)
-    val currentNumEdgeRegions by rememberUpdatedState(numEdgeRegions)
-    val currentRegionBounds by rememberUpdatedState(regionBounds)
-    val currentIsOverlayOpen by rememberUpdatedState(isOverlayOpen)
 
-    return this.pointerInput(isOverlayOpen) {
-        detectTravelingTunesGestures(currentListener, currentBindings, currentNumEdgeRegions, currentRegionBounds, currentIsOverlayOpen)
+    return this.pointerInput(isOverlayOpen, regionBounds, numEdgeRegions) {
+        detectTravelingTunesGestures(
+            listener = currentListener,
+            gestureBindings = currentBindings,
+            numEdgeRegions = numEdgeRegions,
+            regionBounds = regionBounds,
+            isOverlayOpen = isOverlayOpen
+        )
     }
 }
 

@@ -64,6 +64,7 @@ fun RadialMenuOverlay(
     shuffleMode: ShuffleMode = ShuffleMode.OFF,
     isPlaying: Boolean = false,
     onSelectedActionChanged: (GestureAction?) -> Unit = {},
+    onSelectedIndexChanged: (Int?) -> Unit = {},
     onSelectAction: (GestureAction) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -138,6 +139,7 @@ fun RadialMenuOverlay(
         LaunchedEffect(selectedIndex) {
             val selectedAction = selectedIndex?.let { displayActions.getOrNull(it) }
             onSelectedActionChanged(selectedAction)
+            onSelectedIndexChanged(selectedIndex)
         }
 
         Box(

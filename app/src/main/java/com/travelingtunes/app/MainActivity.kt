@@ -230,9 +230,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val isMatchAlbumArt = themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) ||
-                                  themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true) ||
-                                  displaySettings.albumArtColors
+            val isMatchAlbumArt = displaySettings.albumArtColors && (
+                themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) ||
+                themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true)
+            )
 
             TravelingTunesTheme(
                 themeSettings = themeSettings,

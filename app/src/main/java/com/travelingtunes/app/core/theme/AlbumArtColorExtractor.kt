@@ -139,7 +139,7 @@ object AlbumArtColorExtractor {
 
             val sw = scaledBmp.width
             val sh = scaledBmp.height
-            val border = (sw * 0.12f).toInt().coerceAtLeast(2)
+            val border = (sw * 0.03f).toInt().coerceIn(1, 3)
 
             val edgePixels: IntArray
             var index = 0

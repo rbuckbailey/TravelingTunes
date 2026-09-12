@@ -59,7 +59,21 @@ fun resolveActiveTheme(
     dynamicAlbumArtTheme: ColorTheme? = null,
     useAlbumArtColors: Boolean = true
 ): ColorTheme {
-    if (useAlbumArtColors && dynamicAlbumArtTheme != null) {
+    if (themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)) {
+        return ColorTheme(
+            name = "Mondrian",
+            backgroundColor = Color.White,
+            textColor = Color.Black,
+            secondaryTextColor = Color.Black,
+            artistColor = Color.Black,
+            albumColor = Color.Black
+        )
+    }
+
+    if (useAlbumArtColors && dynamicAlbumArtTheme != null && (
+        themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) ||
+        themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true)
+    )) {
         return dynamicAlbumArtTheme
     }
 

@@ -21,17 +21,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DonutLarge
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -60,6 +65,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.travelingtunes.app.core.datastore.SettingsDataStore
+import com.travelingtunes.app.core.model.ConfigOption
 import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
@@ -260,6 +266,7 @@ fun GestureAssignmentScreen(
                     trigger = radialTrigger,
                     numEdgeRegions = numEdgeRegions,
                     actions = currentRadialActions,
+                    settingsDataStore = settingsDataStore,
                     onUpdateActions = { newActions ->
                         coroutineScope.launch {
                             settingsDataStore.updateRadialMenuActions(radialTrigger.key, newActions)
@@ -410,9 +417,9 @@ fun GestureAssignmentScreen(
                                 trigger = trigger,
                                 binding = currentBinding,
                                 numEdgeRegions = numEdgeRegions,
-                                onActionSelected = { newAction ->
+                                onActionSelected = { newAction, otherKey ->
                                     coroutineScope.launch {
-                                        settingsDataStore.updateGestureBinding(trigger, newAction, currentBinding.isContinuous)
+                                        settingsDataStore.updateGestureBinding(trigger, newAction, currentBinding.isContinuous, otherKey)
                                     }
                                 }
                             )
@@ -430,9 +437,13 @@ private fun RadialMenuConfigurator(
     trigger: GestureTrigger,
     numEdgeRegions: Int,
     actions: List<GestureAction>,
+    settingsDataStore: SettingsDataStore,
     onUpdateActions: (List<GestureAction>) -> Unit,
     onResetDefaults: () -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    var editingSlotIndex by remember { mutableStateOf<Int?>(null) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -463,6 +474,10 @@ private fun RadialMenuConfigurator(
 
         itemsIndexed(actions) { index, action ->
             var isDropdownExpanded by remember { mutableStateOf(false) }
+            val radialOptionKey by settingsDataStore.getRadialOtherOptionFlow(trigger.key, index).collectAsState(initial = null)
+            val assignedOption = remember(radialOptionKey) {
+                ConfigOption.findByKey(radialOptionKey) ?: ConfigOption.ALL_OPTIONS.first()
+            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -491,10 +506,20 @@ private fun RadialMenuConfigurator(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = action.displayName,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Column {
+                            Text(
+                                text = action.displayName,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            if (action == GestureAction.OTHER_OPTION) {
+                                Text(
+                                    text = assignedOption.title,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.clickable { editingSlotIndex = index }
+                                )
+                            }
+                        }
                     }
 
                     DropdownMenu(
@@ -519,6 +544,9 @@ private fun RadialMenuConfigurator(
                                     updated[index] = choice
                                     onUpdateActions(updated)
                                     isDropdownExpanded = false
+                                    if (choice == GestureAction.OTHER_OPTION) {
+                                        editingSlotIndex = index
+                                    }
                                 }
                             )
                         }
@@ -542,6 +570,20 @@ private fun RadialMenuConfigurator(
                 }
             }
             HorizontalDivider()
+
+            val activeEditingIndex = editingSlotIndex
+            if (activeEditingIndex == index) {
+                ConfigOptionPickerDialog(
+                    initialKey = radialOptionKey ?: assignedOption.key,
+                    onOptionSelected = { selectedOption ->
+                        editingSlotIndex = null
+                        coroutineScope.launch {
+                            settingsDataStore.updateRadialOtherOption(trigger.key, index, selectedOption.key)
+                        }
+                    },
+                    onDismissRequest = { editingSlotIndex = null }
+                )
+            }
         }
 
         item {
@@ -585,9 +627,14 @@ private fun GestureAssignmentItem(
     trigger: GestureTrigger,
     binding: GestureBinding,
     numEdgeRegions: Int,
-    onActionSelected: (GestureAction) -> Unit
+    onActionSelected: (GestureAction, String?) -> Unit
 ) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
+    var isConfigOptionPickerOpen by remember { mutableStateOf(false) }
+
+    val assignedOption = remember(binding.otherOptionKey) {
+        ConfigOption.findByKey(binding.otherOptionKey) ?: ConfigOption.ALL_OPTIONS.first()
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -605,11 +652,21 @@ private fun GestureAssignmentItem(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = binding.action.displayName,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Column {
+                    Text(
+                        text = binding.action.displayName,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    if (binding.action == GestureAction.OTHER_OPTION) {
+                        Text(
+                            text = assignedOption.title,
+                            color = MaterialTheme.colorScheme.secondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.clickable { isConfigOptionPickerOpen = true }
+                        )
+                    }
+                }
             }
         }
 
@@ -638,12 +695,90 @@ private fun GestureAssignmentItem(
                             }
                         },
                         onClick = {
-                            onActionSelected(action)
                             isDropdownExpanded = false
+                            if (action == GestureAction.OTHER_OPTION) {
+                                isConfigOptionPickerOpen = true
+                            } else {
+                                onActionSelected(action, null)
+                            }
                         }
                     )
                 }
             }
         }
     }
+
+    if (isConfigOptionPickerOpen) {
+        ConfigOptionPickerDialog(
+            initialKey = binding.otherOptionKey ?: assignedOption.key,
+            onOptionSelected = { selectedOption ->
+                isConfigOptionPickerOpen = false
+                onActionSelected(GestureAction.OTHER_OPTION, selectedOption.key)
+            },
+            onDismissRequest = { isConfigOptionPickerOpen = false }
+        )
+    }
+}
+
+@Composable
+fun ConfigOptionPickerDialog(
+    initialKey: String?,
+    onOptionSelected: (ConfigOption) -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    val categories = remember { ConfigOption.ALL_OPTIONS.map { it.category }.distinct() }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Select Configuration Option") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                categories.forEach { category ->
+                    Text(
+                        text = category,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+                    )
+                    ConfigOption.ALL_OPTIONS.filter { it.category == category }.forEach { option ->
+                        val isSelected = option.key == initialKey
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onOptionSelected(option) }
+                                .padding(vertical = 8.dp, horizontal = 4.dp)
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = option.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Cancel")
+            }
+        }
+    )
 }

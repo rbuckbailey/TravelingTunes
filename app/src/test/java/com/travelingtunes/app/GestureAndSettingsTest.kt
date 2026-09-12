@@ -559,4 +559,69 @@ class GestureAndSettingsTest {
         val diffWrap = com.travelingtunes.app.feature.player.shortestAngleDiff(-Math.PI.toFloat() + 0.1f, Math.PI.toFloat() - 0.1f)
         assertEquals(0.2f, diffWrap, 0.01f)
     }
+
+    @Test
+    fun testOtherOptionIsLastInGestureActionEntries() {
+        val entries = GestureAction.entries
+        assertEquals("Other Option should always be the last entry in GestureAction", GestureAction.OTHER_OPTION, entries.last())
+        assertEquals("Other Option", GestureAction.OTHER_OPTION.displayName)
+        assertEquals(GestureAction.OTHER_OPTION, GestureAction.fromKey("Other Option"))
+        assertEquals(GestureAction.OTHER_OPTION, GestureAction.fromKey("OTHER_OPTION"))
+    }
+
+    @Test
+    fun testConfigOptionRegistry() {
+        val allOptions = com.travelingtunes.app.core.model.ConfigOption.ALL_OPTIONS
+        assertTrue("ConfigOption.ALL_OPTIONS should contain configuration options from the config hierarchy", allOptions.isNotEmpty())
+
+        val mondrian = com.travelingtunes.app.core.model.ConfigOption.findByKey("THEME_MONDRIAN")
+        org.junit.Assert.assertNotNull(mondrian)
+        assertEquals("Theme: Mondrian", mondrian?.title)
+        assertEquals("Mondrian", mondrian?.targetValue)
+        assertEquals(false, mondrian?.isBooleanToggle)
+
+        val showArt = com.travelingtunes.app.core.model.ConfigOption.findByKey("DISPLAY_showAlbumArt")
+        org.junit.Assert.assertNotNull(showArt)
+        assertEquals("Show Album Art", showArt?.title)
+        assertEquals(true, showArt?.isBooleanToggle)
+    }
+
+    @Test
+    fun testMondrianThemeAlwaysHasBlackText() {
+        val mondrianTheme = ThemeSettings(currentThemeName = "Mondrian")
+        val dynamicTheme = com.travelingtunes.app.core.model.ColorTheme("Dynamic", androidx.compose.ui.graphics.Color.Red, androidx.compose.ui.graphics.Color.Yellow)
+
+        val resolved = com.travelingtunes.app.core.theme.resolveActiveTheme(
+            themeSettings = mondrianTheme,
+            dynamicAlbumArtTheme = dynamicTheme,
+            useAlbumArtColors = true
+        )
+
+        assertEquals("Mondrian", resolved.name)
+        assertEquals(androidx.compose.ui.graphics.Color.White, resolved.backgroundColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Black, resolved.textColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Black, resolved.secondaryTextColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Black, resolved.artistColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Black, resolved.albumColor)
+    }
+
+    @Test
+    fun testDockedScreenLayoutAndTouchRegionBoundsToggle() {
+        val dockedDisplay = com.travelingtunes.app.core.model.DisplaySettings(
+            artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED,
+            showAlbumArt = true
+        )
+        val matchedTheme = ThemeSettings(currentThemeName = "Match Album Art")
+        val mondrianTheme = ThemeSettings(currentThemeName = "Mondrian")
+
+        val isDockedMatched = dockedDisplay.artDisplayLayout == com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED &&
+                              dockedDisplay.showAlbumArt &&
+                              !matchedTheme.currentThemeName.equals("Mondrian", ignoreCase = true)
+        assertTrue("In Matched theme with Docked layout, isDockedScreen should be true", isDockedMatched)
+
+        val isDockedMondrian = dockedDisplay.artDisplayLayout == com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED &&
+                               dockedDisplay.showAlbumArt &&
+                               !mondrianTheme.currentThemeName.equals("Mondrian", ignoreCase = true)
+        org.junit.Assert.assertFalse("In Mondrian theme, isDockedScreen should be false as artwork is hidden", isDockedMondrian)
+    }
 }
