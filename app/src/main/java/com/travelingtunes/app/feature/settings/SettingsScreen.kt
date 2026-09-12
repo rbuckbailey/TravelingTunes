@@ -68,7 +68,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.database.LibraryStats
@@ -158,15 +161,6 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-
-    val window = (context as? android.app.Activity)?.window
-    if (window != null) {
-        androidx.compose.runtime.DisposableEffect(Unit) {
-            val insetsController = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
-            insetsController.show(androidx.core.view.WindowInsetsCompat.Type.statusBars())
-            onDispose { }
-        }
-    }
 
     var availableFonts by remember { mutableStateOf(FontHelper.getAvailableFonts(context)) }
     var activeColorPicker by remember { mutableStateOf<String?>(null) }
@@ -818,14 +812,14 @@ private fun TypographyHudSettingsContent(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            val currentFontKey = when (rowType) {
-                                TitleRowType.ARTIST -> displaySettings.artistFontKey
-                                TitleRowType.SONG -> displaySettings.songFontKey
-                                TitleRowType.ALBUM -> displaySettings.albumFontKey
+                            val (currentFontKey, isBold, isItalic, isUnderline) = when (rowType) {
+                                TitleRowType.ARTIST -> Quadruple(displaySettings.artistFontKey, displaySettings.artistBold, displaySettings.artistItalic, displaySettings.artistUnderline)
+                                TitleRowType.SONG -> Quadruple(displaySettings.songFontKey, displaySettings.songBold, displaySettings.songItalic, displaySettings.songUnderline)
+                                TitleRowType.ALBUM -> Quadruple(displaySettings.albumFontKey, displaySettings.albumBold, displaySettings.albumItalic, displaySettings.albumUnderline)
                             }
                             val currentFontFamily = FontHelper.getFontFamily(currentFontKey)
 
-                            // Title Header Row in its Selected Font Family
+                            // Title Header Row in its Selected Font Family and Styling
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth()
@@ -839,7 +833,9 @@ private fun TypographyHudSettingsContent(
                                 Text(
                                     text = "${index + 1}. ${rowType.displayName}",
                                     fontFamily = currentFontFamily,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
+                                    fontStyle = if (isItalic) FontStyle.Italic else FontStyle.Normal,
+                                    textDecoration = if (isUnderline) TextDecoration.Underline else TextDecoration.None,
                                     fontSize = 18.sp,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.weight(1f)
@@ -877,7 +873,72 @@ private fun TypographyHudSettingsContent(
 
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            // Font Selector & Alignment Chips on Same Row
+                            // Row 1: Font Drop-down + Style Buttons (Bold, Italic, Underline) on the same row without labels
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                FontSelectorRow(
+                                    currentFontKey = currentFontKey,
+                                    availableFonts = availableFonts,
+                                    onFontSelected = { key ->
+                                        val newSettings = when (rowType) {
+                                            TitleRowType.ARTIST -> displaySettings.copy(artistFontKey = key)
+                                            TitleRowType.SONG -> displaySettings.copy(songFontKey = key)
+                                            TitleRowType.ALBUM -> displaySettings.copy(albumFontKey = key)
+                                        }
+                                        onUpdateDisplaySettings(newSettings)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    FilterChip(
+                                        selected = isBold,
+                                        onClick = {
+                                            val newSettings = when (rowType) {
+                                                TitleRowType.ARTIST -> displaySettings.copy(artistBold = !isBold)
+                                                TitleRowType.SONG -> displaySettings.copy(songBold = !isBold)
+                                                TitleRowType.ALBUM -> displaySettings.copy(albumBold = !isBold)
+                                            }
+                                            onUpdateDisplaySettings(newSettings)
+                                        },
+                                        label = { Text("Bold", fontWeight = FontWeight.Bold, fontSize = 11.sp) }
+                                    )
+                                    FilterChip(
+                                        selected = isItalic,
+                                        onClick = {
+                                            val newSettings = when (rowType) {
+                                                TitleRowType.ARTIST -> displaySettings.copy(artistItalic = !isItalic)
+                                                TitleRowType.SONG -> displaySettings.copy(songItalic = !isItalic)
+                                                TitleRowType.ALBUM -> displaySettings.copy(albumItalic = !isItalic)
+                                            }
+                                            onUpdateDisplaySettings(newSettings)
+                                        },
+                                        label = { Text("Italic", fontStyle = FontStyle.Italic, fontSize = 11.sp) }
+                                    )
+                                    FilterChip(
+                                        selected = isUnderline,
+                                        onClick = {
+                                            val newSettings = when (rowType) {
+                                                TitleRowType.ARTIST -> displaySettings.copy(artistUnderline = !isUnderline)
+                                                TitleRowType.SONG -> displaySettings.copy(songUnderline = !isUnderline)
+                                                TitleRowType.ALBUM -> displaySettings.copy(albumUnderline = !isUnderline)
+                                            }
+                                            onUpdateDisplaySettings(newSettings)
+                                        },
+                                        label = { Text("Underline", textDecoration = TextDecoration.Underline, fontSize = 11.sp) }
+                                    )
+                                }
+                            }
+
+                            // Row 2: Size Slider + Align Buttons on the same row without labels
+                            val (currentSize, minRange, maxRange) = when (rowType) {
+                                TitleRowType.ARTIST -> Triple(displaySettings.artistFontSize, 20f, 100f)
+                                TitleRowType.SONG -> Triple(displaySettings.songFontSize, 30f, 120f)
+                                TitleRowType.ALBUM -> Triple(displaySettings.albumFontSize, 20f, 100f)
+                            }
                             val currentAlign = when (rowType) {
                                 TitleRowType.ARTIST -> displaySettings.artistAlignment
                                 TitleRowType.SONG -> displaySettings.songAlignment
@@ -889,61 +950,11 @@ private fun TypographyHudSettingsContent(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    FontSelectorRow(
-                                        label = "Font Family",
-                                        currentFontKey = currentFontKey,
-                                        availableFonts = availableFonts,
-                                        onFontSelected = { key ->
-                                            val newSettings = when (rowType) {
-                                                TitleRowType.ARTIST -> displaySettings.copy(artistFontKey = key)
-                                                TitleRowType.SONG -> displaySettings.copy(songFontKey = key)
-                                                TitleRowType.ALBUM -> displaySettings.copy(albumFontKey = key)
-                                            }
-                                            onUpdateDisplaySettings(newSettings)
-                                        }
-                                    )
-                                }
-
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("Align:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        TextAlignmentOption.entries.forEach { option ->
-                                            FilterChip(
-                                                selected = currentAlign == option,
-                                                onClick = {
-                                                    val newSettings = when (rowType) {
-                                                        TitleRowType.ARTIST -> displaySettings.copy(artistAlignment = option)
-                                                        TitleRowType.SONG -> displaySettings.copy(songAlignment = option)
-                                                        TitleRowType.ALBUM -> displaySettings.copy(albumAlignment = option)
-                                                    }
-                                                    onUpdateDisplaySettings(newSettings)
-                                                },
-                                                label = { Text(option.displayName, fontSize = 11.sp) }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            // Font Size Slider
-                            val (currentSize, minRange, maxRange) = when (rowType) {
-                                TitleRowType.ARTIST -> Triple(displaySettings.artistFontSize, 20f, 100f)
-                                TitleRowType.SONG -> Triple(displaySettings.songFontSize, 30f, 120f)
-                                TitleRowType.ALBUM -> Triple(displaySettings.albumFontSize, 20f, 100f)
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
                                 Text(
-                                    text = "Size: ${currentSize.toInt()} pt",
+                                    text = "${currentSize.toInt()} pt",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.width(80.dp)
+                                    modifier = Modifier.width(42.dp)
                                 )
                                 Slider(
                                     value = currentSize,
@@ -958,6 +969,22 @@ private fun TypographyHudSettingsContent(
                                     valueRange = minRange..maxRange,
                                     modifier = Modifier.weight(1f)
                                 )
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    TextAlignmentOption.entries.forEach { option ->
+                                        FilterChip(
+                                            selected = currentAlign == option,
+                                            onClick = {
+                                                val newSettings = when (rowType) {
+                                                    TitleRowType.ARTIST -> displaySettings.copy(artistAlignment = option)
+                                                    TitleRowType.SONG -> displaySettings.copy(songAlignment = option)
+                                                    TitleRowType.ALBUM -> displaySettings.copy(albumAlignment = option)
+                                                }
+                                                onUpdateDisplaySettings(newSettings)
+                                            },
+                                            label = { Text(option.displayName, fontSize = 11.sp) }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -1459,53 +1486,66 @@ private fun PaintBucketItem(
     }
 }
 
+private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
 @Composable
 private fun FontSelectorRow(
-    label: String,
     currentFontKey: String,
     availableFonts: List<FontOption>,
-    onFontSelected: (String) -> Unit
+    onFontSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedFontName = availableFonts.find { it.key == currentFontKey }?.displayName ?: "System Default"
+    val selectedFontFamily = remember(currentFontKey) { FontHelper.getFontFamily(currentFontKey) }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { expanded = true },
-                shape = RoundedCornerShape(12.dp),
+    Box(modifier = modifier) {
+        OutlinedButton(
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(selectedFontName, color = MaterialTheme.colorScheme.onSurface)
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Select Font",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = selectedFontName,
+                    fontFamily = selectedFontFamily,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Select Font",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+        }
 
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                availableFonts.forEach { fontOption ->
-                    DropdownMenuItem(
-                        text = { Text(fontOption.displayName) },
-                        onClick = {
-                            onFontSelected(fontOption.key)
-                            expanded = false
-                        }
-                    )
-                }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            availableFonts.forEach { fontOption ->
+                val itemFontFamily = remember(fontOption.key) { FontHelper.getFontFamily(fontOption.key) }
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = fontOption.displayName,
+                            fontFamily = itemFontFamily,
+                            fontSize = 15.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    onClick = {
+                        onFontSelected(fontOption.key)
+                        expanded = false
+                    }
+                )
             }
         }
     }

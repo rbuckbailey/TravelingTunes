@@ -112,7 +112,46 @@ enum class GestureTrigger(
             return getActiveRegionSlots(numRegions).map { BOTTOM_REGION_SLOTS[it] }
         }
 
+        fun getTopTriggerForUserRegion(userRegionNumber: Int, numRegions: Int): GestureTrigger {
+            val activeSlots = getActiveRegionSlots(numRegions)
+            val idx = (userRegionNumber - 1).coerceIn(0, activeSlots.size - 1)
+            val slotIndex = activeSlots[idx]
+            return TOP_REGION_SLOTS[slotIndex]
+        }
+
+        fun getBottomTriggerForUserRegion(userRegionNumber: Int, numRegions: Int): GestureTrigger {
+            val activeSlots = getActiveRegionSlots(numRegions)
+            val idx = (userRegionNumber - 1).coerceIn(0, activeSlots.size - 1)
+            val slotIndex = activeSlots[idx]
+            return BOTTOM_REGION_SLOTS[slotIndex]
+        }
+
         fun fromKey(key: String): GestureTrigger? = entries.find { it.key.equals(key, ignoreCase = true) }
+    }
+
+    fun getUserFacingRegionNumber(numRegions: Int): Int {
+        if (category != GestureCategory.SCREEN_REGION) return -1
+        val activeSlots = getActiveRegionSlots(numRegions)
+        val slotIndex = when (this) {
+            in TOP_REGION_SLOTS -> TOP_REGION_SLOTS.indexOf(this)
+            in BOTTOM_REGION_SLOTS -> BOTTOM_REGION_SLOTS.indexOf(this)
+            else -> -1
+        }
+        if (slotIndex == -1) return -1
+        val indexInActive = activeSlots.indexOf(slotIndex)
+        return if (indexInActive != -1) {
+            indexInActive + 1
+        } else {
+            slotIndex + 1
+        }
+    }
+
+    fun getDisplayName(numRegions: Int = 3): String {
+        if (category != GestureCategory.SCREEN_REGION) return displayName
+        val userFacingNum = getUserFacingRegionNumber(numRegions)
+        val isTop = this in TOP_REGION_SLOTS
+        val prefix = if (isTop) "Top Region " else "Bottom Region "
+        return "$prefix$userFacingNum"
     }
 }
 
@@ -125,15 +164,15 @@ enum class SlideDirection {
 
 fun GestureTrigger.getSlideDirection(): SlideDirection {
     return when (this) {
-        in GestureTrigger.TOP_REGION_SLOTS -> SlideDirection.TOP
-        in GestureTrigger.BOTTOM_REGION_SLOTS -> SlideDirection.BOTTOM
+        in GestureTrigger.TOP_REGION_SLOTS -> SlideDirection.BOTTOM
+        in GestureTrigger.BOTTOM_REGION_SLOTS -> SlideDirection.TOP
 
-        GestureTrigger.SWIPE_1_UP, GestureTrigger.SWIPE_2_UP, GestureTrigger.SWIPE_3_UP -> SlideDirection.TOP
-        GestureTrigger.SWIPE_1_DOWN, GestureTrigger.SWIPE_2_DOWN, GestureTrigger.SWIPE_3_DOWN -> SlideDirection.BOTTOM
-        GestureTrigger.SWIPE_1_LEFT, GestureTrigger.SWIPE_2_LEFT, GestureTrigger.SWIPE_3_LEFT -> SlideDirection.LEFT
-        GestureTrigger.SWIPE_1_RIGHT, GestureTrigger.SWIPE_2_RIGHT, GestureTrigger.SWIPE_3_RIGHT -> SlideDirection.RIGHT
+        GestureTrigger.SWIPE_1_UP, GestureTrigger.SWIPE_2_UP, GestureTrigger.SWIPE_3_UP -> SlideDirection.BOTTOM
+        GestureTrigger.SWIPE_1_DOWN, GestureTrigger.SWIPE_2_DOWN, GestureTrigger.SWIPE_3_DOWN -> SlideDirection.TOP
+        GestureTrigger.SWIPE_1_LEFT, GestureTrigger.SWIPE_2_LEFT, GestureTrigger.SWIPE_3_LEFT -> SlideDirection.RIGHT
+        GestureTrigger.SWIPE_1_RIGHT, GestureTrigger.SWIPE_2_RIGHT, GestureTrigger.SWIPE_3_RIGHT -> SlideDirection.LEFT
 
-        else -> SlideDirection.BOTTOM
+        else -> SlideDirection.TOP
     }
 }
 

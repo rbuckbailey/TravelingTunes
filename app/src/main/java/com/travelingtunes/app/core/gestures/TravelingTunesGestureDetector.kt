@@ -57,7 +57,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
     numEdgeRegions: Int = 3,
     regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
 ) {
-    val minTranslationPx = 28f * density
+    val minTranslationPx = 12f * density
     val slopPx = 40f * density
     val doubleTapTimeoutMs = 300L
 
@@ -259,7 +259,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
 
             if (!isSwipeHandled && !isLongPressHandled) {
                 val hasMovedPastMin = abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx
-                val canCommitSwipe = hasMovedPastMin && (maxFingers >= 2 || duration >= multiTouchWindowMs)
+                val canCommitSwipe = hasMovedPastMin
 
                 if (canCommitSwipe) {
                     isSwipeHandled = true

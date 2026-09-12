@@ -124,6 +124,31 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testTitleFontOptionsDefaultsAndUpdates() {
+        val defaultSettings = com.travelingtunes.app.core.model.DisplaySettings()
+        org.junit.Assert.assertTrue(defaultSettings.artistBold)
+        org.junit.Assert.assertFalse(defaultSettings.artistItalic)
+        org.junit.Assert.assertFalse(defaultSettings.artistUnderline)
+
+        org.junit.Assert.assertTrue(defaultSettings.songBold)
+        org.junit.Assert.assertFalse(defaultSettings.songItalic)
+        org.junit.Assert.assertFalse(defaultSettings.songUnderline)
+
+        org.junit.Assert.assertFalse(defaultSettings.albumBold)
+        org.junit.Assert.assertFalse(defaultSettings.albumItalic)
+        org.junit.Assert.assertFalse(defaultSettings.albumUnderline)
+
+        val updatedSettings = defaultSettings.copy(
+            artistItalic = true,
+            songUnderline = true,
+            albumBold = true
+        )
+        org.junit.Assert.assertTrue(updatedSettings.artistItalic)
+        org.junit.Assert.assertTrue(updatedSettings.songUnderline)
+        org.junit.Assert.assertTrue(updatedSettings.albumBold)
+    }
+
+    @Test
     fun testSettingsCategoriesNaming() {
         val categories = listOf("Library", "Gestures", "Titles and Art", "Themes", "About")
         assertEquals(5, categories.size)
@@ -218,23 +243,49 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testUserFacingRegionMappingForVariousSlotCounts() {
+        for (numRegions in 1..7) {
+            val topTriggers = GestureTrigger.getActiveTopTriggers(numRegions)
+            val bottomTriggers = GestureTrigger.getActiveBottomTriggers(numRegions)
+
+            assertEquals(numRegions, topTriggers.size)
+            assertEquals(numRegions, bottomTriggers.size)
+
+            for (i in 0 until numRegions) {
+                val userFacingNum = i + 1
+                val topTrigger = topTriggers[i]
+                val bottomTrigger = bottomTriggers[i]
+
+                assertEquals(userFacingNum, topTrigger.getUserFacingRegionNumber(numRegions))
+                assertEquals(userFacingNum, bottomTrigger.getUserFacingRegionNumber(numRegions))
+
+                assertEquals("Top Region $userFacingNum", topTrigger.getDisplayName(numRegions))
+                assertEquals("Bottom Region $userFacingNum", bottomTrigger.getDisplayName(numRegions))
+
+                assertEquals(topTrigger, GestureTrigger.getTopTriggerForUserRegion(userFacingNum, numRegions))
+                assertEquals(bottomTrigger, GestureTrigger.getBottomTriggerForUserRegion(userFacingNum, numRegions))
+            }
+        }
+    }
+
+    @Test
     fun testSlideDirectionForTriggers() {
-        // Buttons: Top regions -> TOP, Bottom regions -> BOTTOM
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.CORNER_TOP_LEFT.getSlideDirection())
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.CORNER_TOP_CENTER.getSlideDirection())
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.CORNER_BOTTOM_LEFT.getSlideDirection())
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.CORNER_BOTTOM_RIGHT.getSlideDirection())
+        // Buttons: Top regions -> BOTTOM, Bottom regions -> TOP
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.CORNER_TOP_LEFT.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.CORNER_TOP_CENTER.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.CORNER_BOTTOM_LEFT.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.CORNER_BOTTOM_RIGHT.getSlideDirection())
 
-        // Taps: -> BOTTOM
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.TAP_1_1.getSlideDirection())
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.TAP_2_1.getSlideDirection())
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.LONG_PRESS_1.getSlideDirection())
+        // Taps: -> TOP
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.TAP_1_1.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.TAP_2_1.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.LONG_PRESS_1.getSlideDirection())
 
-        // Slide gestures (Swipes): Gesture direction
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.SWIPE_1_UP.getSlideDirection())
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.SWIPE_1_DOWN.getSlideDirection())
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.LEFT, GestureTrigger.SWIPE_1_LEFT.getSlideDirection())
-        assertEquals(com.travelingtunes.app.core.model.SlideDirection.RIGHT, GestureTrigger.SWIPE_1_RIGHT.getSlideDirection())
+        // Slide gestures (Swipes): Reversed directions (Swipe UP -> BOTTOM, Swipe DOWN -> TOP, Swipe LEFT -> RIGHT, Swipe RIGHT -> LEFT)
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.SWIPE_1_UP.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.SWIPE_1_DOWN.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.RIGHT, GestureTrigger.SWIPE_1_LEFT.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.LEFT, GestureTrigger.SWIPE_1_RIGHT.getSlideDirection())
     }
 
     @Test

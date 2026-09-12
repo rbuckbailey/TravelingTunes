@@ -2,7 +2,9 @@ package com.travelingtunes.app.core.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.travelingtunes.app.core.model.SlideDirection
 
@@ -39,46 +42,52 @@ fun SlidingOverlay(
     }
 
     val (enterTransition, exitTransition) = remember(slideDirection) {
+        val enterSpec = spring<androidx.compose.ui.unit.IntOffset>(
+            stiffness = Spring.StiffnessMediumLow,
+            dampingRatio = Spring.DampingRatioNoBouncy
+        )
+        val exitSpec = tween<androidx.compose.ui.unit.IntOffset>(durationMillis = 200, easing = LinearOutSlowInEasing)
+
         when (slideDirection) {
             SlideDirection.TOP -> {
                 slideInVertically(
                     initialOffsetY = { -it },
-                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300)) to
+                    animationSpec = enterSpec
+                ) + fadeIn(animationSpec = tween(200)) to
                 slideOutVertically(
                     targetOffsetY = { -it },
-                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(250))
+                    animationSpec = exitSpec
+                ) + fadeOut(animationSpec = tween(180))
             }
             SlideDirection.BOTTOM -> {
                 slideInVertically(
                     initialOffsetY = { it },
-                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300)) to
+                    animationSpec = enterSpec
+                ) + fadeIn(animationSpec = tween(200)) to
                 slideOutVertically(
                     targetOffsetY = { it },
-                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(250))
+                    animationSpec = exitSpec
+                ) + fadeOut(animationSpec = tween(180))
             }
             SlideDirection.LEFT -> {
                 slideInHorizontally(
                     initialOffsetX = { -it },
-                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300)) to
+                    animationSpec = enterSpec
+                ) + fadeIn(animationSpec = tween(200)) to
                 slideOutHorizontally(
                     targetOffsetX = { -it },
-                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(250))
+                    animationSpec = exitSpec
+                ) + fadeOut(animationSpec = tween(180))
             }
             SlideDirection.RIGHT -> {
                 slideInHorizontally(
                     initialOffsetX = { it },
-                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300)) to
+                    animationSpec = enterSpec
+                ) + fadeIn(animationSpec = tween(200)) to
                 slideOutHorizontally(
                     targetOffsetX = { it },
-                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(250))
+                    animationSpec = exitSpec
+                ) + fadeOut(animationSpec = tween(180))
             }
         }
     }
@@ -101,6 +110,7 @@ fun SlidingOverlay(
             Surface(
                 modifier = Modifier
                     .fillMaxSize()
+                    .graphicsLayer()
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null

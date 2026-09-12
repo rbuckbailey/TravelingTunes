@@ -148,6 +148,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            LaunchedEffect(displaySettings.immersiveMode) {
+                val insetsController = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+                if (displaySettings.immersiveMode) {
+                    insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.statusBars())
+                    insetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                } else {
+                    insetsController.show(androidx.core.view.WindowInsetsCompat.Type.statusBars())
+                }
+            }
+
             val currentSong by playbackManager.currentSong.collectAsState()
             var dynamicAlbumArtTheme by remember { mutableStateOf<com.travelingtunes.app.core.model.ColorTheme?>(null) }
             var lastExtractedTheme by remember { mutableStateOf<com.travelingtunes.app.core.model.ColorTheme?>(null) }

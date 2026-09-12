@@ -32,9 +32,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.collectAsState
 import com.travelingtunes.app.core.datastore.SettingsDataStore
+import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
+import com.travelingtunes.app.core.model.GestureCategory
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.feature.player.ActionIcon
 import kotlinx.coroutines.launch
@@ -47,6 +50,19 @@ fun GestureAssignmentScreen(
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val displaySettings by settingsDataStore.displaySettingsFlow.collectAsState(initial = DisplaySettings())
+    val numEdgeRegions = displaySettings.numEdgeRegions
+
+    val displayedTriggers = remember(numEdgeRegions) {
+        GestureTrigger.entries.filter { trigger ->
+            if (trigger.category == GestureCategory.SCREEN_REGION) {
+                trigger in GestureTrigger.getActiveTopTriggers(numEdgeRegions) ||
+                trigger in GestureTrigger.getActiveBottomTriggers(numEdgeRegions)
+            } else {
+                true
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -65,7 +81,7 @@ fun GestureAssignmentScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            items(GestureTrigger.entries) { trigger ->
+            items(displayedTriggers) { trigger ->
                 val currentBinding = gestureBindings[trigger] ?: GestureBinding(
                     trigger = trigger,
                     action = GestureAction.fromKey(trigger.defaultActionKey),
@@ -75,6 +91,7 @@ fun GestureAssignmentScreen(
                 GestureAssignmentItem(
                     trigger = trigger,
                     binding = currentBinding,
+                    numEdgeRegions = numEdgeRegions,
                     onActionSelected = { newAction ->
                         coroutineScope.launch {
                             settingsDataStore.updateGestureBinding(trigger, newAction, currentBinding.isContinuous)
@@ -90,6 +107,7 @@ fun GestureAssignmentScreen(
 private fun GestureAssignmentItem(
     trigger: GestureTrigger,
     binding: GestureBinding,
+    numEdgeRegions: Int,
     onActionSelected: (GestureAction) -> Unit
 ) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
@@ -102,7 +120,7 @@ private fun GestureAssignmentItem(
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = trigger.displayName, fontWeight = FontWeight.SemiBold)
+            Text(text = trigger.getDisplayName(numEdgeRegions), fontWeight = FontWeight.SemiBold)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ActionIcon(
                     action = binding.action,

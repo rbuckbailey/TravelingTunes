@@ -7,6 +7,11 @@ import android.net.Uri
 import android.os.Build
 import android.util.Size
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -70,8 +75,10 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -175,9 +182,7 @@ fun PlayerScreen(
             } else {
                 insetsController.show(androidx.core.view.WindowInsetsCompat.Type.statusBars())
             }
-            onDispose {
-                insetsController.show(androidx.core.view.WindowInsetsCompat.Type.statusBars())
-            }
+            onDispose { }
         }
     }
 
@@ -302,7 +307,10 @@ fun PlayerScreen(
     // Sync PlaybackManager -> pagerState when song changes externally
     LaunchedEffect(currentSong?.id) {
         if (songIndex in 0 until pageCount && pagerState.settledPage != songIndex) {
-            pagerState.animateScrollToPage(songIndex)
+            pagerState.animateScrollToPage(
+                page = songIndex,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+            )
         }
     }
 
@@ -979,7 +987,9 @@ fun SongLabelsLayout(
                 lineHeight = artistLineHeight,
                 fontFamily = artistFont,
                 color = MaterialTheme.colorScheme.secondary,
-                fontWeight = FontWeight.Medium,
+                fontWeight = if (displaySettings.artistBold) FontWeight.Bold else FontWeight.Normal,
+                fontStyle = if (displaySettings.artistItalic) FontStyle.Italic else FontStyle.Normal,
+                textDecoration = if (displaySettings.artistUnderline) TextDecoration.Underline else TextDecoration.None,
                 textAlign = displaySettings.artistAlignment.toComposeAlignment(),
                 minFontSize = minFontSize.sp,
                 enableMarquee = displaySettings.titleScrollLong,
@@ -993,7 +1003,9 @@ fun SongLabelsLayout(
                 lineHeight = songLineHeight,
                 fontFamily = songFont,
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
+                fontWeight = if (displaySettings.songBold) FontWeight.Bold else FontWeight.Normal,
+                fontStyle = if (displaySettings.songItalic) FontStyle.Italic else FontStyle.Normal,
+                textDecoration = if (displaySettings.songUnderline) TextDecoration.Underline else TextDecoration.None,
                 textAlign = displaySettings.songAlignment.toComposeAlignment(),
                 minFontSize = minFontSize.sp,
                 enableMarquee = displaySettings.titleScrollLong,
@@ -1007,7 +1019,9 @@ fun SongLabelsLayout(
                 lineHeight = albumLineHeight,
                 fontFamily = albumFont,
                 color = MaterialTheme.colorScheme.tertiary,
-                fontWeight = FontWeight.Normal,
+                fontWeight = if (displaySettings.albumBold) FontWeight.Bold else FontWeight.Normal,
+                fontStyle = if (displaySettings.albumItalic) FontStyle.Italic else FontStyle.Normal,
+                textDecoration = if (displaySettings.albumUnderline) TextDecoration.Underline else TextDecoration.None,
                 textAlign = displaySettings.albumAlignment.toComposeAlignment(),
                 minFontSize = minFontSize.sp,
                 enableMarquee = displaySettings.titleScrollLong,
@@ -1256,80 +1270,90 @@ fun VolumeHudOverlay(
         }
     }
 
-    if (!isVisible) return
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(150)),
+        exit = fadeOut(animationSpec = tween(300))
+    ) {
+        val animatedVolumeRatio by animateFloatAsState(
+            targetValue = volumeRatio.coerceIn(0.01f, 1f),
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+            label = "volumeRatio"
+        )
 
-    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
-    val primaryColor = if (isMondrian) Color.Black else MaterialTheme.colorScheme.primary
-    val lineThicknessDp = displaySettings.hudLineThickness.dp
+        val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
+        val primaryColor = if (isMondrian) Color.Black else MaterialTheme.colorScheme.primary
+        val lineThicknessDp = displaySettings.hudLineThickness.dp
 
-    val shape = if (themeSettings.isRounded) RoundedCornerShape(lineThicknessDp / 2f) else RectangleShape
-    val glassModifier = if (themeSettings.isGlass) {
-        Modifier.border(1.dp, Color.White.copy(alpha = 0.45f), shape)
-    } else Modifier
+        val shape = if (themeSettings.isRounded) RoundedCornerShape(lineThicknessDp / 2f) else RectangleShape
+        val glassModifier = if (themeSettings.isGlass) {
+            Modifier.border(1.dp, Color.White.copy(alpha = 0.45f), shape)
+        } else Modifier
 
-    when (displaySettings.hudType) {
-        HudTypeOption.EDGE_HUD -> {
-            // Geometric Vertical Strip along right edge
-            BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-                val filledHeight = this.maxHeight * volumeRatio.coerceIn(0.01f, 1f)
-                Box(
-                    modifier = Modifier
-                        .width(lineThicknessDp)
-                        .height(filledHeight)
-                        .align(Alignment.BottomEnd)
-                        .clip(shape)
-                        .background(
-                            if (isMondrian) Color.Black
-                            else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
-                            else primaryColor.copy(alpha = 0.50f)
-                        )
-                        .then(glassModifier)
-                )
-            }
-        }
-        HudTypeOption.NUMBER -> {
-            // Horizontal geometric line indicator at height corresponding to volume level
-            BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-                val topOffsetDp = (this.maxHeight - lineThicknessDp) * (1f - volumeRatio.coerceIn(0f, 1f))
-                Box(
-                    modifier = Modifier
-                        .offset(y = topOffsetDp)
-                        .then(if (themeSettings.isRounded) Modifier.padding(horizontal = 12.dp) else Modifier)
-                        .fillMaxWidth()
-                        .height(lineThicknessDp)
-                        .clip(shape)
-                        .background(
-                            if (isMondrian) Color.Black
-                            else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
-                            else primaryColor.copy(alpha = 0.70f)
-                        )
-                        .then(glassModifier)
-                )
-            }
-        }
-        HudTypeOption.BAR_VOLUME -> {
-            // Full width rectangular block filling from bottom to current volume level
-            val barShape = if (themeSettings.isRounded) RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) else RectangleShape
-            val barGlassModifier = if (themeSettings.isGlass) {
-                Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), barShape)
-            } else Modifier
-            val barPadding = if (themeSettings.isRounded) Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp) else Modifier
-
-            Box(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(volumeRatio.coerceIn(0.01f, 1f))
-                    .then(barPadding)
-                    .clip(barShape)
-                    .background(
-                        if (isMondrian) Color.Black
-                        else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.25f)
-                        else primaryColor.copy(alpha = 0.20f)
+        when (displaySettings.hudType) {
+            HudTypeOption.EDGE_HUD -> {
+                // Geometric Vertical Strip along right edge
+                BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+                    val filledHeight = this.maxHeight * animatedVolumeRatio
+                    Box(
+                        modifier = Modifier
+                            .width(lineThicknessDp)
+                            .height(filledHeight)
+                            .align(Alignment.BottomEnd)
+                            .clip(shape)
+                            .background(
+                                if (isMondrian) Color.Black
+                                else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
+                                else primaryColor.copy(alpha = 0.50f)
+                            )
+                            .then(glassModifier)
                     )
-                    .then(barGlassModifier)
-            )
+                }
+            }
+            HudTypeOption.NUMBER -> {
+                // Horizontal geometric line indicator at height corresponding to volume level
+                BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+                    val topOffsetDp = (this.maxHeight - lineThicknessDp) * (1f - animatedVolumeRatio)
+                    Box(
+                        modifier = Modifier
+                            .offset(y = topOffsetDp)
+                            .then(if (themeSettings.isRounded) Modifier.padding(horizontal = 12.dp) else Modifier)
+                            .fillMaxWidth()
+                            .height(lineThicknessDp)
+                            .clip(shape)
+                            .background(
+                                if (isMondrian) Color.Black
+                                else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
+                                else primaryColor.copy(alpha = 0.70f)
+                            )
+                            .then(glassModifier)
+                    )
+                }
+            }
+            HudTypeOption.BAR_VOLUME -> {
+                // Full width rectangular block filling from bottom to current volume level
+                val barShape = if (themeSettings.isRounded) RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) else RectangleShape
+                val barGlassModifier = if (themeSettings.isGlass) {
+                    Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), barShape)
+                } else Modifier
+                val barPadding = if (themeSettings.isRounded) Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp) else Modifier
+
+                Box(
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(animatedVolumeRatio)
+                        .then(barPadding)
+                        .clip(barShape)
+                        .background(
+                            if (isMondrian) Color.Black
+                            else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.25f)
+                            else primaryColor.copy(alpha = 0.20f)
+                        )
+                        .then(barGlassModifier)
+                )
+            }
+            HudTypeOption.NONE -> {}
         }
-        HudTypeOption.NONE -> {}
     }
 }
 
@@ -1343,7 +1367,13 @@ fun ProgressHudOverlay(
 ) {
     if (displaySettings.scrubHudType == ScrubHudTypeOption.NONE || durationMs <= 0L || themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)) return
 
-    val progressRatio = (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+    val rawProgressRatio = (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+    val animatedProgressRatio by animateFloatAsState(
+        targetValue = rawProgressRatio,
+        animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+        label = "progressRatio"
+    )
+
     val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
     val primaryColor = if (isMondrian) Color.Black else MaterialTheme.colorScheme.primary
     val lineThicknessDp = displaySettings.hudLineThickness.dp
@@ -1373,7 +1403,7 @@ fun ProgressHudOverlay(
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .fillMaxWidth(progressRatio)
+                        .fillMaxWidth(animatedProgressRatio)
                         .clip(shape)
                         .background(
                             if (isMondrian) Color.Black
@@ -1386,7 +1416,7 @@ fun ProgressHudOverlay(
         ScrubHudTypeOption.POPUP -> {
             // Moving Geometric Vertical Line Indicator
             BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-                val leftOffsetDp = (this.maxWidth - lineThicknessDp) * progressRatio
+                val leftOffsetDp = (this.maxWidth - lineThicknessDp) * animatedProgressRatio
                 Box(
                     modifier = Modifier
                         .offset(x = leftOffsetDp)
@@ -1408,7 +1438,7 @@ fun ProgressHudOverlay(
             Box(
                 modifier = modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(progressRatio)
+                    .fillMaxWidth(animatedProgressRatio)
                     .background(
                         if (isMondrian) Color.Black
                         else primaryColor.copy(alpha = 0.15f)
@@ -1615,7 +1645,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQuickStart = onOpenQuickStart
                                     )
                                 } else {
-                                    onOpenSettings(SlideDirection.TOP)
+                                    onOpenSettings(SlideDirection.BOTTOM)
                                 }
                             },
                             onLongPress = {
@@ -1637,7 +1667,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQuickStart = onOpenQuickStart
                                     )
                                 } else {
-                                    onOpenSettings(SlideDirection.TOP)
+                                    onOpenSettings(SlideDirection.BOTTOM)
                                 }
                             }
                         )
@@ -1709,7 +1739,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQuickStart = onOpenQuickStart
                                     )
                                 } else {
-                                    onOpenSettings(SlideDirection.BOTTOM)
+                                    onOpenSettings(SlideDirection.TOP)
                                 }
                             },
                             onLongPress = {
@@ -1731,7 +1761,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQuickStart = onOpenQuickStart
                                     )
                                 } else {
-                                    onOpenSettings(SlideDirection.BOTTOM)
+                                    onOpenSettings(SlideDirection.TOP)
                                 }
                             }
                         )
