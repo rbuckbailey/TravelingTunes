@@ -117,6 +117,9 @@ class MainActivity : ComponentActivity() {
             val isScanning by musicScanner.isScanning.collectAsState()
             val scanStatusMessage by musicScanner.statusMessage.collectAsState()
 
+            val isDownloadingArt by musicScanner.isDownloadingArt.collectAsState()
+            val artDownloadStatusMessage by musicScanner.artDownloadStatusMessage.collectAsState()
+
             var libraryStats by remember { mutableStateOf(LibraryStats()) }
 
             LaunchedEffect(lastScanTime, isScanning) {
@@ -187,6 +190,8 @@ class MainActivity : ComponentActivity() {
                         libraryStats = libraryStats,
                         isScanning = isScanning,
                         scanStatusMessage = scanStatusMessage,
+                        isDownloadingArt = isDownloadingArt,
+                        artDownloadStatusMessage = artDownloadStatusMessage,
                         onPickMusicFolder = { folderPickerLauncher.launch(null) },
                         onRescanMusicFolder = {
                             musicFolderUri?.let { uriStr ->
@@ -198,6 +203,11 @@ class MainActivity : ComponentActivity() {
                                         playbackManager.setPlaylistAndPlay(scannedSongs, 0, shuffle = true)
                                     }
                                 }
+                            }
+                        },
+                        onDownloadMissingArt = {
+                            lifecycleScope.launch {
+                                musicScanner.downloadMissingArtwork()
                             }
                         },
                         onDismissFirstRunPrompt = {
@@ -289,8 +299,11 @@ fun TravelingTunesNavHost(
     libraryStats: LibraryStats,
     isScanning: Boolean,
     scanStatusMessage: String?,
+    isDownloadingArt: Boolean = false,
+    artDownloadStatusMessage: String? = null,
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
+    onDownloadMissingArt: () -> Unit = {},
     onDismissFirstRunPrompt: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -323,8 +336,11 @@ fun TravelingTunesNavHost(
                 libraryStats = libraryStats,
                 isScanning = isScanning,
                 scanStatusMessage = scanStatusMessage,
+                isDownloadingArt = isDownloadingArt,
+                artDownloadStatusMessage = artDownloadStatusMessage,
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = onRescanMusicFolder,
+                onDownloadMissingArt = onDownloadMissingArt,
                 onNavigateBack = { navController.popBackStack() },
                 onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
                 onOpenQuickStart = { navController.navigate("quickstart") }

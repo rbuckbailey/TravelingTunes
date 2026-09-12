@@ -106,6 +106,27 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         writableDatabase.execSQL("DELETE FROM $TABLE_SONGS")
     }
 
+    suspend fun updateSongArtwork(songId: Long, artworkUri: Uri) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            put(COL_ARTWORK_URI, artworkUri.toString())
+        }
+        db.update(TABLE_SONGS, cv, "$COL_ID = ?", arrayOf(songId.toString()))
+    }
+
+    suspend fun updateAlbumArtwork(albumName: String, artistName: String, artworkUri: Uri) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            put(COL_ARTWORK_URI, artworkUri.toString())
+        }
+        db.update(
+            TABLE_SONGS,
+            cv,
+            "$COL_ALBUM = ? AND $COL_ARTIST = ?",
+            arrayOf(albumName, artistName)
+        )
+    }
+
     suspend fun getAllSongs(): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase

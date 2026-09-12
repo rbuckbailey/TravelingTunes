@@ -111,8 +111,11 @@ fun SettingsScreen(
     libraryStats: LibraryStats = LibraryStats(),
     isScanning: Boolean = false,
     scanStatusMessage: String? = null,
+    isDownloadingArt: Boolean = false,
+    artDownloadStatusMessage: String? = null,
     onPickMusicFolder: () -> Unit = {},
     onRescanMusicFolder: () -> Unit = {},
+    onDownloadMissingArt: () -> Unit = {},
     onNavigateBack: () -> Unit,
     onOpenGestureAssignments: () -> Unit,
     onOpenQuickStart: () -> Unit
@@ -221,9 +224,12 @@ fun SettingsScreen(
                             isScanning = isScanning,
                             lastScanTime = lastScanTime,
                             scanStatusMessage = scanStatusMessage,
+                            isDownloadingArt = isDownloadingArt,
+                            artDownloadStatusMessage = artDownloadStatusMessage,
                             libraryStats = libraryStats,
                             onPickMusicFolder = onPickMusicFolder,
-                            onRescanMusicFolder = onRescanMusicFolder
+                            onRescanMusicFolder = onRescanMusicFolder,
+                            onDownloadMissingArt = onDownloadMissingArt
                         )
 
                         GesturesSettingsCard(
@@ -278,9 +284,12 @@ fun SettingsScreen(
                         isScanning = isScanning,
                         lastScanTime = lastScanTime,
                         scanStatusMessage = scanStatusMessage,
+                        isDownloadingArt = isDownloadingArt,
+                        artDownloadStatusMessage = artDownloadStatusMessage,
                         libraryStats = libraryStats,
                         onPickMusicFolder = onPickMusicFolder,
-                        onRescanMusicFolder = onRescanMusicFolder
+                        onRescanMusicFolder = onRescanMusicFolder,
+                        onDownloadMissingArt = onDownloadMissingArt
                     )
 
                     GesturesSettingsCard(
@@ -528,9 +537,12 @@ private fun LibrarySettingsCard(
     lastScanTime: Long,
     scanStatusMessage: String?,
     libraryStats: LibraryStats,
+    modifier: Modifier = Modifier,
+    isDownloadingArt: Boolean = false,
+    artDownloadStatusMessage: String? = null,
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
-    modifier: Modifier = Modifier
+    onDownloadMissingArt: () -> Unit = {}
 ) {
     CollapsibleSettingsCard(
         title = "Library",
@@ -563,6 +575,19 @@ private fun LibrarySettingsCard(
             },
             modifier = Modifier.clickable(enabled = !isScanning && !musicFolderName.isNullOrBlank()) {
                 onRescanMusicFolder()
+            }
+        )
+        ListItem(
+            headlineContent = { Text("Download Missing Album Art") },
+            supportingContent = {
+                if (isDownloadingArt) {
+                    Text(artDownloadStatusMessage ?: "Downloading artwork...", color = MaterialTheme.colorScheme.primary)
+                } else {
+                    Text("Search and download high-res square artwork for missing albums")
+                }
+            },
+            modifier = Modifier.clickable(enabled = !isDownloadingArt) {
+                onDownloadMissingArt()
             }
         )
 

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,7 +27,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -127,6 +128,9 @@ fun SongPickerBottomSheet(
     val isScanning by musicScanner?.isScanning?.collectAsState() ?: remember { mutableStateOf(false) }
     val scanStatusMessage by musicScanner?.statusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
     val scannedCount by musicScanner?.scannedCount?.collectAsState() ?: remember { mutableStateOf(0) }
+
+    val isDownloadingArt by musicScanner?.isDownloadingArt?.collectAsState() ?: remember { mutableStateOf(false) }
+    val artDownloadStatusMessage by musicScanner?.artDownloadStatusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(PickerCategory.ALL) }
@@ -278,8 +282,26 @@ fun SongPickerBottomSheet(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (musicScanner != null) {
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    musicScanner.downloadMissingArtwork()
+                                }
+                            },
+                            enabled = !isScanning && !isDownloadingArt
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudDownload,
+                                contentDescription = "Download Missing Album Art",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
                 }
             }
 
@@ -340,6 +362,43 @@ fun SongPickerBottomSheet(
                     }
                 }
 
+                if (isDownloadingArt) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Text(
+                                    text = "Downloading Missing Artwork...",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            if (!artDownloadStatusMessage.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = artDownloadStatusMessage ?: "",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Category Filter Chips
@@ -347,6 +406,25 @@ fun SongPickerBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    item {
+                        FilterChip(
+                            selected = false,
+                            onClick = {
+                                coroutineScope.launch {
+                                    musicScanner?.downloadMissingArtwork()
+                                }
+                            },
+                            enabled = !isScanning && !isDownloadingArt,
+                            label = { Text("Download Missing Art") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.CloudDownload,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+                    }
                     items(PickerCategory.entries.toTypedArray()) { category ->
                         FilterChip(
                             selected = selectedCategory == category && selectedGenre == null && selectedArtist == null && selectedAlbum == null && selectedFolder == null,

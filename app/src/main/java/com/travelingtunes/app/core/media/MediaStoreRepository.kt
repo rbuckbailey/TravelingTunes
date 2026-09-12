@@ -79,7 +79,7 @@ class MediaStoreRepository(private val context: Context) {
                 val artist = if (!rawArtist.isNullOrBlank() && !rawArtist.equals("<unknown>", ignoreCase = true) && !rawArtist.equals("Unknown Artist", ignoreCase = true) && !rawArtist.equals("Unknown", ignoreCase = true)) {
                     rawArtist
                 } else {
-                    "Unknown Artist"
+                    folderName
                 }
 
                 val contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)

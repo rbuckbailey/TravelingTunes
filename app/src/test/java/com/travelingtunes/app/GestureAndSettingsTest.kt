@@ -178,6 +178,13 @@ class GestureAndSettingsTest {
             artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED
         )
         assertEquals(com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED, displaySettings.artDisplayLayout)
+
+        val edges = com.travelingtunes.app.feature.player.DockAdjacentEdge.entries
+        assertEquals(4, edges.size)
+        assertEquals(com.travelingtunes.app.feature.player.DockAdjacentEdge.TOP, edges[0])
+        assertEquals(com.travelingtunes.app.feature.player.DockAdjacentEdge.BOTTOM, edges[1])
+        assertEquals(com.travelingtunes.app.feature.player.DockAdjacentEdge.LEFT, edges[2])
+        assertEquals(com.travelingtunes.app.feature.player.DockAdjacentEdge.RIGHT, edges[3])
     }
 
     @Test

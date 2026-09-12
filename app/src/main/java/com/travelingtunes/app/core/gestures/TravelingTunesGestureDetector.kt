@@ -156,7 +156,6 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
     numEdgeRegions: Int = 3,
     regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
 ): TapPressResult {
-    firstDown.consume()
     val startTime = System.currentTimeMillis()
     val startPosition = firstDown.position
 
@@ -169,7 +168,6 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
 
     while (true) {
         val event = awaitPointerEvent()
-        event.changes.forEach { it.consume() }
         val activePointers = event.changes.filter { it.pressed }
 
         if (activePointers.size > maxFingers) {
@@ -206,6 +204,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
             if (!isSwipeHandled && !isLongPressHandled) {
                 if (abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx) {
                     isSwipeHandled = true
+                    event.changes.forEach { it.consume() }
                     val trigger = determineSwipeTrigger(maxFingers, totalDx, totalDy)
                     if (trigger != null) {
                         listener.onGestureTriggered(trigger)
@@ -214,6 +213,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
             }
 
             if (isSwipeHandled) {
+                event.changes.forEach { it.consume() }
                 val isVerticalSwipe = abs(totalDy) > abs(totalDx)
                 val trigger = if (isVerticalSwipe) {
                     if (dy < 0f) determineSwipeTrigger(maxFingers, 0f, -100f)
@@ -233,6 +233,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
         if (!isSwipeHandled && !isLongPressHandled && duration >= 500L) {
             if (abs(totalDx) < minTranslationPx && abs(totalDy) < minTranslationPx) {
                 isLongPressHandled = true
+                event.changes.forEach { it.consume() }
                 if (maxFingers == 1) {
                     val cornerTrigger = detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds)
                     if (cornerTrigger != null) {

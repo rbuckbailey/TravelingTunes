@@ -14,6 +14,8 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -337,7 +339,8 @@ fun PlayerScreen(
         // 2. Gesture Detector Touch Overlay
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && currentSong != null
+        val currentSongHasArtwork = rememberHasArtwork(currentSong)
+        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && currentSong != null && currentSongHasArtwork
 
         val regionBounds = if (isDockedScreen) {
             if (isLandscape) {
@@ -497,6 +500,37 @@ fun PlayerScreen(
     }
 }
 
+enum class DockAdjacentEdge {
+    TOP, BOTTOM, LEFT, RIGHT
+}
+
+@Composable
+fun rememberHasArtwork(song: Song?): Boolean {
+    if (song == null) return false
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var hasArt by remember(song.id, song.artworkUri) {
+        mutableStateOf(AlbumArtCache.instance.get(song.id) != null)
+    }
+    LaunchedEffect(song.id, song.artworkUri, song.contentUri) {
+        val cached = AlbumArtCache.instance.get(song.id)
+        if (cached != null) {
+            hasArt = true
+        } else {
+            withContext(Dispatchers.IO) {
+                val loadedBitmap = loadSongArtwork(context, song)
+                if (loadedBitmap != null) {
+                    val imgBmp = loadedBitmap.asImageBitmap()
+                    AlbumArtCache.instance.put(song.id, imgBmp)
+                    hasArt = true
+                } else {
+                    hasArt = false
+                }
+            }
+        }
+    }
+    return hasArt
+}
+
 @Composable
 private fun TitleAndButtonsContainer(
     pageSong: Song?,
@@ -514,6 +548,7 @@ private fun TitleAndButtonsContainer(
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
+    dockAdjacentEdge: DockAdjacentEdge? = null,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
@@ -521,7 +556,8 @@ private fun TitleAndButtonsContainer(
             currentSong = pageSong,
             displaySettings = displaySettings,
             hasTopButtons = hasTopButtons,
-            hasBottomButtons = hasBottomButtons
+            hasBottomButtons = hasBottomButtons,
+            dockAdjacentEdge = dockAdjacentEdge
         )
         ScreenRegionIconsOverlay(
             gestureBindings = gestureBindings,
@@ -535,7 +571,8 @@ private fun TitleAndButtonsContainer(
             onOpenQuickStart = onOpenQuickStart,
             onShowRepeatOptions = onShowRepeatOptions,
             onShowShuffleOptions = onShowShuffleOptions,
-            numEdgeRegions = displaySettings.numEdgeRegions
+            numEdgeRegions = displaySettings.numEdgeRegions,
+            dockAdjacentEdge = dockAdjacentEdge
         )
     }
 }
@@ -561,9 +598,10 @@ fun PlayerPageContent(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
-    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
+    val pageSongHasArtwork = rememberHasArtwork(pageSong)
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && pageSong != null && pageSongHasArtwork
 
-    if (isDocked && displaySettings.showAlbumArt && pageSong != null) {
+    if (isDocked) {
         if (isLandscape) {
             val isDockedRight = displaySettings.artAlignmentLandscape == com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT
             Row(modifier = Modifier.fillMaxSize()) {
@@ -584,6 +622,7 @@ fun PlayerPageContent(
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
                         onShowShuffleOptions = onShowShuffleOptions,
+                        dockAdjacentEdge = DockAdjacentEdge.RIGHT,
                         modifier = Modifier.weight(1f).fillMaxHeight()
                     )
                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -615,6 +654,7 @@ fun PlayerPageContent(
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
                         onShowShuffleOptions = onShowShuffleOptions,
+                        dockAdjacentEdge = DockAdjacentEdge.LEFT,
                         modifier = Modifier.weight(1f).fillMaxHeight()
                     )
                 }
@@ -639,6 +679,7 @@ fun PlayerPageContent(
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
                         onShowShuffleOptions = onShowShuffleOptions,
+                        dockAdjacentEdge = DockAdjacentEdge.BOTTOM,
                         modifier = Modifier.weight(1f).fillMaxWidth()
                     )
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -670,6 +711,7 @@ fun PlayerPageContent(
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
                         onShowShuffleOptions = onShowShuffleOptions,
+                        dockAdjacentEdge = DockAdjacentEdge.TOP,
                         modifier = Modifier.weight(1f).fillMaxWidth()
                     )
                 }
@@ -698,14 +740,20 @@ fun SongLabelsLayout(
     displaySettings: DisplaySettings,
     hasTopButtons: Boolean = true,
     hasBottomButtons: Boolean = true,
+    dockAdjacentEdge: DockAdjacentEdge? = null,
     modifier: Modifier = Modifier
 ) {
     val artistFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.artistFontKey)
     val songFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.songFontKey)
     val albumFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.albumFontKey)
 
-    val topPadding = if (hasTopButtons) 84.dp else 32.dp
-    val bottomPadding = if (hasBottomButtons) 88.dp else 32.dp
+    val baseTopPadding = if (hasTopButtons) 84.dp else 32.dp
+    val baseBottomPadding = if (hasBottomButtons) 88.dp else 32.dp
+
+    val topPadding = if (dockAdjacentEdge == DockAdjacentEdge.TOP) baseTopPadding / 2 else baseTopPadding
+    val bottomPadding = if (dockAdjacentEdge == DockAdjacentEdge.BOTTOM) baseBottomPadding / 2 else baseBottomPadding
+    val startPadding = if (dockAdjacentEdge == DockAdjacentEdge.LEFT) 12.dp else 24.dp
+    val endPadding = if (dockAdjacentEdge == DockAdjacentEdge.RIGHT) 12.dp else 24.dp
 
     val minFontSize = displaySettings.minimumFontSize.coerceAtLeast(12f)
     var scaleFactor by remember(currentSong?.id, displaySettings) {
@@ -724,8 +772,8 @@ fun SongLabelsLayout(
         modifier = modifier
             .fillMaxSize()
             .padding(
-                start = 24.dp,
-                end = 24.dp,
+                start = startPadding,
+                end = endPadding,
                 top = topPadding,
                 bottom = bottomPadding
             ),
@@ -1186,6 +1234,7 @@ fun ScreenRegionIconsOverlay(
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
     numEdgeRegions: Int = 3,
+    dockAdjacentEdge: DockAdjacentEdge? = null,
     modifier: Modifier = Modifier
 ) {
     val activeSlotIndices = GestureTrigger.getActiveRegionSlots(numEdgeRegions)
@@ -1207,49 +1256,58 @@ fun ScreenRegionIconsOverlay(
             val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
             val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = -1.0f)
 
-            val startPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
-            val endPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+            val baseStartPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
+            val baseEndPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+            val startPadding = if (horizontalBias == -1.0f && dockAdjacentEdge == DockAdjacentEdge.LEFT) 4.dp else baseStartPadding
+            val endPadding = if (horizontalBias == 1.0f && dockAdjacentEdge == DockAdjacentEdge.RIGHT) 4.dp else baseEndPadding
+            val topPadding = if (dockAdjacentEdge == DockAdjacentEdge.TOP) 8.dp else 16.dp
 
             Box(
                 modifier = Modifier
                     .align(alignment)
-                    .padding(top = 16.dp, start = startPadding, end = endPadding)
+                    .padding(top = topPadding, start = startPadding, end = endPadding)
                     .size(iconBoxSize)
                     .clip(CircleShape)
-                    .combinedClickable(
-                        onClick = {
-                            if (action != GestureAction.UNASSIGNED) {
-                                handleGestureAction(
-                                    action = action,
-                                    playbackManager = playbackManager,
-                                    onOpenSongPicker = onOpenSongPicker,
-                                    onOpenQueue = onOpenQueue,
-                                    onOpenSettings = onOpenSettings,
-                                    onOpenQuickStart = onOpenQuickStart
-                                )
-                            } else {
-                                onOpenSettings()
+                    .pointerInput(action) {
+                        detectTapGestures(
+                            onTap = {
+                                if (action == GestureAction.TOGGLE_REPEAT) {
+                                    playbackManager.toggleRepeat()
+                                } else if (action == GestureAction.TOGGLE_SHUFFLE) {
+                                    playbackManager.toggleShuffle()
+                                } else if (action != GestureAction.UNASSIGNED) {
+                                    handleGestureAction(
+                                        action = action,
+                                        playbackManager = playbackManager,
+                                        onOpenSongPicker = onOpenSongPicker,
+                                        onOpenQueue = onOpenQueue,
+                                        onOpenSettings = onOpenSettings,
+                                        onOpenQuickStart = onOpenQuickStart
+                                    )
+                                } else {
+                                    onOpenSettings()
+                                }
+                            },
+                            onLongPress = {
+                                if (action == GestureAction.TOGGLE_REPEAT) {
+                                    onShowRepeatOptions()
+                                } else if (action == GestureAction.TOGGLE_SHUFFLE) {
+                                    onShowShuffleOptions()
+                                } else if (action != GestureAction.UNASSIGNED) {
+                                    handleGestureAction(
+                                        action = action,
+                                        playbackManager = playbackManager,
+                                        onOpenSongPicker = onOpenSongPicker,
+                                        onOpenQueue = onOpenQueue,
+                                        onOpenSettings = onOpenSettings,
+                                        onOpenQuickStart = onOpenQuickStart
+                                    )
+                                } else {
+                                    onOpenSettings()
+                                }
                             }
-                        },
-                        onLongClick = {
-                            if (action == GestureAction.TOGGLE_REPEAT) {
-                                onShowRepeatOptions()
-                            } else if (action == GestureAction.TOGGLE_SHUFFLE) {
-                                onShowShuffleOptions()
-                            } else if (action != GestureAction.UNASSIGNED) {
-                                handleGestureAction(
-                                    action = action,
-                                    playbackManager = playbackManager,
-                                    onOpenSongPicker = onOpenSongPicker,
-                                    onOpenQueue = onOpenQueue,
-                                    onOpenSettings = onOpenSettings,
-                                    onOpenQuickStart = onOpenQuickStart
-                                )
-                            } else {
-                                onOpenSettings()
-                            }
-                        }
-                    ),
+                        )
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 if (action != GestureAction.UNASSIGNED) {
@@ -1280,49 +1338,58 @@ fun ScreenRegionIconsOverlay(
             val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
             val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = 1.0f)
 
-            val startPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
-            val endPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+            val baseStartPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
+            val baseEndPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+            val startPadding = if (horizontalBias == -1.0f && dockAdjacentEdge == DockAdjacentEdge.LEFT) 4.dp else baseStartPadding
+            val endPadding = if (horizontalBias == 1.0f && dockAdjacentEdge == DockAdjacentEdge.RIGHT) 4.dp else baseEndPadding
+            val bottomPadding = if (dockAdjacentEdge == DockAdjacentEdge.BOTTOM) 8.dp else 16.dp
 
             Box(
                 modifier = Modifier
                     .align(alignment)
-                    .padding(bottom = 16.dp, start = startPadding, end = endPadding)
+                    .padding(bottom = bottomPadding, start = startPadding, end = endPadding)
                     .size(iconBoxSize)
                     .clip(CircleShape)
-                    .combinedClickable(
-                        onClick = {
-                            if (action != GestureAction.UNASSIGNED) {
-                                handleGestureAction(
-                                    action = action,
-                                    playbackManager = playbackManager,
-                                    onOpenSongPicker = onOpenSongPicker,
-                                    onOpenQueue = onOpenQueue,
-                                    onOpenSettings = onOpenSettings,
-                                    onOpenQuickStart = onOpenQuickStart
-                                )
-                            } else {
-                                onOpenSettings()
+                    .pointerInput(action) {
+                        detectTapGestures(
+                            onTap = {
+                                if (action == GestureAction.TOGGLE_REPEAT) {
+                                    playbackManager.toggleRepeat()
+                                } else if (action == GestureAction.TOGGLE_SHUFFLE) {
+                                    playbackManager.toggleShuffle()
+                                } else if (action != GestureAction.UNASSIGNED) {
+                                    handleGestureAction(
+                                        action = action,
+                                        playbackManager = playbackManager,
+                                        onOpenSongPicker = onOpenSongPicker,
+                                        onOpenQueue = onOpenQueue,
+                                        onOpenSettings = onOpenSettings,
+                                        onOpenQuickStart = onOpenQuickStart
+                                    )
+                                } else {
+                                    onOpenSettings()
+                                }
+                            },
+                            onLongPress = {
+                                if (action == GestureAction.TOGGLE_REPEAT) {
+                                    onShowRepeatOptions()
+                                } else if (action == GestureAction.TOGGLE_SHUFFLE) {
+                                    onShowShuffleOptions()
+                                } else if (action != GestureAction.UNASSIGNED) {
+                                    handleGestureAction(
+                                        action = action,
+                                        playbackManager = playbackManager,
+                                        onOpenSongPicker = onOpenSongPicker,
+                                        onOpenQueue = onOpenQueue,
+                                        onOpenSettings = onOpenSettings,
+                                        onOpenQuickStart = onOpenQuickStart
+                                    )
+                                } else {
+                                    onOpenSettings()
+                                }
                             }
-                        },
-                        onLongClick = {
-                            if (action == GestureAction.TOGGLE_REPEAT) {
-                                onShowRepeatOptions()
-                            } else if (action == GestureAction.TOGGLE_SHUFFLE) {
-                                onShowShuffleOptions()
-                            } else if (action != GestureAction.UNASSIGNED) {
-                                handleGestureAction(
-                                    action = action,
-                                    playbackManager = playbackManager,
-                                    onOpenSongPicker = onOpenSongPicker,
-                                    onOpenQueue = onOpenQueue,
-                                    onOpenSettings = onOpenSettings,
-                                    onOpenQuickStart = onOpenQuickStart
-                                )
-                            } else {
-                                onOpenSettings()
-                            }
-                        }
-                    ),
+                        )
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 if (action != GestureAction.UNASSIGNED) {

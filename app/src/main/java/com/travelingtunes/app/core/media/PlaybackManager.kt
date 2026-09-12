@@ -563,84 +563,20 @@ class PlaybackManager(
 
     fun playCurrentAlbum() {
         val song = _currentSong.value ?: return
-        val currentAlbumName = song.album
-        if (currentAlbumName.isBlank()) return
-
-        scope.launch(Dispatchers.IO) {
-            val dbSongs = musicDatabase?.getSongsByAlbum(currentAlbumName) ?: emptyList()
-            val albumSongs = dbSongs.ifEmpty {
-                unshuffledPlaylist.ifEmpty { _currentPlaylist.value }
-                    .filter { it.album.equals(currentAlbumName, ignoreCase = true) }
-                    .sortedBy { it.trackNumber }
-            }.ifEmpty { listOf(song) }
-
-            withContext(Dispatchers.Main) {
-                _shuffleMode.value = ShuffleMode.OFF
-                _repeatMode.value = RepeatMode.ALBUM
-
-                setPlaylistAndPlay(albumSongs, startIndex = 0, shuffle = false)
-
-                _repeatMode.value = RepeatMode.ALBUM
-                player.repeatMode = Player.REPEAT_MODE_ALL
-                persistCurrentPlaybackState()
-            }
-        }
+        if (song.album.isBlank()) return
+        setRepeatMode(RepeatMode.ALBUM)
     }
 
     fun playCurrentArtist() {
         val song = _currentSong.value ?: return
-        val currentArtistName = song.artist
-        if (currentArtistName.isBlank()) return
-
-        scope.launch(Dispatchers.IO) {
-            val dbSongs = musicDatabase?.getSongsByArtist(currentArtistName) ?: emptyList()
-            val artistSongs = dbSongs.ifEmpty {
-                unshuffledPlaylist.ifEmpty { _currentPlaylist.value }
-                    .filter { it.artist.equals(currentArtistName, ignoreCase = true) }
-            }.ifEmpty { listOf(song) }
-
-            withContext(Dispatchers.Main) {
-                _shuffleMode.value = ShuffleMode.OFF
-                _repeatMode.value = RepeatMode.ARTIST
-
-                setPlaylistAndPlay(artistSongs, startIndex = 0, shuffle = false)
-
-                _repeatMode.value = RepeatMode.ARTIST
-                player.repeatMode = Player.REPEAT_MODE_ALL
-                persistCurrentPlaybackState()
-            }
-        }
+        if (song.artist.isBlank()) return
+        setRepeatMode(RepeatMode.ARTIST)
     }
 
     fun playCurrentFolder() {
         val song = _currentSong.value ?: return
-        val currentFolderPath = song.folderPath
-        if (currentFolderPath.isBlank()) return
-
-        scope.launch(Dispatchers.IO) {
-            val allSongs = musicDatabase?.getAllSongs() ?: emptyList()
-            val folderSongs = allSongs.filter {
-                it.folderPath.equals(currentFolderPath, ignoreCase = true) ||
-                it.folderPath.startsWith(currentFolderPath, ignoreCase = true)
-            }.ifEmpty {
-                unshuffledPlaylist.ifEmpty { _currentPlaylist.value }
-                    .filter {
-                        it.folderPath.equals(currentFolderPath, ignoreCase = true) ||
-                        it.folderPath.startsWith(currentFolderPath, ignoreCase = true)
-                    }
-            }.ifEmpty { listOf(song) }
-
-            withContext(Dispatchers.Main) {
-                _shuffleMode.value = ShuffleMode.OFF
-                _repeatMode.value = RepeatMode.FOLDER
-
-                setPlaylistAndPlay(folderSongs, startIndex = 0, shuffle = false)
-
-                _repeatMode.value = RepeatMode.FOLDER
-                player.repeatMode = Player.REPEAT_MODE_ALL
-                persistCurrentPlaybackState()
-            }
-        }
+        if (song.folderPath.isBlank()) return
+        setRepeatMode(RepeatMode.FOLDER)
     }
 
     fun increaseRating() {

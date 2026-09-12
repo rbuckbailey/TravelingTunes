@@ -29,6 +29,12 @@ class MusicScanner(
     private val _statusMessage = MutableStateFlow<String?>(null)
     val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
 
+    val albumArtDownloader = AlbumArtDownloader(context, musicDatabase)
+    val isDownloadingArt: StateFlow<Boolean> = albumArtDownloader.isDownloading
+    val artDownloadStatusMessage: StateFlow<String?> = albumArtDownloader.statusMessage
+
+    suspend fun downloadMissingArtwork(): Int = albumArtDownloader.downloadMissingArtwork()
+
     private val supportedExtensions = setOf("mp3", "m4a", "flac", "wav", "aac", "ogg", "opus", "wma")
 
     suspend fun scanFolder(treeUri: Uri) = withContext(Dispatchers.IO) {
@@ -143,11 +149,7 @@ class MusicScanner(
             val artist = if (!rawArtist.isNullOrBlank() && !rawArtist.equals("Unknown", ignoreCase = true) && !rawArtist.equals("Unknown Artist", ignoreCase = true) && !rawArtist.equals("<unknown>", ignoreCase = true)) {
                 rawArtist
             } else {
-                if (relativePath.contains('/')) {
-                    relativePath.substringBeforeLast('/').substringAfterLast('/')
-                } else {
-                    "Unknown Artist"
-                }
+                folderName
             }
 
             val genre = if (!rawGenre.isNullOrBlank() && !rawGenre.equals("Unknown", ignoreCase = true) && !rawGenre.equals("Unknown Genre", ignoreCase = true)) rawGenre else "Unknown Genre"
@@ -185,7 +187,7 @@ class MusicScanner(
             Song(
                 id = kotlin.math.abs(contentUri.toString().hashCode().toLong()),
                 title = cleanFileName,
-                artist = "Unknown Artist",
+                artist = folderName,
                 album = folderName,
                 albumId = folderName.hashCode().toLong(),
                 durationMs = 0L,
