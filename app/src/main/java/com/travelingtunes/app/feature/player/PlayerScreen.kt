@@ -161,6 +161,10 @@ fun PlayerScreen(
     artDownloadFailedCount: Int = 0,
     artDownloadTotalCount: Int = 0,
     lastAuditReport: AlbumArtAuditReport? = null,
+    autoRescanEnabled: Boolean = false,
+    autoRescanStatusMessage: String? = null,
+    isAutoRescanWaiting: Boolean = false,
+    onToggleAutoRescan: (Boolean) -> Unit = {},
     onDismissFirstRunPrompt: () -> Unit = {},
     onPickMusicFolder: () -> Unit = {},
     onRescanMusicFolder: () -> Unit = {},
@@ -258,6 +262,11 @@ fun PlayerScreen(
         ?: remember(lastScanTime) { mutableStateOf(lastScanTime) }
     val activeMusicFolderUri by settingsDataStore?.musicFolderUriFlow?.collectAsState(initial = null)
         ?: remember { mutableStateOf(null) }
+
+    val effectiveSettingsDataStore = settingsDataStore ?: remember { SettingsDataStore(context) }
+    val activeAutoRescanEnabled by effectiveSettingsDataStore.autoRescanFlow.collectAsState(initial = autoRescanEnabled)
+    val activeIsAutoRescanWaiting by (musicScanner?.isAutoRescanWaiting ?: kotlinx.coroutines.flow.MutableStateFlow(isAutoRescanWaiting)).collectAsState()
+    val activeAutoRescanStatusMessage by (musicScanner?.autoRescanStatusMessage ?: kotlinx.coroutines.flow.MutableStateFlow(autoRescanStatusMessage)).collectAsState()
 
     var activeLibraryStats by remember { mutableStateOf(libraryStats) }
     LaunchedEffect(activeLastScanTime, activeIsScanning, currentPlaylist) {
@@ -760,9 +769,18 @@ fun PlayerScreen(
                 artDownloadFailedCount = activeArtDownloadFailedCount,
                 artDownloadTotalCount = activeArtDownloadTotalCount,
                 lastAuditReport = activeLastAuditReport,
+                autoRescanEnabled = activeAutoRescanEnabled,
+                autoRescanStatusMessage = activeAutoRescanStatusMessage,
+                isAutoRescanWaiting = activeIsAutoRescanWaiting,
                 cddbOverridesCount = cddbOverridesCount,
                 isEmbeddingCddb = isEmbeddingCddb,
                 cddbEmbeddingStatus = cddbEmbeddingStatus,
+                onToggleAutoRescan = { enabled ->
+                    coroutineScope.launch {
+                        effectiveSettingsDataStore.setAutoRescan(enabled)
+                    }
+                    onToggleAutoRescan(enabled)
+                },
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = effectiveOnRescanMusicFolder,
                 onDownloadMissingArt = effectiveOnDownloadMissingArt,

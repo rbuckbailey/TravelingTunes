@@ -94,4 +94,56 @@ class MetadataFallbackTest {
         assertEquals(1000, best?.height)
         assertEquals(1.0, best?.squareness ?: 0.0, 0.001)
     }
+
+    @Test
+    fun testColorDistinctnessSelection_MovesDownTheLineIfTooSimilar() {
+        val bgInt = (0xFF000000 or (20 shl 16) or (20 shl 8) or 30).toInt() // Dark blue/black
+
+        // Candidate 1 (dominant): Very similar dark blue
+        val cand1 = (0xFF000000 or (25 shl 16) or (25 shl 8) or 38).toInt()
+        // Candidate 2 (less common): Bright yellow
+        val cand2 = (0xFF000000 or (255 shl 16) or (220 shl 8) or 0).toInt()
+
+        fun colorDistance(c1: Int, c2: Int): Double {
+            val r1 = (c1 shr 16) and 0xFF
+            val g1 = (c1 shr 8) and 0xFF
+            val b1 = c1 and 0xFF
+            val r2 = (c2 shr 16) and 0xFF
+            val g2 = (c2 shr 8) and 0xFF
+            val b2 = c2 and 0xFF
+            val dr = r1 - r2
+            val dg = g1 - g2
+            val db = b1 - b2
+            return Math.sqrt((dr * dr + dg * dg + db * db).toDouble())
+        }
+
+        fun relativeLuminance(c: Int): Double {
+            val r = ((c shr 16) and 0xFF) / 255.0
+            val g = ((c shr 8) and 0xFF) / 255.0
+            val b = (c and 0xFF) / 255.0
+            val rr = if (r <= 0.03928) r / 12.92 else Math.pow((r + 0.055) / 1.055, 2.4)
+            val gg = if (g <= 0.03928) g / 12.92 else Math.pow((g + 0.055) / 1.055, 2.4)
+            val bb = if (b <= 0.03928) b / 12.92 else Math.pow((b + 0.055) / 1.055, 2.4)
+            return 0.2126 * rr + 0.7152 * gg + 0.0722 * bb
+        }
+
+        fun calculateContrast(c1: Int, c2: Int): Double {
+            val l1 = relativeLuminance(c1)
+            val l2 = relativeLuminance(c2)
+            val maxL = Math.max(l1, l2)
+            val minL = Math.min(l1, l2)
+            return (maxL + 0.05) / (minL + 0.05)
+        }
+
+        val candidates = listOf(cand1, cand2)
+
+        val selected = candidates.firstOrNull { cand ->
+            val contrast = calculateContrast(cand, bgInt)
+            val dist = colorDistance(cand, bgInt)
+            contrast >= 4.5 && dist >= 80.0
+        }
+
+        assertNotNull(selected)
+        assertEquals(cand2, selected)
+    }
 }

@@ -47,9 +47,10 @@ object AlbumArtColorExtractor {
             palette.darkMutedSwatch
         )
 
-        val targetMinContrast = 3.5 // Minimum contrast ratio threshold for visibility
+        val targetMinContrastStrict = 4.5
+        val targetMinDistanceStrict = 80.0
 
-        // Try background swatches down the line (favoring edge colors) in order of prominence
+        // Pass 1: Try text candidates down the line matching strict contrast and distinctness
         for (bgSwatch in bgCandidates) {
             val bgInt = bgSwatch.rgb
 
@@ -60,7 +61,9 @@ object AlbumArtColorExtractor {
             for (primaryTextSwatch in textCandidates) {
                 val primaryInt = primaryTextSwatch.rgb
                 val contrast = ColorUtils.calculateContrast(primaryInt, bgInt)
-                if (contrast >= targetMinContrast) {
+                val distance = colorDistance(primaryInt, bgInt)
+
+                if (contrast >= targetMinContrastStrict && distance >= targetMinDistanceStrict) {
                     val secondaryInt = findSecondaryTextColor(bgInt, primaryInt, textCandidates)
                     return@withContext ColorTheme(
                         name = "Album Art Dynamic",
@@ -72,7 +75,7 @@ object AlbumArtColorExtractor {
             }
         }
 
-        // Fallback pass: try threshold 3.0 down the line
+        // Pass 2: Moderately strict fallbackpass (moving down the line for contrast >= 3.5 and distance >= 55.0)
         for (bgSwatch in bgCandidates) {
             val bgInt = bgSwatch.rgb
             val textCandidates = (preferredTextSwatches + allSwatches)
@@ -82,7 +85,9 @@ object AlbumArtColorExtractor {
             for (primaryTextSwatch in textCandidates) {
                 val primaryInt = primaryTextSwatch.rgb
                 val contrast = ColorUtils.calculateContrast(primaryInt, bgInt)
-                if (contrast >= 3.0) {
+                val distance = colorDistance(primaryInt, bgInt)
+
+                if (contrast >= 3.5 && distance >= 55.0) {
                     val secondaryInt = findSecondaryTextColor(bgInt, primaryInt, textCandidates)
                     return@withContext ColorTheme(
                         name = "Album Art Dynamic",
@@ -94,22 +99,29 @@ object AlbumArtColorExtractor {
             }
         }
 
-        // Ultimate fallback: Use dominant background (favoring edge) and White/Black for text
+        // Pass 3: Select the artwork swatch down the line that offers the highest distinctness
         val primaryBgInt = (edgeSwatches.firstOrNull() ?: palette.dominantSwatch ?: allSwatches.first()).rgb
-        val whiteContrast = ColorUtils.calculateContrast(android.graphics.Color.WHITE, primaryBgInt)
-        val blackContrast = ColorUtils.calculateContrast(android.graphics.Color.BLACK, primaryBgInt)
-        val fallbackTextInt = if (whiteContrast >= blackContrast) android.graphics.Color.WHITE else android.graphics.Color.BLACK
-        val fallbackSecondaryInt = if (whiteContrast >= blackContrast) {
-            android.graphics.Color.argb(255, 220, 220, 220)
-        } else {
-            android.graphics.Color.argb(255, 50, 50, 50)
+        val allTextCandidates = (preferredTextSwatches + allSwatches).distinctBy { it.rgb }.filter { it.rgb != primaryBgInt }
+
+        val bestArtworkCandidate = allTextCandidates.maxByOrNull {
+            ColorUtils.calculateContrast(it.rgb, primaryBgInt) * colorDistance(it.rgb, primaryBgInt)
         }
+
+        val primaryTextInt = if (bestArtworkCandidate != null && ColorUtils.calculateContrast(bestArtworkCandidate.rgb, primaryBgInt) >= 2.8) {
+            bestArtworkCandidate.rgb
+        } else {
+            val whiteContrast = ColorUtils.calculateContrast(android.graphics.Color.WHITE, primaryBgInt)
+            val blackContrast = ColorUtils.calculateContrast(android.graphics.Color.BLACK, primaryBgInt)
+            if (whiteContrast >= blackContrast) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+        }
+
+        val secondaryTextInt = findSecondaryTextColor(primaryBgInt, primaryTextInt, allTextCandidates)
 
         ColorTheme(
             name = "Album Art Dynamic",
             backgroundColor = Color(primaryBgInt),
-            textColor = Color(fallbackTextInt),
-            secondaryTextColor = Color(fallbackSecondaryInt)
+            textColor = Color(primaryTextInt),
+            secondaryTextColor = Color(secondaryTextInt)
         )
     }
 
@@ -216,8 +228,11 @@ object AlbumArtColorExtractor {
             val contrastToBg = ColorUtils.calculateContrast(candInt, bgInt)
             if (contrastToBg < 2.5) continue
 
-            val distance = colorDistance(candInt, primaryTextInt)
-            if (distance > 30) {
+            val distToBg = colorDistance(candInt, bgInt)
+            if (distToBg < 45.0) continue
+
+            val distToPrimary = colorDistance(candInt, primaryTextInt)
+            if (distToPrimary >= 25.0) {
                 return candInt
             }
         }

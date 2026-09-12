@@ -827,8 +827,7 @@ private fun LibrarySettingsContent(
             trailingContent = {
                 Switch(
                     checked = autoRescanEnabled,
-                    onCheckedChange = { onToggleAutoRescan(it) },
-                    enabled = !musicFolderName.isNullOrBlank()
+                    onCheckedChange = { onToggleAutoRescan(it) }
                 )
             }
         )
