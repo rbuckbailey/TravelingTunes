@@ -17,7 +17,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -105,6 +107,7 @@ class MainActivity : ComponentActivity() {
         requestRequiredPermissions()
 
         setContent {
+            val activityScope = rememberCoroutineScope()
             val displaySettings by settingsDataStore.displaySettingsFlow.collectAsState(initial = com.travelingtunes.app.core.model.DisplaySettings())
             val themeSettings by settingsDataStore.themeSettingsFlow.collectAsState(initial = com.travelingtunes.app.core.model.ThemeSettings())
             val gestureBindings by settingsDataStore.gestureBindingsFlow.collectAsState(initial = emptyMap())
@@ -128,6 +131,12 @@ class MainActivity : ComponentActivity() {
             val artDownloadFailedCount by musicScanner.artDownloadFailedCount.collectAsState()
             val artDownloadTotalCount by musicScanner.artDownloadTotalCount.collectAsState()
             val lastAuditReport by musicScanner.lastAuditReport.collectAsState()
+
+            val cddbOverridesCount by androidx.compose.runtime.produceState(initialValue = 0, key1 = lastScanTime) {
+                value = musicScanner.getCddbOverridesCount()
+            }
+            val isEmbeddingCddb by musicScanner.isEmbeddingCddb.collectAsState()
+            val cddbEmbeddingStatus by musicScanner.cddbStatusMessage.collectAsState()
 
             var libraryStats by remember { mutableStateOf(LibraryStats()) }
 
@@ -258,6 +267,9 @@ class MainActivity : ComponentActivity() {
                         autoRescanEnabled = autoRescanEnabled,
                         autoRescanStatusMessage = autoRescanStatusMessage,
                         isAutoRescanWaiting = isAutoRescanWaiting,
+                        cddbOverridesCount = cddbOverridesCount,
+                        isEmbeddingCddb = isEmbeddingCddb,
+                        cddbEmbeddingStatus = cddbEmbeddingStatus,
                         onToggleAutoRescan = { enabled ->
                             lifecycleScope.launch {
                                 settingsDataStore.setAutoRescan(enabled)
@@ -279,6 +291,11 @@ class MainActivity : ComponentActivity() {
                         onDownloadMissingArt = {
                             lifecycleScope.launch {
                                 musicScanner.downloadMissingArtwork()
+                            }
+                        },
+                        onEmbedCddbOverrides = {
+                            activityScope.launch {
+                                musicScanner.embedCddbOverrides()
                             }
                         },
                         onDismissFirstRunPrompt = {
@@ -380,10 +397,14 @@ fun TravelingTunesNavHost(
     autoRescanEnabled: Boolean = false,
     autoRescanStatusMessage: String? = null,
     isAutoRescanWaiting: Boolean = false,
+    cddbOverridesCount: Int = 0,
+    isEmbeddingCddb: Boolean = false,
+    cddbEmbeddingStatus: String? = null,
     onToggleAutoRescan: (Boolean) -> Unit = {},
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
     onDownloadMissingArt: () -> Unit = {},
+    onEmbedCddbOverrides: () -> Unit = {},
     onDismissFirstRunPrompt: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -440,11 +461,15 @@ fun TravelingTunesNavHost(
                 autoRescanEnabled = autoRescanEnabled,
                 autoRescanStatusMessage = autoRescanStatusMessage,
                 isAutoRescanWaiting = isAutoRescanWaiting,
+                cddbOverridesCount = cddbOverridesCount,
+                isEmbeddingCddb = isEmbeddingCddb,
+                cddbEmbeddingStatus = cddbEmbeddingStatus,
                 onToggleAutoRescan = onToggleAutoRescan,
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = onRescanMusicFolder,
                 onDownloadMissingArt = onDownloadMissingArt,
                 onCancelDownloadArt = { musicScanner.cancelDownloadArt() },
+                onEmbedCddbOverrides = onEmbedCddbOverrides,
                 onNavigateBack = { navController.popBackStack() },
                 onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
                 onOpenQuickStart = { navController.navigate("quickstart") },

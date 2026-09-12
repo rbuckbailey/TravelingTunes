@@ -16,5 +16,6 @@ data class Song(
     val folderPath: String = "",
     val fileName: String = "",
     val trackNumber: Int = 0,
+    val discNumber: Int = 0,
     val year: Int = 0
 )

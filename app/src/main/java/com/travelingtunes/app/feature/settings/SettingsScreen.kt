@@ -155,11 +155,15 @@ fun SettingsScreen(
     autoRescanEnabled: Boolean = false,
     autoRescanStatusMessage: String? = null,
     isAutoRescanWaiting: Boolean = false,
+    cddbOverridesCount: Int = 0,
+    isEmbeddingCddb: Boolean = false,
+    cddbEmbeddingStatus: String? = null,
     onPickMusicFolder: () -> Unit = {},
     onRescanMusicFolder: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
     onDownloadMissingArt: () -> Unit = {},
     onCancelDownloadArt: () -> Unit = {},
+    onEmbedCddbOverrides: () -> Unit = {},
     onNavigateBack: () -> Unit,
     onOpenGestureAssignments: () -> Unit,
     onOpenQuickStart: () -> Unit,
@@ -374,12 +378,16 @@ fun SettingsScreen(
                         autoRescanEnabled = autoRescanEnabled,
                         autoRescanStatusMessage = autoRescanStatusMessage,
                         isAutoRescanWaiting = isAutoRescanWaiting,
+                        cddbOverridesCount = cddbOverridesCount,
+                        isEmbeddingCddb = isEmbeddingCddb,
+                        cddbEmbeddingStatus = cddbEmbeddingStatus,
                         onToggleAutoRescan = onToggleAutoRescan,
                         availableFonts = availableFonts,
                         onPickMusicFolder = onPickMusicFolder,
                         onRescanMusicFolder = onRescanMusicFolder,
                         onDownloadMissingArt = onDownloadMissingArt,
                         onCancelDownloadArt = onCancelDownloadArt,
+                        onEmbedCddbOverrides = onEmbedCddbOverrides,
                         onViewAudit = { showAuditDialog = true },
                         onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
                         onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
@@ -511,12 +519,16 @@ fun SettingsScreen(
                         autoRescanEnabled = autoRescanEnabled,
                         autoRescanStatusMessage = autoRescanStatusMessage,
                         isAutoRescanWaiting = isAutoRescanWaiting,
+                        cddbOverridesCount = cddbOverridesCount,
+                        isEmbeddingCddb = isEmbeddingCddb,
+                        cddbEmbeddingStatus = cddbEmbeddingStatus,
                         onToggleAutoRescan = onToggleAutoRescan,
                         availableFonts = availableFonts,
                         onPickMusicFolder = onPickMusicFolder,
                         onRescanMusicFolder = onRescanMusicFolder,
                         onDownloadMissingArt = onDownloadMissingArt,
                         onCancelDownloadArt = onCancelDownloadArt,
+                        onEmbedCddbOverrides = onEmbedCddbOverrides,
                         onViewAudit = { showAuditDialog = true },
                         onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
                         onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
@@ -650,12 +662,16 @@ private fun SubmenuContent(
     autoRescanEnabled: Boolean = false,
     autoRescanStatusMessage: String? = null,
     isAutoRescanWaiting: Boolean = false,
+    cddbOverridesCount: Int = 0,
+    isEmbeddingCddb: Boolean = false,
+    cddbEmbeddingStatus: String? = null,
     onToggleAutoRescan: (Boolean) -> Unit = {},
     availableFonts: List<FontOption>,
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
     onDownloadMissingArt: () -> Unit,
     onCancelDownloadArt: () -> Unit,
+    onEmbedCddbOverrides: () -> Unit = {},
     onViewAudit: () -> Unit,
     onAddFont: () -> Unit,
     onUpdateDisplaySettings: (DisplaySettings) -> Unit,
@@ -706,12 +722,16 @@ private fun SubmenuContent(
                     autoRescanEnabled = autoRescanEnabled,
                     autoRescanStatusMessage = autoRescanStatusMessage,
                     isAutoRescanWaiting = isAutoRescanWaiting,
+                    cddbOverridesCount = cddbOverridesCount,
+                    isEmbeddingCddb = isEmbeddingCddb,
+                    cddbEmbeddingStatus = cddbEmbeddingStatus,
                     onToggleAutoRescan = onToggleAutoRescan,
                     libraryStats = libraryStats,
                     onPickMusicFolder = onPickMusicFolder,
                     onRescanMusicFolder = onRescanMusicFolder,
                     onDownloadMissingArt = onDownloadMissingArt,
                     onCancelDownloadArt = onCancelDownloadArt,
+                    onEmbedCddbOverrides = onEmbedCddbOverrides,
                     onViewAudit = onViewAudit,
                     onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
                     onBackupSettings = onBackupSettings,
@@ -767,11 +787,15 @@ private fun LibrarySettingsContent(
     autoRescanEnabled: Boolean = false,
     autoRescanStatusMessage: String? = null,
     isAutoRescanWaiting: Boolean = false,
+    cddbOverridesCount: Int = 0,
+    isEmbeddingCddb: Boolean = false,
+    cddbEmbeddingStatus: String? = null,
     onToggleAutoRescan: (Boolean) -> Unit = {},
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
     onDownloadMissingArt: () -> Unit = {},
     onCancelDownloadArt: () -> Unit = {},
+    onEmbedCddbOverrides: () -> Unit = {},
     onViewAudit: () -> Unit = {},
     onOpenDownloadedArtBrowser: () -> Unit = {},
     onBackupSettings: () -> Unit = {},
@@ -888,6 +912,40 @@ private fun LibrarySettingsContent(
                 },
                 modifier = Modifier.clickable { onViewAudit() }
             )
+        }
+
+        if (cddbOverridesCount > 0) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "CDDB Track Overrides",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "$cddbOverridesCount tracks ordered using CDDB metadata",
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(
+                        onClick = onEmbedCddbOverrides,
+                        enabled = !isEmbeddingCddb
+                    ) {
+                        Text(
+                            text = if (isEmbeddingCddb) (cddbEmbeddingStatus ?: "Embedding ID3 tags...") else "Embed CDDB Overrides as ID3 Tags",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
         }
 
         Card(

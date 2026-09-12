@@ -21,7 +21,8 @@ class MediaStoreRepository(private val context: Context) {
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.DATA
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.TRACK
         )
 
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
@@ -42,6 +43,8 @@ class MediaStoreRepository(private val context: Context) {
             val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val displayNameColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
             val dataColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
+            val trackColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TRACK)
+            val discColumn = cursor.getColumnIndex("disc_number")
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
@@ -50,6 +53,11 @@ class MediaStoreRepository(private val context: Context) {
                 val rawAlbum = cursor.getString(albumColumn)?.trim()
                 val albumId = cursor.getLong(albumIdColumn)
                 val duration = cursor.getLong(durationColumn)
+                val trackVal = if (trackColumn != -1) cursor.getInt(trackColumn) else 0
+                val trackNumber = if (trackVal > 0) (trackVal % 1000) else 0
+                val discNumberFromTrack = if (trackVal >= 1000) (trackVal / 1000) else 0
+                val discVal = if (discColumn != -1) cursor.getInt(discColumn) else 0
+                val discNumber = if (discVal > 0) discVal else discNumberFromTrack
 
                 val displayName = if (displayNameColumn != -1) cursor.getString(displayNameColumn)?.trim() else null
                 val filePath = if (dataColumn != -1) cursor.getString(dataColumn)?.trim() else null
@@ -96,7 +104,9 @@ class MediaStoreRepository(private val context: Context) {
                         contentUri = contentUri,
                         artworkUri = artworkUri,
                         folderPath = folderName,
-                        fileName = fileName
+                        fileName = fileName,
+                        trackNumber = trackNumber,
+                        discNumber = discNumber
                     )
                 )
             }
@@ -106,6 +116,7 @@ class MediaStoreRepository(private val context: Context) {
                 String.CASE_INSENSITIVE_ORDER
             ) { song: Song -> song.artist }
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { song -> song.album }
+                .thenBy { song -> if (song.discNumber > 0) song.discNumber else Int.MAX_VALUE }
                 .thenBy { song -> if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE }
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { song -> song.title }
         )

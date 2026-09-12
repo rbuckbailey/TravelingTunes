@@ -40,12 +40,20 @@ class MusicScanner(
     val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
 
     val albumArtDownloader = AlbumArtDownloader(context, musicDatabase)
+    val cddbManager = CddbManager(context, musicDatabase)
+
     val isDownloadingArt: StateFlow<Boolean> = albumArtDownloader.isDownloading
     val artDownloadStatusMessage: StateFlow<String?> = albumArtDownloader.statusMessage
     val artDownloadDownloadedCount: StateFlow<Int> = albumArtDownloader.downloadedCount
     val artDownloadFailedCount: StateFlow<Int> = albumArtDownloader.failedCount
     val artDownloadTotalCount: StateFlow<Int> = albumArtDownloader.totalToDownload
     val lastAuditReport: StateFlow<AlbumArtAuditReport?> = albumArtDownloader.lastAuditReport
+
+    val isEmbeddingCddb: StateFlow<Boolean> = cddbManager.isEmbeddingCddb
+    val cddbStatusMessage: StateFlow<String?> = cddbManager.embeddingCddbStatusMessage
+
+    suspend fun getCddbOverridesCount(): Int = cddbManager.getCddbOverridesCount()
+    suspend fun embedCddbOverrides(): Pair<Int, Int> = cddbManager.embedAllCddbOverrides()
 
     suspend fun downloadMissingArtwork(): Int = albumArtDownloader.downloadMissingArtwork()
     fun cancelDownloadArt() = albumArtDownloader.cancelDownload()
@@ -388,6 +396,8 @@ class MusicScanner(
                 ?.toLongOrNull() ?: 0L
             val trackStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
             val trackNumber = trackStr?.substringBefore('/')?.trim()?.toIntOrNull() ?: 0
+            val discStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DISC_NUMBER)
+            val discNumber = discStr?.substringBefore('/')?.trim()?.toIntOrNull() ?: 0
             val yearStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)
             val year = yearStr?.trim()?.toIntOrNull() ?: 0
 
@@ -410,6 +420,7 @@ class MusicScanner(
                 folderPath = relativePath,
                 fileName = fileName,
                 trackNumber = trackNumber,
+                discNumber = discNumber,
                 year = year
             )
         } catch (e: Exception) {

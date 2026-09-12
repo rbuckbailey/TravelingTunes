@@ -228,21 +228,39 @@ class PlaybackManager(
 
         if (_shuffleMode.value != ShuffleMode.OFF) {
             val chosenSong = songs[safeIndex]
-            val remainingSongs = songs.filter { it.id != chosenSong.id }
+            val activeAlbum = chosenSong.album
+            val sourceList = if (songs.groupBy { it.album }.size > 1) songs else masterPlaylist.ifEmpty { songs }
+
             val upcomingSongs = when (_shuffleMode.value) {
-                ShuffleMode.SONGS -> remainingSongs.shuffled()
-                ShuffleMode.ALBUMS -> {
-                    val albumMap = remainingSongs.groupBy { it.album }
-                    val shuffledAlbums = albumMap.keys.shuffled()
-                    val list = mutableListOf<Song>()
-                    for (album in shuffledAlbums) {
-                        list.addAll(albumMap[album]?.sortedBy { it.trackNumber } ?: emptyList())
-                    }
-                    list
+                ShuffleMode.SONGS -> {
+                    val remainingSongs = songs.filter { it.id != chosenSong.id }
+                    listOf(chosenSong) + remainingSongs.shuffled()
                 }
-                ShuffleMode.OFF -> remainingSongs.shuffled()
+                ShuffleMode.ALBUMS -> {
+                    val activeAlbumSongs = sortAlbumSongs(sourceList.filter { it.album.equals(activeAlbum, ignoreCase = true) })
+                    val chosenIdx = activeAlbumSongs.indexOfFirst { it.id == chosenSong.id }
+                    val currentAlbumRemaining = if (chosenIdx != -1) {
+                        activeAlbumSongs.drop(chosenIdx)
+                    } else {
+                        listOf(chosenSong) + activeAlbumSongs.filter { it.id != chosenSong.id }
+                    }
+
+                    val otherAlbumsMap = sourceList.filter { !it.album.equals(activeAlbum, ignoreCase = true) }
+                        .groupBy { it.album }
+                    val shuffledAlbumNames = otherAlbumsMap.keys.shuffled()
+
+                    val queue = mutableListOf<Song>()
+                    queue.addAll(currentAlbumRemaining)
+
+                    for (albumName in shuffledAlbumNames) {
+                        val albumSongs = otherAlbumsMap[albumName] ?: emptyList()
+                        queue.addAll(sortAlbumSongs(albumSongs))
+                    }
+                    queue
+                }
+                ShuffleMode.OFF -> songs
             }
-            activeQueue = listOf(chosenSong) + upcomingSongs
+            activeQueue = upcomingSongs
             playIndex = 0
         } else {
             activeQueue = songs
@@ -454,12 +472,21 @@ class PlaybackManager(
         persistCurrentPlaybackState()
     }
 
+    fun sortAlbumSongs(songs: List<Song>): List<Song> {
+        return songs.sortedWith(
+            compareBy<Song> { if (it.discNumber > 0) it.discNumber else Int.MAX_VALUE }
+                .thenBy { if (it.trackNumber > 0) it.trackNumber else Int.MAX_VALUE }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+        )
+    }
+
     fun sortLibrarySongs(songs: List<Song>): List<Song> {
         return songs.sortedWith(
             compareBy(
                 String.CASE_INSENSITIVE_ORDER
             ) { song: Song -> song.artist }
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { song -> song.album }
+                .thenBy { song -> if (song.discNumber > 0) song.discNumber else Int.MAX_VALUE }
                 .thenBy { song -> if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE }
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { song -> song.title }
         )
@@ -538,12 +565,20 @@ class PlaybackManager(
             }
             ShuffleMode.SONGS -> candidateSongs.filter { it.id != current.id }.shuffled()
             ShuffleMode.ALBUMS -> {
-                val remaining = candidateSongs.filter { it.id != current.id }
-                val albumMap = remaining.groupBy { it.album }
-                val shuffledAlbums = albumMap.keys.shuffled()
+                val currentAlbumName = current.album
+                val remainingSameAlbum = candidateSongs.filter { it.id != current.id && it.album.equals(currentAlbumName, ignoreCase = true) }
+                val currentAlbumRemainingOrdered = sortAlbumSongs(remainingSameAlbum)
+
+                val otherAlbumsMap = candidateSongs.filter { !it.album.equals(currentAlbumName, ignoreCase = true) }
+                    .groupBy { it.album }
+                val shuffledAlbumNames = otherAlbumsMap.keys.shuffled()
+
                 val list = mutableListOf<Song>()
-                for (album in shuffledAlbums) {
-                    list.addAll(albumMap[album] ?: emptyList())
+                list.addAll(currentAlbumRemainingOrdered)
+
+                for (album in shuffledAlbumNames) {
+                    val songsInAlbum = otherAlbumsMap[album] ?: emptyList()
+                    list.addAll(sortAlbumSongs(songsInAlbum))
                 }
                 list
             }

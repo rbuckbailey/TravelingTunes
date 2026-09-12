@@ -732,6 +732,12 @@ fun PlayerScreen(
             onDismiss = { showQueue = false }
         )
 
+        val cddbOverridesCount by androidx.compose.runtime.produceState(initialValue = 0, key1 = activeLastScanTime) {
+            value = musicScanner?.getCddbOverridesCount() ?: 0
+        }
+        val isEmbeddingCddb by (musicScanner?.isEmbeddingCddb ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState()
+        val cddbEmbeddingStatus by (musicScanner?.cddbStatusMessage ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
+
         // 9. Menu / Settings Overlay
         SlidingOverlay(
             visible = showMenu,
@@ -754,10 +760,14 @@ fun PlayerScreen(
                 artDownloadFailedCount = activeArtDownloadFailedCount,
                 artDownloadTotalCount = activeArtDownloadTotalCount,
                 lastAuditReport = activeLastAuditReport,
+                cddbOverridesCount = cddbOverridesCount,
+                isEmbeddingCddb = isEmbeddingCddb,
+                cddbEmbeddingStatus = cddbEmbeddingStatus,
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = effectiveOnRescanMusicFolder,
                 onDownloadMissingArt = effectiveOnDownloadMissingArt,
                 onCancelDownloadArt = { musicScanner?.cancelDownloadArt() },
+                onEmbedCddbOverrides = { coroutineScope.launch { musicScanner?.embedCddbOverrides() } },
                 onNavigateBack = { showMenu = false },
                 onOpenGestureAssignments = {
                     showGestureAssignments = true
@@ -1888,13 +1898,6 @@ fun ScreenRegionIconsOverlay(
                         isPlaying = isPlaying,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
                     )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(if (iconBoxSize < 60.dp) 18.dp else 24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-                    )
                 }
             }
         }
@@ -1981,13 +1984,6 @@ fun ScreenRegionIconsOverlay(
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(if (iconBoxSize < 60.dp) 18.dp else 24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
                     )
                 }
             }

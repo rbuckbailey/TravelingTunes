@@ -40,13 +40,25 @@ data class DownloadedAlbumArtInfo(
     val artworkUri: Uri
 )
 
+data class CddbOverrideRecord(
+    val album: String,
+    val artist: String,
+    val songId: Long,
+    val discNumber: Int,
+    val trackNumber: Int,
+    val title: String,
+    val cddbId: String
+)
+
 class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_NAME = "traveling_tunes_music.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
 
         private const val TABLE_SONGS = "songs"
+        private const val TABLE_CDDB_OVERRIDES = "cddb_overrides"
+
         private const val COL_ID = "id"
         private const val COL_TITLE = "title"
         private const val COL_ARTIST = "artist"
@@ -59,8 +71,12 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         private const val COL_FOLDER_PATH = "folder_path"
         private const val COL_FILE_NAME = "file_name"
         private const val COL_TRACK_NUMBER = "track_number"
+        private const val COL_DISC_NUMBER = "disc_number"
         private const val COL_YEAR = "year"
         private const val COL_USER_RATING = "user_rating"
+
+        private const val COL_SONG_ID = "song_id"
+        private const val COL_CDDB_ID = "cddb_id"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -78,15 +94,32 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                 $COL_FOLDER_PATH TEXT NOT NULL DEFAULT '',
                 $COL_FILE_NAME TEXT NOT NULL DEFAULT '',
                 $COL_TRACK_NUMBER INTEGER NOT NULL DEFAULT 0,
+                $COL_DISC_NUMBER INTEGER NOT NULL DEFAULT 0,
                 $COL_YEAR INTEGER NOT NULL DEFAULT 0,
                 $COL_USER_RATING INTEGER NOT NULL DEFAULT 0
             )
         """.trimIndent()
         db.execSQL(createSongsTable)
+
+        val createCddbTable = """
+            CREATE TABLE IF NOT EXISTS $TABLE_CDDB_OVERRIDES (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                $COL_ALBUM TEXT NOT NULL,
+                $COL_ARTIST TEXT NOT NULL,
+                $COL_SONG_ID INTEGER NOT NULL,
+                $COL_DISC_NUMBER INTEGER NOT NULL DEFAULT 1,
+                $COL_TRACK_NUMBER INTEGER NOT NULL DEFAULT 0,
+                $COL_TITLE TEXT NOT NULL,
+                $COL_CDDB_ID TEXT NOT NULL DEFAULT '',
+                UNIQUE($COL_ALBUM, $COL_ARTIST, $COL_SONG_ID) ON CONFLICT REPLACE
+            )
+        """.trimIndent()
+        db.execSQL(createCddbTable)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS $TABLE_SONGS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_CDDB_OVERRIDES")
         onCreate(db)
     }
 
@@ -108,6 +141,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                     put(COL_FOLDER_PATH, song.folderPath)
                     put(COL_FILE_NAME, song.fileName)
                     put(COL_TRACK_NUMBER, song.trackNumber)
+                    put(COL_DISC_NUMBER, song.discNumber)
                     put(COL_YEAR, song.year)
                     put(COL_USER_RATING, song.userRating)
                 }
@@ -129,6 +163,77 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             put(COL_ARTWORK_URI, artworkUri.toString())
         }
         db.update(TABLE_SONGS, cv, "$COL_ID = ?", arrayOf(songId.toString()))
+    }
+
+    suspend fun updateSongTrackAndDisc(songId: Long, trackNumber: Int, discNumber: Int) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            put(COL_TRACK_NUMBER, trackNumber)
+            put(COL_DISC_NUMBER, discNumber)
+        }
+        db.update(TABLE_SONGS, cv, "$COL_ID = ?", arrayOf(songId.toString()))
+    }
+
+    suspend fun insertCddbOverride(
+        album: String,
+        artist: String,
+        songId: Long,
+        discNumber: Int,
+        trackNumber: Int,
+        title: String,
+        cddbId: String
+    ) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            put(COL_ALBUM, album)
+            put(COL_ARTIST, artist)
+            put(COL_SONG_ID, songId)
+            put(COL_DISC_NUMBER, discNumber)
+            put(COL_TRACK_NUMBER, trackNumber)
+            put(COL_TITLE, title)
+            put(COL_CDDB_ID, cddbId)
+        }
+        db.insertWithOnConflict(TABLE_CDDB_OVERRIDES, null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+        updateSongTrackAndDisc(songId, trackNumber, discNumber)
+    }
+
+    suspend fun getCddbOverridesCount(): Int = withContext(Dispatchers.IO) {
+        val db = readableDatabase
+        var count = 0
+        db.rawQuery("SELECT COUNT(*) FROM $TABLE_CDDB_OVERRIDES", null).use { c ->
+            if (c.moveToFirst()) count = c.getInt(0)
+        }
+        count
+    }
+
+    suspend fun getCddbOverrides(): List<CddbOverrideRecord> = withContext(Dispatchers.IO) {
+        val overrides = mutableListOf<CddbOverrideRecord>()
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_CDDB_OVERRIDES ORDER BY $COL_ARTIST ASC, $COL_ALBUM ASC, $COL_DISC_NUMBER ASC, $COL_TRACK_NUMBER ASC", null)
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                val album = c.getString(c.getColumnIndexOrThrow(COL_ALBUM))
+                val artist = c.getString(c.getColumnIndexOrThrow(COL_ARTIST))
+                val songId = c.getLong(c.getColumnIndexOrThrow(COL_SONG_ID))
+                val discNumber = c.getInt(c.getColumnIndexOrThrow(COL_DISC_NUMBER))
+                val trackNumber = c.getInt(c.getColumnIndexOrThrow(COL_TRACK_NUMBER))
+                val title = c.getString(c.getColumnIndexOrThrow(COL_TITLE))
+                val cddbId = c.getString(c.getColumnIndexOrThrow(COL_CDDB_ID))
+
+                overrides.add(
+                    CddbOverrideRecord(
+                        album = album,
+                        artist = artist,
+                        songId = songId,
+                        discNumber = discNumber,
+                        trackNumber = trackNumber,
+                        title = title,
+                        cddbId = cddbId
+                    )
+                )
+            }
+        }
+        overrides
     }
 
     suspend fun updateAlbumArtwork(albumName: String, artistName: String, artworkUri: Uri) = withContext(Dispatchers.IO) {
@@ -161,7 +266,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         val songs = mutableListOf<Song>()
         val db = readableDatabase
         val cursor = db.rawQuery(
-            "SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? AND $COL_ARTIST = ? ORDER BY CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC",
+            "SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? AND $COL_ARTIST = ? ORDER BY CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC",
             arrayOf(albumName, artistName)
         )
         cursor.use { c ->
@@ -175,7 +280,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     suspend fun getAllSongs(): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", null)
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", null)
         cursor.use { c ->
             while (c.moveToNext()) {
                 songs.add(cursorToSong(c))
@@ -197,7 +302,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                OR $COL_GENRE LIKE ? 
                OR $COL_FOLDER_PATH LIKE ? 
                OR $COL_FILE_NAME LIKE ? 
-            ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC
+            ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC
         """.trimIndent()
         val cursor = db.rawQuery(sql, arrayOf(pattern, pattern, pattern, pattern, pattern, pattern))
         cursor.use { c ->
@@ -211,7 +316,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     suspend fun getSongsByArtist(artist: String): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ARTIST = ? ORDER BY $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(artist))
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ARTIST = ? ORDER BY $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(artist))
         cursor.use { c ->
             while (c.moveToNext()) {
                 songs.add(cursorToSong(c))
@@ -223,7 +328,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     suspend fun getSongsByAlbum(album: String): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? ORDER BY CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(album))
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? ORDER BY CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(album))
         cursor.use { c ->
             while (c.moveToNext()) {
                 songs.add(cursorToSong(c))
@@ -235,7 +340,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     suspend fun getSongsByGenre(genre: String): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_GENRE = ? ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(genre))
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_GENRE = ? ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(genre))
         cursor.use { c ->
             while (c.moveToNext()) {
                 songs.add(cursorToSong(c))
@@ -448,6 +553,8 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         val folderPath = c.getString(c.getColumnIndexOrThrow(COL_FOLDER_PATH))
         val fileName = c.getString(c.getColumnIndexOrThrow(COL_FILE_NAME))
         val trackNumber = c.getInt(c.getColumnIndexOrThrow(COL_TRACK_NUMBER))
+        val discIdx = c.getColumnIndex(COL_DISC_NUMBER)
+        val discNumber = if (discIdx != -1) c.getInt(discIdx) else 0
         val year = c.getInt(c.getColumnIndexOrThrow(COL_YEAR))
         val userRating = c.getInt(c.getColumnIndexOrThrow(COL_USER_RATING))
 
@@ -465,6 +572,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             folderPath = folderPath,
             fileName = fileName,
             trackNumber = trackNumber,
+            discNumber = discNumber,
             year = year
         )
     }
