@@ -32,8 +32,13 @@ class MusicScanner(
     val albumArtDownloader = AlbumArtDownloader(context, musicDatabase)
     val isDownloadingArt: StateFlow<Boolean> = albumArtDownloader.isDownloading
     val artDownloadStatusMessage: StateFlow<String?> = albumArtDownloader.statusMessage
+    val artDownloadDownloadedCount: StateFlow<Int> = albumArtDownloader.downloadedCount
+    val artDownloadFailedCount: StateFlow<Int> = albumArtDownloader.failedCount
+    val artDownloadTotalCount: StateFlow<Int> = albumArtDownloader.totalToDownload
+    val lastAuditReport: StateFlow<AlbumArtAuditReport?> = albumArtDownloader.lastAuditReport
 
     suspend fun downloadMissingArtwork(): Int = albumArtDownloader.downloadMissingArtwork()
+    fun cancelDownloadArt() = albumArtDownloader.cancelDownload()
 
     private val supportedExtensions = setOf("mp3", "m4a", "flac", "wav", "aac", "ogg", "opus", "wma")
 

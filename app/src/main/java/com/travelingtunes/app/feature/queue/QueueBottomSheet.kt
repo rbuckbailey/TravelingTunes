@@ -48,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.travelingtunes.app.core.theme.BalancedTitleText
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -57,12 +58,16 @@ import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.model.Song
 import com.travelingtunes.app.feature.songpicker.AlbumArtImage
+import com.travelingtunes.app.core.model.SlideDirection
+import com.travelingtunes.app.core.ui.SlidingOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QueueBottomSheet(
+    visible: Boolean,
+    slideDirection: SlideDirection = SlideDirection.BOTTOM,
     playbackManager: PlaybackManager,
-    onOpenSongPicker: () -> Unit,
+    onOpenSongPicker: (SlideDirection) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
@@ -74,12 +79,10 @@ fun QueueBottomSheet(
         if (idx != -1) idx else 0
     }
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        modifier = Modifier.fillMaxSize()
+    SlidingOverlay(
+        visible = visible,
+        slideDirection = slideDirection,
+        onDismiss = onDismiss
     ) {
         Column(
             modifier = Modifier
@@ -92,12 +95,16 @@ fun QueueBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    BalancedTitleText(
                         text = "Current Queue",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
@@ -115,7 +122,7 @@ fun QueueBottomSheet(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onOpenSongPicker) {
+                    IconButton(onClick = { onOpenSongPicker(SlideDirection.BOTTOM) }) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add Songs (Open Song Picker)",
@@ -147,7 +154,7 @@ fun QueueBottomSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        Button(onClick = onOpenSongPicker) {
+                        Button(onClick = { onOpenSongPicker(SlideDirection.BOTTOM) }) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Add Songs")
@@ -327,12 +334,11 @@ private fun QueueItemRow(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                     }
-                    Text(
+                    BalancedTitleText(
                         text = song.title,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
                         fontSize = 15.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 2,
                         color = contentColor
                     )
                 }

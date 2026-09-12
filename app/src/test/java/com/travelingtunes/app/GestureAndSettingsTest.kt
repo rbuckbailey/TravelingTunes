@@ -2,6 +2,8 @@ package com.travelingtunes.app
 
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureTrigger
+import com.travelingtunes.app.core.model.SlideDirection
+import com.travelingtunes.app.core.model.getSlideDirection
 import com.travelingtunes.app.core.model.ThemeSettings
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -209,5 +211,149 @@ class GestureAndSettingsTest {
 
         // N = 7: all slots 0..6
         assertEquals(listOf(0, 1, 2, 3, 4, 5, 6), GestureTrigger.getActiveRegionSlots(7))
+    }
+
+    @Test
+    fun testSlideDirectionForTriggers() {
+        // Buttons: Top regions -> TOP, Bottom regions -> BOTTOM
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.CORNER_TOP_LEFT.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.CORNER_TOP_CENTER.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.CORNER_BOTTOM_LEFT.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.CORNER_BOTTOM_RIGHT.getSlideDirection())
+
+        // Taps: -> BOTTOM
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.TAP_1_1.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.TAP_2_1.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.LONG_PRESS_1.getSlideDirection())
+
+        // Slide gestures (Swipes): Gesture direction
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.TOP, GestureTrigger.SWIPE_1_UP.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.BOTTOM, GestureTrigger.SWIPE_1_DOWN.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.LEFT, GestureTrigger.SWIPE_1_LEFT.getSlideDirection())
+        assertEquals(com.travelingtunes.app.core.model.SlideDirection.RIGHT, GestureTrigger.SWIPE_1_RIGHT.getSlideDirection())
+    }
+
+    @Test
+    fun testMondrianThemePreset() {
+        val theme = com.travelingtunes.app.core.model.ColorTheme.getByName("Mondrian")
+        assertEquals("Mondrian", theme.name)
+        org.junit.Assert.assertTrue(com.travelingtunes.app.core.model.ColorTheme.PRESETS.contains(theme))
+        assertEquals(androidx.compose.ui.graphics.Color.White, theme.backgroundColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Black, theme.textColor)
+    }
+
+    @Test
+    fun testMondrianLayoutDeterministicPerAlbum() {
+        val mockUri = org.mockito.Mockito.mock(android.net.Uri::class.java)
+        val song1 = com.travelingtunes.app.core.model.Song(
+            id = 1L, title = "Song A", artist = "Artist 1", album = "Album Red", albumId = 100L,
+            durationMs = 180000L, contentUri = mockUri, artworkUri = null
+        )
+        val song2 = com.travelingtunes.app.core.model.Song(
+            id = 1L, title = "Song A", artist = "Artist 1", album = "Album Red", albumId = 100L,
+            durationMs = 200000L, contentUri = mockUri, artworkUri = null
+        )
+        val song3 = com.travelingtunes.app.core.model.Song(
+            id = 3L, title = "Song C", artist = "Artist 2", album = "Album Blue", albumId = 200L,
+            durationMs = 210000L, contentUri = mockUri, artworkUri = null
+        )
+
+        val layout1 = com.travelingtunes.app.core.theme.MondrianThemeHelper.generateLayoutForSong(song1)
+        val layout2 = com.travelingtunes.app.core.theme.MondrianThemeHelper.generateLayoutForSong(song2)
+        val layout3 = com.travelingtunes.app.core.theme.MondrianThemeHelper.generateLayoutForSong(song3)
+
+        // Same album and track produces identical Mondrian layout
+        assertEquals(layout1, layout2)
+        // Different album produces different Mondrian layout
+        org.junit.Assert.assertNotEquals(layout1, layout3)
+    }
+
+    @Test
+    fun testMondrianAtMostOneSubdivisionPerTrack() {
+        val mockUri = org.mockito.Mockito.mock(android.net.Uri::class.java)
+        val primaryColors = com.travelingtunes.app.core.theme.MondrianThemeHelper.PRIMARY_COLORS
+        val secondaryColors = com.travelingtunes.app.core.theme.MondrianThemeHelper.SECONDARY_HALF_COLORS
+
+        for (i in 1..20) {
+            val song = com.travelingtunes.app.core.model.Song(
+                id = i.toLong(), title = "Track $i", artist = "Artist", album = "Album X", albumId = 10L,
+                durationMs = 180000L, contentUri = mockUri, artworkUri = null
+            )
+            val layout = com.travelingtunes.app.core.theme.MondrianThemeHelper.generateLayoutForSong(song)
+            val corners = listOf(layout.topLeft, layout.topRight, layout.bottomLeft, layout.bottomRight)
+
+            val subdividedCount = corners.count { it.isSubdivided }
+            org.junit.Assert.assertTrue("Subdivided count $subdividedCount should be <= 1", subdividedCount <= 1)
+
+            corners.forEach { corner ->
+                org.junit.Assert.assertTrue(primaryColors.contains(corner.color1))
+                if (corner.isSubdivided) {
+                    org.junit.Assert.assertNotNull(corner.color2)
+                    org.junit.Assert.assertTrue(secondaryColors.contains(corner.color2))
+                } else {
+                    org.junit.Assert.assertNull(corner.color2)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun testMondrianNoAdjacentNonWhiteIdenticalColors() {
+        val mockUri = org.mockito.Mockito.mock(android.net.Uri::class.java)
+
+        for (i in 1..50) {
+            val song = com.travelingtunes.app.core.model.Song(
+                id = i.toLong(), title = "Track $i", artist = "Artist $i", album = "Album $i", albumId = i.toLong() * 10L,
+                durationMs = 180000L, contentUri = mockUri, artworkUri = null
+            )
+            val layout = com.travelingtunes.app.core.theme.MondrianThemeHelper.generateLayoutForSong(song)
+
+            // Main 4 region base colors: non-white adjacent pair check
+            if (layout.topLeft.color1 != com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_WHITE) {
+                org.junit.Assert.assertNotEquals("TL and TR non-white base colors must not match", layout.topLeft.color1, layout.topRight.color1)
+                org.junit.Assert.assertNotEquals("TL and BL non-white base colors must not match", layout.topLeft.color1, layout.bottomLeft.color1)
+            }
+            if (layout.topRight.color1 != com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_WHITE) {
+                org.junit.Assert.assertNotEquals("TR and BR non-white base colors must not match", layout.topRight.color1, layout.bottomRight.color1)
+            }
+            if (layout.bottomLeft.color1 != com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_WHITE) {
+                org.junit.Assert.assertNotEquals("BL and BR non-white base colors must not match", layout.bottomLeft.color1, layout.bottomRight.color1)
+            }
+
+            // Subdivided corners
+            val corners = listOf(layout.topLeft, layout.topRight, layout.bottomLeft, layout.bottomRight)
+            corners.forEach { corner ->
+                if (corner.isSubdivided && corner.color1 != com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_WHITE) {
+                    org.junit.Assert.assertNotEquals("Subdivided non-white half 1 and half 2 colors must not match", corner.color1, corner.color2)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun testMondrianRoughlyFiftyPercentWhite() {
+        val mockUri = org.mockito.Mockito.mock(android.net.Uri::class.java)
+        var totalRegions = 0
+        var whiteRegions = 0
+
+        for (i in 1..100) {
+            val song = com.travelingtunes.app.core.model.Song(
+                id = i.toLong(), title = "Track $i", artist = "Artist $i", album = "Album $i", albumId = i.toLong() * 10L,
+                durationMs = 180000L, contentUri = mockUri, artworkUri = null
+            )
+            val layout = com.travelingtunes.app.core.theme.MondrianThemeHelper.generateLayoutForSong(song)
+            val corners = listOf(layout.topLeft, layout.topRight, layout.bottomLeft, layout.bottomRight)
+
+            corners.forEach { corner ->
+                totalRegions++
+                if (corner.color1 == com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_WHITE) {
+                    whiteRegions++
+                }
+            }
+        }
+
+        val whitePercentage = (whiteRegions.toDouble() / totalRegions.toDouble()) * 100.0
+        // Expecting white percentage to be roughly 40% - 60%
+        org.junit.Assert.assertTrue("White percentage $whitePercentage% should be between 35% and 65%", whitePercentage in 35.0..65.0)
     }
 }

@@ -3,6 +3,7 @@ package com.travelingtunes.app.feature.quickstart
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,15 +14,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -75,33 +75,46 @@ val PAGES = listOf(
     )
 )
 
-data class MatrixRow(
-    val shuffle: String,
-    val repeat: String,
-    val behavior: String
-)
+val SHUFFLE_MODES = listOf("Shuffle Off", "Shuffle Songs", "Shuffle Albums")
+val REPEAT_MODES = listOf("Repeat Off", "Repeat Song", "Repeat Album", "Repeat Artist", "Repeat Genre", "Repeat Folder")
 
-val MATRIX_ROWS = listOf(
-    MatrixRow("Shuffle Off", "Repeat Off", "Plays queue in order once, then stops."),
-    MatrixRow("Shuffle Off", "Repeat Song", "Loops active single track continuously."),
-    MatrixRow("Shuffle Off", "Repeat Album", "Plays album in track order, loops album continuously."),
-    MatrixRow("Shuffle Off", "Repeat Artist", "Plays artist's songs in order, loops artist continuously."),
-    MatrixRow("Shuffle Off", "Repeat Genre", "Plays genre's songs in order, loops genre continuously."),
-    MatrixRow("Shuffle Off", "Repeat Folder", "Plays folder's songs in order, loops folder continuously."),
-
-    MatrixRow("Shuffle Songs", "Repeat Off", "Shuffles all songs, plays once to end, then stops."),
-    MatrixRow("Shuffle Songs", "Repeat Song", "Loops active single track continuously."),
-    MatrixRow("Shuffle Songs", "Repeat Album", "Shuffles songs within current album, loops album continuously."),
-    MatrixRow("Shuffle Songs", "Repeat Artist", "Shuffles songs within current artist, loops artist continuously."),
-    MatrixRow("Shuffle Songs", "Repeat Genre", "Shuffles songs within current genre, loops genre continuously."),
-    MatrixRow("Shuffle Songs", "Repeat Folder", "Shuffles songs within current folder, loops folder continuously."),
-
-    MatrixRow("Shuffle Albums", "Repeat Off", "Shuffles album order (keeping tracks in order within each album), plays once to end, then stops."),
-    MatrixRow("Shuffle Albums", "Repeat Song", "Loops active single track continuously."),
-    MatrixRow("Shuffle Albums", "Repeat Album", "Plays album in track order, loops album continuously."),
-    MatrixRow("Shuffle Albums", "Repeat Artist", "Shuffles albums by artist, keeping tracks in order within each album, loops artist continuously."),
-    MatrixRow("Shuffle Albums", "Repeat Genre", "Shuffles albums in genre, keeping tracks in order within each album, loops genre continuously."),
-    MatrixRow("Shuffle Albums", "Repeat Folder", "Shuffles albums in folder, keeping tracks in order within each album, loops folder continuously.")
+val MATRIX_GRID: Array<Array<String>> = arrayOf(
+    // Row 0: Repeat Off
+    arrayOf(
+        "Plays queue in order once, then stops.",
+        "Shuffles all songs, plays once to end, then stops.",
+        "Shuffles album order (keeping tracks in order), plays once to end, then stops."
+    ),
+    // Row 1: Repeat Song
+    arrayOf(
+        "Loops active single track continuously.",
+        "Loops active single track continuously.",
+        "Loops active single track continuously."
+    ),
+    // Row 2: Repeat Album
+    arrayOf(
+        "Plays album in track order, loops album continuously.",
+        "Shuffles songs within current album, loops album continuously.",
+        "Plays album in track order, loops album continuously."
+    ),
+    // Row 3: Repeat Artist
+    arrayOf(
+        "Plays artist's songs in order, loops artist continuously.",
+        "Shuffles songs by artist, loops artist continuously.",
+        "Shuffles albums by artist (keeping tracks in order), loops artist continuously."
+    ),
+    // Row 4: Repeat Genre
+    arrayOf(
+        "Plays genre's songs in order, loops genre continuously.",
+        "Shuffles songs in genre, loops genre continuously.",
+        "Shuffles albums in genre (keeping tracks in order), loops genre continuously."
+    ),
+    // Row 5: Repeat Folder
+    arrayOf(
+        "Plays folder's songs in order, loops folder continuously.",
+        "Shuffles songs in folder, loops folder continuously.",
+        "Shuffles albums in folder (keeping tracks in order), loops folder continuously."
+    )
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -116,7 +129,7 @@ fun QuickStartScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(24.dp),
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         HorizontalPager(
@@ -164,79 +177,40 @@ fun QuickStartScreen(
                     }
                 }
             } else {
-                // Page 4: Shuffle & Repeat Matrix Table
+                // Page 4: 3x6 Shuffle & Repeat Grid Matrix Table
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(8.dp),
+                        .padding(4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Shuffle & Repeat Matrix",
-                        fontSize = 24.sp,
+                        text = "Shuffle & Repeat Matrix (3x6)",
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Combinations of Shuffle (Off, Songs, Albums) & Repeat (Off, Song, Album, Artist, Genre, Folder)",
-                        fontSize = 13.sp,
+                        text = "Grid matrix combining 3 Shuffle settings & 6 Repeat settings",
+                        fontSize = 12.sp,
                         color = Color.LightGray,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(MATRIX_ROWS) { row ->
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .border(1.dp, Color(0xFF333333), RoundedCornerShape(8.dp))
-                            ) {
-                                Column(modifier = Modifier.padding(10.dp)) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = "🔀 ${row.shuffle}",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF9BB2FF)
-                                        )
-                                        Text(
-                                            text = "🔁 ${row.repeat}",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFFFBCC4)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = row.behavior,
-                                        fontSize = 12.sp,
-                                        color = Color.White
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    ShuffleRepeatGridMatrix(modifier = Modifier.weight(1f))
                 }
             }
         }
 
         // Page Indicator Dots
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(12.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             repeat(totalPages) { iteration ->
@@ -255,9 +229,122 @@ fun QuickStartScreen(
             onClick = onDone,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = 4.dp)
         ) {
             Text("Done")
+        }
+    }
+}
+
+@Composable
+fun ShuffleRepeatGridMatrix(
+    modifier: Modifier = Modifier
+) {
+    val horizontalScrollState = rememberScrollState()
+    val verticalScrollState = rememberScrollState()
+
+    val rowHeaderWidth = 110.dp
+    val colWidth = 180.dp
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(horizontalScrollState)
+        ) {
+            Column {
+                // Table Header Row
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Top-Left Header Cell
+                    Box(
+                        modifier = Modifier
+                            .width(rowHeaderWidth)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(topStart = 8.dp))
+                            .background(Color(0xFF2C2C2C))
+                            .border(0.5.dp, Color(0xFF444444)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Repeat \\ Shuffle",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.LightGray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    // 3 Shuffle Column Headers
+                    SHUFFLE_MODES.forEachIndexed { colIdx, shuffleTitle ->
+                        Box(
+                            modifier = Modifier
+                                .width(colWidth)
+                                .height(48.dp)
+                                .clip(if (colIdx == SHUFFLE_MODES.lastIndex) RoundedCornerShape(topEnd = 8.dp) else RoundedCornerShape(0.dp))
+                                .background(Color(0xFF333A56))
+                                .border(0.5.dp, Color(0xFF555E88)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "🔀 $shuffleTitle",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF9BB2FF),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
+                // Table Data Rows (6 Repeat Rows)
+                Column(
+                    modifier = Modifier.verticalScroll(verticalScrollState)
+                ) {
+                    REPEAT_MODES.forEachIndexed { rowIdx, repeatTitle ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Left Row Header Cell
+                            Box(
+                                modifier = Modifier
+                                    .width(rowHeaderWidth)
+                                    .height(86.dp)
+                                    .background(Color(0xFF3A282B))
+                                    .border(0.5.dp, Color(0xFF66444A)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "🔁\n$repeatTitle",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFFBCC4),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+
+                            // 3 Data Cells for this Repeat Mode
+                            SHUFFLE_MODES.indices.forEach { colIdx ->
+                                val behaviorText = MATRIX_GRID[rowIdx][colIdx]
+                                Box(
+                                    modifier = Modifier
+                                        .width(colWidth)
+                                        .height(86.dp)
+                                        .background(if (rowIdx % 2 == 0) Color(0xFF1E1E1E) else Color(0xFF161616))
+                                        .border(0.5.dp, Color(0xFF333333))
+                                        .padding(8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = behaviorText,
+                                        fontSize = 11.sp,
+                                        lineHeight = 14.sp,
+                                        color = Color.White,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

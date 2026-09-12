@@ -115,3 +115,25 @@ enum class GestureTrigger(
         fun fromKey(key: String): GestureTrigger? = entries.find { it.key.equals(key, ignoreCase = true) }
     }
 }
+
+enum class SlideDirection {
+    TOP,
+    BOTTOM,
+    LEFT,
+    RIGHT
+}
+
+fun GestureTrigger.getSlideDirection(): SlideDirection {
+    return when (this) {
+        in GestureTrigger.TOP_REGION_SLOTS -> SlideDirection.TOP
+        in GestureTrigger.BOTTOM_REGION_SLOTS -> SlideDirection.BOTTOM
+
+        GestureTrigger.SWIPE_1_UP, GestureTrigger.SWIPE_2_UP, GestureTrigger.SWIPE_3_UP -> SlideDirection.TOP
+        GestureTrigger.SWIPE_1_DOWN, GestureTrigger.SWIPE_2_DOWN, GestureTrigger.SWIPE_3_DOWN -> SlideDirection.BOTTOM
+        GestureTrigger.SWIPE_1_LEFT, GestureTrigger.SWIPE_2_LEFT, GestureTrigger.SWIPE_3_LEFT -> SlideDirection.LEFT
+        GestureTrigger.SWIPE_1_RIGHT, GestureTrigger.SWIPE_2_RIGHT, GestureTrigger.SWIPE_3_RIGHT -> SlideDirection.RIGHT
+
+        else -> SlideDirection.BOTTOM
+    }
+}
+

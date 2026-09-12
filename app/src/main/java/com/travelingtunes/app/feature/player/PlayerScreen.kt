@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -91,7 +92,15 @@ import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.Song
 import com.travelingtunes.app.core.model.TextAlignmentOption
 import com.travelingtunes.app.core.model.ThemeSettings
+import com.travelingtunes.app.core.model.TitleRowType
+import com.travelingtunes.app.core.theme.BalancedTitleText
+import com.travelingtunes.app.core.theme.MondrianBackground
+import com.travelingtunes.app.core.theme.MondrianMaskedLayout
+import com.travelingtunes.app.core.model.SlideDirection
+import com.travelingtunes.app.core.model.getSlideDirection
+import com.travelingtunes.app.core.ui.SlidingOverlay
 import com.travelingtunes.app.feature.queue.QueueBottomSheet
+import com.travelingtunes.app.feature.settings.SettingsScreen
 import com.travelingtunes.app.feature.songpicker.SongPickerBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -160,9 +169,31 @@ fun PlayerScreen(
     val shuffleMode by playbackManager.shuffleMode.collectAsState()
 
     var showSongPicker by remember { mutableStateOf(false) }
+    var songPickerSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
+
     var showQueue by remember { mutableStateOf(false) }
+    var queueSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
+
+    var showMenu by remember { mutableStateOf(false) }
+    var menuSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
+
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
+
+    fun openSongPicker(direction: SlideDirection = SlideDirection.BOTTOM) {
+        songPickerSlideDirection = direction
+        showSongPicker = true
+    }
+
+    fun openQueue(direction: SlideDirection = SlideDirection.BOTTOM) {
+        queueSlideDirection = direction
+        showQueue = true
+    }
+
+    fun openMenu(direction: SlideDirection = SlideDirection.BOTTOM) {
+        menuSlideDirection = direction
+        showMenu = true
+    }
 
     val pageCount = currentPlaylist.size.coerceAtLeast(1)
     val songIndex = currentPlaylist.indexOfFirst { it.id == currentSong?.id }.coerceAtLeast(0)
@@ -214,19 +245,21 @@ fun PlayerScreen(
 
             if (action == GestureAction.UNASSIGNED) return
 
+            val slideDir = trigger.getSlideDirection()
+
             if (isLongPress || trigger.category == GestureCategory.LONG_PRESS) {
                 if (action == GestureAction.TOGGLE_REPEAT) {
                     showRepeatOptionsDialog = true
                 } else if (action == GestureAction.TOGGLE_SHUFFLE) {
                     showShuffleOptionsDialog = true
                 } else if (action == GestureAction.MENU) {
-                    onOpenSettings()
+                    openMenu(slideDir)
                 } else if (action == GestureAction.SHOW_QUICK_START) {
                     onOpenQuickStart()
                 } else if (action == GestureAction.SONG_PICKER) {
-                    showSongPicker = true
+                    openSongPicker(slideDir)
                 } else if (action == GestureAction.SHOW_QUEUE) {
-                    showQueue = true
+                    openQueue(slideDir)
                 }
                 return
             }
@@ -241,10 +274,11 @@ fun PlayerScreen(
                 else -> {
                     handleGestureAction(
                         action = action,
+                        trigger = trigger,
                         playbackManager = playbackManager,
-                        onOpenSongPicker = { showSongPicker = true },
-                        onOpenQueue = { showQueue = true },
-                        onOpenSettings = onOpenSettings,
+                        onOpenSongPicker = { dir -> openSongPicker(dir) },
+                        onOpenQueue = { dir -> openQueue(dir) },
+                        onOpenSettings = { dir -> openMenu(dir) },
                         onOpenQuickStart = onOpenQuickStart
                     )
                 }
@@ -277,32 +311,36 @@ fun PlayerScreen(
                     playbackManager.seekByDelta(deltaMs)
                 }
                 else -> {
-                    if (trigger.name.contains("SWIPE")) {
-                        if (trigger.name.contains("UP") || trigger.name.contains("DOWN")) {
-                            playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
-                        } else if (trigger.name.contains("RIGHT") || trigger.name.contains("LEFT")) {
-                            val deltaMs = (deltaX * msPerPixel).toLong()
-                            playbackManager.seekByDelta(deltaMs)
-                        }
-                    }
+                    // Actions not explicitly bound to Volume or Seek should not trigger continuous Volume or Seeking
                 }
             }
         }
 
         override fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int) {
             playbackManager.persistCurrentPlaybackState()
-            if (kotlin.math.abs(totalDy) > 20f && kotlin.math.abs(totalDy) > kotlin.math.abs(totalDx)) {
-                val volPct = (playbackManager.currentVolumeRatio.value * 100).toInt()
-                playbackManager.showHudAction("Volume: $volPct%")
-            }
         }
     }
+
+    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .then(
+                if (isMondrian) Modifier
+                else Modifier.background(MaterialTheme.colorScheme.background)
+            )
     ) {
+        if (isMondrian) {
+            MondrianBackground(
+                song = currentSong,
+                currentPositionMs = currentPositionMs,
+                durationMs = durationMs,
+                volumeRatio = currentVolumeRatio,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
         // 1. Sliding Page Transition (Album Art + Song Titles & Labels)
         HorizontalPager(
             state = pagerState,
@@ -320,6 +358,10 @@ fun PlayerScreen(
             PlayerPageContent(
                 pageSong = pageSong,
                 displaySettings = displaySettings,
+                themeSettings = themeSettings,
+                currentPositionMs = currentPositionMs,
+                durationMs = durationMs,
+                volumeRatio = currentVolumeRatio,
                 hasTopButtons = hasTopButtons,
                 hasBottomButtons = hasBottomButtons,
                 gestureBindings = gestureBindings,
@@ -327,9 +369,9 @@ fun PlayerScreen(
                 repeatMode = repeatMode,
                 shuffleMode = shuffleMode,
                 isPlaying = isPlaying,
-                onOpenSongPicker = { showSongPicker = true },
-                onOpenQueue = { showQueue = true },
-                onOpenSettings = onOpenSettings,
+                onOpenSongPicker = { dir -> openSongPicker(dir) },
+                onOpenQueue = { dir -> openQueue(dir) },
+                onOpenSettings = { dir -> openMenu(dir) },
                 onOpenQuickStart = onOpenQuickStart,
                 onShowRepeatOptions = { showRepeatOptionsDialog = true },
                 onShowShuffleOptions = { showShuffleOptionsDialog = true }
@@ -340,7 +382,7 @@ fun PlayerScreen(
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         val currentSongHasArtwork = rememberHasArtwork(currentSong)
-        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && currentSong != null && currentSongHasArtwork
+        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && currentSong != null && currentSongHasArtwork && !isMondrian
 
         val regionBounds = if (isDockedScreen) {
             if (isLandscape) {
@@ -384,74 +426,71 @@ fun PlayerScreen(
 
         // 5. Screen Region Icons Overlay (only if not docked)
         if (!isDockedScreen) {
-            ScreenRegionIconsOverlay(
-                gestureBindings = gestureBindings,
-                playbackManager = playbackManager,
-                repeatMode = repeatMode,
-                shuffleMode = shuffleMode,
-                isPlaying = isPlaying,
-                onOpenSongPicker = { showSongPicker = true },
-                onOpenQueue = { showQueue = true },
-                onOpenSettings = onOpenSettings,
-                onOpenQuickStart = onOpenQuickStart,
-                onShowRepeatOptions = { showRepeatOptionsDialog = true },
-                onShowShuffleOptions = { showShuffleOptionsDialog = true },
-                numEdgeRegions = displaySettings.numEdgeRegions
-            )
-        }
-
-        /* Action HUD Banner Overlay disabled per user requirement (no pop-up announcements needed)
-        AnimatedVisibility(
-            visible = actionHudText != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.Center)
-        ) {
-            actionHudText?.let { text ->
-                val bannerShape = if (themeSettings.isRounded) RoundedCornerShape(24.dp) else RectangleShape
-                val bannerGlassModifier = if (themeSettings.isGlass) {
-                    Modifier.border(1.dp, Color.White.copy(alpha = 0.45f), bannerShape)
-                } else Modifier
-
-                Box(
-                    modifier = Modifier
-                        .clip(bannerShape)
-                        .background(
-                            if (themeSettings.isGlass) Color.Black.copy(alpha = 0.45f)
-                            else Color.Black.copy(alpha = 0.80f)
-                        )
-                        .then(bannerGlassModifier)
-                        .padding(horizontal = 32.dp, vertical = 20.dp)
-                ) {
-                    Text(
-                        text = text,
-                        color = Color.White,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
+            MondrianMaskedLayout(
+                song = currentSong,
+                themeSettings = themeSettings,
+                currentPositionMs = currentPositionMs,
+                durationMs = durationMs,
+                volumeRatio = currentVolumeRatio,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                ScreenRegionIconsOverlay(
+                    gestureBindings = gestureBindings,
+                    playbackManager = playbackManager,
+                    repeatMode = repeatMode,
+                    shuffleMode = shuffleMode,
+                    isPlaying = isPlaying,
+                    onOpenSongPicker = { dir -> openSongPicker(dir) },
+                    onOpenQueue = { dir -> openQueue(dir) },
+                    onOpenSettings = { dir -> openMenu(dir) },
+                    onOpenQuickStart = onOpenQuickStart,
+                    onShowRepeatOptions = { showRepeatOptionsDialog = true },
+                    onShowShuffleOptions = { showShuffleOptionsDialog = true },
+                    numEdgeRegions = displaySettings.numEdgeRegions
+                )
             }
         }
-        */
 
         // 7. Song Picker Sheet
-        if (showSongPicker) {
-            SongPickerBottomSheet(
-                musicDatabase = musicDatabase,
-                playbackManager = playbackManager,
-                musicScanner = musicScanner,
-                settingsDataStore = settingsDataStore,
-                onDismiss = { showSongPicker = false }
-            )
-        }
+        SongPickerBottomSheet(
+            visible = showSongPicker,
+            slideDirection = songPickerSlideDirection,
+            musicDatabase = musicDatabase,
+            playbackManager = playbackManager,
+            musicScanner = musicScanner,
+            settingsDataStore = settingsDataStore,
+            onDismiss = { showSongPicker = false }
+        )
 
         // 8. Queue Sheet
-        if (showQueue) {
-            QueueBottomSheet(
-                playbackManager = playbackManager,
-                onOpenSongPicker = { showSongPicker = true },
-                onDismiss = { showQueue = false }
+        QueueBottomSheet(
+            visible = showQueue,
+            slideDirection = queueSlideDirection,
+            playbackManager = playbackManager,
+            onOpenSongPicker = { dir -> openSongPicker(dir) },
+            onDismiss = { showQueue = false }
+        )
+
+        // 9. Menu / Settings Overlay
+        SlidingOverlay(
+            visible = showMenu,
+            slideDirection = menuSlideDirection,
+            onDismiss = { showMenu = false }
+        ) {
+            SettingsScreen(
+                settingsDataStore = settingsDataStore ?: SettingsDataStore(context),
+                displaySettings = displaySettings,
+                themeSettings = themeSettings,
+                musicFolderName = null,
+                lastScanTime = 0L,
+                libraryStats = com.travelingtunes.app.core.database.LibraryStats(),
+                isScanning = false,
+                scanStatusMessage = null,
+                onPickMusicFolder = onPickMusicFolder,
+                onRescanMusicFolder = {},
+                onNavigateBack = { showMenu = false },
+                onOpenGestureAssignments = onOpenSettings,
+                onOpenQuickStart = onOpenQuickStart
             )
         }
 
@@ -535,6 +574,10 @@ fun rememberHasArtwork(song: Song?): Boolean {
 private fun TitleAndButtonsContainer(
     pageSong: Song?,
     displaySettings: DisplaySettings,
+    themeSettings: ThemeSettings = ThemeSettings(),
+    currentPositionMs: Long = 0L,
+    durationMs: Long = 0L,
+    volumeRatio: Float = 0.5f,
     hasTopButtons: Boolean,
     hasBottomButtons: Boolean,
     gestureBindings: Map<GestureTrigger, GestureBinding>,
@@ -542,38 +585,47 @@ private fun TitleAndButtonsContainer(
     repeatMode: RepeatMode,
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
-    onOpenSongPicker: () -> Unit,
-    onOpenQueue: () -> Unit = {},
-    onOpenSettings: () -> Unit,
+    onOpenSongPicker: (SlideDirection) -> Unit,
+    onOpenQueue: (SlideDirection) -> Unit = {},
+    onOpenSettings: (SlideDirection) -> Unit,
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
     dockAdjacentEdge: DockAdjacentEdge? = null,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier) {
-        SongLabelsLayout(
-            currentSong = pageSong,
-            displaySettings = displaySettings,
-            hasTopButtons = hasTopButtons,
-            hasBottomButtons = hasBottomButtons,
-            dockAdjacentEdge = dockAdjacentEdge
-        )
-        ScreenRegionIconsOverlay(
-            gestureBindings = gestureBindings,
-            playbackManager = playbackManager,
-            repeatMode = repeatMode,
-            shuffleMode = shuffleMode,
-            isPlaying = isPlaying,
-            onOpenSongPicker = onOpenSongPicker,
-            onOpenQueue = onOpenQueue,
-            onOpenSettings = onOpenSettings,
-            onOpenQuickStart = onOpenQuickStart,
-            onShowRepeatOptions = onShowRepeatOptions,
-            onShowShuffleOptions = onShowShuffleOptions,
-            numEdgeRegions = displaySettings.numEdgeRegions,
-            dockAdjacentEdge = dockAdjacentEdge
-        )
+    MondrianMaskedLayout(
+        song = pageSong,
+        themeSettings = themeSettings,
+        currentPositionMs = currentPositionMs,
+        durationMs = durationMs,
+        volumeRatio = volumeRatio,
+        modifier = modifier
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            SongLabelsLayout(
+                currentSong = pageSong,
+                displaySettings = displaySettings,
+                hasTopButtons = hasTopButtons,
+                hasBottomButtons = hasBottomButtons,
+                dockAdjacentEdge = dockAdjacentEdge
+            )
+            ScreenRegionIconsOverlay(
+                gestureBindings = gestureBindings,
+                playbackManager = playbackManager,
+                repeatMode = repeatMode,
+                shuffleMode = shuffleMode,
+                isPlaying = isPlaying,
+                onOpenSongPicker = onOpenSongPicker,
+                onOpenQueue = onOpenQueue,
+                onOpenSettings = onOpenSettings,
+                onOpenQuickStart = onOpenQuickStart,
+                onShowRepeatOptions = onShowRepeatOptions,
+                onShowShuffleOptions = onShowShuffleOptions,
+                numEdgeRegions = displaySettings.numEdgeRegions,
+                dockAdjacentEdge = dockAdjacentEdge
+            )
+        }
     }
 }
 
@@ -581,6 +633,10 @@ private fun TitleAndButtonsContainer(
 fun PlayerPageContent(
     pageSong: Song?,
     displaySettings: DisplaySettings,
+    themeSettings: ThemeSettings = ThemeSettings(),
+    currentPositionMs: Long = 0L,
+    durationMs: Long = 0L,
+    volumeRatio: Float = 0.5f,
     hasTopButtons: Boolean,
     hasBottomButtons: Boolean,
     gestureBindings: Map<GestureTrigger, GestureBinding>,
@@ -588,18 +644,30 @@ fun PlayerPageContent(
     repeatMode: RepeatMode,
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
-    onOpenSongPicker: () -> Unit,
-    onOpenQueue: () -> Unit = {},
-    onOpenSettings: () -> Unit,
+    onOpenSongPicker: (SlideDirection) -> Unit,
+    onOpenQueue: (SlideDirection) -> Unit = {},
+    onOpenSettings: (SlideDirection) -> Unit,
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isMondrian) {
+            MondrianBackground(
+                song = pageSong,
+                currentPositionMs = currentPositionMs,
+                durationMs = durationMs,
+                volumeRatio = volumeRatio,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
     val pageSongHasArtwork = rememberHasArtwork(pageSong)
-    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && pageSong != null && pageSongHasArtwork
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && pageSong != null && pageSongHasArtwork && !isMondrian
 
     if (isDocked) {
         if (isLandscape) {
@@ -609,6 +677,10 @@ fun PlayerPageContent(
                     TitleAndButtonsContainer(
                         pageSong = pageSong,
                         displaySettings = displaySettings,
+                        themeSettings = themeSettings,
+                        currentPositionMs = currentPositionMs,
+                        durationMs = durationMs,
+                        volumeRatio = volumeRatio,
                         hasTopButtons = hasTopButtons,
                         hasBottomButtons = hasBottomButtons,
                         gestureBindings = gestureBindings,
@@ -628,19 +700,25 @@ fun PlayerPageContent(
                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                         PlayerAlbumArtBackground(
                             song = pageSong,
-                            displaySettings = displaySettings
+                            displaySettings = displaySettings,
+                            themeSettings = themeSettings
                         )
                     }
                 } else {
                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                         PlayerAlbumArtBackground(
                             song = pageSong,
-                            displaySettings = displaySettings
+                            displaySettings = displaySettings,
+                            themeSettings = themeSettings
                         )
                     }
                     TitleAndButtonsContainer(
                         pageSong = pageSong,
                         displaySettings = displaySettings,
+                        themeSettings = themeSettings,
+                        currentPositionMs = currentPositionMs,
+                        durationMs = durationMs,
+                        volumeRatio = volumeRatio,
                         hasTopButtons = hasTopButtons,
                         hasBottomButtons = hasBottomButtons,
                         gestureBindings = gestureBindings,
@@ -666,6 +744,10 @@ fun PlayerPageContent(
                     TitleAndButtonsContainer(
                         pageSong = pageSong,
                         displaySettings = displaySettings,
+                        themeSettings = themeSettings,
+                        currentPositionMs = currentPositionMs,
+                        durationMs = durationMs,
+                        volumeRatio = volumeRatio,
                         hasTopButtons = hasTopButtons,
                         hasBottomButtons = hasBottomButtons,
                         gestureBindings = gestureBindings,
@@ -685,19 +767,25 @@ fun PlayerPageContent(
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         PlayerAlbumArtBackground(
                             song = pageSong,
-                            displaySettings = displaySettings
+                            displaySettings = displaySettings,
+                            themeSettings = themeSettings
                         )
                     }
                 } else {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         PlayerAlbumArtBackground(
                             song = pageSong,
-                            displaySettings = displaySettings
+                            displaySettings = displaySettings,
+                            themeSettings = themeSettings
                         )
                     }
                     TitleAndButtonsContainer(
                         pageSong = pageSong,
                         displaySettings = displaySettings,
+                        themeSettings = themeSettings,
+                        currentPositionMs = currentPositionMs,
+                        durationMs = durationMs,
+                        volumeRatio = volumeRatio,
                         hasTopButtons = hasTopButtons,
                         hasBottomButtons = hasBottomButtons,
                         gestureBindings = gestureBindings,
@@ -721,17 +809,35 @@ fun PlayerPageContent(
         Box(modifier = Modifier.fillMaxSize()) {
             PlayerAlbumArtBackground(
                 song = pageSong,
-                displaySettings = displaySettings
+                displaySettings = displaySettings,
+                themeSettings = themeSettings
             )
 
-            SongLabelsLayout(
-                currentSong = pageSong,
+            TitleAndButtonsContainer(
+                pageSong = pageSong,
                 displaySettings = displaySettings,
+                themeSettings = themeSettings,
+                currentPositionMs = currentPositionMs,
+                durationMs = durationMs,
+                volumeRatio = volumeRatio,
                 hasTopButtons = hasTopButtons,
-                hasBottomButtons = hasBottomButtons
+                hasBottomButtons = hasBottomButtons,
+                gestureBindings = gestureBindings,
+                playbackManager = playbackManager,
+                repeatMode = repeatMode,
+                shuffleMode = shuffleMode,
+                isPlaying = isPlaying,
+                onOpenSongPicker = onOpenSongPicker,
+                onOpenQueue = onOpenQueue,
+                onOpenSettings = onOpenSettings,
+                onOpenQuickStart = onOpenQuickStart,
+                onShowRepeatOptions = onShowRepeatOptions,
+                onShowShuffleOptions = onShowShuffleOptions,
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
+}
 }
 
 @Composable
@@ -747,13 +853,13 @@ fun SongLabelsLayout(
     val songFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.songFontKey)
     val albumFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.albumFontKey)
 
-    val baseTopPadding = if (hasTopButtons) 84.dp else 32.dp
-    val baseBottomPadding = if (hasBottomButtons) 88.dp else 32.dp
+    val baseTopPadding = if (hasTopButtons) 96.dp else 24.dp
+    val baseBottomPadding = if (hasBottomButtons) 96.dp else 24.dp
 
-    val topPadding = if (dockAdjacentEdge == DockAdjacentEdge.TOP) baseTopPadding / 2 else baseTopPadding
-    val bottomPadding = if (dockAdjacentEdge == DockAdjacentEdge.BOTTOM) baseBottomPadding / 2 else baseBottomPadding
-    val startPadding = if (dockAdjacentEdge == DockAdjacentEdge.LEFT) 12.dp else 24.dp
-    val endPadding = if (dockAdjacentEdge == DockAdjacentEdge.RIGHT) 12.dp else 24.dp
+    val topPadding = if (dockAdjacentEdge == DockAdjacentEdge.TOP) 16.dp else baseTopPadding
+    val bottomPadding = if (dockAdjacentEdge == DockAdjacentEdge.BOTTOM) 16.dp else baseBottomPadding
+    val startPadding = if (dockAdjacentEdge == DockAdjacentEdge.LEFT) 16.dp else 24.dp
+    val endPadding = if (dockAdjacentEdge == DockAdjacentEdge.RIGHT) 16.dp else 24.dp
 
     val minFontSize = displaySettings.minimumFontSize.coerceAtLeast(12f)
     var scaleFactor by remember(currentSong?.id, displaySettings) {
@@ -768,7 +874,50 @@ fun SongLabelsLayout(
     val songLineHeight = (songFontSize.value * 1.35f).sp
     val albumLineHeight = (albumFontSize.value * 1.35f).sp
 
-    Column(
+    PriorityTitlesLayout(
+        titleOrder = displaySettings.titleOrder,
+        artistContent = {
+            BalancedTitleText(
+                text = currentSong?.artist ?: "Traveling Tunes",
+                fontSize = artistFontSize,
+                lineHeight = artistLineHeight,
+                fontFamily = artistFont,
+                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = FontWeight.Medium,
+                textAlign = displaySettings.artistAlignment.toComposeAlignment(),
+                minFontSize = minFontSize.sp,
+                enableMarquee = displaySettings.titleScrollLong,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        songTitleContent = {
+            BalancedTitleText(
+                text = currentSong?.title ?: "Swipe or Tap Screen to Play",
+                fontSize = songFontSize,
+                lineHeight = songLineHeight,
+                fontFamily = songFont,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                textAlign = displaySettings.songAlignment.toComposeAlignment(),
+                minFontSize = minFontSize.sp,
+                enableMarquee = displaySettings.titleScrollLong,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        albumContent = {
+            BalancedTitleText(
+                text = currentSong?.album ?: "No Song Selected",
+                fontSize = albumFontSize,
+                lineHeight = albumLineHeight,
+                fontFamily = albumFont,
+                color = MaterialTheme.colorScheme.tertiary,
+                fontWeight = FontWeight.Normal,
+                textAlign = displaySettings.albumAlignment.toComposeAlignment(),
+                minFontSize = minFontSize.sp,
+                enableMarquee = displaySettings.titleScrollLong,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
         modifier = modifier
             .fillMaxSize()
             .padding(
@@ -776,69 +925,76 @@ fun SongLabelsLayout(
                 end = endPadding,
                 top = topPadding,
                 bottom = bottomPadding
-            ),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Artist Name Label
-        Text(
-            text = currentSong?.artist ?: "Traveling Tunes",
-            fontSize = artistFontSize,
-            lineHeight = artistLineHeight,
-            fontFamily = artistFont,
-            color = MaterialTheme.colorScheme.secondary,
-            fontWeight = FontWeight.Medium,
-            textAlign = displaySettings.artistAlignment.toComposeAlignment(),
-            onTextLayout = { result ->
-                if (result.didOverflowHeight && scaleFactor > (minFontSize / displaySettings.artistFontSize.coerceAtLeast(1f))) {
-                    scaleFactor = (scaleFactor * 0.88f).coerceAtLeast(minFontSize / displaySettings.artistFontSize.coerceAtLeast(1f))
+            )
+    )
+}
+
+@Composable
+private fun PriorityTitlesLayout(
+    titleOrder: List<TitleRowType>,
+    artistContent: @Composable () -> Unit,
+    songTitleContent: @Composable () -> Unit,
+    albumContent: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val rowContents = mapOf(
+        TitleRowType.ARTIST to artistContent,
+        TitleRowType.SONG to songTitleContent,
+        TitleRowType.ALBUM to albumContent
+    )
+
+    val orderedContents = titleOrder.mapNotNull { rowContents[it] }
+
+    Layout(
+        contents = orderedContents,
+        modifier = modifier
+    ) { (firstMeasurables, secondMeasurables, thirdMeasurables), constraints ->
+        val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+
+        val songIndex = titleOrder.indexOf(TitleRowType.SONG).coerceAtLeast(0)
+        val measurablesList = listOf(firstMeasurables, secondMeasurables, thirdMeasurables)
+
+        // 1. Song Title has priority - measure it FIRST!
+        val songMeasurable = measurablesList.getOrNull(songIndex)?.firstOrNull()
+        val songPlaceable = songMeasurable?.measure(looseConstraints)
+        val songHeight = songPlaceable?.height ?: 0
+
+        // 2. Measure remaining two items in remaining vertical height
+        val remainingHeight = (constraints.maxHeight - songHeight).coerceAtLeast(0)
+        val halfRemainingHeight = remainingHeight / 2
+
+        val otherIndices = (0..2).filter { it != songIndex }
+        val idx1 = otherIndices.getOrElse(0) { 0 }
+        val idx2 = otherIndices.getOrElse(1) { 1 }
+
+        val item1Measurable = measurablesList.getOrNull(idx1)?.firstOrNull()
+        val item1Placeable = item1Measurable?.measure(looseConstraints.copy(maxHeight = halfRemainingHeight))
+        val item1Height = item1Placeable?.height ?: 0
+
+        val item2MaxHeight = (remainingHeight - item1Height).coerceAtLeast(0)
+        val item2Measurable = measurablesList.getOrNull(idx2)?.firstOrNull()
+        val item2Placeable = item2Measurable?.measure(looseConstraints.copy(maxHeight = item2MaxHeight))
+        val item2Height = item2Placeable?.height ?: 0
+
+        val placeables = arrayOfNulls<androidx.compose.ui.layout.Placeable>(3)
+        placeables[songIndex] = songPlaceable
+        placeables[idx1] = item1Placeable
+        placeables[idx2] = item2Placeable
+
+        val totalHeight = constraints.maxHeight
+        val totalContentHeight = (songHeight + item1Height + item2Height)
+        val slack = (totalHeight - totalContentHeight).coerceAtLeast(0)
+        val spacer = slack / 2
+
+        layout(constraints.maxWidth, totalHeight) {
+            var currentY = 0
+            for (p in placeables) {
+                if (p != null) {
+                    p.placeRelative(0, currentY)
+                    currentY += p.height + spacer
                 }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Song Title Label
-        Text(
-            text = currentSong?.title ?: "Swipe or Tap Screen to Play",
-            fontSize = songFontSize,
-            lineHeight = songLineHeight,
-            fontFamily = songFont,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-            textAlign = displaySettings.songAlignment.toComposeAlignment(),
-            onTextLayout = { result ->
-                if (result.didOverflowHeight && scaleFactor > (minFontSize / displaySettings.songFontSize.coerceAtLeast(1f))) {
-                    scaleFactor = (scaleFactor * 0.88f).coerceAtLeast(minFontSize / displaySettings.songFontSize.coerceAtLeast(1f))
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Album Name Label
-        Text(
-            text = currentSong?.album ?: "No Song Selected",
-            fontSize = albumFontSize,
-            lineHeight = albumLineHeight,
-            fontFamily = albumFont,
-            color = MaterialTheme.colorScheme.tertiary,
-            fontWeight = FontWeight.Normal,
-            textAlign = displaySettings.albumAlignment.toComposeAlignment(),
-            onTextLayout = { result ->
-                if (result.didOverflowHeight && scaleFactor > (minFontSize / displaySettings.albumFontSize.coerceAtLeast(1f))) {
-                    scaleFactor = (scaleFactor * 0.88f).coerceAtLeast(minFontSize / displaySettings.albumFontSize.coerceAtLeast(1f))
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (displaySettings.titleScrollLong) Modifier.basicMarquee() else Modifier)
-        )
+            }
+        }
     }
 }
 
@@ -846,9 +1002,11 @@ fun SongLabelsLayout(
 fun PlayerAlbumArtBackground(
     song: Song?,
     displaySettings: DisplaySettings,
+    themeSettings: ThemeSettings = ThemeSettings(),
     modifier: Modifier = Modifier
 ) {
-    if (!displaySettings.showAlbumArt || song == null) return
+    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
+    if (!displaySettings.showAlbumArt || song == null || isMondrian) return
 
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -963,7 +1121,7 @@ fun VolumeHudOverlay(
     themeSettings: ThemeSettings = ThemeSettings(),
     modifier: Modifier = Modifier
 ) {
-    if (displaySettings.hudType == HudTypeOption.NONE) return
+    if (displaySettings.hudType == HudTypeOption.NONE || themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)) return
 
     var isVisible by remember { mutableStateOf(displaySettings.volumeAlwaysOn) }
 
@@ -979,7 +1137,8 @@ fun VolumeHudOverlay(
 
     if (!isVisible) return
 
-    val primaryColor = MaterialTheme.colorScheme.primary
+    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
+    val primaryColor = if (isMondrian) Color.Black else MaterialTheme.colorScheme.primary
     val lineThicknessDp = displaySettings.hudLineThickness.dp
 
     val shape = if (themeSettings.isRounded) RoundedCornerShape(lineThicknessDp / 2f) else RectangleShape
@@ -999,7 +1158,8 @@ fun VolumeHudOverlay(
                         .align(Alignment.BottomEnd)
                         .clip(shape)
                         .background(
-                            if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
+                            if (isMondrian) Color.Black
+                            else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
                             else primaryColor.copy(alpha = 0.50f)
                         )
                         .then(glassModifier)
@@ -1018,7 +1178,8 @@ fun VolumeHudOverlay(
                         .height(lineThicknessDp)
                         .clip(shape)
                         .background(
-                            if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
+                            if (isMondrian) Color.Black
+                            else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
                             else primaryColor.copy(alpha = 0.70f)
                         )
                         .then(glassModifier)
@@ -1040,7 +1201,8 @@ fun VolumeHudOverlay(
                     .then(barPadding)
                     .clip(barShape)
                     .background(
-                        if (themeSettings.isGlass) primaryColor.copy(alpha = 0.25f)
+                        if (isMondrian) Color.Black
+                        else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.25f)
                         else primaryColor.copy(alpha = 0.20f)
                     )
                     .then(barGlassModifier)
@@ -1058,10 +1220,11 @@ fun ProgressHudOverlay(
     themeSettings: ThemeSettings = ThemeSettings(),
     modifier: Modifier = Modifier
 ) {
-    if (displaySettings.scrubHudType == ScrubHudTypeOption.NONE || durationMs <= 0L) return
+    if (displaySettings.scrubHudType == ScrubHudTypeOption.NONE || durationMs <= 0L || themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)) return
 
     val progressRatio = (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
-    val primaryColor = MaterialTheme.colorScheme.primary
+    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
+    val primaryColor = if (isMondrian) Color.Black else MaterialTheme.colorScheme.primary
     val lineThicknessDp = displaySettings.hudLineThickness.dp
 
     val shape = if (themeSettings.isRounded) RoundedCornerShape(lineThicknessDp / 2f) else RectangleShape
@@ -1080,7 +1243,8 @@ fun ProgressHudOverlay(
                     .height(lineThicknessDp)
                     .clip(shape)
                     .background(
-                        if (themeSettings.isGlass) primaryColor.copy(alpha = 0.15f)
+                        if (isMondrian) Color.Black.copy(alpha = 0.20f)
+                        else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.15f)
                         else primaryColor.copy(alpha = 0.15f)
                     )
                     .then(glassModifier)
@@ -1091,7 +1255,8 @@ fun ProgressHudOverlay(
                         .fillMaxWidth(progressRatio)
                         .clip(shape)
                         .background(
-                            if (themeSettings.isGlass) primaryColor.copy(alpha = 0.50f)
+                            if (isMondrian) Color.Black
+                            else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.50f)
                             else primaryColor.copy(alpha = 0.85f)
                         )
                 )
@@ -1100,7 +1265,7 @@ fun ProgressHudOverlay(
         ScrubHudTypeOption.POPUP -> {
             // Moving Geometric Vertical Line Indicator
             BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-                val leftOffsetDp = (maxWidth - lineThicknessDp) * progressRatio
+                val leftOffsetDp = (this.maxWidth - lineThicknessDp) * progressRatio
                 Box(
                     modifier = Modifier
                         .offset(x = leftOffsetDp)
@@ -1109,7 +1274,8 @@ fun ProgressHudOverlay(
                         .width(lineThicknessDp)
                         .clip(shape)
                         .background(
-                            if (themeSettings.isGlass) primaryColor.copy(alpha = 0.50f)
+                            if (isMondrian) Color.Black
+                            else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.50f)
                             else primaryColor.copy(alpha = 0.85f)
                         )
                         .then(glassModifier)
@@ -1122,7 +1288,10 @@ fun ProgressHudOverlay(
                 modifier = modifier
                     .fillMaxHeight()
                     .fillMaxWidth(progressRatio)
-                    .background(primaryColor.copy(alpha = 0.15f))
+                    .background(
+                        if (isMondrian) Color.Black
+                        else primaryColor.copy(alpha = 0.15f)
+                    )
             )
         }
         ScrubHudTypeOption.NONE -> {}
@@ -1131,12 +1300,14 @@ fun ProgressHudOverlay(
 
 private fun handleGestureAction(
     action: GestureAction,
+    trigger: GestureTrigger? = null,
     playbackManager: PlaybackManager,
-    onOpenSongPicker: () -> Unit,
-    onOpenQueue: () -> Unit = {},
-    onOpenSettings: () -> Unit,
+    onOpenSongPicker: (SlideDirection) -> Unit,
+    onOpenQueue: (SlideDirection) -> Unit = {},
+    onOpenSettings: (SlideDirection) -> Unit,
     onOpenQuickStart: () -> Unit
 ) {
+    val direction = trigger?.getSlideDirection() ?: SlideDirection.BOTTOM
     when (action) {
         GestureAction.PLAY_PAUSE -> playbackManager.togglePlayPause()
         GestureAction.PLAY -> playbackManager.play()
@@ -1156,9 +1327,9 @@ private fun handleGestureAction(
         GestureAction.PLAY_CURRENT_ARTIST -> playbackManager.playCurrentArtist()
         GestureAction.INCREASE_RATING -> playbackManager.increaseRating()
         GestureAction.DECREASE_RATING -> playbackManager.decreaseRating()
-        GestureAction.SONG_PICKER -> onOpenSongPicker()
-        GestureAction.SHOW_QUEUE -> onOpenQueue()
-        GestureAction.MENU -> onOpenSettings()
+        GestureAction.SONG_PICKER -> onOpenSongPicker(direction)
+        GestureAction.SHOW_QUEUE -> onOpenQueue(direction)
+        GestureAction.MENU -> onOpenSettings(direction)
         GestureAction.SHOW_QUICK_START -> onOpenQuickStart()
         GestureAction.UNASSIGNED -> {}
     }
@@ -1227,9 +1398,9 @@ fun ScreenRegionIconsOverlay(
     repeatMode: RepeatMode,
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
-    onOpenSongPicker: () -> Unit,
-    onOpenQueue: () -> Unit = {},
-    onOpenSettings: () -> Unit,
+    onOpenSongPicker: (SlideDirection) -> Unit,
+    onOpenQueue: (SlideDirection) -> Unit = {},
+    onOpenSettings: (SlideDirection) -> Unit,
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
@@ -1278,6 +1449,7 @@ fun ScreenRegionIconsOverlay(
                                 } else if (action != GestureAction.UNASSIGNED) {
                                     handleGestureAction(
                                         action = action,
+                                        trigger = trigger,
                                         playbackManager = playbackManager,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
@@ -1285,7 +1457,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQuickStart = onOpenQuickStart
                                     )
                                 } else {
-                                    onOpenSettings()
+                                    onOpenSettings(SlideDirection.TOP)
                                 }
                             },
                             onLongPress = {
@@ -1296,6 +1468,7 @@ fun ScreenRegionIconsOverlay(
                                 } else if (action != GestureAction.UNASSIGNED) {
                                     handleGestureAction(
                                         action = action,
+                                        trigger = trigger,
                                         playbackManager = playbackManager,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
@@ -1303,7 +1476,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQuickStart = onOpenQuickStart
                                     )
                                 } else {
-                                    onOpenSettings()
+                                    onOpenSettings(SlideDirection.TOP)
                                 }
                             }
                         )
@@ -1360,6 +1533,7 @@ fun ScreenRegionIconsOverlay(
                                 } else if (action != GestureAction.UNASSIGNED) {
                                     handleGestureAction(
                                         action = action,
+                                        trigger = trigger,
                                         playbackManager = playbackManager,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
@@ -1367,7 +1541,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQuickStart = onOpenQuickStart
                                     )
                                 } else {
-                                    onOpenSettings()
+                                    onOpenSettings(SlideDirection.BOTTOM)
                                 }
                             },
                             onLongPress = {
@@ -1378,6 +1552,7 @@ fun ScreenRegionIconsOverlay(
                                 } else if (action != GestureAction.UNASSIGNED) {
                                     handleGestureAction(
                                         action = action,
+                                        trigger = trigger,
                                         playbackManager = playbackManager,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
@@ -1385,7 +1560,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQuickStart = onOpenQuickStart
                                     )
                                 } else {
-                                    onOpenSettings()
+                                    onOpenSettings(SlideDirection.BOTTOM)
                                 }
                             }
                         )

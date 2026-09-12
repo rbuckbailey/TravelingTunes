@@ -24,7 +24,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Stop
+import com.travelingtunes.app.feature.settings.AlbumArtAuditDialog
+import com.travelingtunes.app.feature.settings.ArtDownloadProgressBar
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
@@ -42,6 +46,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import com.travelingtunes.app.core.model.SlideDirection
+import com.travelingtunes.app.core.ui.SlidingOverlay
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -51,6 +57,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.travelingtunes.app.core.theme.BalancedTitleText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -97,6 +104,8 @@ enum class PickerCategory(val displayName: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongPickerBottomSheet(
+    visible: Boolean,
+    slideDirection: SlideDirection = SlideDirection.BOTTOM,
     musicDatabase: MusicDatabase,
     playbackManager: PlaybackManager,
     musicScanner: MusicScanner? = null,
@@ -130,6 +139,11 @@ fun SongPickerBottomSheet(
 
     val isDownloadingArt by musicScanner?.isDownloadingArt?.collectAsState() ?: remember { mutableStateOf(false) }
     val artDownloadStatusMessage by musicScanner?.artDownloadStatusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
+    val artDownloadDownloadedCount by musicScanner?.artDownloadDownloadedCount?.collectAsState() ?: remember { mutableStateOf(0) }
+    val artDownloadFailedCount by musicScanner?.artDownloadFailedCount?.collectAsState() ?: remember { mutableStateOf(0) }
+    val artDownloadTotalCount by musicScanner?.artDownloadTotalCount?.collectAsState() ?: remember { mutableStateOf(0) }
+    val lastAuditReport by musicScanner?.lastAuditReport?.collectAsState() ?: remember { mutableStateOf(null) }
+    var showAuditDialog by remember { mutableStateOf(false) }
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(PickerCategory.ALBUMS) }
@@ -257,12 +271,10 @@ fun SongPickerBottomSheet(
         }
     }
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        modifier = Modifier.fillMaxSize()
+    SlidingOverlay(
+        visible = visible,
+        slideDirection = slideDirection,
+        onDismiss = onDismiss
     ) {
         Column(
             modifier = Modifier
@@ -275,11 +287,13 @@ fun SongPickerBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                BalancedTitleText(
                     text = "Song Picker",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (musicScanner != null) {
@@ -370,22 +384,45 @@ fun SongPickerBottomSheet(
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                                Text(
-                                    text = "Downloading Missing Artwork...",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                    Text(
+                                        text = "Downloading Missing Artwork...",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                                TextButton(
+                                    onClick = { musicScanner?.cancelDownloadArt() }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Stop,
+                                        contentDescription = "Stop Download",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Stop", color = MaterialTheme.colorScheme.error, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                             Spacer(modifier = Modifier.height(6.dp))
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            ArtDownloadProgressBar(
+                                downloadedCount = artDownloadDownloadedCount,
+                                failedCount = artDownloadFailedCount,
+                                totalCount = artDownloadTotalCount
+                            )
                             if (!artDownloadStatusMessage.isNullOrBlank()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
@@ -393,6 +430,36 @@ fun SongPickerBottomSheet(
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
+                            }
+                        }
+                    }
+                } else if (lastAuditReport != null) {
+                    val report = lastAuditReport!!
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Album Art Audit Ready",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "Downloaded ${report.successCount} of ${report.totalProcessed} (${report.failedCount} missing)",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            TextButton(onClick = { showAuditDialog = true }) {
+                                Text("View / Share Audit")
                             }
                         }
                     }
@@ -423,6 +490,22 @@ fun SongPickerBottomSheet(
                                 )
                             }
                         )
+                    }
+                    if (lastAuditReport != null) {
+                        item {
+                            FilterChip(
+                                selected = false,
+                                onClick = { showAuditDialog = true },
+                                label = { Text("View Audit (${lastAuditReport!!.failedCount} failed)") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Assessment,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            )
+                        }
                     }
                     items(PickerCategory.entries.toTypedArray()) { category ->
                         FilterChip(
@@ -673,6 +756,14 @@ fun SongPickerBottomSheet(
                         }
                     }
                 }
+            }
+
+            val currentAuditReport = lastAuditReport
+            if (showAuditDialog && currentAuditReport != null) {
+                AlbumArtAuditDialog(
+                    report = currentAuditReport,
+                    onDismiss = { showAuditDialog = false }
+                )
             }
         }
     }
@@ -929,7 +1020,14 @@ private fun GenreItemRow(
     onClick: () -> Unit
 ) {
     ListItem(
-        headlineContent = { Text(genre, fontWeight = FontWeight.Medium) },
+        headlineContent = {
+            BalancedTitleText(
+                text = genre,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                fontSize = 16.sp
+            )
+        },
         leadingContent = {
             Box(
                 modifier = Modifier
@@ -978,7 +1076,14 @@ private fun ArtistItemRow(
     onClick: () -> Unit
 ) {
     ListItem(
-        headlineContent = { Text(artist, fontWeight = FontWeight.SemiBold) },
+        headlineContent = {
+            BalancedTitleText(
+                text = artist,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                fontSize = 16.sp
+            )
+        },
         leadingContent = {
             Box(
                 modifier = Modifier
@@ -1028,11 +1133,11 @@ private fun AlbumItemRow(
 ) {
     ListItem(
         headlineContent = {
-            Text(
+            BalancedTitleText(
                 text = album.name,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 2,
+                fontSize = 16.sp
             )
         },
         supportingContent = {
@@ -1084,11 +1189,11 @@ private fun SongItemRow(
 ) {
     ListItem(
         headlineContent = {
-            Text(
+            BalancedTitleText(
                 text = song.title,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 2,
+                fontSize = 16.sp
             )
         },
         supportingContent = {
@@ -1146,9 +1251,11 @@ private fun FolderItemRow(
 ) {
     ListItem(
         headlineContent = {
-            Text(
+            BalancedTitleText(
                 text = folder.ifEmpty { "Root Folder" },
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                fontSize = 16.sp
             )
         },
         leadingContent = {

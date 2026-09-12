@@ -119,6 +119,10 @@ class MainActivity : ComponentActivity() {
 
             val isDownloadingArt by musicScanner.isDownloadingArt.collectAsState()
             val artDownloadStatusMessage by musicScanner.artDownloadStatusMessage.collectAsState()
+            val artDownloadDownloadedCount by musicScanner.artDownloadDownloadedCount.collectAsState()
+            val artDownloadFailedCount by musicScanner.artDownloadFailedCount.collectAsState()
+            val artDownloadTotalCount by musicScanner.artDownloadTotalCount.collectAsState()
+            val lastAuditReport by musicScanner.lastAuditReport.collectAsState()
 
             var libraryStats by remember { mutableStateOf(LibraryStats()) }
 
@@ -192,6 +196,10 @@ class MainActivity : ComponentActivity() {
                         scanStatusMessage = scanStatusMessage,
                         isDownloadingArt = isDownloadingArt,
                         artDownloadStatusMessage = artDownloadStatusMessage,
+                        artDownloadDownloadedCount = artDownloadDownloadedCount,
+                        artDownloadFailedCount = artDownloadFailedCount,
+                        artDownloadTotalCount = artDownloadTotalCount,
+                        lastAuditReport = lastAuditReport,
                         onPickMusicFolder = { folderPickerLauncher.launch(null) },
                         onRescanMusicFolder = {
                             musicFolderUri?.let { uriStr ->
@@ -301,6 +309,10 @@ fun TravelingTunesNavHost(
     scanStatusMessage: String?,
     isDownloadingArt: Boolean = false,
     artDownloadStatusMessage: String? = null,
+    artDownloadDownloadedCount: Int = 0,
+    artDownloadFailedCount: Int = 0,
+    artDownloadTotalCount: Int = 0,
+    lastAuditReport: com.travelingtunes.app.core.media.AlbumArtAuditReport? = null,
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
     onDownloadMissingArt: () -> Unit = {},
@@ -338,9 +350,14 @@ fun TravelingTunesNavHost(
                 scanStatusMessage = scanStatusMessage,
                 isDownloadingArt = isDownloadingArt,
                 artDownloadStatusMessage = artDownloadStatusMessage,
+                artDownloadDownloadedCount = artDownloadDownloadedCount,
+                artDownloadFailedCount = artDownloadFailedCount,
+                artDownloadTotalCount = artDownloadTotalCount,
+                lastAuditReport = lastAuditReport,
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = onRescanMusicFolder,
                 onDownloadMissingArt = onDownloadMissingArt,
+                onCancelDownloadArt = { musicScanner.cancelDownloadArt() },
                 onNavigateBack = { navController.popBackStack() },
                 onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
                 onOpenQuickStart = { navController.navigate("quickstart") }

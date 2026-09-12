@@ -9,7 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
+import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
@@ -60,7 +62,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
     val doubleTapTimeoutMs = 300L
 
     awaitEachGesture {
-        val firstDown = awaitFirstDown(requireUnconsumed = true)
+        val firstDown = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
         val tap1 = awaitPressResult(firstDown, minTranslationPx, listener, numEdgeRegions, regionBounds)
 
         if (tap1.isSwipe || tap1.isLongPress) {
@@ -78,7 +80,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
         // Wait for potential second tap down
         val secondDown = try {
             withTimeout(doubleTapTimeoutMs) {
-                awaitFirstDown(requireUnconsumed = true)
+                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
             }
         } catch (_: PointerEventTimeoutCancellationException) {
             null
@@ -111,7 +113,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
         // Wait for potential third tap down
         val thirdDown = try {
             withTimeout(doubleTapTimeoutMs) {
-                awaitFirstDown(requireUnconsumed = true)
+                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
             }
         } catch (_: PointerEventTimeoutCancellationException) {
             null
@@ -158,24 +160,72 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
 ): TapPressResult {
     val startTime = System.currentTimeMillis()
     val startPosition = firstDown.position
+    val multiTouchWindowMs = 120L
 
-    var maxFingers = 1
+    val seenPointerIds = mutableSetOf<PointerId>()
+    seenPointerIds.add(firstDown.id)
+
+    currentEvent.changes.forEach {
+        if (it.pressed) {
+            seenPointerIds.add(it.id)
+        }
+    }
+
+    var maxFingers = seenPointerIds.size.coerceAtMost(3)
     var totalDx = 0f
     var totalDy = 0f
     var isSwipeHandled = false
     var isLongPressHandled = false
+    var swipedTrigger: GestureTrigger? = null
     var lastPosition = startPosition
+    var trackedPointerId: PointerId? = firstDown.id
 
     while (true) {
-        val event = awaitPointerEvent()
+        val event = awaitPointerEvent(PointerEventPass.Initial)
         val activePointers = event.changes.filter { it.pressed }
 
+        activePointers.forEach {
+            seenPointerIds.add(it.id)
+        }
+
+        if (seenPointerIds.size > maxFingers) {
+            maxFingers = seenPointerIds.size.coerceAtMost(3)
+        }
         if (activePointers.size > maxFingers) {
             maxFingers = activePointers.size.coerceAtMost(3)
         }
 
+        val currentTime = System.currentTimeMillis()
+        val duration = currentTime - startTime
+
         if (activePointers.isEmpty()) {
-            val duration = System.currentTimeMillis() - startTime
+            if (duration < multiTouchWindowMs && maxFingers == 1) {
+                val remainingMs = multiTouchWindowMs - duration
+                val extraEvent = try {
+                    withTimeout(remainingMs) {
+                        awaitPointerEvent(PointerEventPass.Initial)
+                    }
+                } catch (_: PointerEventTimeoutCancellationException) {
+                    null
+                }
+
+                if (extraEvent != null) {
+                    val newActive = extraEvent.changes.filter { it.pressed }
+                    newActive.forEach { seenPointerIds.add(it.id) }
+                    if (seenPointerIds.size > maxFingers) {
+                        maxFingers = seenPointerIds.size.coerceAtMost(3)
+                    }
+                    if (newActive.isNotEmpty()) {
+                        val newPointer = newActive.firstOrNull()
+                        if (newPointer != null) {
+                            trackedPointerId = newPointer.id
+                            lastPosition = newPointer.position
+                        }
+                        continue
+                    }
+                }
+            }
+
             if (isSwipeHandled) {
                 listener.onGestureEnd(totalDx, totalDy, maxFingers)
             }
@@ -190,42 +240,43 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
             )
         }
 
-        val currentTime = System.currentTimeMillis()
-        val duration = currentTime - startTime
-
-        val currentPointer = activePointers.firstOrNull()
+        val currentPointer = activePointers.find { it.id == trackedPointerId } ?: activePointers.firstOrNull()
         if (currentPointer != null) {
-            val dx = currentPointer.position.x - lastPosition.x
-            val dy = currentPointer.position.y - lastPosition.y
-            totalDx += dx
-            totalDy += dy
-            lastPosition = currentPointer.position
+            val dx: Float
+            val dy: Float
+            if (currentPointer.id != trackedPointerId) {
+                trackedPointerId = currentPointer.id
+                lastPosition = currentPointer.position
+                dx = 0f
+                dy = 0f
+            } else {
+                dx = currentPointer.position.x - lastPosition.x
+                dy = currentPointer.position.y - lastPosition.y
+                totalDx += dx
+                totalDy += dy
+                lastPosition = currentPointer.position
+            }
 
             if (!isSwipeHandled && !isLongPressHandled) {
-                if (abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx) {
+                val hasMovedPastMin = abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx
+                val canCommitSwipe = hasMovedPastMin && (maxFingers >= 2 || duration >= multiTouchWindowMs)
+
+                if (canCommitSwipe) {
                     isSwipeHandled = true
                     event.changes.forEach { it.consume() }
-                    val trigger = determineSwipeTrigger(maxFingers, totalDx, totalDy)
-                    if (trigger != null) {
-                        listener.onGestureTriggered(trigger)
+                    swipedTrigger = determineSwipeTrigger(maxFingers, totalDx, totalDy)
+                    if (swipedTrigger != null) {
+                        listener.onGestureTriggered(swipedTrigger)
                     }
                 }
             }
 
             if (isSwipeHandled) {
                 event.changes.forEach { it.consume() }
-                val isVerticalSwipe = abs(totalDy) > abs(totalDx)
-                val trigger = if (isVerticalSwipe) {
-                    if (dy < 0f) determineSwipeTrigger(maxFingers, 0f, -100f)
-                    else if (dy > 0f) determineSwipeTrigger(maxFingers, 0f, 100f)
-                    else determineSwipeTrigger(maxFingers, totalDx, totalDy)
-                } else {
-                    determineSwipeTrigger(maxFingers, totalDx, totalDy)
-                }
-
-                if (trigger != null) {
+                if (swipedTrigger != null) {
+                    val isVerticalSwipe = abs(totalDy) > abs(totalDx)
                     val delta = if (!isVerticalSwipe) dx else -dy
-                    listener.onContinuousGesture(trigger, delta, dx, dy, totalDx, totalDy)
+                    listener.onContinuousGesture(swipedTrigger, delta, dx, dy, totalDx, totalDy)
                 }
             }
         }

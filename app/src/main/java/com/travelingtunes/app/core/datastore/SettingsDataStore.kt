@@ -25,6 +25,7 @@ import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.StreamingAccount
 import com.travelingtunes.app.core.model.TextAlignmentOption
 import com.travelingtunes.app.core.model.ThemeSettings
+import com.travelingtunes.app.core.model.TitleRowType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -90,6 +91,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
         val KEY_IMMERSIVE_MODE = booleanPreferencesKey("immersiveMode")
         val KEY_NUM_EDGE_REGIONS = intPreferencesKey("numEdgeRegions")
+        val KEY_TITLE_ORDER = stringPreferencesKey("titleOrder")
 
         // Theme
         val KEY_CURRENT_THEME = stringPreferencesKey("currentTheme")
@@ -169,7 +171,13 @@ class SettingsDataStore(private val context: Context) {
             albumFontKey = prefs[KEY_ALBUM_FONT_KEY] ?: "DEFAULT",
             keepScreenOn = prefs[KEY_KEEP_SCREEN_ON] ?: prefs[KEY_DISABLE_AUTOLOCK] ?: true,
             immersiveMode = prefs[KEY_IMMERSIVE_MODE] ?: true,
-            numEdgeRegions = prefs[KEY_NUM_EDGE_REGIONS] ?: 3
+            numEdgeRegions = prefs[KEY_NUM_EDGE_REGIONS] ?: 3,
+            titleOrder = (prefs[KEY_TITLE_ORDER] ?: "ARTIST,SONG,ALBUM")
+                .split(",")
+                .mapNotNull { name ->
+                    runCatching { TitleRowType.valueOf(name.trim()) }.getOrNull()
+                }
+                .ifEmpty { listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM) }
         )
     }
 
@@ -386,6 +394,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_KEEP_SCREEN_ON] = update.keepScreenOn
             prefs[KEY_IMMERSIVE_MODE] = update.immersiveMode
             prefs[KEY_NUM_EDGE_REGIONS] = update.numEdgeRegions
+            prefs[KEY_TITLE_ORDER] = update.titleOrder.joinToString(",") { it.name }
         }
     }
 

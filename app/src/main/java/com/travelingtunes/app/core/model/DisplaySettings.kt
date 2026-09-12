@@ -6,6 +6,12 @@ enum class TextAlignmentOption(val displayName: String) {
     RIGHT("Right")
 }
 
+enum class TitleRowType(val displayName: String) {
+    ARTIST("Artist"),
+    SONG("Song Title"),
+    ALBUM("Album")
+}
+
 enum class ArtScaleOption(val displayName: String) {
     FILL_SCREEN("Fill Screen"),
     ASPECT_FIT("Fit Screen")
@@ -83,5 +89,6 @@ data class DisplaySettings(
     val albumFontKey: String = "DEFAULT",
     val keepScreenOn: Boolean = true,
     val immersiveMode: Boolean = true,
-    val numEdgeRegions: Int = 3
+    val numEdgeRegions: Int = 3,
+    val titleOrder: List<TitleRowType> = listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM)
 )
