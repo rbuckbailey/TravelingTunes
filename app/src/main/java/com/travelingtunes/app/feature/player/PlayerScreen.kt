@@ -122,6 +122,7 @@ import com.travelingtunes.app.feature.queue.QueueBottomSheet
 import com.travelingtunes.app.feature.settings.DownloadedArtBrowserScreen
 import com.travelingtunes.app.feature.settings.GestureAssignmentScreen
 import com.travelingtunes.app.feature.settings.SettingsScreen
+import com.travelingtunes.app.feature.songpicker.PickerCategory
 import com.travelingtunes.app.feature.songpicker.SongPickerBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -210,6 +211,9 @@ fun PlayerScreen(
     var showSongPicker by remember { mutableStateOf(false) }
     var songPickerSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
     var pickerOpeningTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
+    var pickerInitialCategory by remember { mutableStateOf<PickerCategory?>(null) }
+    var pickerInitialArtist by remember { mutableStateOf<String?>(null) }
+    var pickerInitialAlbum by remember { mutableStateOf<String?>(null) }
 
     var showQueue by remember { mutableStateOf(false) }
     var queueSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
@@ -276,9 +280,18 @@ fun PlayerScreen(
         activeLibraryStats = musicDatabase.getLibraryStats()
     }
 
-    fun openSongPicker(direction: SlideDirection = SlideDirection.BOTTOM, trigger: GestureTrigger? = null) {
+    fun openSongPicker(
+        direction: SlideDirection = SlideDirection.BOTTOM,
+        trigger: GestureTrigger? = null,
+        initialCategory: PickerCategory? = null,
+        initialArtist: String? = null,
+        initialAlbum: String? = null
+    ) {
         songPickerSlideDirection = direction
         pickerOpeningTrigger = trigger
+        pickerInitialCategory = initialCategory
+        pickerInitialArtist = initialArtist
+        pickerInitialAlbum = initialAlbum
         showSongPicker = true
     }
 
@@ -445,6 +458,10 @@ fun PlayerScreen(
                     onOpenQuickStart()
                 } else if (action == GestureAction.SONG_PICKER) {
                     openSongPicker(slideDir, trigger)
+                } else if (action == GestureAction.SELECT_ALBUM_VIEW) {
+                    openSongPicker(slideDir, trigger, PickerCategory.ALBUMS, currentSong?.artist, currentSong?.album)
+                } else if (action == GestureAction.SELECT_ARTIST_VIEW) {
+                    openSongPicker(slideDir, trigger, PickerCategory.ARTISTS, currentSong?.artist, null)
                 } else if (action == GestureAction.SHOW_QUEUE) {
                     openQueue(slideDir, trigger)
                 }
@@ -467,6 +484,7 @@ fun PlayerScreen(
                         musicDatabase = musicDatabase,
                         coroutineScope = coroutineScope,
                         onOpenSongPicker = { dir -> openSongPicker(dir, trigger) },
+                        onOpenSongPickerWithFilter = { dir, cat, art, alb -> openSongPicker(dir, trigger, cat, art, alb) },
                         onOpenQueue = { dir -> openQueue(dir, trigger) },
                         onOpenSettings = { dir -> openMenu(dir, trigger) },
                         onOpenQuickStart = onOpenQuickStart,
@@ -731,6 +749,9 @@ fun PlayerScreen(
             visible = showSongPicker,
             slideDirection = songPickerSlideDirection,
             openingTrigger = pickerOpeningTrigger,
+            initialCategory = pickerInitialCategory,
+            initialArtist = pickerInitialArtist,
+            initialAlbum = pickerInitialAlbum,
             musicDatabase = musicDatabase,
             playbackManager = playbackManager,
             musicScanner = musicScanner,
@@ -1694,6 +1715,7 @@ private fun handleGestureAction(
     musicDatabase: MusicDatabase? = null,
     coroutineScope: kotlinx.coroutines.CoroutineScope? = null,
     onOpenSongPicker: (SlideDirection) -> Unit,
+    onOpenSongPickerWithFilter: ((SlideDirection, PickerCategory, String?, String?) -> Unit)? = null,
     onOpenQueue: (SlideDirection) -> Unit = {},
     onOpenSettings: (SlideDirection) -> Unit,
     onOpenQuickStart: () -> Unit,
@@ -1722,6 +1744,22 @@ private fun handleGestureAction(
         GestureAction.INCREASE_RATING -> playbackManager.increaseRating()
         GestureAction.DECREASE_RATING -> playbackManager.decreaseRating()
         GestureAction.SONG_PICKER -> onOpenSongPicker(direction)
+        GestureAction.SELECT_ALBUM_VIEW -> {
+            val song = playbackManager.currentSong.value
+            if (onOpenSongPickerWithFilter != null) {
+                onOpenSongPickerWithFilter(direction, PickerCategory.ALBUMS, song?.artist, song?.album)
+            } else {
+                onOpenSongPicker(direction)
+            }
+        }
+        GestureAction.SELECT_ARTIST_VIEW -> {
+            val song = playbackManager.currentSong.value
+            if (onOpenSongPickerWithFilter != null) {
+                onOpenSongPickerWithFilter(direction, PickerCategory.ARTISTS, song?.artist, null)
+            } else {
+                onOpenSongPicker(direction)
+            }
+        }
         GestureAction.SHOW_QUEUE -> onOpenQueue(direction)
         GestureAction.MENU -> onOpenSettings(direction)
         GestureAction.SHOW_QUICK_START -> onOpenQuickStart()
@@ -1884,6 +1922,7 @@ fun ScreenRegionIconsOverlay(
                     .padding(top = topPadding, start = startPadding, end = endPadding)
                     .size(iconBoxSize)
                     .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.15f))
                     .pointerInput(trigger, binding, action) {
                         detectTapGestures(
                             onTap = {
@@ -1971,6 +2010,7 @@ fun ScreenRegionIconsOverlay(
                     .padding(bottom = bottomPadding, start = startPadding, end = endPadding)
                     .size(iconBoxSize)
                     .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.15f))
                     .pointerInput(trigger, binding, action) {
                         detectTapGestures(
                             onTap = {

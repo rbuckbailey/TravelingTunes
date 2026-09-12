@@ -153,6 +153,8 @@ class MusicPlaybackService : MediaLibraryService() {
             GestureAction.FAST_FORWARD -> "com.travelingtunes.app.ACTION_FAST_FORWARD"
             GestureAction.REWIND -> "com.travelingtunes.app.ACTION_REWIND"
             GestureAction.SONG_PICKER -> "com.travelingtunes.app.ACTION_SONG_PICKER"
+            GestureAction.SELECT_ALBUM_VIEW -> "com.travelingtunes.app.ACTION_SELECT_ALBUM_VIEW"
+            GestureAction.SELECT_ARTIST_VIEW -> "com.travelingtunes.app.ACTION_SELECT_ARTIST_VIEW"
             GestureAction.SHOW_QUEUE -> "com.travelingtunes.app.ACTION_SHOW_QUEUE"
             GestureAction.MENU -> "com.travelingtunes.app.ACTION_MENU"
             else -> return null
@@ -173,6 +175,8 @@ class MusicPlaybackService : MediaLibraryService() {
             GestureAction.FAST_FORWARD -> R.drawable.ic_fast_forward
             GestureAction.REWIND -> R.drawable.ic_rewind
             GestureAction.SONG_PICKER -> R.drawable.ic_song_picker
+            GestureAction.SELECT_ALBUM_VIEW -> R.drawable.ic_play_current_album
+            GestureAction.SELECT_ARTIST_VIEW -> R.drawable.ic_play_current_artist
             GestureAction.MENU -> R.drawable.ic_menu_settings
             else -> R.drawable.ic_play_pause
         }
@@ -434,6 +438,8 @@ class MusicPlaybackService : MediaLibraryService() {
                 GestureAction.FAST_FORWARD,
                 GestureAction.REWIND,
                 GestureAction.SONG_PICKER,
+                GestureAction.SELECT_ALBUM_VIEW,
+                GestureAction.SELECT_ARTIST_VIEW,
                 GestureAction.SHOW_QUEUE,
                 GestureAction.MENU
             )

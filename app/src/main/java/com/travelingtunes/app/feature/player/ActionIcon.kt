@@ -204,6 +204,20 @@ fun ActionIcon(
                 modifier = Modifier.size(iconSize)
             )
 
+            GestureAction.SELECT_ALBUM_VIEW -> Icon(
+                imageVector = Icons.Default.Album,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
+            GestureAction.SELECT_ARTIST_VIEW -> Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
             GestureAction.INCREASE_RATING -> Icon(
                 imageVector = Icons.Default.ThumbUp,
                 contentDescription = action.displayName,
@@ -384,11 +398,11 @@ private fun getActionAlpha(
     isPlaying: Boolean
 ): Float {
     return when (action) {
-        GestureAction.TOGGLE_REPEAT -> if (repeatMode != RepeatMode.OFF) 1.0f else 0.25f
-        GestureAction.TOGGLE_SHUFFLE -> if (shuffleMode != ShuffleMode.OFF) 1.0f else 0.25f
-        GestureAction.PLAY -> if (isPlaying) 1.0f else 0.25f
-        GestureAction.PAUSE -> if (!isPlaying) 1.0f else 0.25f
-        GestureAction.PLAY_PAUSE -> if (isPlaying) 1.0f else 0.25f
+        GestureAction.TOGGLE_REPEAT -> if (repeatMode != RepeatMode.OFF) 1.0f else 0.55f
+        GestureAction.TOGGLE_SHUFFLE -> if (shuffleMode != ShuffleMode.OFF) 1.0f else 0.55f
+        GestureAction.PLAY -> if (isPlaying) 1.0f else 0.55f
+        GestureAction.PAUSE -> if (!isPlaying) 1.0f else 0.55f
+        GestureAction.PLAY_PAUSE -> if (isPlaying) 1.0f else 0.55f
         else -> 1.0f
     }
 }

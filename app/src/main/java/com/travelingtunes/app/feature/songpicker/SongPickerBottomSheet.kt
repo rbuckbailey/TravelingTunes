@@ -108,6 +108,9 @@ fun SongPickerBottomSheet(
     visible: Boolean,
     slideDirection: SlideDirection = SlideDirection.BOTTOM,
     openingTrigger: GestureTrigger? = null,
+    initialCategory: PickerCategory? = null,
+    initialArtist: String? = null,
+    initialAlbum: String? = null,
     musicDatabase: MusicDatabase,
     playbackManager: PlaybackManager,
     musicScanner: MusicScanner? = null,
@@ -116,24 +119,6 @@ fun SongPickerBottomSheet(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-
-    /*
-    // Streaming state placeholder (Commented out for future development)
-    val effectiveDataStore = remember(settingsDataStore, context) {
-        settingsDataStore ?: SettingsDataStore(context)
-    }
-    val streamingAccounts by effectiveDataStore.streamingAccountsFlow.collectAsState(initial = emptyMap())
-    val signedInServicesList = remember(streamingAccounts) {
-        StreamingServiceId.entries.filter { streamingAccounts.containsKey(it.id) }
-    }
-    var activeTopTab by remember { mutableStateOf("local") }
-
-    LaunchedEffect(signedInServicesList) {
-        if (activeTopTab != "local" && signedInServicesList.none { it.id == activeTopTab }) {
-            activeTopTab = "local"
-        }
-    }
-    */
 
     val isScanning by musicScanner?.isScanning?.collectAsState() ?: remember { mutableStateOf(false) }
     val scanStatusMessage by musicScanner?.statusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
@@ -148,13 +133,24 @@ fun SongPickerBottomSheet(
     var showAuditDialog by remember { mutableStateOf(false) }
 
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(PickerCategory.ALBUMS) }
+    var selectedCategory by remember { mutableStateOf(initialCategory ?: PickerCategory.ALBUMS) }
 
     // Drill-down hierarchy state
     var selectedGenre by remember { mutableStateOf<String?>(null) }
-    var selectedArtist by remember { mutableStateOf<String?>(null) }
-    var selectedAlbum by remember { mutableStateOf<String?>(null) }
+    var selectedArtist by remember { mutableStateOf<String?>(initialArtist) }
+    var selectedAlbum by remember { mutableStateOf<String?>(initialAlbum) }
     var selectedFolder by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(visible, initialCategory, initialArtist, initialAlbum) {
+        if (visible) {
+            searchQuery = ""
+            selectedCategory = initialCategory ?: PickerCategory.ALBUMS
+            selectedGenre = null
+            selectedArtist = initialArtist
+            selectedAlbum = initialAlbum
+            selectedFolder = null
+        }
+    }
 
     var songsList by remember { mutableStateOf<List<Song>>(emptyList()) }
     var albumsList by remember { mutableStateOf<List<AlbumInfo>>(emptyList()) }
