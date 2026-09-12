@@ -29,7 +29,14 @@ import androidx.compose.ui.unit.sp
  *    without breaking up words across lines (using [LineBreak.Heading]).
  * 2. Never break up a word; if a single word won't fit without breaking it up on a line, font size
  *    is reduced just enough so that every single word (and the full title) fits cleanly without breaking up words.
+ * 3. 5% single-row reduction rule: If reducing font size by up to 5% allows a title to fit on 1 row,
+ *    do so to preserve vertical space for adjacent title rows.
  */
+private data class SizeAndLines(
+    val fontSize: TextUnit,
+    val maxLines: Int
+)
+
 @Composable
 fun BalancedTitleText(
     text: String,
@@ -45,6 +52,7 @@ fun BalancedTitleText(
     maxLines: Int = 2,
     minFontSize: TextUnit = 10.sp,
     enableMarquee: Boolean = false,
+    allowFivePercentOneRowFit: Boolean = true,
     style: TextStyle = LocalTextStyle.current,
 ) {
     BoxWithConstraints(modifier = modifier) {
@@ -79,24 +87,24 @@ fun BalancedTitleText(
 
         val actualMaxLines = if (enableMarquee) 1 else maxLines
 
-        // Calculate auto-scaled font size guaranteed not to break words
-        val calculatedFontSize = remember(
+        // Calculate auto-scaled font size and line count using low-latency binary search fitting
+        val sizeAndLines = remember(
             text,
             availableWidthPx,
             availableHeightPx,
             baseFontSize,
             minFontSp,
             actualMaxLines,
+            allowFivePercentOneRowFit,
             effectiveTextStyle,
         ) {
             if ((availableWidthPx <= 0f) || text.isBlank()) {
-                baseFontSize
+                SizeAndLines(baseFontSize, actualMaxLines)
             } else {
                 var currentSp = baseFontSize.value
-                val words = text.split("\\s+".toRegex()).filter { it.isNotEmpty() }
+                val words = text.split(' ').filter { it.isNotEmpty() }
 
                 // Step 1: Ensure no individual word is wider than available line width.
-                // If a word exceeds available width, reduce font size so the longest word fits on 1 line.
                 if (words.isNotEmpty()) {
                     var maxWordWidthPx = 0f
                     for (word in words) {
@@ -118,50 +126,113 @@ fun BalancedTitleText(
                     }
                 }
 
-                // Step 2: Ensure full text fits within actualMaxLines and height constraints.
-                // Reduce font size iteratively if visual overflow occurs.
-                var fits = false
-                var attempts = 0
-                while (!fits && (attempts < 15) && (currentSp > minFontSp)) {
-                    val testStyle = effectiveTextStyle.copy(
-                        fontSize = currentSp.sp,
+                // Step 2: Check 5% single-row reduction fit rule.
+                // If text can fit on 1 row by reducing font size by up to 5% (>= 95% of requested font size), do that.
+                var solvedOneRow = false
+                var finalSp = currentSp
+                var finalLines = actualMaxLines
+
+                if (actualMaxLines > 1 && allowFivePercentOneRowFit) {
+                    val minFivePercentSp = (currentSp * 0.95f).coerceAtLeast(minFontSp)
+                    // Test 1-row fit at minFivePercentSp
+                    val testStyleOneRow = effectiveTextStyle.copy(
+                        fontSize = minFivePercentSp.sp,
                         lineHeight = if (lineHeight.isSp && (lineHeight.value > 0f)) {
-                            (lineHeight.value * (currentSp / baseFontSize.value)).sp
+                            (lineHeight.value * (minFivePercentSp / baseFontSize.value)).sp
                         } else {
-                            (currentSp * 1.35f).sp
+                            (minFivePercentSp * 1.35f).sp
                         },
                     )
-                    val measuredText = textMeasurer.measure(
+                    val measuredOneRow = textMeasurer.measure(
                         text = text,
-                        style = testStyle,
-                        constraints = Constraints(
-                            maxWidth = availableWidthPx.toInt().coerceAtLeast(1),
-                        ),
-                        maxLines = actualMaxLines,
-                        softWrap = true,
+                        style = testStyleOneRow,
+                        constraints = Constraints(maxWidth = availableWidthPx.toInt().coerceAtLeast(1)),
+                        maxLines = 1,
+                        softWrap = false,
                     )
-
-                    val hasOverflow = measuredText.hasVisualOverflow ||
-                            (measuredText.lineCount > actualMaxLines) ||
-                            ((availableHeightPx < Float.MAX_VALUE) && (availableHeightPx > 0f) && (measuredText.size.height > availableHeightPx))
-
-                    if (!hasOverflow) {
-                        fits = true
-                    } else {
-                        val nextSp = currentSp * 0.92f
-                        if (nextSp < minFontSp) {
-                            currentSp = minFontSp
-                            break
-                        } else {
-                            currentSp = nextSp
+                    if (measuredOneRow.lineCount == 1 && !measuredOneRow.hasVisualOverflow && measuredOneRow.size.width <= availableWidthPx) {
+                        // Binary search between 0.95*currentSp and currentSp to find largest font size that fits 1 row
+                        var low = minFivePercentSp
+                        var high = currentSp
+                        var bestOneRowSp = minFivePercentSp
+                        for (i in 0..4) {
+                            val mid = (low + high) / 2f
+                            val midStyle = effectiveTextStyle.copy(
+                                fontSize = mid.sp,
+                                lineHeight = if (lineHeight.isSp && (lineHeight.value > 0f)) {
+                                    (lineHeight.value * (mid / baseFontSize.value)).sp
+                                } else {
+                                    (mid * 1.35f).sp
+                                },
+                            )
+                            val m = textMeasurer.measure(
+                                text = text,
+                                style = midStyle,
+                                constraints = Constraints(maxWidth = availableWidthPx.toInt().coerceAtLeast(1)),
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                            if (m.lineCount == 1 && !m.hasVisualOverflow && m.size.width <= availableWidthPx) {
+                                bestOneRowSp = mid
+                                low = mid + 0.1f
+                            } else {
+                                high = mid - 0.1f
+                            }
                         }
-                        attempts++
+                        finalSp = bestOneRowSp
+                        finalLines = 1
+                        solvedOneRow = true
                     }
                 }
 
-                currentSp.sp
+                // Step 3: Fast binary search fitting for multiline / height constraints if 1-row fit was not used.
+                if (!solvedOneRow) {
+                    fun checkFits(sp: Float): Boolean {
+                        val testStyle = effectiveTextStyle.copy(
+                            fontSize = sp.sp,
+                            lineHeight = if (lineHeight.isSp && (lineHeight.value > 0f)) {
+                                (lineHeight.value * (sp / baseFontSize.value)).sp
+                            } else {
+                                (sp * 1.35f).sp
+                            },
+                        )
+                        val measuredText = textMeasurer.measure(
+                            text = text,
+                            style = testStyle,
+                            constraints = Constraints(maxWidth = availableWidthPx.toInt().coerceAtLeast(1)),
+                            maxLines = actualMaxLines,
+                            softWrap = true,
+                        )
+                        return !measuredText.hasVisualOverflow &&
+                                (measuredText.lineCount <= actualMaxLines) &&
+                                ((availableHeightPx >= Float.MAX_VALUE) || (availableHeightPx <= 0f) || (measuredText.size.height <= availableHeightPx))
+                    }
+
+                    if (checkFits(currentSp)) {
+                        finalSp = currentSp
+                    } else {
+                        var low = minFontSp
+                        var high = currentSp
+                        var bestSp = minFontSp
+                        for (i in 0..5) {
+                            val mid = (low + high) / 2f
+                            if (checkFits(mid)) {
+                                bestSp = mid
+                                low = mid + 0.1f
+                            } else {
+                                high = mid - 0.1f
+                            }
+                        }
+                        finalSp = bestSp
+                    }
+                }
+
+                SizeAndLines(finalSp.sp, finalLines)
             }
         }
+
+        val calculatedFontSize = sizeAndLines.fontSize
+        val targetMaxLines = sizeAndLines.maxLines
 
         val finalLineHeight = if (lineHeight.isSp && (lineHeight.value > 0f)) {
             (lineHeight.value * (calculatedFontSize.value / baseFontSize.value)).sp
@@ -181,7 +252,7 @@ fun BalancedTitleText(
             fontStyle = fontStyle,
             textDecoration = textDecoration,
             textAlign = textAlign,
-            maxLines = actualMaxLines,
+            maxLines = targetMaxLines,
             overflow = TextOverflow.Clip,
             style = effectiveTextStyle,
             modifier = Modifier

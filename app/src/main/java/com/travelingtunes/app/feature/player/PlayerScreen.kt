@@ -1306,44 +1306,36 @@ private fun PriorityTitlesLayout(
         modifier = modifier
     ) { (firstMeasurables, secondMeasurables, thirdMeasurables), constraints ->
         val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
-
-        val songIndex = titleOrder.indexOf(TitleRowType.SONG).coerceAtLeast(0)
         val measurablesList = listOf(firstMeasurables, secondMeasurables, thirdMeasurables)
 
-        // 1. Song Title has priority - measure it FIRST!
-        val songMeasurable = measurablesList.getOrNull(songIndex)?.firstOrNull()
-        val songPlaceable = songMeasurable?.measure(looseConstraints)
-        val songHeight = songPlaceable?.height ?: 0
+        // 1. Measure top title (index 0 in titleOrder) first with loose height constraint
+        val topMeasurable = measurablesList.getOrNull(0)?.firstOrNull()
+        val topPlaceable = topMeasurable?.measure(looseConstraints.copy(maxHeight = (constraints.maxHeight * 0.45f).toInt()))
+        val topHeight = topPlaceable?.height ?: 0
 
-        // 2. Measure remaining two items in remaining vertical height
-        val remainingHeight = (constraints.maxHeight - songHeight).coerceAtLeast(0)
-        val halfRemainingHeight = remainingHeight / 2
+        val remainingHeight = (constraints.maxHeight - topHeight).coerceAtLeast(0)
 
-        val otherIndices = (0..2).filter { it != songIndex }
-        val idx1 = otherIndices.getOrElse(0) { 0 }
-        val idx2 = otherIndices.getOrElse(1) { 1 }
+        // 2. Measure middle title (index 1) with fair remaining height allocation
+        val middleMeasurable = measurablesList.getOrNull(1)?.firstOrNull()
+        val middleMaxHeight = (remainingHeight * 0.55f).toInt()
+        val middlePlaceable = middleMeasurable?.measure(looseConstraints.copy(maxHeight = middleMaxHeight))
+        val middleHeight = middlePlaceable?.height ?: 0
 
-        val item1Measurable = measurablesList.getOrNull(idx1)?.firstOrNull()
-        val item1Placeable = item1Measurable?.measure(looseConstraints.copy(maxHeight = halfRemainingHeight))
-        val item1Height = item1Placeable?.height ?: 0
+        // 3. Measure bottom title (index 2) with remaining height
+        val bottomMaxHeight = (remainingHeight - middleHeight).coerceAtLeast(0)
+        val bottomMeasurable = measurablesList.getOrNull(2)?.firstOrNull()
+        val bottomPlaceable = bottomMeasurable?.measure(looseConstraints.copy(maxHeight = bottomMaxHeight))
+        val bottomHeight = bottomPlaceable?.height ?: 0
 
-        val item2MaxHeight = (remainingHeight - item1Height).coerceAtLeast(0)
-        val item2Measurable = measurablesList.getOrNull(idx2)?.firstOrNull()
-        val item2Placeable = item2Measurable?.measure(looseConstraints.copy(maxHeight = item2MaxHeight))
-        val item2Height = item2Placeable?.height ?: 0
-
-        val placeables = arrayOfNulls<androidx.compose.ui.layout.Placeable>(3)
-        placeables[songIndex] = songPlaceable
-        placeables[idx1] = item1Placeable
-        placeables[idx2] = item2Placeable
+        val placeables = arrayOf(topPlaceable, middlePlaceable, bottomPlaceable)
 
         val totalHeight = constraints.maxHeight
-        val totalContentHeight = (songHeight + item1Height + item2Height)
+        val totalContentHeight = (topHeight + middleHeight + bottomHeight)
         val slack = (totalHeight - totalContentHeight).coerceAtLeast(0)
-        val spacer = slack / 2
+        val spacer = slack / 3
 
         layout(constraints.maxWidth, totalHeight) {
-            var currentY = 0
+            var currentY = spacer / 2
             for (p in placeables) {
                 if (p != null) {
                     p.placeRelative(0, currentY)
@@ -1394,8 +1386,7 @@ fun PlayerAlbumArtBackground(
         }
     }
 
-    val cachedBitmap = song?.id?.let { AlbumArtCache.instance.get(it) }
-    val imgBitmap = bitmap ?: cachedBitmap
+    val imgBitmap = bitmap
     val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
 
     if (imgBitmap != null) {

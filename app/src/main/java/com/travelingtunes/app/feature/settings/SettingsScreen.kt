@@ -38,11 +38,11 @@ import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -58,6 +58,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -628,13 +629,14 @@ fun SettingsScreen(
             onDismiss = { activeColorPicker = null },
             onConfirmColor = { r, g, b ->
                 coroutineScope.launch {
-                    val newTheme = when (pickerType) {
+                    val baseTheme = when (pickerType) {
                         "BG" -> themeSettings.copy(customBGRed = r, customBGGreen = g, customBGBlue = b)
                         "SONG" -> themeSettings.copy(customSongTitleRed = r, customSongTitleGreen = g, customSongTitleBlue = b)
                         "ARTIST" -> themeSettings.copy(customArtistTitleRed = r, customArtistTitleGreen = g, customArtistTitleBlue = b)
                         "ALBUM" -> themeSettings.copy(customAlbumTitleRed = r, customAlbumTitleGreen = g, customAlbumTitleBlue = b)
                         else -> themeSettings
                     }
+                    val newTheme = baseTheme.copy(currentThemeName = "Custom")
                     settingsDataStore.updateThemeSettings(newTheme)
                 }
                 activeColorPicker = null
@@ -705,7 +707,7 @@ private fun SubmenuContent(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Divider(modifier = Modifier.padding(vertical = 12.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
             when (submenu) {
                 SettingsSubmenu.LIBRARY -> LibrarySettingsContent(
@@ -1230,41 +1232,25 @@ private fun TypographyHudSettingsContent(
         Text("Title Display Mode", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Toggle placed in the center between Scrolling Marquee and Wrap Titles options (Default: Wrap Titles)
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
         ) {
-            Text(
-                text = "Scrolling Marquee",
-                fontWeight = if (displaySettings.titleScrollLong) FontWeight.Bold else FontWeight.Normal,
-                color = if (displaySettings.titleScrollLong) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
-                modifier = Modifier.clickable {
-                    onUpdateDisplaySettings(displaySettings.copy(titleScrollLong = true))
-                }
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Switch(
-                checked = !displaySettings.titleScrollLong,
-                onCheckedChange = { isWrap ->
-                    onUpdateDisplaySettings(displaySettings.copy(titleScrollLong = !isWrap))
-                }
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "Wrap Titles",
-                fontWeight = if (!displaySettings.titleScrollLong) FontWeight.Bold else FontWeight.Normal,
-                color = if (!displaySettings.titleScrollLong) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
-                modifier = Modifier.clickable {
+            FilterChip(
+                selected = !displaySettings.titleScrollLong,
+                onClick = {
                     onUpdateDisplaySettings(displaySettings.copy(titleScrollLong = false))
-                }
+                },
+                label = { Text("Wrap Titles", fontWeight = FontWeight.Bold) },
+                modifier = Modifier.weight(1f)
+            )
+            FilterChip(
+                selected = displaySettings.titleScrollLong,
+                onClick = {
+                    onUpdateDisplaySettings(displaySettings.copy(titleScrollLong = true))
+                },
+                label = { Text("Scrolling Marquee", fontWeight = FontWeight.Bold) },
+                modifier = Modifier.weight(1f)
             )
         }
 
@@ -1374,7 +1360,7 @@ private fun TypographyHudSettingsContent(
             }
         }
 
-        Divider(modifier = Modifier.padding(vertical = 12.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
         // Section: HUD & Progress Displays
         Text("HUD & Progress Displays", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
@@ -1508,7 +1494,7 @@ private fun GesturesSettingsContent(
                 steps = 5
             )
         }
-        Divider()
+        HorizontalDivider()
         ListItem(
             headlineContent = { Text("Reconfigure Gesture Assignments") },
             supportingContent = { Text("Customize 1/2/3 finger swipes, taps, long presses, and edge regions") },
@@ -1820,9 +1806,9 @@ private fun CustomColorPickerDialog(
     onDismiss: () -> Unit,
     onConfirmColor: (Float, Float, Float) -> Unit
 ) {
-    var red by remember { mutableStateOf(initialRed) }
-    var green by remember { mutableStateOf(initialGreen) }
-    var blue by remember { mutableStateOf(initialBlue) }
+    var red by remember { mutableFloatStateOf(initialRed) }
+    var green by remember { mutableFloatStateOf(initialGreen) }
+    var blue by remember { mutableFloatStateOf(initialBlue) }
 
     val currentColor = Color(
         red = (red / 255f).coerceIn(0f, 1f),
