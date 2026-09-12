@@ -14,6 +14,7 @@ import com.travelingtunes.app.core.model.ArtAlignmentLandscape
 import com.travelingtunes.app.core.model.ArtAlignmentPortrait
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
+import com.travelingtunes.app.core.model.ColorTheme
 import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
@@ -158,7 +159,7 @@ class SettingsDataStore(private val context: Context) {
             artAlignmentLandscape = ArtAlignmentLandscape.entries.find {
                 it.name.equals(prefs[KEY_ART_ALIGNMENT_LANDSCAPE], true)
             } ?: ArtAlignmentLandscape.CENTER,
-            albumArtFade = prefs[KEY_ALBUM_ART_FADE] ?: 0.35f,
+            albumArtFade = (prefs[KEY_ALBUM_ART_FADE] ?: 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
             artDisplayLayout = ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY },
             hudType = HudTypeOption.entries.find { it.value == (prefs[KEY_HUD_TYPE] ?: 1) } ?: HudTypeOption.BAR_VOLUME,
             scrubHudType = ScrubHudTypeOption.entries.find { it.value == (prefs[KEY_SCRUB_HUD_TYPE] ?: 2) } ?: ScrubHudTypeOption.EDGE_HUD,
@@ -186,7 +187,7 @@ class SettingsDataStore(private val context: Context) {
         val textGreen = prefs[KEY_CUSTOM_TEXT_GREEN] ?: 22f
         val textBlue = prefs[KEY_CUSTOM_TEXT_BLUE] ?: 180f
         ThemeSettings(
-            currentThemeName = prefs[KEY_CURRENT_THEME] ?: "White on Grey",
+            currentThemeName = prefs[KEY_CURRENT_THEME] ?: ColorTheme.MATCH_ALBUM_ART.name,
             customTextRed = textRed,
             customTextGreen = textGreen,
             customTextBlue = textBlue,

@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
@@ -37,6 +38,7 @@ import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.theme.TravelingTunesTheme
 import com.travelingtunes.app.feature.player.PlayerScreen
 import com.travelingtunes.app.feature.quickstart.QuickStartScreen
+import com.travelingtunes.app.feature.settings.DownloadedArtBrowserScreen
 import com.travelingtunes.app.feature.settings.GestureAssignmentScreen
 import com.travelingtunes.app.feature.settings.SettingsScreen
 import kotlinx.coroutines.flow.first
@@ -150,14 +152,34 @@ class MainActivity : ComponentActivity() {
             var dynamicAlbumArtTheme by remember { mutableStateOf<com.travelingtunes.app.core.model.ColorTheme?>(null) }
             var lastExtractedTheme by remember { mutableStateOf<com.travelingtunes.app.core.model.ColorTheme?>(null) }
 
-            LaunchedEffect(currentSong?.id, currentSong?.artworkUri) {
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            val innerEdge = if (displaySettings.artDisplayLayout == com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED && displaySettings.showAlbumArt) {
+                if (isLandscape) {
+                    when (displaySettings.artAlignmentLandscape) {
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
+                        else -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
+                    }
+                } else {
+                    when (displaySettings.artAlignmentPortrait) {
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
+                        else -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
+                    }
+                }
+            } else null
+
+            LaunchedEffect(currentSong?.id, currentSong?.artworkUri, innerEdge) {
                 val song = currentSong
                 if (song != null) {
                     val bitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         com.travelingtunes.app.feature.player.loadSongArtwork(applicationContext, song)
                     }
                     if (bitmap != null) {
-                        val extracted = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(bitmap)
+                        val extracted = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(bitmap, innerEdge)
                         lastExtractedTheme = extracted
                         dynamicAlbumArtTheme = extracted
                     } else {
@@ -168,12 +190,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val isAutoByArt = themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true) || displaySettings.albumArtColors
+            val isMatchAlbumArt = themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) ||
+                                  themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true) ||
+                                  displaySettings.albumArtColors
 
             TravelingTunesTheme(
                 themeSettings = themeSettings,
                 dynamicAlbumArtTheme = dynamicAlbumArtTheme,
-                useAlbumArtColors = isAutoByArt
+                useAlbumArtColors = isMatchAlbumArt
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -332,10 +356,25 @@ fun TravelingTunesNavHost(
                 settingsDataStore = settingsDataStore,
                 themeSettings = themeSettings,
                 showFirstRunPrompt = showFirstRunPrompt,
+                musicFolderName = musicFolderName,
+                lastScanTime = lastScanTime,
+                libraryStats = libraryStats,
+                isScanning = isScanning,
+                scanStatusMessage = scanStatusMessage,
+                isDownloadingArt = isDownloadingArt,
+                artDownloadStatusMessage = artDownloadStatusMessage,
+                artDownloadDownloadedCount = artDownloadDownloadedCount,
+                artDownloadFailedCount = artDownloadFailedCount,
+                artDownloadTotalCount = artDownloadTotalCount,
+                lastAuditReport = lastAuditReport,
                 onDismissFirstRunPrompt = onDismissFirstRunPrompt,
                 onPickMusicFolder = onPickMusicFolder,
+                onRescanMusicFolder = onRescanMusicFolder,
+                onDownloadMissingArt = onDownloadMissingArt,
                 onOpenSettings = { navController.navigate("settings") },
-                onOpenQuickStart = { navController.navigate("quickstart") }
+                onOpenQuickStart = { navController.navigate("quickstart") },
+                onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
+                onOpenDownloadedArtBrowser = { navController.navigate("downloaded_art_browser") }
             )
         }
         composable("settings") {
@@ -360,7 +399,8 @@ fun TravelingTunesNavHost(
                 onCancelDownloadArt = { musicScanner.cancelDownloadArt() },
                 onNavigateBack = { navController.popBackStack() },
                 onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
-                onOpenQuickStart = { navController.navigate("quickstart") }
+                onOpenQuickStart = { navController.navigate("quickstart") },
+                onOpenDownloadedArtBrowser = { navController.navigate("downloaded_art_browser") }
             )
         }
         composable("gesture_assignments") {
@@ -373,6 +413,14 @@ fun TravelingTunesNavHost(
         composable("quickstart") {
             QuickStartScreen(
                 onDone = { navController.popBackStack() }
+            )
+        }
+        composable("downloaded_art_browser") {
+            DownloadedArtBrowserScreen(
+                musicDatabase = musicDatabase,
+                albumArtDownloader = musicScanner.albumArtDownloader,
+                playbackManager = playbackManager,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

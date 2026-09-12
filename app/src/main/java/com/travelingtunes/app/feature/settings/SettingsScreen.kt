@@ -153,7 +153,8 @@ fun SettingsScreen(
     onCancelDownloadArt: () -> Unit = {},
     onNavigateBack: () -> Unit,
     onOpenGestureAssignments: () -> Unit,
-    onOpenQuickStart: () -> Unit
+    onOpenQuickStart: () -> Unit,
+    onOpenDownloadedArtBrowser: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -312,6 +313,7 @@ fun SettingsScreen(
                         onDownloadMissingArt = onDownloadMissingArt,
                         onCancelDownloadArt = onCancelDownloadArt,
                         onViewAudit = { showAuditDialog = true },
+                        onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
                         onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
                         onUpdateDisplaySettings = { newSettings ->
                             coroutineScope.launch {
@@ -438,6 +440,7 @@ fun SettingsScreen(
                         onDownloadMissingArt = onDownloadMissingArt,
                         onCancelDownloadArt = onCancelDownloadArt,
                         onViewAudit = { showAuditDialog = true },
+                        onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
                         onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
                         onUpdateDisplaySettings = { newSettings ->
                             coroutineScope.launch {
@@ -567,7 +570,8 @@ private fun SubmenuContent(
     onOpenSongPicker: () -> Unit,
     onOpenArtistPicker: () -> Unit,
     onOpenAlbumPicker: () -> Unit,
-    onOpenQuickStart: () -> Unit
+    onOpenQuickStart: () -> Unit,
+    onOpenDownloadedArtBrowser: () -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -605,7 +609,8 @@ private fun SubmenuContent(
                     onRescanMusicFolder = onRescanMusicFolder,
                     onDownloadMissingArt = onDownloadMissingArt,
                     onCancelDownloadArt = onCancelDownloadArt,
-                    onViewAudit = onViewAudit
+                    onViewAudit = onViewAudit,
+                    onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser
                 )
 
                 SettingsSubmenu.TYPOGRAPHY_HUD -> TypographyHudSettingsContent(
@@ -658,7 +663,8 @@ private fun LibrarySettingsContent(
     onRescanMusicFolder: () -> Unit,
     onDownloadMissingArt: () -> Unit = {},
     onCancelDownloadArt: () -> Unit = {},
-    onViewAudit: () -> Unit = {}
+    onViewAudit: () -> Unit = {},
+    onOpenDownloadedArtBrowser: () -> Unit = {}
 ) {
     Column {
         ListItem(
@@ -734,6 +740,14 @@ private fun LibrarySettingsContent(
                 modifier = Modifier.clickable { onDownloadMissingArt() }
             )
         }
+
+        ListItem(
+            headlineContent = { Text("Downloaded Art Browser") },
+            supportingContent = {
+                Text("Manage, replace, or embed downloaded album artwork into ID3 tags")
+            },
+            modifier = Modifier.clickable { onOpenDownloadedArtBrowser() }
+        )
 
         if (lastAuditReport != null) {
             ListItem(
@@ -1139,6 +1153,17 @@ private fun TypographyHudSettingsContent(
             )
         }
 
+        if (displaySettings.showAlbumArt) {
+            Text("Album Art Opacity (Behind Titles): ${(displaySettings.albumArtFade * 100).toInt()}%", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+            Slider(
+                value = displaySettings.albumArtFade,
+                onValueChange = { fade ->
+                    onUpdateDisplaySettings(displaySettings.copy(albumArtFade = fade))
+                },
+                valueRange = 0.1f..1.0f
+            )
+        }
+
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Prevent Screen From Turning Off", fontWeight = FontWeight.SemiBold)
@@ -1221,17 +1246,19 @@ private fun ThemesSettingsContent(
     onOpenAlbumPicker: () -> Unit
 ) {
     Column {
-        val isAutoByArtActive = themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true) || displaySettings.albumArtColors
+        val isMatchAlbumArtActive = themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) ||
+                                    themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true) ||
+                                    displaySettings.albumArtColors
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Auto By Art Theme", fontWeight = FontWeight.SemiBold)
+                Text("Match Album Art Theme", fontWeight = FontWeight.SemiBold)
                 Text("Extract dynamic color palette from album art", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Switch(
-                checked = isAutoByArtActive,
+                checked = isMatchAlbumArtActive,
                 onCheckedChange = { checked ->
-                    val newThemeName = if (checked) "Auto By Art" else "White on Grey"
+                    val newThemeName = if (checked) "Match Album Art" else "White on Grey"
                     onSelectPreset(newThemeName, checked)
                 }
             )
@@ -1295,7 +1322,7 @@ private fun ThemesSettingsContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        val isAuto = theme.name.equals("Auto By Art", ignoreCase = true)
+                        val isAuto = theme.name.equals("Match Album Art", ignoreCase = true) || theme.name.equals("Auto By Art", ignoreCase = true)
                         onSelectPreset(theme.name, isAuto)
                     }
                     .padding(vertical = 8.dp)

@@ -162,8 +162,8 @@ fun SongPickerBottomSheet(
 
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
 
-    // Query database when search, category, or drill-down selection changes
-    LaunchedEffect(searchQuery, selectedCategory, selectedGenre, selectedArtist, selectedAlbum, selectedFolder, currentPlaylist) {
+    // Query database when search, category, drill-down selection, or scan state changes
+    LaunchedEffect(searchQuery, selectedCategory, selectedGenre, selectedArtist, selectedAlbum, selectedFolder, currentPlaylist, isScanning, scannedCount) {
         withContext(Dispatchers.IO) {
             if (musicDatabase.getAllSongs().isEmpty() && currentPlaylist.isNotEmpty()) {
                 musicDatabase.insertOrReplaceSongs(currentPlaylist)

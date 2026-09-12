@@ -6,6 +6,7 @@ import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.model.getSlideDirection
 import com.travelingtunes.app.core.model.ThemeSettings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GestureAndSettingsTest {
@@ -47,7 +48,7 @@ class GestureAndSettingsTest {
     @Test
     fun testDefaultThemeSettings() {
         val themeSettings = ThemeSettings()
-        assertEquals("White on Grey", themeSettings.currentThemeName)
+        assertEquals("Match Album Art", themeSettings.currentThemeName)
         assertEquals(6, themeSettings.sunRiseHour)
         assertEquals(19, themeSettings.sunSetHour)
         assertEquals(false, themeSettings.isRounded)
@@ -85,9 +86,10 @@ class GestureAndSettingsTest {
     }
 
     @Test
-    fun testAutoByArtThemePreset() {
-        val theme = com.travelingtunes.app.core.model.ColorTheme.getByName("Auto By Art")
-        assertEquals("Auto By Art", theme.name)
+    fun testMatchAlbumArtThemePreset() {
+        val theme = com.travelingtunes.app.core.model.ColorTheme.getByName("Match Album Art")
+        assertEquals("Match Album Art", theme.name)
+        assertEquals(com.travelingtunes.app.core.model.ColorTheme.PRESETS.first(), theme)
         org.junit.Assert.assertTrue(com.travelingtunes.app.core.model.ColorTheme.PRESETS.contains(theme))
     }
 
@@ -177,9 +179,11 @@ class GestureAndSettingsTest {
     @Test
     fun testDockedArtLayoutSettings() {
         val displaySettings = com.travelingtunes.app.core.model.DisplaySettings(
-            artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED
+            artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED,
+            showAlbumArt = true
         )
         assertEquals(com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED, displaySettings.artDisplayLayout)
+        assertTrue(displaySettings.showAlbumArt)
 
         val edges = com.travelingtunes.app.feature.player.DockAdjacentEdge.entries
         assertEquals(4, edges.size)

@@ -76,7 +76,7 @@ data class DisplaySettings(
     val albumArtScale: ArtScaleOption = ArtScaleOption.FILL_SCREEN,
     val artAlignmentPortrait: ArtAlignmentPortrait = ArtAlignmentPortrait.MIDDLE,
     val artAlignmentLandscape: ArtAlignmentLandscape = ArtAlignmentLandscape.CENTER,
-    val albumArtFade: Float = 0.35f,
+    val albumArtFade: Float = 1.0f,
     val artDisplayLayout: ArtLayoutOption = ArtLayoutOption.OVERLAY,
     val hudType: HudTypeOption = HudTypeOption.BAR_VOLUME,
     val scrubHudType: ScrubHudTypeOption = ScrubHudTypeOption.EDGE_HUD,

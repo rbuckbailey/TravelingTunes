@@ -633,6 +633,17 @@ class PlaybackManager(
         persistCurrentPlaybackState()
     }
 
+    fun refreshCurrentSongArtwork() {
+        val current = _currentSong.value ?: return
+        scope.launch(Dispatchers.IO) {
+            val updatedSongs = musicDatabase?.getAllSongs() ?: emptyList()
+            val updatedSong = updatedSongs.find { it.id == current.id }
+            if (updatedSong != null) {
+                _currentSong.value = updatedSong
+            }
+        }
+    }
+
     fun showHudAction(actionText: String) {
         // Disabled pop-up announcements per user requirement
         _actionHudText.value = null

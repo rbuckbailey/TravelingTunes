@@ -23,7 +23,8 @@ enum class GestureAction(val displayName: String) {
     TOGGLE_SHUFFLE("Toggle Shuffle"),
     INCREASE_RATING("Increase Rating"),
     DECREASE_RATING("Decrease Rating"),
-    SHOW_QUICK_START("Show Quick Start");
+    SHOW_QUICK_START("Show Quick Start"),
+    DELETE_DOWNLOADED_ART("Delete Downloaded Art");
     // Navigation actions disabled/commented out:
     // NAVIGATE_TO_CONTACT("Navigate to Contact"),
     // NAVIGATE_HOME("Navigate Home"),

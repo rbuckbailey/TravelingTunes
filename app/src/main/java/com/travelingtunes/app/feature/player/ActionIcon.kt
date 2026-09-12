@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeDown
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
@@ -217,6 +218,13 @@ fun ActionIcon(
 
             GestureAction.SHOW_QUICK_START -> Icon(
                 imageVector = Icons.AutoMirrored.Filled.Help,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
+            GestureAction.DELETE_DOWNLOADED_ART -> Icon(
+                imageVector = Icons.Default.Delete,
                 contentDescription = action.displayName,
                 tint = effectiveTint,
                 modifier = Modifier.size(iconSize)

@@ -23,6 +23,13 @@ data class AlbumInfo(
     val artworkUri: Uri?
 )
 
+data class DownloadedAlbumArtInfo(
+    val album: String,
+    val artist: String,
+    val songCount: Int,
+    val artworkUri: Uri
+)
+
 class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
@@ -127,6 +134,34 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         )
     }
 
+    suspend fun clearAlbumArtwork(albumName: String, artistName: String) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            putNull(COL_ARTWORK_URI)
+        }
+        db.update(
+            TABLE_SONGS,
+            cv,
+            "$COL_ALBUM = ? AND $COL_ARTIST = ?",
+            arrayOf(albumName, artistName)
+        )
+    }
+
+    suspend fun getSongsByAlbumAndArtist(albumName: String, artistName: String): List<Song> = withContext(Dispatchers.IO) {
+        val songs = mutableListOf<Song>()
+        val db = readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? AND $COL_ARTIST = ? ORDER BY CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC",
+            arrayOf(albumName, artistName)
+        )
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                songs.add(cursorToSong(c))
+            }
+        }
+        songs
+    }
+
     suspend fun getAllSongs(): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
@@ -209,6 +244,59 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             }
         }
         songs
+    }
+
+    suspend fun getAlbumsWithDownloadedArt(context: Context? = null): List<DownloadedAlbumArtInfo> = withContext(Dispatchers.IO) {
+        val albums = mutableListOf<DownloadedAlbumArtInfo>()
+        val db = readableDatabase
+        val sql = """
+            SELECT $COL_ALBUM, $COL_ARTIST, COUNT(*) as song_count, MAX($COL_ARTWORK_URI) as art_uri, MIN($COL_CONTENT_URI) as content_uri
+            FROM $TABLE_SONGS
+            WHERE $COL_ARTWORK_URI IS NOT NULL AND $COL_ARTWORK_URI != ''
+            GROUP BY $COL_ALBUM, $COL_ARTIST
+            ORDER BY $COL_ALBUM ASC
+        """.trimIndent()
+        val cursor = db.rawQuery(sql, null)
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                val album = c.getString(0)
+                val artist = c.getString(1)
+                val count = c.getInt(2)
+                val artStr = c.getString(3) ?: continue
+                val contentUriStr = c.getString(4) ?: ""
+                val artUri = Uri.parse(artStr)
+                if (isDownloadedArtworkUri(context, artUri, contentUriStr)) {
+                    albums.add(DownloadedAlbumArtInfo(album, artist, count, artUri))
+                }
+            }
+        }
+        albums
+    }
+
+    private fun isDownloadedArtworkUri(context: Context?, artUri: Uri, contentUriStr: String): Boolean {
+        val uriStr = artUri.toString()
+        if (uriStr.contains("downloaded_art") || uriStr.contains("art_downloaded") || uriStr.contains("art_custom")) {
+            return true
+        }
+        if (uriStr.contains("art_embedded")) {
+            return false
+        }
+        if (context != null && contentUriStr.isNotBlank()) {
+            val contentUri = Uri.parse(contentUriStr)
+            val mmr = android.media.MediaMetadataRetriever()
+            return try {
+                context.contentResolver.openFileDescriptor(contentUri, "r")?.use { pfd ->
+                    mmr.setDataSource(pfd.fileDescriptor)
+                } ?: mmr.setDataSource(context, contentUri)
+                val bytes = mmr.embeddedPicture
+                bytes == null
+            } catch (_: Exception) {
+                false
+            } finally {
+                try { mmr.release() } catch (_: Exception) {}
+            }
+        }
+        return false
     }
 
     suspend fun getArtists(): List<String> = withContext(Dispatchers.IO) {

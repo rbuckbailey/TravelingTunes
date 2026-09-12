@@ -1,0 +1,116 @@
+package com.travelingtunes.app
+
+import android.net.Uri
+import com.travelingtunes.app.core.database.DownloadedAlbumArtInfo
+import com.travelingtunes.app.core.media.ArtworkCandidate
+import com.travelingtunes.app.core.media.Id3ArtworkEmbedder
+import com.travelingtunes.app.core.model.GestureAction
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.mockito.Mockito
+import java.io.File
+import java.io.FileOutputStream
+
+class DownloadedArtAndEmbeddingTest {
+
+    @Test
+    fun testDeleteDownloadedArtGestureActionResolution() {
+        val action = GestureAction.fromKey("DeleteDownloadedArt")
+        assertEquals(GestureAction.DELETE_DOWNLOADED_ART, action)
+
+        val actionWithSpaces = GestureAction.fromKey("Delete Downloaded Art")
+        assertEquals(GestureAction.DELETE_DOWNLOADED_ART, actionWithSpaces)
+        assertEquals("Delete Downloaded Art", GestureAction.DELETE_DOWNLOADED_ART.displayName)
+    }
+
+    @Test
+    fun testDownloadedAlbumArtInfoModel() {
+        val mockUri = Mockito.mock(Uri::class.java)
+        val info = DownloadedAlbumArtInfo(
+            album = "Abbey Road",
+            artist = "The Beatles",
+            songCount = 17,
+            artworkUri = mockUri
+        )
+
+        assertEquals("Abbey Road", info.album)
+        assertEquals("The Beatles", info.artist)
+        assertEquals(17, info.songCount)
+        assertEquals(mockUri, info.artworkUri)
+    }
+
+    @Test
+    fun testArtworkCandidateSquareness() {
+        val squareCandidate = ArtworkCandidate(url = "http://example.com/square.jpg", width = 1000, height = 1000, source = "Deezer")
+        assertEquals(1.0, squareCandidate.squareness, 0.001)
+        assertEquals(1000000, squareCandidate.resolution)
+
+        val nonSquareCandidate = ArtworkCandidate(url = "http://example.com/rect.jpg", width = 800, height = 400, source = "Web Search")
+        assertEquals(0.5, nonSquareCandidate.squareness, 0.001)
+    }
+
+    @Test
+    fun testMp3Id3EmbeddingStructure() {
+        val tempAudioFile = File.createTempFile("test_audio", ".mp3").apply { deleteOnExit() }
+        val tempOutputFile = File.createTempFile("test_output", ".mp3").apply { deleteOnExit() }
+
+        // Create dummy MP3 content (sync bytes FF FB)
+        val dummyMp3Audio = byteArrayOf(0xFF.toByte(), 0xFB.toByte(), 0x90.toByte(), 0x64.toByte(), 0x00, 0x00, 0x00)
+        FileOutputStream(tempAudioFile).use { it.write(dummyMp3Audio) }
+
+        // Create dummy JPEG image bytes (FF D8 ... FF D9)
+        val dummyJpegBytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0x00, 0x10, 0xFF.toByte(), 0xD9.toByte())
+
+        val method = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "embedMp3Id3v2Apic",
+            ByteArray::class.java,
+            ByteArray::class.java,
+            File::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(Id3ArtworkEmbedder, dummyMp3Audio, dummyJpegBytes, tempOutputFile) as Boolean
+
+        assertTrue("Embedding ID3v2 APIC frame should succeed", result)
+        assertTrue("Output file must exist", tempOutputFile.exists())
+        assertTrue("Output file size should be larger than original audio", tempOutputFile.length() > dummyMp3Audio.size)
+
+        val outputBytes = tempOutputFile.readBytes()
+        // Must start with 'ID3' header
+        assertEquals('I'.code.toByte(), outputBytes[0])
+        assertEquals('D'.code.toByte(), outputBytes[1])
+        assertEquals('3'.code.toByte(), outputBytes[2])
+        // Version 2.3
+        assertEquals(3.toByte(), outputBytes[3])
+    }
+
+    @Test
+    fun testFlacPictureBlockEmbeddingStructure() {
+        val tempOutputFile = File.createTempFile("test_output", ".flac").apply { deleteOnExit() }
+
+        // Create dummy FLAC content (header "fLaC" followed by dummy frame)
+        val dummyFlacAudio = byteArrayOf('f'.code.toByte(), 'L'.code.toByte(), 'a'.code.toByte(), 'C'.code.toByte(), 0x12, 0x34, 0x56)
+        val dummyJpegBytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+
+        val method = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "embedFlacPicture",
+            ByteArray::class.java,
+            ByteArray::class.java,
+            File::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(Id3ArtworkEmbedder, dummyFlacAudio, dummyJpegBytes, tempOutputFile) as Boolean
+
+        assertTrue("Embedding FLAC PICTURE metadata block should succeed", result)
+        assertTrue("Output file must exist", tempOutputFile.exists())
+
+        val outputBytes = tempOutputFile.readBytes()
+        // Must start with "fLaC"
+        assertEquals('f'.code.toByte(), outputBytes[0])
+        assertEquals('L'.code.toByte(), outputBytes[1])
+        assertEquals('a'.code.toByte(), outputBytes[2])
+        assertEquals('C'.code.toByte(), outputBytes[3])
+        // Picture block type header is 0x06
+        assertEquals(0x06.toByte(), outputBytes[4])
+    }
+}

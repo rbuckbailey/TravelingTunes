@@ -1,7 +1,9 @@
 package com.travelingtunes.app.feature.player
 
+import android.content.ContentUris
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.os.Build
 import android.util.Size
 import androidx.compose.animation.AnimatedVisibility
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +39,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -72,6 +76,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.database.MusicDatabase
+import androidx.core.net.toUri
+import com.travelingtunes.app.core.database.LibraryStats
+import com.travelingtunes.app.core.media.AlbumArtAuditReport
 import com.travelingtunes.app.core.gestures.GestureEventListener
 import com.travelingtunes.app.core.gestures.travelingTunesGestures
 import com.travelingtunes.app.core.media.AlbumArtCache
@@ -100,6 +107,8 @@ import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.model.getSlideDirection
 import com.travelingtunes.app.core.ui.SlidingOverlay
 import com.travelingtunes.app.feature.queue.QueueBottomSheet
+import com.travelingtunes.app.feature.settings.DownloadedArtBrowserScreen
+import com.travelingtunes.app.feature.settings.GestureAssignmentScreen
 import com.travelingtunes.app.feature.settings.SettingsScreen
 import com.travelingtunes.app.feature.songpicker.SongPickerBottomSheet
 import kotlinx.coroutines.Dispatchers
@@ -130,10 +139,25 @@ fun PlayerScreen(
     settingsDataStore: SettingsDataStore? = null,
     themeSettings: ThemeSettings = ThemeSettings(),
     showFirstRunPrompt: Boolean = false,
+    musicFolderName: String? = null,
+    lastScanTime: Long = 0L,
+    libraryStats: LibraryStats = LibraryStats(),
+    isScanning: Boolean = false,
+    scanStatusMessage: String? = null,
+    isDownloadingArt: Boolean = false,
+    artDownloadStatusMessage: String? = null,
+    artDownloadDownloadedCount: Int = 0,
+    artDownloadFailedCount: Int = 0,
+    artDownloadTotalCount: Int = 0,
+    lastAuditReport: AlbumArtAuditReport? = null,
     onDismissFirstRunPrompt: () -> Unit = {},
     onPickMusicFolder: () -> Unit = {},
+    onRescanMusicFolder: () -> Unit = {},
+    onDownloadMissingArt: () -> Unit = {},
     onOpenSettings: () -> Unit,
-    onOpenQuickStart: () -> Unit
+    onOpenQuickStart: () -> Unit,
+    onOpenGestureAssignments: () -> Unit = {},
+    onOpenDownloadedArtBrowser: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -177,8 +201,41 @@ fun PlayerScreen(
     var showMenu by remember { mutableStateOf(false) }
     var menuSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
 
+    var showDownloadedArtBrowser by remember { mutableStateOf(false) }
+    var showGestureAssignments by remember { mutableStateOf(false) }
+
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
+
+    val activeIsScanning by musicScanner?.isScanning?.collectAsState()
+        ?: remember(isScanning) { mutableStateOf(isScanning) }
+    val activeScanStatusMessage by musicScanner?.statusMessage?.collectAsState()
+        ?: remember(scanStatusMessage) { mutableStateOf(scanStatusMessage) }
+
+    val activeIsDownloadingArt by musicScanner?.isDownloadingArt?.collectAsState()
+        ?: remember(isDownloadingArt) { mutableStateOf(isDownloadingArt) }
+    val activeArtDownloadStatusMessage by musicScanner?.artDownloadStatusMessage?.collectAsState()
+        ?: remember(artDownloadStatusMessage) { mutableStateOf(artDownloadStatusMessage) }
+    val activeArtDownloadDownloadedCount by musicScanner?.artDownloadDownloadedCount?.collectAsState()
+        ?: remember(artDownloadDownloadedCount) { mutableStateOf(artDownloadDownloadedCount) }
+    val activeArtDownloadFailedCount by musicScanner?.artDownloadFailedCount?.collectAsState()
+        ?: remember(artDownloadFailedCount) { mutableStateOf(artDownloadFailedCount) }
+    val activeArtDownloadTotalCount by musicScanner?.artDownloadTotalCount?.collectAsState()
+        ?: remember(artDownloadTotalCount) { mutableStateOf(artDownloadTotalCount) }
+    val activeLastAuditReport by musicScanner?.lastAuditReport?.collectAsState()
+        ?: remember(lastAuditReport) { mutableStateOf(lastAuditReport) }
+
+    val activeMusicFolderName by settingsDataStore?.musicFolderNameFlow?.collectAsState(initial = musicFolderName)
+        ?: remember(musicFolderName) { mutableStateOf(musicFolderName) }
+    val activeLastScanTime by settingsDataStore?.lastScanTimeFlow?.collectAsState(initial = lastScanTime)
+        ?: remember(lastScanTime) { mutableStateOf(lastScanTime) }
+    val activeMusicFolderUri by settingsDataStore?.musicFolderUriFlow?.collectAsState(initial = null)
+        ?: remember { mutableStateOf(null) }
+
+    var activeLibraryStats by remember { mutableStateOf(libraryStats) }
+    LaunchedEffect(activeLastScanTime, activeIsScanning, currentPlaylist) {
+        activeLibraryStats = musicDatabase.getLibraryStats()
+    }
 
     fun openSongPicker(direction: SlideDirection = SlideDirection.BOTTOM) {
         songPickerSlideDirection = direction
@@ -200,6 +257,37 @@ fun PlayerScreen(
 
     val pagerState = rememberPagerState(initialPage = songIndex) { pageCount }
     val coroutineScope = rememberCoroutineScope()
+
+    val effectiveOnRescanMusicFolder: () -> Unit = remember(onRescanMusicFolder, activeMusicFolderUri, musicScanner, settingsDataStore, playbackManager, musicDatabase) {
+        {
+            if (!activeMusicFolderUri.isNullOrEmpty() && musicScanner != null && settingsDataStore != null) {
+                coroutineScope.launch {
+                    musicScanner.scanFolder(activeMusicFolderUri!!.toUri())
+                    settingsDataStore.setLastScanTime(System.currentTimeMillis())
+                    val scannedSongs = musicDatabase.getAllSongs()
+                    if (scannedSongs.isNotEmpty()) {
+                        playbackManager.setPlaylistAndPlay(scannedSongs, 0, shuffle = true)
+                    }
+                }
+            } else {
+                onRescanMusicFolder()
+            }
+            Unit
+        }
+    }
+
+    val effectiveOnDownloadMissingArt: () -> Unit = remember(onDownloadMissingArt, musicScanner) {
+        {
+            if (musicScanner != null) {
+                coroutineScope.launch {
+                    musicScanner.downloadMissingArtwork()
+                }
+            } else {
+                onDownloadMissingArt()
+            }
+            Unit
+        }
+    }
 
     // Sync pagerState -> PlaybackManager when user swipes pager to a settled page
     LaunchedEffect(pagerState.settledPage) {
@@ -245,6 +333,11 @@ fun PlayerScreen(
 
             if (action == GestureAction.UNASSIGNED) return
 
+            val isCurrentSongDownloadedArt = musicScanner?.albumArtDownloader?.isDownloadedArtwork(currentSong) == true
+            if (action == GestureAction.DELETE_DOWNLOADED_ART && !isCurrentSongDownloadedArt) {
+                return
+            }
+
             val slideDir = trigger.getSlideDirection()
 
             if (isLongPress || trigger.category == GestureCategory.LONG_PRESS) {
@@ -276,6 +369,9 @@ fun PlayerScreen(
                         action = action,
                         trigger = trigger,
                         playbackManager = playbackManager,
+                        musicScanner = musicScanner,
+                        musicDatabase = musicDatabase,
+                        coroutineScope = coroutineScope,
                         onOpenSongPicker = { dir -> openSongPicker(dir) },
                         onOpenQueue = { dir -> openQueue(dir) },
                         onOpenSettings = { dir -> openMenu(dir) },
@@ -352,8 +448,15 @@ fun PlayerScreen(
             val activeTopTriggers = GestureTrigger.getActiveTopTriggers(displaySettings.numEdgeRegions)
             val activeBottomTriggers = GestureTrigger.getActiveBottomTriggers(displaySettings.numEdgeRegions)
 
-            val hasTopButtons = activeTopTriggers.any { resolveGestureBinding(it, gestureBindings).action != GestureAction.UNASSIGNED }
-            val hasBottomButtons = activeBottomTriggers.any { resolveGestureBinding(it, gestureBindings).action != GestureAction.UNASSIGNED }
+            val isPageSongDownloadedArt = musicScanner?.albumArtDownloader?.isDownloadedArtwork(pageSong) == true
+            val hasTopButtons = activeTopTriggers.any {
+                val act = resolveGestureBinding(it, gestureBindings).action
+                act != GestureAction.UNASSIGNED && !(act == GestureAction.DELETE_DOWNLOADED_ART && !isPageSongDownloadedArt)
+            }
+            val hasBottomButtons = activeBottomTriggers.any {
+                val act = resolveGestureBinding(it, gestureBindings).action
+                act != GestureAction.UNASSIGNED && !(act == GestureAction.DELETE_DOWNLOADED_ART && !isPageSongDownloadedArt)
+            }
 
             PlayerPageContent(
                 pageSong = pageSong,
@@ -366,6 +469,8 @@ fun PlayerScreen(
                 hasBottomButtons = hasBottomButtons,
                 gestureBindings = gestureBindings,
                 playbackManager = playbackManager,
+                musicScanner = musicScanner,
+                musicDatabase = musicDatabase,
                 repeatMode = repeatMode,
                 shuffleMode = shuffleMode,
                 isPlaying = isPlaying,
@@ -381,16 +486,28 @@ fun PlayerScreen(
         // 2. Gesture Detector Touch Overlay
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        val currentSongHasArtwork = rememberHasArtwork(currentSong)
-        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && currentSong != null && currentSongHasArtwork && !isMondrian
+        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian
+
+        val screenWidth = configuration.screenWidthDp.toFloat()
+        val screenHeight = configuration.screenHeightDp.toFloat()
+        val artFractionY = if (screenHeight > 0f) (screenWidth / screenHeight).coerceAtMost(0.6f) else 0.5f
+        val artFractionX = if (screenWidth > 0f) (screenHeight / screenWidth).coerceAtMost(0.6f) else 0.5f
 
         val regionBounds = if (isDockedScreen) {
             if (isLandscape) {
-                val isDockedRight = displaySettings.artAlignmentLandscape == com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT
-                if (isDockedRight) Rect(0f, 0f, 0.5f, 1f) else Rect(0.5f, 0f, 1f, 1f)
+                when (displaySettings.artAlignmentLandscape) {
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> Rect(0f, 0f, 1f - artFractionX, 1f)
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> Rect(0f, artFractionY, 1f, 1f)
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> Rect(0f, 0f, 1f, 1f - artFractionY)
+                    else -> Rect(artFractionX, 0f, 1f, 1f)
+                }
             } else {
-                val isDockedBottom = displaySettings.artAlignmentPortrait == com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM
-                if (isDockedBottom) Rect(0f, 0f, 1f, 0.5f) else Rect(0f, 0.5f, 1f, 1f)
+                when (displaySettings.artAlignmentPortrait) {
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> Rect(0f, 0f, 1f, 1f - artFractionY)
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> Rect(artFractionX, 0f, 1f, 1f)
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> Rect(0f, 0f, 1f - artFractionX, 1f)
+                    else -> Rect(0f, artFractionY, 1f, 1f)
+                }
             }
         } else {
             Rect(0f, 0f, 1f, 1f)
@@ -407,22 +524,36 @@ fun PlayerScreen(
                 )
         )
 
-        // 3. Geometric Volume HUD Overlay (Bar / Line / Edge)
-        VolumeHudOverlay(
-            volumeRatio = currentVolumeRatio,
-            displaySettings = displaySettings,
-            themeSettings = themeSettings,
-            modifier = Modifier.align(Alignment.BottomStart)
-        )
+        val hudBoundsModifier = if (isDockedScreen) {
+            val offsetX = (screenWidth * regionBounds.left).dp
+            val offsetY = (screenHeight * regionBounds.top).dp
+            val widthDp = (screenWidth * regionBounds.width).dp
+            val heightDp = (screenHeight * regionBounds.height).dp
+            Modifier
+                .offset(x = offsetX, y = offsetY)
+                .size(width = widthDp, height = heightDp)
+        } else {
+            Modifier.fillMaxSize()
+        }
 
-        // 4. Geometric Progress / Playback Bar Overlay (Edge Bar / Line)
-        ProgressHudOverlay(
-            currentPositionMs = currentPositionMs,
-            durationMs = durationMs,
-            displaySettings = displaySettings,
-            themeSettings = themeSettings,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        Box(modifier = hudBoundsModifier) {
+            // 3. Geometric Volume HUD Overlay (Bar / Line / Edge)
+            VolumeHudOverlay(
+                volumeRatio = currentVolumeRatio,
+                displaySettings = displaySettings,
+                themeSettings = themeSettings,
+                modifier = Modifier.align(Alignment.BottomStart)
+            )
+
+            // 4. Geometric Progress / Playback Bar Overlay (Edge Bar / Line)
+            ProgressHudOverlay(
+                currentPositionMs = currentPositionMs,
+                durationMs = durationMs,
+                displaySettings = displaySettings,
+                themeSettings = themeSettings,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
 
         // 5. Screen Region Icons Overlay (only if not docked)
         if (!isDockedScreen) {
@@ -437,6 +568,8 @@ fun PlayerScreen(
                 ScreenRegionIconsOverlay(
                     gestureBindings = gestureBindings,
                     playbackManager = playbackManager,
+                    musicScanner = musicScanner,
+                    musicDatabase = musicDatabase,
                     repeatMode = repeatMode,
                     shuffleMode = shuffleMode,
                     isPlaying = isPlaying,
@@ -481,16 +614,58 @@ fun PlayerScreen(
                 settingsDataStore = settingsDataStore ?: SettingsDataStore(context),
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
-                musicFolderName = null,
-                lastScanTime = 0L,
-                libraryStats = com.travelingtunes.app.core.database.LibraryStats(),
-                isScanning = false,
-                scanStatusMessage = null,
+                musicFolderName = activeMusicFolderName,
+                lastScanTime = activeLastScanTime,
+                libraryStats = activeLibraryStats,
+                isScanning = activeIsScanning,
+                scanStatusMessage = activeScanStatusMessage,
+                isDownloadingArt = activeIsDownloadingArt,
+                artDownloadStatusMessage = activeArtDownloadStatusMessage,
+                artDownloadDownloadedCount = activeArtDownloadDownloadedCount,
+                artDownloadFailedCount = activeArtDownloadFailedCount,
+                artDownloadTotalCount = activeArtDownloadTotalCount,
+                lastAuditReport = activeLastAuditReport,
                 onPickMusicFolder = onPickMusicFolder,
-                onRescanMusicFolder = {},
+                onRescanMusicFolder = effectiveOnRescanMusicFolder,
+                onDownloadMissingArt = effectiveOnDownloadMissingArt,
+                onCancelDownloadArt = { musicScanner?.cancelDownloadArt() },
                 onNavigateBack = { showMenu = false },
-                onOpenGestureAssignments = onOpenSettings,
-                onOpenQuickStart = onOpenQuickStart
+                onOpenGestureAssignments = {
+                    showGestureAssignments = true
+                    onOpenGestureAssignments()
+                },
+                onOpenQuickStart = onOpenQuickStart,
+                onOpenDownloadedArtBrowser = {
+                    showDownloadedArtBrowser = true
+                    onOpenDownloadedArtBrowser()
+                }
+            )
+        }
+
+        // 10. Downloaded Art Browser Overlay
+        SlidingOverlay(
+            visible = showDownloadedArtBrowser,
+            slideDirection = menuSlideDirection,
+            onDismiss = { showDownloadedArtBrowser = false }
+        ) {
+            DownloadedArtBrowserScreen(
+                musicDatabase = musicDatabase,
+                albumArtDownloader = musicScanner?.albumArtDownloader ?: com.travelingtunes.app.core.media.AlbumArtDownloader(context, musicDatabase),
+                playbackManager = playbackManager,
+                onNavigateBack = { showDownloadedArtBrowser = false }
+            )
+        }
+
+        // 11. Gesture Assignments Overlay
+        SlidingOverlay(
+            visible = showGestureAssignments,
+            slideDirection = menuSlideDirection,
+            onDismiss = { showGestureAssignments = false }
+        ) {
+            GestureAssignmentScreen(
+                settingsDataStore = settingsDataStore ?: SettingsDataStore(context),
+                gestureBindings = gestureBindings,
+                onNavigateBack = { showGestureAssignments = false }
             )
         }
 
@@ -544,33 +719,6 @@ enum class DockAdjacentEdge {
 }
 
 @Composable
-fun rememberHasArtwork(song: Song?): Boolean {
-    if (song == null) return false
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var hasArt by remember(song.id, song.artworkUri) {
-        mutableStateOf(AlbumArtCache.instance.get(song.id) != null)
-    }
-    LaunchedEffect(song.id, song.artworkUri, song.contentUri) {
-        val cached = AlbumArtCache.instance.get(song.id)
-        if (cached != null) {
-            hasArt = true
-        } else {
-            withContext(Dispatchers.IO) {
-                val loadedBitmap = loadSongArtwork(context, song)
-                if (loadedBitmap != null) {
-                    val imgBmp = loadedBitmap.asImageBitmap()
-                    AlbumArtCache.instance.put(song.id, imgBmp)
-                    hasArt = true
-                } else {
-                    hasArt = false
-                }
-            }
-        }
-    }
-    return hasArt
-}
-
-@Composable
 private fun TitleAndButtonsContainer(
     pageSong: Song?,
     displaySettings: DisplaySettings,
@@ -582,6 +730,8 @@ private fun TitleAndButtonsContainer(
     hasBottomButtons: Boolean,
     gestureBindings: Map<GestureTrigger, GestureBinding>,
     playbackManager: PlaybackManager,
+    musicScanner: MusicScanner? = null,
+    musicDatabase: MusicDatabase? = null,
     repeatMode: RepeatMode,
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
@@ -613,6 +763,8 @@ private fun TitleAndButtonsContainer(
             ScreenRegionIconsOverlay(
                 gestureBindings = gestureBindings,
                 playbackManager = playbackManager,
+                musicScanner = musicScanner,
+                musicDatabase = musicDatabase,
                 repeatMode = repeatMode,
                 shuffleMode = shuffleMode,
                 isPlaying = isPlaying,
@@ -641,6 +793,8 @@ fun PlayerPageContent(
     hasBottomButtons: Boolean,
     gestureBindings: Map<GestureTrigger, GestureBinding>,
     playbackManager: PlaybackManager,
+    musicScanner: MusicScanner? = null,
+    musicDatabase: MusicDatabase? = null,
     repeatMode: RepeatMode,
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
@@ -666,142 +820,82 @@ fun PlayerPageContent(
             )
         }
 
-    val pageSongHasArtwork = rememberHasArtwork(pageSong)
-    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && pageSong != null && pageSongHasArtwork && !isMondrian
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian
 
     if (isDocked) {
-        if (isLandscape) {
-            val isDockedRight = displaySettings.artAlignmentLandscape == com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT
+        val (dockEdge, isRow) = if (isLandscape) {
+            when (displaySettings.artAlignmentLandscape) {
+                com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> Pair(DockAdjacentEdge.RIGHT, true)
+                com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> Pair(DockAdjacentEdge.TOP, false)
+                com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> Pair(DockAdjacentEdge.BOTTOM, false)
+                else -> Pair(DockAdjacentEdge.LEFT, true)
+            }
+        } else {
+            when (displaySettings.artAlignmentPortrait) {
+                com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> Pair(DockAdjacentEdge.BOTTOM, false)
+                com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> Pair(DockAdjacentEdge.LEFT, true)
+                com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> Pair(DockAdjacentEdge.RIGHT, true)
+                else -> Pair(DockAdjacentEdge.TOP, false)
+            }
+        }
+
+        val titlesContainer: @Composable (Modifier) -> Unit = { mod ->
+            TitleAndButtonsContainer(
+                pageSong = pageSong,
+                displaySettings = displaySettings,
+                themeSettings = themeSettings,
+                currentPositionMs = currentPositionMs,
+                durationMs = durationMs,
+                volumeRatio = volumeRatio,
+                hasTopButtons = hasTopButtons,
+                hasBottomButtons = hasBottomButtons,
+                gestureBindings = gestureBindings,
+                playbackManager = playbackManager,
+                musicScanner = musicScanner,
+                musicDatabase = musicDatabase,
+                repeatMode = repeatMode,
+                shuffleMode = shuffleMode,
+                isPlaying = isPlaying,
+                onOpenSongPicker = onOpenSongPicker,
+                onOpenQueue = onOpenQueue,
+                onOpenSettings = onOpenSettings,
+                onOpenQuickStart = onOpenQuickStart,
+                onShowRepeatOptions = onShowRepeatOptions,
+                onShowShuffleOptions = onShowShuffleOptions,
+                dockAdjacentEdge = dockEdge,
+                modifier = mod
+            )
+        }
+
+        val albumArtContainer: @Composable (Modifier) -> Unit = { mod ->
+            Box(modifier = mod) {
+                PlayerAlbumArtBackground(
+                    song = pageSong,
+                    displaySettings = displaySettings,
+                    themeSettings = themeSettings,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+
+        if (isRow) {
             Row(modifier = Modifier.fillMaxSize()) {
-                if (isDockedRight) {
-                    TitleAndButtonsContainer(
-                        pageSong = pageSong,
-                        displaySettings = displaySettings,
-                        themeSettings = themeSettings,
-                        currentPositionMs = currentPositionMs,
-                        durationMs = durationMs,
-                        volumeRatio = volumeRatio,
-                        hasTopButtons = hasTopButtons,
-                        hasBottomButtons = hasBottomButtons,
-                        gestureBindings = gestureBindings,
-                        playbackManager = playbackManager,
-                        repeatMode = repeatMode,
-                        shuffleMode = shuffleMode,
-                        isPlaying = isPlaying,
-                        onOpenSongPicker = onOpenSongPicker,
-                        onOpenQueue = onOpenQueue,
-                        onOpenSettings = onOpenSettings,
-                        onOpenQuickStart = onOpenQuickStart,
-                        onShowRepeatOptions = onShowRepeatOptions,
-                        onShowShuffleOptions = onShowShuffleOptions,
-                        dockAdjacentEdge = DockAdjacentEdge.RIGHT,
-                        modifier = Modifier.weight(1f).fillMaxHeight()
-                    )
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        PlayerAlbumArtBackground(
-                            song = pageSong,
-                            displaySettings = displaySettings,
-                            themeSettings = themeSettings
-                        )
-                    }
+                if (dockEdge == DockAdjacentEdge.LEFT) {
+                    albumArtContainer(Modifier.fillMaxHeight().aspectRatio(1f))
+                    titlesContainer(Modifier.weight(1f).fillMaxHeight())
                 } else {
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        PlayerAlbumArtBackground(
-                            song = pageSong,
-                            displaySettings = displaySettings,
-                            themeSettings = themeSettings
-                        )
-                    }
-                    TitleAndButtonsContainer(
-                        pageSong = pageSong,
-                        displaySettings = displaySettings,
-                        themeSettings = themeSettings,
-                        currentPositionMs = currentPositionMs,
-                        durationMs = durationMs,
-                        volumeRatio = volumeRatio,
-                        hasTopButtons = hasTopButtons,
-                        hasBottomButtons = hasBottomButtons,
-                        gestureBindings = gestureBindings,
-                        playbackManager = playbackManager,
-                        repeatMode = repeatMode,
-                        shuffleMode = shuffleMode,
-                        isPlaying = isPlaying,
-                        onOpenSongPicker = onOpenSongPicker,
-                        onOpenQueue = onOpenQueue,
-                        onOpenSettings = onOpenSettings,
-                        onOpenQuickStart = onOpenQuickStart,
-                        onShowRepeatOptions = onShowRepeatOptions,
-                        onShowShuffleOptions = onShowShuffleOptions,
-                        dockAdjacentEdge = DockAdjacentEdge.LEFT,
-                        modifier = Modifier.weight(1f).fillMaxHeight()
-                    )
+                    titlesContainer(Modifier.weight(1f).fillMaxHeight())
+                    albumArtContainer(Modifier.fillMaxHeight().aspectRatio(1f))
                 }
             }
         } else {
-            val isDockedBottom = displaySettings.artAlignmentPortrait == com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM
             Column(modifier = Modifier.fillMaxSize()) {
-                if (isDockedBottom) {
-                    TitleAndButtonsContainer(
-                        pageSong = pageSong,
-                        displaySettings = displaySettings,
-                        themeSettings = themeSettings,
-                        currentPositionMs = currentPositionMs,
-                        durationMs = durationMs,
-                        volumeRatio = volumeRatio,
-                        hasTopButtons = hasTopButtons,
-                        hasBottomButtons = hasBottomButtons,
-                        gestureBindings = gestureBindings,
-                        playbackManager = playbackManager,
-                        repeatMode = repeatMode,
-                        shuffleMode = shuffleMode,
-                        isPlaying = isPlaying,
-                        onOpenSongPicker = onOpenSongPicker,
-                        onOpenQueue = onOpenQueue,
-                        onOpenSettings = onOpenSettings,
-                        onOpenQuickStart = onOpenQuickStart,
-                        onShowRepeatOptions = onShowRepeatOptions,
-                        onShowShuffleOptions = onShowShuffleOptions,
-                        dockAdjacentEdge = DockAdjacentEdge.BOTTOM,
-                        modifier = Modifier.weight(1f).fillMaxWidth()
-                    )
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        PlayerAlbumArtBackground(
-                            song = pageSong,
-                            displaySettings = displaySettings,
-                            themeSettings = themeSettings
-                        )
-                    }
+                if (dockEdge == DockAdjacentEdge.TOP) {
+                    albumArtContainer(Modifier.fillMaxWidth().aspectRatio(1f))
+                    titlesContainer(Modifier.weight(1f).fillMaxWidth())
                 } else {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        PlayerAlbumArtBackground(
-                            song = pageSong,
-                            displaySettings = displaySettings,
-                            themeSettings = themeSettings
-                        )
-                    }
-                    TitleAndButtonsContainer(
-                        pageSong = pageSong,
-                        displaySettings = displaySettings,
-                        themeSettings = themeSettings,
-                        currentPositionMs = currentPositionMs,
-                        durationMs = durationMs,
-                        volumeRatio = volumeRatio,
-                        hasTopButtons = hasTopButtons,
-                        hasBottomButtons = hasBottomButtons,
-                        gestureBindings = gestureBindings,
-                        playbackManager = playbackManager,
-                        repeatMode = repeatMode,
-                        shuffleMode = shuffleMode,
-                        isPlaying = isPlaying,
-                        onOpenSongPicker = onOpenSongPicker,
-                        onOpenQueue = onOpenQueue,
-                        onOpenSettings = onOpenSettings,
-                        onOpenQuickStart = onOpenQuickStart,
-                        onShowRepeatOptions = onShowRepeatOptions,
-                        onShowShuffleOptions = onShowShuffleOptions,
-                        dockAdjacentEdge = DockAdjacentEdge.TOP,
-                        modifier = Modifier.weight(1f).fillMaxWidth()
-                    )
+                    titlesContainer(Modifier.weight(1f).fillMaxWidth())
+                    albumArtContainer(Modifier.fillMaxWidth().aspectRatio(1f))
                 }
             }
         }
@@ -824,6 +918,8 @@ fun PlayerPageContent(
                 hasBottomButtons = hasBottomButtons,
                 gestureBindings = gestureBindings,
                 playbackManager = playbackManager,
+                musicScanner = musicScanner,
+                musicDatabase = musicDatabase,
                 repeatMode = repeatMode,
                 shuffleMode = shuffleMode,
                 isPlaying = isPlaying,
@@ -1006,111 +1102,136 @@ fun PlayerAlbumArtBackground(
     modifier: Modifier = Modifier
 ) {
     val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
-    if (!displaySettings.showAlbumArt || song == null || isMondrian) return
+    if (!displaySettings.showAlbumArt || isMondrian) return
 
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
-    var bitmap by remember(song.id, song.artworkUri) {
-        mutableStateOf(AlbumArtCache.instance.get(song.id))
+    var bitmap by remember(song?.id, song?.artworkUri) {
+        mutableStateOf(song?.id?.let { AlbumArtCache.instance.get(it) })
     }
 
-    LaunchedEffect(song.id, song.artworkUri, song.contentUri) {
-        val cached = AlbumArtCache.instance.get(song.id)
-        if (cached != null) {
-            bitmap = cached
-        } else {
-            withContext(Dispatchers.IO) {
-                val loadedBitmap = loadSongArtwork(context, song)
+    LaunchedEffect(song?.id, song?.artworkUri, song?.contentUri) {
+        if (song != null) {
+            val cached = AlbumArtCache.instance.get(song.id)
+            if (cached != null) {
+                bitmap = cached
+            } else {
+                val loadedBitmap = withContext(Dispatchers.IO) {
+                    loadSongArtwork(context, song)
+                }
                 if (loadedBitmap != null) {
                     val imgBmp = loadedBitmap.asImageBitmap()
                     AlbumArtCache.instance.put(song.id, imgBmp)
                     bitmap = imgBmp
+                } else {
+                    bitmap = null
                 }
             }
+        } else {
+            bitmap = null
         }
     }
 
-    val imgBitmap = bitmap ?: return
-
-    val contentScale = when (displaySettings.albumArtScale) {
-        ArtScaleOption.FILL_SCREEN -> ContentScale.Crop
-        ArtScaleOption.ASPECT_FIT -> ContentScale.Fit
-    }
-
-    val imageAlignment = if (isLandscape) {
-        when (displaySettings.albumArtScale) {
-            com.travelingtunes.app.core.model.ArtScaleOption.FILL_SCREEN -> {
-                when (displaySettings.artAlignmentLandscape) {
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> Alignment.TopCenter
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.MIDDLE -> Alignment.Center
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> Alignment.BottomCenter
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.LEFT -> Alignment.CenterStart
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.CENTER -> Alignment.Center
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> Alignment.CenterEnd
-                }
-            }
-            com.travelingtunes.app.core.model.ArtScaleOption.ASPECT_FIT -> {
-                when (displaySettings.artAlignmentLandscape) {
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.LEFT -> Alignment.CenterStart
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.CENTER -> Alignment.Center
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> Alignment.CenterEnd
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> Alignment.TopCenter
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.MIDDLE -> Alignment.Center
-                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> Alignment.BottomCenter
-                }
-            }
-        }
-    } else {
-        when (displaySettings.albumArtScale) {
-            com.travelingtunes.app.core.model.ArtScaleOption.FILL_SCREEN -> {
-                when (displaySettings.artAlignmentPortrait) {
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> Alignment.CenterStart
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.CENTER -> Alignment.Center
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> Alignment.CenterEnd
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.TOP -> Alignment.TopCenter
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.MIDDLE -> Alignment.Center
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> Alignment.BottomCenter
-                }
-            }
-            com.travelingtunes.app.core.model.ArtScaleOption.ASPECT_FIT -> {
-                when (displaySettings.artAlignmentPortrait) {
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.TOP -> Alignment.TopCenter
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.MIDDLE -> Alignment.Center
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> Alignment.BottomCenter
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> Alignment.CenterStart
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.CENTER -> Alignment.Center
-                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> Alignment.CenterEnd
-                }
-            }
-        }
-    }
-
+    val cachedBitmap = song?.id?.let { AlbumArtCache.instance.get(it) }
+    val imgBitmap = bitmap ?: cachedBitmap
     val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
-    val artAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
-    val letterboxBgColor = MaterialTheme.colorScheme.background
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .then(
-                if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
-                    val bgAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
-                    Modifier.background(letterboxBgColor.copy(alpha = bgAlpha))
-                } else Modifier
-            )
-    ) {
-        Image(
-            bitmap = imgBitmap,
-            contentDescription = "Album Art Background",
-            contentScale = contentScale,
-            alignment = imageAlignment,
-            colorFilter = null,
-            modifier = Modifier
+    if (imgBitmap != null) {
+        val contentScale = when (displaySettings.albumArtScale) {
+            ArtScaleOption.FILL_SCREEN -> ContentScale.Crop
+            ArtScaleOption.ASPECT_FIT -> ContentScale.Fit
+        }
+
+        val imageAlignment = if (isDocked) {
+            Alignment.Center
+        } else if (isLandscape) {
+            when (displaySettings.albumArtScale) {
+                com.travelingtunes.app.core.model.ArtScaleOption.FILL_SCREEN -> {
+                    when (displaySettings.artAlignmentLandscape) {
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> Alignment.TopCenter
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.MIDDLE -> Alignment.Center
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> Alignment.BottomCenter
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.LEFT -> Alignment.CenterStart
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.CENTER -> Alignment.Center
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> Alignment.CenterEnd
+                    }
+                }
+                com.travelingtunes.app.core.model.ArtScaleOption.ASPECT_FIT -> {
+                    when (displaySettings.artAlignmentLandscape) {
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.LEFT -> Alignment.CenterStart
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.CENTER -> Alignment.Center
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> Alignment.CenterEnd
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> Alignment.TopCenter
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.MIDDLE -> Alignment.Center
+                        com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> Alignment.BottomCenter
+                    }
+                }
+            }
+        } else {
+            when (displaySettings.albumArtScale) {
+                com.travelingtunes.app.core.model.ArtScaleOption.FILL_SCREEN -> {
+                    when (displaySettings.artAlignmentPortrait) {
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> Alignment.CenterStart
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.CENTER -> Alignment.Center
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> Alignment.CenterEnd
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.TOP -> Alignment.TopCenter
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.MIDDLE -> Alignment.Center
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> Alignment.BottomCenter
+                    }
+                }
+                com.travelingtunes.app.core.model.ArtScaleOption.ASPECT_FIT -> {
+                    when (displaySettings.artAlignmentPortrait) {
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.TOP -> Alignment.TopCenter
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.MIDDLE -> Alignment.Center
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> Alignment.BottomCenter
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> Alignment.CenterStart
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.CENTER -> Alignment.Center
+                        com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> Alignment.CenterEnd
+                    }
+                }
+            }
+        }
+
+        val artAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
+        val letterboxBgColor = MaterialTheme.colorScheme.background
+
+        Box(
+            modifier = modifier
                 .fillMaxSize()
-                .alpha(artAlpha)
-        )
+                .then(
+                    if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
+                        val bgAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
+                        Modifier.background(letterboxBgColor.copy(alpha = bgAlpha))
+                    } else Modifier
+                )
+        ) {
+            Image(
+                bitmap = imgBitmap,
+                contentDescription = "Album Art Background",
+                contentScale = contentScale,
+                alignment = imageAlignment,
+                colorFilter = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(artAlpha)
+            )
+        }
+    } else if (isDocked) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = "No Album Art",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(64.dp)
+            )
+        }
     }
 }
 
@@ -1302,6 +1423,9 @@ private fun handleGestureAction(
     action: GestureAction,
     trigger: GestureTrigger? = null,
     playbackManager: PlaybackManager,
+    musicScanner: MusicScanner? = null,
+    musicDatabase: MusicDatabase? = null,
+    coroutineScope: kotlinx.coroutines.CoroutineScope? = null,
     onOpenSongPicker: (SlideDirection) -> Unit,
     onOpenQueue: (SlideDirection) -> Unit = {},
     onOpenSettings: (SlideDirection) -> Unit,
@@ -1331,6 +1455,16 @@ private fun handleGestureAction(
         GestureAction.SHOW_QUEUE -> onOpenQueue(direction)
         GestureAction.MENU -> onOpenSettings(direction)
         GestureAction.SHOW_QUICK_START -> onOpenQuickStart()
+        GestureAction.DELETE_DOWNLOADED_ART -> {
+            val song = playbackManager.currentSong.value
+            if (song != null && musicScanner != null && musicDatabase != null && coroutineScope != null) {
+                coroutineScope.launch(Dispatchers.IO) {
+                    val songsInAlbum = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                    musicScanner.albumArtDownloader.deleteDownloadedArtworkForAlbum(song.album, song.artist, songsInAlbum)
+                    playbackManager.refreshCurrentSongArtwork()
+                }
+            }
+        }
         GestureAction.UNASSIGNED -> {}
     }
 }
@@ -1344,23 +1478,34 @@ private fun TextAlignmentOption.toComposeAlignment(): TextAlign {
 }
 
 suspend fun loadSongArtwork(context: android.content.Context, song: Song): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
-    // 1. Try file scheme if song.artworkUri is a file:// URI
-    if (song.artworkUri != null && song.artworkUri.scheme == "file") {
+    // 1. Try explicit song.artworkUri if present (downloaded or scanned artwork)
+    if (song.artworkUri != null) {
+        if (song.artworkUri.scheme == "file") {
+            try {
+                val bmp = BitmapFactory.decodeFile(song.artworkUri.path)
+                if (bmp != null) return@withContext bmp
+            } catch (ignored: Exception) {}
+        }
         try {
-            val bmp = BitmapFactory.decodeFile(song.artworkUri.path)
-            if (bmp != null) return@withContext bmp
+            context.contentResolver.openInputStream(song.artworkUri)?.use { stream ->
+                val bmp = BitmapFactory.decodeStream(stream)
+                if (bmp != null) return@withContext bmp
+            }
         } catch (ignored: Exception) {}
     }
 
-    // 2. Try ContentResolver.loadThumbnail (Android 10+ / API 29+)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    // 2. Try MediaStore album art URI from song.albumId
+    if (song.albumId > 0) {
         try {
-            val bmp = context.contentResolver.loadThumbnail(song.contentUri, Size(1024, 1024), null)
-            if (bmp != null) return@withContext bmp
+            val albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+            context.contentResolver.openInputStream(albumArtUri)?.use { stream ->
+                val bmp = BitmapFactory.decodeStream(stream)
+                if (bmp != null) return@withContext bmp
+            }
         } catch (ignored: Exception) {}
     }
 
-    // 3. Try MediaMetadataRetriever on song.contentUri
+    // 3. Try MediaMetadataRetriever on song.contentUri (embedded ID3 artwork)
     val mmr = MediaMetadataRetriever()
     try {
         context.contentResolver.openFileDescriptor(song.contentUri, "r")?.use { pfd ->
@@ -1377,13 +1522,11 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
         try { mmr.release() } catch (ignored: Exception) {}
     }
 
-    // 4. Try ContentResolver openInputStream on artworkUri
-    if (song.artworkUri != null) {
+    // 4. Try ContentResolver.loadThumbnail (Android 10+ / API 29+)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
-            context.contentResolver.openInputStream(song.artworkUri)?.use { stream ->
-                val bmp = BitmapFactory.decodeStream(stream)
-                if (bmp != null) return@withContext bmp
-            }
+            val bmp = context.contentResolver.loadThumbnail(song.contentUri, Size(1024, 1024), null)
+            if (bmp != null) return@withContext bmp
         } catch (ignored: Exception) {}
     }
 
@@ -1395,6 +1538,8 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
 fun ScreenRegionIconsOverlay(
     gestureBindings: Map<GestureTrigger, GestureBinding>,
     playbackManager: PlaybackManager,
+    musicScanner: MusicScanner? = null,
+    musicDatabase: MusicDatabase? = null,
     repeatMode: RepeatMode,
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
@@ -1408,6 +1553,12 @@ fun ScreenRegionIconsOverlay(
     dockAdjacentEdge: DockAdjacentEdge? = null,
     modifier: Modifier = Modifier
 ) {
+    val currentSong by playbackManager.currentSong.collectAsState()
+    val isDownloadedArt = remember(currentSong?.id, currentSong?.artworkUri) {
+        musicScanner?.albumArtDownloader?.isDownloadedArtwork(currentSong) == true
+    }
+    val coroutineScope = rememberCoroutineScope()
+
     val activeSlotIndices = GestureTrigger.getActiveRegionSlots(numEdgeRegions)
     val n = activeSlotIndices.size
 
@@ -1423,6 +1574,10 @@ fun ScreenRegionIconsOverlay(
             val trigger = GestureTrigger.TOP_REGION_SLOTS[slotIdx]
             val binding = resolveGestureBinding(trigger, gestureBindings)
             val action = binding.action
+
+            if (action == GestureAction.DELETE_DOWNLOADED_ART && !isDownloadedArt) {
+                continue
+            }
 
             val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
             val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = -1.0f)
@@ -1451,6 +1606,9 @@ fun ScreenRegionIconsOverlay(
                                         action = action,
                                         trigger = trigger,
                                         playbackManager = playbackManager,
+                                        musicScanner = musicScanner,
+                                        musicDatabase = musicDatabase,
+                                        coroutineScope = coroutineScope,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
@@ -1470,6 +1628,9 @@ fun ScreenRegionIconsOverlay(
                                         action = action,
                                         trigger = trigger,
                                         playbackManager = playbackManager,
+                                        musicScanner = musicScanner,
+                                        musicDatabase = musicDatabase,
+                                        coroutineScope = coroutineScope,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
@@ -1508,6 +1669,10 @@ fun ScreenRegionIconsOverlay(
             val binding = resolveGestureBinding(trigger, gestureBindings)
             val action = binding.action
 
+            if (action == GestureAction.DELETE_DOWNLOADED_ART && !isDownloadedArt) {
+                continue
+            }
+
             val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
             val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = 1.0f)
 
@@ -1535,6 +1700,9 @@ fun ScreenRegionIconsOverlay(
                                         action = action,
                                         trigger = trigger,
                                         playbackManager = playbackManager,
+                                        musicScanner = musicScanner,
+                                        musicDatabase = musicDatabase,
+                                        coroutineScope = coroutineScope,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
@@ -1554,6 +1722,9 @@ fun ScreenRegionIconsOverlay(
                                         action = action,
                                         trigger = trigger,
                                         playbackManager = playbackManager,
+                                        musicScanner = musicScanner,
+                                        musicDatabase = musicDatabase,
+                                        coroutineScope = coroutineScope,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,

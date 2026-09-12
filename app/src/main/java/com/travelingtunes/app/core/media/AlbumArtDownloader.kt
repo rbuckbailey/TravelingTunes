@@ -174,7 +174,7 @@ class AlbumArtDownloader(
         _totalToDownload.value = missingGroups.size
         _statusMessage.value = "Found ${missingGroups.size} albums with missing artwork"
 
-        val artworkCacheDir = File(context.cacheDir, "album_art").apply { mkdirs() }
+        val artworkCacheDir = File(context.filesDir, "downloaded_art").apply { mkdirs() }
         var successCount = 0
         val auditItems = mutableListOf<AlbumArtAuditItem>()
 
@@ -693,8 +693,9 @@ class AlbumArtDownloader(
 
     private fun downloadImageToFile(imgUrl: String, artist: String, album: String, artworkCacheDir: File): File? {
         return try {
+            val downloadedDir = File(context.filesDir, "downloaded_art").apply { mkdirs() }
             val hashKey = hashString("$artist-$album")
-            val artFile = File(artworkCacheDir, "art_$hashKey.jpg")
+            val artFile = File(downloadedDir, "art_downloaded_$hashKey.jpg")
 
             val conn = (URL(imgUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
@@ -719,6 +720,178 @@ class AlbumArtDownloader(
             e.printStackTrace()
             null
         }
+    }
+
+    suspend fun searchCandidatesWithQuery(query: String): List<ArtworkCandidate> = withContext(Dispatchers.IO) {
+        if (query.isBlank()) return@withContext emptyList()
+        val sanitized = sanitizeMetadata(query)
+        val candidates = fetchCandidatesInParallel(
+            cleanArtist = "",
+            cleanAlbum = sanitized,
+            useQuotes = false,
+            searchMode = SearchMode.ALBUM_ONLY
+        )
+        candidates.sortedWith(
+            compareByDescending<ArtworkCandidate> { it.squareness }
+                .thenByDescending { it.resolution }
+        )
+    }
+
+    suspend fun applyCandidateToAlbum(
+        candidate: ArtworkCandidate,
+        artist: String,
+        album: String,
+        songs: List<Song>
+    ): Uri? = withContext(Dispatchers.IO) {
+        val downloadedDir = File(context.filesDir, "downloaded_art").apply { mkdirs() }
+        val downloadedFile = downloadImageToFile(candidate.url, artist, album, downloadedDir) ?: return@withContext null
+        val artworkUri = Uri.fromFile(downloadedFile)
+
+        musicDatabase.updateAlbumArtwork(album, artist, artworkUri)
+        val bitmap = loadSongArtworkFromUri(context, artworkUri)
+        if (bitmap != null) {
+            val imageBitmap = bitmap.asImageBitmap()
+            for (song in songs) {
+                AlbumArtCache.instance.put(song.id, imageBitmap)
+            }
+        }
+        artworkUri
+    }
+
+    suspend fun saveCustomArtworkForAlbum(
+        album: String,
+        artist: String,
+        imageBytes: ByteArray,
+        songs: List<Song>
+    ): Uri? = withContext(Dispatchers.IO) {
+        if (imageBytes.isEmpty()) return@withContext null
+        val downloadedDir = File(context.filesDir, "downloaded_art").apply { mkdirs() }
+        val hashKey = hashString("$artist-$album")
+        val artFile = File(downloadedDir, "art_downloaded_$hashKey.jpg")
+
+        try {
+            FileOutputStream(artFile).use { fos ->
+                fos.write(imageBytes)
+            }
+            if (!artFile.exists() || artFile.length() == 0L) return@withContext null
+
+            val artworkUri = Uri.fromFile(artFile)
+            musicDatabase.updateAlbumArtwork(album, artist, artworkUri)
+
+            val bitmap = loadSongArtworkFromUri(context, artworkUri)
+            if (bitmap != null) {
+                val imageBitmap = bitmap.asImageBitmap()
+                for (song in songs) {
+                    AlbumArtCache.instance.put(song.id, imageBitmap)
+                }
+            }
+            artworkUri
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun deleteDownloadedArtworkForAlbum(
+        album: String,
+        artist: String,
+        songs: List<Song>
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            // Find current downloaded art file and delete if present
+            val downloadedDir = File(context.filesDir, "downloaded_art")
+            val hashKey = hashString("$artist-$album")
+            val artFile = File(downloadedDir, "art_downloaded_$hashKey.jpg")
+            if (artFile.exists()) {
+                artFile.delete()
+            }
+
+            // Clear DB artwork URI for album
+            musicDatabase.clearAlbumArtwork(album, artist)
+
+            // Check if songs in album have embedded ID3 picture
+            var embeddedUri: Uri? = null
+            val embeddedDir = File(context.cacheDir, "embedded_art").apply { mkdirs() }
+            val embeddedFile = File(embeddedDir, "art_embedded_$hashKey.jpg")
+
+            for (song in songs) {
+                val mmr = android.media.MediaMetadataRetriever()
+                try {
+                    context.contentResolver.openFileDescriptor(song.contentUri, "r")?.use { pfd ->
+                        mmr.setDataSource(pfd.fileDescriptor)
+                    } ?: mmr.setDataSource(context, song.contentUri)
+
+                    val bytes = mmr.embeddedPicture
+                    if (bytes != null) {
+                        if (!embeddedFile.exists()) {
+                            FileOutputStream(embeddedFile).use { fos -> fos.write(bytes) }
+                        }
+                        if (embeddedFile.exists() && embeddedFile.length() > 0) {
+                            embeddedUri = Uri.fromFile(embeddedFile)
+                            break
+                        }
+                    }
+                } catch (_: Exception) {
+                } finally {
+                    try { mmr.release() } catch (_: Exception) {}
+                }
+            }
+
+            if (embeddedUri != null) {
+                musicDatabase.updateAlbumArtwork(album, artist, embeddedUri)
+            }
+
+            // Evict songs from AlbumArtCache
+            for (song in songs) {
+                if (embeddedUri != null) {
+                    val bitmap = loadSongArtworkFromUri(context, embeddedUri)
+                    if (bitmap != null) {
+                        AlbumArtCache.instance.put(song.id, bitmap.asImageBitmap())
+                    }
+                } else {
+                    // Force refresh or remove from cache
+                    val dummy = loadSongArtworkFromUri(context, Uri.EMPTY)
+                }
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun isDownloadedArtwork(song: Song?): Boolean {
+        if (song == null) return false
+        val uri = song.artworkUri ?: return false
+        val uriStr = uri.toString()
+        if (uriStr.isBlank()) return false
+
+        if (uriStr.contains("downloaded_art") || uriStr.contains("art_downloaded") || uriStr.contains("art_custom")) {
+            return true
+        }
+        if (uriStr.contains("art_embedded")) {
+            return false
+        }
+
+        // Fallback for file URI: if file exists and song has NO embedded picture, it was downloaded online
+        if (uri.scheme == "file") {
+            val file = File(uri.path ?: "")
+            if (file.exists() && file.length() > 0) {
+                val mmr = android.media.MediaMetadataRetriever()
+                return try {
+                    context.contentResolver.openFileDescriptor(song.contentUri, "r")?.use { pfd ->
+                        mmr.setDataSource(pfd.fileDescriptor)
+                    } ?: mmr.setDataSource(context, song.contentUri)
+                    val bytes = mmr.embeddedPicture
+                    bytes == null
+                } catch (_: Exception) {
+                    true
+                } finally {
+                    try { mmr.release() } catch (_: Exception) {}
+                }
+            }
+        }
+        return false
     }
 
     private fun loadSongArtworkFromUri(context: Context, uri: Uri): Bitmap? {

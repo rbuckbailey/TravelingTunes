@@ -8,9 +8,16 @@ import com.travelingtunes.app.core.model.ColorTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+enum class InnerEdge {
+    LEFT, RIGHT, TOP, BOTTOM
+}
+
 object AlbumArtColorExtractor {
 
-    suspend fun extractThemeFromBitmap(bitmap: Bitmap): ColorTheme = withContext(Dispatchers.Default) {
+    suspend fun extractThemeFromBitmap(
+        bitmap: Bitmap,
+        innerEdge: InnerEdge? = null
+    ): ColorTheme = withContext(Dispatchers.Default) {
         val safeBmp = if (bitmap.config == Bitmap.Config.HARDWARE) {
             bitmap.copy(Bitmap.Config.ARGB_8888, false)
         } else {
@@ -21,11 +28,11 @@ object AlbumArtColorExtractor {
 
         val allSwatches = palette.swatches.sortedByDescending { it.population }
         if (allSwatches.isEmpty()) {
-            return@withContext ColorTheme.WHITE_ON_GREY
+            return@withContext ColorTheme.MATCH_ALBUM_ART
         }
 
         // Favor edge colors for letterboxing / background extraction
-        val edgeSwatches = extractEdgeSwatches(targetBmp)
+        val edgeSwatches = extractEdgeSwatches(targetBmp, innerEdge)
 
         // Combine edge swatches first to favor edge colors, followed by full image swatches
         val bgCandidates = (edgeSwatches + allSwatches).distinctBy { it.rgb }
@@ -106,7 +113,7 @@ object AlbumArtColorExtractor {
         )
     }
 
-    private fun extractEdgeSwatches(bitmap: Bitmap): List<Palette.Swatch> {
+    private fun extractEdgeSwatches(bitmap: Bitmap, innerEdge: InnerEdge? = null): List<Palette.Swatch> {
         return try {
             val width = bitmap.width
             val height = bitmap.height
@@ -120,36 +127,76 @@ object AlbumArtColorExtractor {
 
             val sw = scaledBmp.width
             val sh = scaledBmp.height
-            val border = (sw * 0.05f).toInt().coerceAtLeast(1)
+            val border = (sw * 0.12f).toInt().coerceAtLeast(2)
 
-            val edgePixels = IntArray(sw * border * 2 + (sh - border * 2) * border * 2)
+            val edgePixels: IntArray
             var index = 0
 
-            // Top border
-            for (y in 0 until border) {
-                for (x in 0 until sw) {
-                    edgePixels[index++] = scaledBmp.getPixel(x, y)
+            if (innerEdge != null) {
+                when (innerEdge) {
+                    InnerEdge.RIGHT -> {
+                        edgePixels = IntArray(sh * border)
+                        for (y in 0 until sh) {
+                            for (x in (sw - border) until sw) {
+                                edgePixels[index++] = scaledBmp.getPixel(x, y)
+                            }
+                        }
+                    }
+                    InnerEdge.LEFT -> {
+                        edgePixels = IntArray(sh * border)
+                        for (y in 0 until sh) {
+                            for (x in 0 until border) {
+                                edgePixels[index++] = scaledBmp.getPixel(x, y)
+                            }
+                        }
+                    }
+                    InnerEdge.BOTTOM -> {
+                        edgePixels = IntArray(sw * border)
+                        for (y in (sh - border) until sh) {
+                            for (x in 0 until sw) {
+                                edgePixels[index++] = scaledBmp.getPixel(x, y)
+                            }
+                        }
+                    }
+                    InnerEdge.TOP -> {
+                        edgePixels = IntArray(sw * border)
+                        for (y in 0 until border) {
+                            for (x in 0 until sw) {
+                                edgePixels[index++] = scaledBmp.getPixel(x, y)
+                            }
+                        }
+                    }
                 }
-            }
-            // Bottom border
-            for (y in (sh - border) until sh) {
-                for (x in 0 until sw) {
-                    edgePixels[index++] = scaledBmp.getPixel(x, y)
+            } else {
+                // All 4 borders
+                val totalCap = sw * border * 2 + (sh - border * 2) * border * 2
+                edgePixels = IntArray(totalCap)
+                // Top border
+                for (y in 0 until border) {
+                    for (x in 0 until sw) {
+                        edgePixels[index++] = scaledBmp.getPixel(x, y)
+                    }
                 }
-            }
-            // Left & Right borders (middle)
-            for (y in border until (sh - border)) {
-                for (x in 0 until border) {
-                    edgePixels[index++] = scaledBmp.getPixel(x, y)
+                // Bottom border
+                for (y in (sh - border) until sh) {
+                    for (x in 0 until sw) {
+                        edgePixels[index++] = scaledBmp.getPixel(x, y)
+                    }
                 }
-                for (x in (sw - border) until sw) {
-                    edgePixels[index++] = scaledBmp.getPixel(x, y)
+                // Left & Right borders (middle)
+                for (y in border until (sh - border)) {
+                    for (x in 0 until border) {
+                        edgePixels[index++] = scaledBmp.getPixel(x, y)
+                    }
+                    for (x in (sw - border) until sw) {
+                        edgePixels[index++] = scaledBmp.getPixel(x, y)
+                    }
                 }
             }
 
             if (index <= 0) return emptyList()
 
-            val edgeBmp = Bitmap.createBitmap(edgePixels, index, 1, Bitmap.Config.ARGB_8888)
+            val edgeBmp = Bitmap.createBitmap(edgePixels, 0, index.coerceAtMost(edgePixels.size), index, 1, Bitmap.Config.ARGB_8888)
             val edgePalette = Palette.from(edgeBmp).generate()
             edgePalette.swatches.sortedByDescending { it.population }
         } catch (e: Exception) {
