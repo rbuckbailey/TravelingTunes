@@ -155,15 +155,28 @@ class GestureAndSettingsTest {
     @Test
     fun testSettingsCategoriesNaming() {
         val submenus = com.travelingtunes.app.feature.settings.SettingsSubmenu.entries
-        assertEquals(5, submenus.size)
+        assertEquals(8, submenus.size)
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY, submenus[0])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TYPOGRAPHY_HUD, submenus[1])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, submenus[2])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.THEMES, submenus[3])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[4])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TITLES, submenus[1])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ART, submenus[2])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.HUD, submenus[3])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.THEMES, submenus[4])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, submenus[5])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, submenus[6])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[7])
 
-        val found = submenus.find { it.name == "GESTURES" }
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, found)
+        val standalone = submenus.filter { it.categoryGroup == null }
+        assertEquals(1, standalone.size)
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY, standalone[0])
+
+        val appearanceGroup = submenus.filter { it.categoryGroup == "Appearance" }
+        assertEquals(4, appearanceGroup.size)
+
+        val controlsGroup = submenus.filter { it.categoryGroup == "Controls" }
+        assertEquals(3, controlsGroup.size)
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, controlsGroup[0])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, controlsGroup[1])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, controlsGroup[2])
     }
 
     @Test
@@ -623,5 +636,90 @@ class GestureAndSettingsTest {
                                dockedDisplay.showAlbumArt &&
                                !mondrianTheme.currentThemeName.equals("Mondrian", ignoreCase = true)
         org.junit.Assert.assertFalse("In Mondrian theme, isDockedScreen should be false as artwork is hidden", isDockedMondrian)
+    }
+
+    @Test
+    fun testAutoCategoryDefaultsAndReordering() {
+        val defaultDisplay = com.travelingtunes.app.core.model.DisplaySettings()
+        assertEquals(5, defaultDisplay.autoCategoryOrder.size)
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.SONGS, defaultDisplay.autoCategoryOrder[0])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.ALBUMS, defaultDisplay.autoCategoryOrder[1])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.ARTISTS, defaultDisplay.autoCategoryOrder[2])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.GENRES, defaultDisplay.autoCategoryOrder[3])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.FOLDERS, defaultDisplay.autoCategoryOrder[4])
+
+        assertTrue(defaultDisplay.autoShowAlbumArt)
+        assertTrue(defaultDisplay.autoAlbumStyleGrid)
+        org.junit.Assert.assertFalse(defaultDisplay.autoArtistStyleGrid)
+        org.junit.Assert.assertFalse(defaultDisplay.autoAutoplayOnConnect)
+        assertTrue(defaultDisplay.autoVoiceSearch)
+
+        val reordered = listOf(
+            com.travelingtunes.app.core.model.AutoCategory.ARTISTS,
+            com.travelingtunes.app.core.model.AutoCategory.ALBUMS,
+            com.travelingtunes.app.core.model.AutoCategory.SONGS
+        )
+        val updatedDisplay = defaultDisplay.copy(
+            autoCategoryOrder = reordered,
+            autoShowAlbumArt = false,
+            autoArtistStyleGrid = true
+        )
+
+        assertEquals(3, updatedDisplay.autoCategoryOrder.size)
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.ARTISTS, updatedDisplay.autoCategoryOrder[0])
+        org.junit.Assert.assertFalse(updatedDisplay.autoShowAlbumArt)
+        assertTrue(updatedDisplay.autoArtistStyleGrid)
+    }
+
+    @Test
+    fun testSettingsBackupWithAndroidAutoPreferences() {
+        val display = com.travelingtunes.app.core.model.DisplaySettings(
+            autoCategoryOrder = listOf(
+                com.travelingtunes.app.core.model.AutoCategory.FOLDERS,
+                com.travelingtunes.app.core.model.AutoCategory.SONGS
+            ),
+            autoShowAlbumArt = false,
+            autoVoiceSearch = true
+        )
+        val theme = ThemeSettings()
+        val jsonStr = com.travelingtunes.app.core.datastore.SettingsBackupHelper.exportToJson(
+            display = display,
+            theme = theme,
+            bindings = emptyMap(),
+            gpsVolume = false,
+            gpsSens = 0.5f,
+            autoRescan = true
+        )
+
+        assertTrue(jsonStr.contains("\"autoCategoryOrder\": \"FOLDERS,SONGS\""))
+        assertTrue(jsonStr.contains("\"autoShowAlbumArt\": false"))
+        assertTrue(jsonStr.contains("\"autoVoiceSearch\": true"))
+    }
+
+    @Test
+    fun testAutoActionButtonOrderDefaultsAndBackup() {
+        val defaultDisplay = com.travelingtunes.app.core.model.DisplaySettings()
+        assertTrue(defaultDisplay.autoActionButtonOrder.contains(com.travelingtunes.app.core.model.GestureAction.PLAY_CURRENT_ALBUM))
+        assertTrue(defaultDisplay.autoActionButtonOrder.contains(com.travelingtunes.app.core.model.GestureAction.PLAY_CURRENT_ARTIST))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.PLAY_CURRENT_ALBUM, defaultDisplay.autoActionButtonOrder[0])
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.PLAY_CURRENT_ARTIST, defaultDisplay.autoActionButtonOrder[1])
+
+        val customButtons = listOf(
+            com.travelingtunes.app.core.model.GestureAction.PLAY_CURRENT_ARTIST,
+            com.travelingtunes.app.core.model.GestureAction.PLAY_CURRENT_ALBUM
+        )
+        val updated = defaultDisplay.copy(autoActionButtonOrder = customButtons)
+        assertEquals(2, updated.autoActionButtonOrder.size)
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.PLAY_CURRENT_ARTIST, updated.autoActionButtonOrder[0])
+
+        val jsonStr = com.travelingtunes.app.core.datastore.SettingsBackupHelper.exportToJson(
+            display = updated,
+            theme = ThemeSettings(),
+            bindings = emptyMap(),
+            gpsVolume = false,
+            gpsSens = 0.5f,
+            autoRescan = true
+        )
+        assertTrue(jsonStr.contains("\"autoActionButtonOrder\": \"PLAY_CURRENT_ARTIST,PLAY_CURRENT_ALBUM\""))
     }
 }

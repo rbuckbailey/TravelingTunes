@@ -12,6 +12,14 @@ enum class TitleRowType(val displayName: String) {
     ALBUM("Album")
 }
 
+enum class AutoCategory(val displayName: String) {
+    SONGS("Songs"),
+    ALBUMS("Albums"),
+    ARTISTS("Artists"),
+    GENRES("Genres"),
+    FOLDERS("Folders")
+}
+
 enum class ArtScaleOption(val displayName: String) {
     FILL_SCREEN("Fill Screen"),
     ASPECT_FIT("Fit Screen")
@@ -99,5 +107,21 @@ data class DisplaySettings(
     val keepScreenOn: Boolean = true,
     val immersiveMode: Boolean = true,
     val numEdgeRegions: Int = 3,
-    val titleOrder: List<TitleRowType> = listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM)
+    val titleOrder: List<TitleRowType> = listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM),
+    val autoCategoryOrder: List<AutoCategory> = listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS),
+    val autoShowAlbumArt: Boolean = true,
+    val autoAlbumStyleGrid: Boolean = true,
+    val autoArtistStyleGrid: Boolean = false,
+    val autoAutoplayOnConnect: Boolean = false,
+    val autoVoiceSearch: Boolean = true,
+    val autoActionButtonOrder: List<GestureAction> = listOf(
+        GestureAction.PLAY_CURRENT_ALBUM,
+        GestureAction.PLAY_CURRENT_ARTIST,
+        GestureAction.PLAY_PAUSE,
+        GestureAction.NEXT,
+        GestureAction.PREVIOUS,
+        GestureAction.TOGGLE_SHUFFLE,
+        GestureAction.TOGGLE_REPEAT,
+        GestureAction.SHUFFLE_ALL_SONGS
+    )
 )

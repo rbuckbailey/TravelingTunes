@@ -14,6 +14,7 @@ import com.travelingtunes.app.core.model.ArtAlignmentLandscape
 import com.travelingtunes.app.core.model.ArtAlignmentPortrait
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
+import com.travelingtunes.app.core.model.AutoCategory
 import com.travelingtunes.app.core.model.ColorTheme
 import com.travelingtunes.app.core.model.ConfigOption
 import com.travelingtunes.app.core.model.DisplaySettings
@@ -105,6 +106,15 @@ class SettingsDataStore(private val context: Context) {
         val KEY_IMMERSIVE_MODE = booleanPreferencesKey("immersiveMode")
         val KEY_NUM_EDGE_REGIONS = intPreferencesKey("numEdgeRegions")
         val KEY_TITLE_ORDER = stringPreferencesKey("titleOrder")
+
+        // Android Auto Preferences
+        val KEY_AUTO_CATEGORY_ORDER = stringPreferencesKey("autoCategoryOrder")
+        val KEY_AUTO_SHOW_ALBUM_ART = booleanPreferencesKey("autoShowAlbumArt")
+        val KEY_AUTO_ALBUM_STYLE_GRID = booleanPreferencesKey("autoAlbumStyleGrid")
+        val KEY_AUTO_ARTIST_STYLE_GRID = booleanPreferencesKey("autoArtistStyleGrid")
+        val KEY_AUTO_AUTOPLAY_ON_CONNECT = booleanPreferencesKey("autoAutoplayOnConnect")
+        val KEY_AUTO_VOICE_SEARCH = booleanPreferencesKey("autoVoiceSearch")
+        val KEY_AUTO_ACTION_BUTTON_ORDER = stringPreferencesKey("autoActionButtonOrder")
 
         // Navigation / Menu State Persistence
         val KEY_LAST_SETTINGS_SUBMENU = stringPreferencesKey("lastSettingsSubmenu")
@@ -213,7 +223,36 @@ class SettingsDataStore(private val context: Context) {
                 .mapNotNull { name ->
                     runCatching { TitleRowType.valueOf(name.trim()) }.getOrNull()
                 }
-                .ifEmpty { listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM) }
+                .ifEmpty { listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM) },
+            autoCategoryOrder = (prefs[KEY_AUTO_CATEGORY_ORDER] ?: "SONGS,ALBUMS,ARTISTS,GENRES,FOLDERS")
+                .split(",")
+                .mapNotNull { name ->
+                    runCatching { AutoCategory.valueOf(name.trim()) }.getOrNull()
+                }
+                .ifEmpty { listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS) },
+            autoShowAlbumArt = prefs[KEY_AUTO_SHOW_ALBUM_ART] ?: true,
+            autoAlbumStyleGrid = prefs[KEY_AUTO_ALBUM_STYLE_GRID] ?: true,
+            autoArtistStyleGrid = prefs[KEY_AUTO_ARTIST_STYLE_GRID] ?: false,
+            autoAutoplayOnConnect = prefs[KEY_AUTO_AUTOPLAY_ON_CONNECT] ?: false,
+            autoVoiceSearch = prefs[KEY_AUTO_VOICE_SEARCH] ?: true,
+            autoActionButtonOrder = (prefs[KEY_AUTO_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
+                .split(",")
+                .mapNotNull { name ->
+                    runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim())
+                }
+                .filter { it != GestureAction.UNASSIGNED && it != GestureAction.OTHER_OPTION }
+                .ifEmpty {
+                    listOf(
+                        GestureAction.PLAY_CURRENT_ALBUM,
+                        GestureAction.PLAY_CURRENT_ARTIST,
+                        GestureAction.PLAY_PAUSE,
+                        GestureAction.NEXT,
+                        GestureAction.PREVIOUS,
+                        GestureAction.TOGGLE_SHUFFLE,
+                        GestureAction.TOGGLE_REPEAT,
+                        GestureAction.SHUFFLE_ALL_SONGS
+                    )
+                }
         )
     }
 
@@ -683,6 +722,13 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_IMMERSIVE_MODE] = update.immersiveMode
             prefs[KEY_NUM_EDGE_REGIONS] = update.numEdgeRegions
             prefs[KEY_TITLE_ORDER] = update.titleOrder.joinToString(",") { it.name }
+            prefs[KEY_AUTO_CATEGORY_ORDER] = update.autoCategoryOrder.joinToString(",") { it.name }
+            prefs[KEY_AUTO_SHOW_ALBUM_ART] = update.autoShowAlbumArt
+            prefs[KEY_AUTO_ALBUM_STYLE_GRID] = update.autoAlbumStyleGrid
+            prefs[KEY_AUTO_ARTIST_STYLE_GRID] = update.autoArtistStyleGrid
+            prefs[KEY_AUTO_AUTOPLAY_ON_CONNECT] = update.autoAutoplayOnConnect
+            prefs[KEY_AUTO_VOICE_SEARCH] = update.autoVoiceSearch
+            prefs[KEY_AUTO_ACTION_BUTTON_ORDER] = update.autoActionButtonOrder.joinToString(",") { it.name }
         }
     }
 
@@ -804,7 +850,21 @@ class SettingsDataStore(private val context: Context) {
                     titleOrder = dJson.optString("titleOrder", "")
                         .split(",")
                         .mapNotNull { name -> runCatching { TitleRowType.valueOf(name.trim()) }.getOrNull() }
-                        .ifEmpty { currentDisplay.titleOrder }
+                        .ifEmpty { currentDisplay.titleOrder },
+                    autoCategoryOrder = dJson.optString("autoCategoryOrder", "")
+                        .split(",")
+                        .mapNotNull { name -> runCatching { AutoCategory.valueOf(name.trim()) }.getOrNull() }
+                        .ifEmpty { currentDisplay.autoCategoryOrder },
+                    autoShowAlbumArt = dJson.optBoolean("autoShowAlbumArt", currentDisplay.autoShowAlbumArt),
+                    autoAlbumStyleGrid = dJson.optBoolean("autoAlbumStyleGrid", currentDisplay.autoAlbumStyleGrid),
+                    autoArtistStyleGrid = dJson.optBoolean("autoArtistStyleGrid", currentDisplay.autoArtistStyleGrid),
+                    autoAutoplayOnConnect = dJson.optBoolean("autoAutoplayOnConnect", currentDisplay.autoAutoplayOnConnect),
+                    autoVoiceSearch = dJson.optBoolean("autoVoiceSearch", currentDisplay.autoVoiceSearch),
+                    autoActionButtonOrder = dJson.optString("autoActionButtonOrder", "")
+                        .split(",")
+                        .mapNotNull { name -> runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim()) }
+                        .filter { it != GestureAction.UNASSIGNED && it != GestureAction.OTHER_OPTION }
+                        .ifEmpty { currentDisplay.autoActionButtonOrder }
                 )
                 updateDisplaySettings(newDisplay)
             }

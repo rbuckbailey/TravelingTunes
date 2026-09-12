@@ -29,6 +29,8 @@ import com.travelingtunes.app.MainActivity
 import com.travelingtunes.app.R
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.datastore.SettingsDataStore
+import com.travelingtunes.app.core.model.AutoCategory
+import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureTrigger
@@ -78,6 +80,7 @@ class MusicPlaybackService : MediaLibraryService() {
     private lateinit var musicDatabase: MusicDatabase
     private lateinit var mediaStoreRepository: MediaStoreRepository
     private lateinit var settingsDataStore: SettingsDataStore
+    private var autoDisplaySettings = DisplaySettings()
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
     override fun onCreate() {
@@ -107,7 +110,17 @@ class MusicPlaybackService : MediaLibraryService() {
 
         serviceScope.launch {
             settingsDataStore.gestureBindingsFlow.collect { bindings ->
-                updateCustomLayout(session, bindings)
+                sharedSession?.let { session ->
+                    updateCustomLayout(session, bindings, autoDisplaySettings)
+                }
+            }
+        }
+        serviceScope.launch {
+            settingsDataStore.displaySettingsFlow.collect { settings ->
+                autoDisplaySettings = settings
+                sharedSession?.let { session ->
+                    updateCustomLayout(session, emptyMap(), settings)
+                }
             }
         }
     }
@@ -195,56 +208,34 @@ class MusicPlaybackService : MediaLibraryService() {
 
     private fun updateCustomLayout(
         session: MediaLibrarySession,
-        bindings: Map<GestureTrigger, GestureBinding>
+        bindings: Map<GestureTrigger, GestureBinding>,
+        autoSettings: DisplaySettings
     ) {
-        val regionTriggers = GestureTrigger.TOP_REGION_SLOTS + GestureTrigger.BOTTOM_REGION_SLOTS
-
-        val assignedActions = mutableSetOf<GestureAction>()
         val buttons = mutableListOf<CommandButton>()
-
-        // 1. Add assigned screen region actions (e.g. Top-Center -> Play Current Album)
-        for (trigger in regionTriggers) {
-            val action = bindings[trigger]?.action ?: GestureAction.fromKey(trigger.defaultActionKey)
-            if (action != GestureAction.UNASSIGNED && action !in assignedActions) {
-                actionToCommandButton(action)?.let {
-                    buttons.add(it)
-                    assignedActions.add(action)
-                }
-            }
+        val configuredActions = autoSettings.autoActionButtonOrder.filter {
+            it != GestureAction.UNASSIGNED && it != GestureAction.OTHER_OPTION
         }
 
-        // 2. High priority mode/playback actions (Repeat, Shuffle, Play/Pause) ahead of Next/Previous
-        val priorityActions = listOf(
-            GestureAction.TOGGLE_REPEAT,
-            GestureAction.TOGGLE_SHUFFLE,
-            GestureAction.PLAY_PAUSE
-        )
-
-        for (action in priorityActions) {
-            val alreadyHasAction = assignedActions.any {
-                it == action ||
-                (action == GestureAction.PLAY_PAUSE && (it == GestureAction.PLAY || it == GestureAction.PAUSE))
-            }
-            if (!alreadyHasAction) {
-                actionToCommandButton(action)?.let {
-                    buttons.add(it)
-                    assignedActions.add(action)
+        val actionsToUse = configuredActions.ifEmpty {
+            val regionTriggers = GestureTrigger.TOP_REGION_SLOTS + GestureTrigger.BOTTOM_REGION_SLOTS
+            val list = mutableListOf<GestureAction>()
+            for (trigger in regionTriggers) {
+                val action = bindings[trigger]?.action ?: GestureAction.fromKey(trigger.defaultActionKey)
+                if (action != GestureAction.UNASSIGNED && action !in list) {
+                    list.add(action)
                 }
             }
+            if (GestureAction.PLAY_CURRENT_ALBUM !in list) list.add(GestureAction.PLAY_CURRENT_ALBUM)
+            if (GestureAction.PLAY_CURRENT_ARTIST !in list) list.add(GestureAction.PLAY_CURRENT_ARTIST)
+            if (GestureAction.PLAY_PAUSE !in list) list.add(GestureAction.PLAY_PAUSE)
+            if (GestureAction.NEXT !in list) list.add(GestureAction.NEXT)
+            if (GestureAction.PREVIOUS !in list) list.add(GestureAction.PREVIOUS)
+            list
         }
 
-        // 3. Secondary navigation actions (Next, Previous)
-        val secondaryActions = listOf(
-            GestureAction.NEXT,
-            GestureAction.PREVIOUS
-        )
-
-        for (action in secondaryActions) {
-            if (action !in assignedActions) {
-                actionToCommandButton(action)?.let {
-                    buttons.add(it)
-                    assignedActions.add(action)
-                }
+        for (action in actionsToUse) {
+            actionToCommandButton(action)?.let {
+                buttons.add(it)
             }
         }
 
@@ -515,7 +506,7 @@ class MusicPlaybackService : MediaLibraryService() {
         ): ListenableFuture<LibraryResult<MediaItem>> {
             val rootParams = LibraryParams.Builder()
                 .setExtras(Bundle().apply {
-                    putBoolean("android.media.browse.SEARCH_SUPPORTED", true)
+                    putBoolean("android.media.browse.SEARCH_SUPPORTED", autoDisplaySettings.autoVoiceSearch)
                     putInt(
                         MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
                         MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
@@ -542,17 +533,26 @@ class MusicPlaybackService : MediaLibraryService() {
 
             serviceScope.launch {
                 val items = mutableListOf<MediaItem>()
+                val showArt = autoDisplaySettings.autoShowAlbumArt
                 when (parentId) {
                     "root" -> {
-                        items.add(categorySongs)
-                        items.add(categoryAlbums)
-                        items.add(categoryArtists)
-                        items.add(categoryGenres)
-                        items.add(categoryFolders)
+                        val categoryMap = mapOf(
+                            AutoCategory.SONGS to categorySongs,
+                            AutoCategory.ALBUMS to categoryAlbums,
+                            AutoCategory.ARTISTS to categoryArtists,
+                            AutoCategory.GENRES to categoryGenres,
+                            AutoCategory.FOLDERS to categoryFolders
+                        )
+                        val catOrder = autoDisplaySettings.autoCategoryOrder.ifEmpty {
+                            listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS)
+                        }
+                        catOrder.forEach { cat ->
+                            categoryMap[cat]?.let { items.add(it) }
+                        }
                     }
                     "category_songs" -> {
                         val songs = getAllSongsHelper()
-                        items.addAll(songs.map { songToMediaItem(it) })
+                        items.addAll(songs.map { songToMediaItem(it, showArt) })
                     }
                     "category_albums" -> {
                         val dbAlbums = musicDatabase.getAlbums()
@@ -566,6 +566,11 @@ class MusicPlaybackService : MediaLibraryService() {
                                 )
                             }
                         }
+                        val albumStyle = if (autoDisplaySettings.autoAlbumStyleGrid) {
+                            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM
+                        } else {
+                            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+                        }
                         items.addAll(albums.map { album ->
                             MediaItem.Builder()
                                 .setMediaId("album_${album.name}")
@@ -573,13 +578,15 @@ class MusicPlaybackService : MediaLibraryService() {
                                     MediaMetadata.Builder()
                                         .setTitle(album.name)
                                         .setArtist(album.artist)
-                                        .setArtworkUri(album.artworkUri)
+                                        .apply {
+                                            if (showArt) setArtworkUri(album.artworkUri)
+                                        }
                                         .setIsBrowsable(true)
                                         .setIsPlayable(false)
                                         .setExtras(Bundle().apply {
                                             putInt(
                                                 MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
-                                                MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM
+                                                albumStyle
                                             )
                                         })
                                         .build()
@@ -592,6 +599,11 @@ class MusicPlaybackService : MediaLibraryService() {
                         val artists = dbArtists.ifEmpty {
                             getAllSongsHelper().map { it.artist }.distinct().sorted()
                         }
+                        val artistStyle = if (autoDisplaySettings.autoArtistStyleGrid) {
+                            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM
+                        } else {
+                            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+                        }
                         items.addAll(artists.map { artist ->
                             MediaItem.Builder()
                                 .setMediaId("artist_$artist")
@@ -603,7 +615,7 @@ class MusicPlaybackService : MediaLibraryService() {
                                         .setExtras(Bundle().apply {
                                             putInt(
                                                 MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
-                                                MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+                                                artistStyle
                                             )
                                         })
                                         .build()
@@ -888,15 +900,17 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 }
 
-fun songToMediaItem(song: Song): MediaItem {
-    val artUri = song.artworkUri ?: song.contentUri
+fun songToMediaItem(song: Song, showAlbumArt: Boolean = true): MediaItem {
+    val artUri = if (showAlbumArt) (song.artworkUri ?: song.contentUri) else null
     val metadata = MediaMetadata.Builder()
         .setTitle(song.title)
         .setArtist(song.artist)
         .setAlbumTitle(song.album)
         .setGenre(song.genre)
         .setTrackNumber(song.trackNumber)
-        .setArtworkUri(artUri)
+        .apply {
+            if (artUri != null) setArtworkUri(artUri)
+        }
         .setIsPlayable(true)
         .setIsBrowsable(false)
         .setExtras(Bundle().apply {

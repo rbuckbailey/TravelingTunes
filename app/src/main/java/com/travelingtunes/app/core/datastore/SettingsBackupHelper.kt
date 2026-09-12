@@ -59,7 +59,14 @@ object SettingsBackupHelper {
         sb.append("    \"keepScreenOn\": ${display.keepScreenOn},\n")
         sb.append("    \"immersiveMode\": ${display.immersiveMode},\n")
         sb.append("    \"numEdgeRegions\": ${display.numEdgeRegions},\n")
-        sb.append("    \"titleOrder\": \"${display.titleOrder.joinToString(",") { it.name }}\"\n")
+        sb.append("    \"titleOrder\": \"${display.titleOrder.joinToString(",") { it.name }}\",\n")
+        sb.append("    \"autoCategoryOrder\": \"${display.autoCategoryOrder.joinToString(",") { it.name }}\",\n")
+        sb.append("    \"autoShowAlbumArt\": ${display.autoShowAlbumArt},\n")
+        sb.append("    \"autoAlbumStyleGrid\": ${display.autoAlbumStyleGrid},\n")
+        sb.append("    \"autoArtistStyleGrid\": ${display.autoArtistStyleGrid},\n")
+        sb.append("    \"autoAutoplayOnConnect\": ${display.autoAutoplayOnConnect},\n")
+        sb.append("    \"autoVoiceSearch\": ${display.autoVoiceSearch},\n")
+        sb.append("    \"autoActionButtonOrder\": \"${display.autoActionButtonOrder.joinToString(",") { it.name }}\"\n")
         sb.append("  },\n")
 
         // Theme

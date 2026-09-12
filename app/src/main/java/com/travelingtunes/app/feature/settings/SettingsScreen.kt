@@ -3,6 +3,12 @@ package com.travelingtunes.app.feature.settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,15 +32,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FormatPaint
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -83,10 +93,12 @@ import com.travelingtunes.app.core.model.ArtAlignmentLandscape
 import com.travelingtunes.app.core.model.ArtAlignmentPortrait
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
+import com.travelingtunes.app.core.model.AutoCategory
 import com.travelingtunes.app.core.model.TextAlignmentOption
 import com.travelingtunes.app.core.model.TitleRowType
 import com.travelingtunes.app.core.model.ColorTheme
 import com.travelingtunes.app.core.model.DisplaySettings
+import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.HudTypeOption
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
 import com.travelingtunes.app.core.model.ThemeSettings
@@ -107,32 +119,56 @@ import kotlin.math.roundToInt
 enum class SettingsSubmenu(
     val title: String,
     val description: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val categoryGroup: String?
 ) {
     LIBRARY(
         title = "Music Library",
         description = "Folder selection, rescan & album art downloads",
-        icon = Icons.Default.Folder
+        icon = Icons.Default.Folder,
+        categoryGroup = null
     ),
-    TYPOGRAPHY_HUD(
-        title = "Font & Layout",
-        description = "Font sizes, title wrap/marquee, alignment & HUD overlays",
-        icon = Icons.Default.Title
+    TITLES(
+        title = "Titles",
+        description = "Font family, sizes, style, alignment & title row order",
+        icon = Icons.Default.Title,
+        categoryGroup = "Appearance"
+    ),
+    ART(
+        title = "Art",
+        description = "Album art display layout, scale mode & alignment",
+        icon = Icons.Default.Image,
+        categoryGroup = "Appearance"
+    ),
+    HUD(
+        title = "HUD",
+        description = "Volume/progress overlays, line thickness, rounded corners & glass effect",
+        icon = Icons.Default.Tune,
+        categoryGroup = "Appearance"
+    ),
+    THEMES(
+        title = "Colors",
+        description = "Dynamic album art theme & color presets",
+        icon = Icons.Default.Palette,
+        categoryGroup = "Appearance"
     ),
     GESTURES(
         title = "Gestures & Controls",
         description = "Touch region sensitivity & gesture action assignments",
-        icon = Icons.Default.TouchApp
+        icon = Icons.Default.TouchApp,
+        categoryGroup = "Controls"
     ),
-    THEMES(
-        title = "Colors",
-        description = "Color presets, custom colors, glass effect & rounded corners",
-        icon = Icons.Default.Palette
+    ANDROID_AUTO(
+        title = "Android Auto",
+        description = "Root category browse order & Android Auto preferences",
+        icon = Icons.Default.DirectionsCar,
+        categoryGroup = "Controls"
     ),
     ABOUT(
         title = "Tutorial & About",
         description = "Gesture tutorial & app information",
-        icon = Icons.Default.Info
+        icon = Icons.Default.Info,
+        categoryGroup = "Controls"
     )
 }
 
@@ -235,7 +271,7 @@ fun SettingsScreen(
     val screenWidthDp = configuration.screenWidthDp
     val isWideScreen = screenWidthDp >= 600
 
-    val activeSubmenu = if (isWideScreen) (selectedSubmenu ?: SettingsSubmenu.LIBRARY) else selectedSubmenu
+    val activeSubmenu = if (isWideScreen) (selectedSubmenu ?: SettingsSubmenu.TITLES) else selectedSubmenu
 
     val handleBack: () -> Unit = {
         if (activeColorPicker != null) {
@@ -269,6 +305,9 @@ fun SettingsScreen(
         }
     }
 
+    val standaloneSubmenus = remember { SettingsSubmenu.entries.filter { it.categoryGroup == null } }
+    val groupedSubmenus = remember { SettingsSubmenu.entries.filter { it.categoryGroup != null }.groupBy { it.categoryGroup!! } }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -299,17 +338,10 @@ fun SettingsScreen(
                         .fillMaxHeight()
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "Categories",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
-                    )
-
-                    SettingsSubmenu.entries.forEach { submenu ->
+                    // Standalone Items on Top (No Category Header Label)
+                    standaloneSubmenus.forEach { submenu ->
                         val isSelected = activeSubmenu == submenu
                         Card(
                             colors = CardDefaults.cardColors(
@@ -327,129 +359,45 @@ fun SettingsScreen(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
                                 Icon(
                                     imageVector = submenu.icon,
                                     contentDescription = null,
                                     tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                                     else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = submenu.title,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        fontSize = 14.sp,
-                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
+                                Text(
+                                    text = submenu.title,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 14.sp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                    else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
                         }
                     }
-                }
 
-                VerticalDivider()
-
-                // Detail Content (Right Pane)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .verticalScroll(rememberScrollState())
-                        .padding(20.dp)
-                ) {
-                    SubmenuContent(
-                        submenu = activeSubmenu ?: SettingsSubmenu.LIBRARY,
-                        displaySettings = displaySettings,
-                        themeSettings = themeSettings,
-                        musicFolderName = musicFolderName,
-                        lastScanTime = lastScanTime,
-                        libraryStats = libraryStats,
-                        isScanning = isScanning,
-                        scanStatusMessage = scanStatusMessage,
-                        isDownloadingArt = isDownloadingArt,
-                        artDownloadStatusMessage = artDownloadStatusMessage,
-                        artDownloadDownloadedCount = artDownloadDownloadedCount,
-                        artDownloadFailedCount = artDownloadFailedCount,
-                        artDownloadTotalCount = artDownloadTotalCount,
-                        lastAuditReport = lastAuditReport,
-                        autoRescanEnabled = autoRescanEnabled,
-                        autoRescanStatusMessage = autoRescanStatusMessage,
-                        isAutoRescanWaiting = isAutoRescanWaiting,
-                        cddbOverridesCount = cddbOverridesCount,
-                        isEmbeddingCddb = isEmbeddingCddb,
-                        cddbEmbeddingStatus = cddbEmbeddingStatus,
-                        onToggleAutoRescan = onToggleAutoRescan,
-                        availableFonts = availableFonts,
-                        onPickMusicFolder = onPickMusicFolder,
-                        onRescanMusicFolder = onRescanMusicFolder,
-                        onDownloadMissingArt = onDownloadMissingArt,
-                        onCancelDownloadArt = onCancelDownloadArt,
-                        onEmbedCddbOverrides = onEmbedCddbOverrides,
-                        onViewAudit = { showAuditDialog = true },
-                        onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
-                        onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
-                        onUpdateDisplaySettings = { newSettings ->
-                            coroutineScope.launch {
-                                settingsDataStore.updateDisplaySettings(newSettings)
-                            }
-                        },
-                        onOpenGestureAssignments = onOpenGestureAssignments,
-                        onResetGestureAssignments = {
-                            coroutineScope.launch {
-                                settingsDataStore.resetAllGestureBindings()
-                            }
-                        },
-                        onSelectPreset = { presetName, isAuto ->
-                            coroutineScope.launch {
-                                settingsDataStore.updateThemeSettings(themeSettings.copy(currentThemeName = presetName))
-                                settingsDataStore.updateDisplaySettings(displaySettings.copy(albumArtColors = isAuto))
-                            }
-                        },
-                        onUpdateThemeSettings = { newTheme ->
-                            coroutineScope.launch {
-                                settingsDataStore.updateThemeSettings(newTheme)
-                            }
-                        },
-                        onOpenBgPicker = { activeColorPicker = "BG" },
-                        onOpenSongPicker = { activeColorPicker = "SONG" },
-                        onOpenArtistPicker = { activeColorPicker = "ARTIST" },
-                        onOpenAlbumPicker = { activeColorPicker = "ALBUM" },
-                        onOpenQuickStart = onOpenQuickStart,
-                        onBackupSettings = { createBackupLauncher.launch("traveling_tunes_settings.json") },
-                        onRestoreSettings = { restoreBackupLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }
-                    )
-                }
-            }
-        } else {
-            // Single-Pane Navigation for Compact Screens
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-            ) {
-                if (activeSubmenu == null) {
-                    // Main Submenu Navigation List
-                    Text(
-                        text = "Settings Categories",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SettingsSubmenu.entries.forEach { submenu ->
+                    // Grouped Submenus
+                    groupedSubmenus.forEach { (groupName, submenus) ->
+                        Text(
+                            text = groupName,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 10.dp, bottom = 2.dp, start = 4.dp)
+                        )
+                        submenus.forEach { submenu ->
+                            val isSelected = activeSubmenu == submenu
                             Card(
-                                shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                 ),
+                                shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
@@ -460,50 +408,270 @@ fun SettingsScreen(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(16.dp)
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primaryContainer),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = submenu.icon,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = submenu.title,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = submenu.description,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
                                     Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                        contentDescription = "Open",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        imageVector = submenu.icon,
+                                        contentDescription = null,
+                                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = submenu.title,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 14.sp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
                         }
                     }
-                } else {
-                    // Selected Submenu Content Page
-                    SubmenuContent(
-                        submenu = activeSubmenu,
+                }
+
+                VerticalDivider()
+
+                // Detail Content (Right Pane) with Slide Animation
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(20.dp)
+                ) {
+                    AnimatedContent(
+                        targetState = activeSubmenu ?: SettingsSubmenu.LIBRARY,
+                        transitionSpec = {
+                            (slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth }) + fadeIn()).togetherWith(
+                                slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth / 2 }) + fadeOut()
+                            )
+                        },
+                        label = "SettingsDetailSubmenuTransition"
+                    ) { targetSubmenu ->
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            SubmenuContent(
+                                submenu = targetSubmenu,
+                                displaySettings = displaySettings,
+                                themeSettings = themeSettings,
+                                musicFolderName = musicFolderName,
+                                lastScanTime = lastScanTime,
+                                libraryStats = libraryStats,
+                                isScanning = isScanning,
+                                scanStatusMessage = scanStatusMessage,
+                                isDownloadingArt = isDownloadingArt,
+                                artDownloadStatusMessage = artDownloadStatusMessage,
+                                artDownloadDownloadedCount = artDownloadDownloadedCount,
+                                artDownloadFailedCount = artDownloadFailedCount,
+                                artDownloadTotalCount = artDownloadTotalCount,
+                                lastAuditReport = lastAuditReport,
+                                autoRescanEnabled = autoRescanEnabled,
+                                autoRescanStatusMessage = autoRescanStatusMessage,
+                                isAutoRescanWaiting = isAutoRescanWaiting,
+                                cddbOverridesCount = cddbOverridesCount,
+                                isEmbeddingCddb = isEmbeddingCddb,
+                                cddbEmbeddingStatus = cddbEmbeddingStatus,
+                                onToggleAutoRescan = onToggleAutoRescan,
+                                availableFonts = availableFonts,
+                                onPickMusicFolder = onPickMusicFolder,
+                                onRescanMusicFolder = onRescanMusicFolder,
+                                onDownloadMissingArt = onDownloadMissingArt,
+                                onCancelDownloadArt = onCancelDownloadArt,
+                                onEmbedCddbOverrides = onEmbedCddbOverrides,
+                                onViewAudit = { showAuditDialog = true },
+                                onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
+                                onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
+                                onUpdateDisplaySettings = { newSettings ->
+                                    coroutineScope.launch {
+                                        settingsDataStore.updateDisplaySettings(newSettings)
+                                    }
+                                },
+                                onOpenGestureAssignments = onOpenGestureAssignments,
+                                onResetGestureAssignments = {
+                                    coroutineScope.launch {
+                                        settingsDataStore.resetAllGestureBindings()
+                                    }
+                                },
+                                onSelectPreset = { presetName, isAuto ->
+                                    coroutineScope.launch {
+                                        settingsDataStore.updateThemeSettings(themeSettings.copy(currentThemeName = presetName))
+                                        settingsDataStore.updateDisplaySettings(displaySettings.copy(albumArtColors = isAuto))
+                                    }
+                                },
+                                onUpdateThemeSettings = { newTheme ->
+                                    coroutineScope.launch {
+                                        settingsDataStore.updateThemeSettings(newTheme)
+                                    }
+                                },
+                                onOpenBgPicker = { activeColorPicker = "BG" },
+                                onOpenSongPicker = { activeColorPicker = "SONG" },
+                                onOpenArtistPicker = { activeColorPicker = "ARTIST" },
+                                onOpenAlbumPicker = { activeColorPicker = "ALBUM" },
+                                onOpenQuickStart = onOpenQuickStart,
+                                onBackupSettings = { createBackupLauncher.launch("traveling_tunes_settings.json") },
+                                onRestoreSettings = { restoreBackupLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            // Single-Pane Navigation with Slide-In from Right Animation
+            AnimatedContent(
+                targetState = activeSubmenu,
+                transitionSpec = {
+                    if (targetState != null) {
+                        (slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth }) + fadeIn()).togetherWith(
+                            slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth / 3 }) + fadeOut()
+                        )
+                    } else {
+                        (slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth / 3 }) + fadeIn()).togetherWith(
+                            slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth }) + fadeOut()
+                        )
+                    }
+                },
+                label = "SettingsSinglePaneTransition",
+                modifier = Modifier.padding(paddingValues)
+            ) { targetSubmenu ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp)
+                ) {
+                    if (targetSubmenu == null) {
+                        // Main Submenu Navigation List
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            // Standalone Items at the top without category label
+                            standaloneSubmenus.forEach { submenu ->
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            coroutineScope.launch {
+                                                settingsDataStore.setLastSettingsSubmenu(submenu.name)
+                                            }
+                                        }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(44.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = submenu.icon,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = submenu.title,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = submenu.description,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Grouped Submenus with section headers
+                            groupedSubmenus.forEach { (groupName, submenus) ->
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        text = groupName,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                                    )
+                                    submenus.forEach { submenu ->
+                                        Card(
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            ),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    coroutineScope.launch {
+                                                        settingsDataStore.setLastSettingsSubmenu(submenu.name)
+                                                    }
+                                                }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(16.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(44.dp)
+                                                        .clip(CircleShape)
+                                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        imageVector = submenu.icon,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.width(16.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = submenu.title,
+                                                        style = MaterialTheme.typography.titleSmall,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = submenu.description,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                Icon(
+                                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Selected Submenu Content Page
+                        SubmenuContent(
+                            submenu = targetSubmenu,
                         displaySettings = displaySettings,
                         themeSettings = themeSettings,
                         musicFolderName = musicFolderName,
@@ -567,6 +735,7 @@ fun SettingsScreen(
             }
         }
     }
+}
 
     if (statusToastMessage != null) {
         AlertDialog(
@@ -740,10 +909,37 @@ private fun SubmenuContent(
                     onRestoreSettings = onRestoreSettings
                 )
 
-                SettingsSubmenu.TYPOGRAPHY_HUD -> TypographyHudSettingsContent(
+                SettingsSubmenu.TITLES -> TitlesSettingsContent(
                     displaySettings = displaySettings,
                     availableFonts = availableFonts,
                     onAddFont = onAddFont,
+                    onUpdateDisplaySettings = onUpdateDisplaySettings
+                )
+
+                SettingsSubmenu.ART -> ArtSettingsContent(
+                    displaySettings = displaySettings,
+                    onUpdateDisplaySettings = onUpdateDisplaySettings
+                )
+
+                SettingsSubmenu.HUD -> HudSettingsContent(
+                    displaySettings = displaySettings,
+                    themeSettings = themeSettings,
+                    onUpdateDisplaySettings = onUpdateDisplaySettings,
+                    onUpdateThemeSettings = onUpdateThemeSettings
+                )
+
+                SettingsSubmenu.THEMES -> ThemesSettingsContent(
+                    themeSettings = themeSettings,
+                    displaySettings = displaySettings,
+                    onSelectPreset = onSelectPreset,
+                    onOpenBgPicker = onOpenBgPicker,
+                    onOpenSongPicker = onOpenSongPicker,
+                    onOpenArtistPicker = onOpenArtistPicker,
+                    onOpenAlbumPicker = onOpenAlbumPicker
+                )
+
+                SettingsSubmenu.ANDROID_AUTO -> AndroidAutoSettingsContent(
+                    displaySettings = displaySettings,
                     onUpdateDisplaySettings = onUpdateDisplaySettings
                 )
 
@@ -752,17 +948,6 @@ private fun SubmenuContent(
                     onUpdateDisplaySettings = onUpdateDisplaySettings,
                     onOpenGestureAssignments = onOpenGestureAssignments,
                     onResetGestureAssignments = onResetGestureAssignments
-                )
-
-                SettingsSubmenu.THEMES -> ThemesSettingsContent(
-                    themeSettings = themeSettings,
-                    displaySettings = displaySettings,
-                    onSelectPreset = onSelectPreset,
-                    onUpdateThemeSettings = onUpdateThemeSettings,
-                    onOpenBgPicker = onOpenBgPicker,
-                    onOpenSongPicker = onOpenSongPicker,
-                    onOpenArtistPicker = onOpenArtistPicker,
-                    onOpenAlbumPicker = onOpenAlbumPicker
                 )
 
                 SettingsSubmenu.ABOUT -> AboutSettingsContent(
@@ -1005,7 +1190,7 @@ private fun LibrarySettingsContent(
 }
 
 @Composable
-private fun TypographyHudSettingsContent(
+private fun TitlesSettingsContent(
     displaySettings: DisplaySettings,
     availableFonts: List<FontOption>,
     onAddFont: () -> Unit,
@@ -1055,7 +1240,6 @@ private fun TypographyHudSettingsContent(
                             }
                             val currentFontFamily = FontHelper.getFontFamily(currentFontKey)
 
-                            // Title Header Row in its Selected Font Family and Styling
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth()
@@ -1109,7 +1293,6 @@ private fun TypographyHudSettingsContent(
 
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            // Row 1: Font Drop-down + Style Buttons (Bold, Italic, Underline) on the same row without labels
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1169,7 +1352,6 @@ private fun TypographyHudSettingsContent(
                                 }
                             }
 
-                            // Row 2: Size Slider + Align Buttons on the same row without labels
                             val (currentSize, minRange, maxRange) = when (rowType) {
                                 TitleRowType.ARTIST -> Triple(displaySettings.artistFontSize, 20f, 100f)
                                 TitleRowType.SONG -> Triple(displaySettings.songFontSize, 30f, 120f)
@@ -1253,15 +1435,47 @@ private fun TypographyHudSettingsContent(
                 modifier = Modifier.weight(1f)
             )
         }
+    }
+}
+
+@Composable
+private fun ArtSettingsContent(
+    displaySettings: DisplaySettings,
+    onUpdateDisplaySettings: (DisplaySettings) -> Unit
+) {
+    Column {
+        Text("Album Art Display Options", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Show Album Art", fontWeight = FontWeight.SemiBold)
+                Text("Display album artwork on the player screen", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = displaySettings.showAlbumArt,
+                onCheckedChange = { checked ->
+                    onUpdateDisplaySettings(displaySettings.copy(showAlbumArt = checked))
+                }
+            )
+        }
+
+        if (displaySettings.showAlbumArt) {
+            Text("Album Art Opacity (Behind Titles): ${(displaySettings.albumArtFade * 100).toInt()}%", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+            Slider(
+                value = displaySettings.albumArtFade,
+                onValueChange = { fade ->
+                    onUpdateDisplaySettings(displaySettings.copy(albumArtFade = fade))
+                },
+                valueRange = 0.1f..1.0f
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
-        Text("Album Art Options", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
-        Spacer(modifier = Modifier.height(4.dp))
-
         Text("Album Art Scale Mode", fontWeight = FontWeight.Bold)
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp)
         ) {
             ArtScaleOption.entries.forEach { option ->
                 FilterChip(
@@ -1301,7 +1515,7 @@ private fun TypographyHudSettingsContent(
         Text("Portrait Alignment", fontWeight = FontWeight.Bold)
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp)
         ) {
             portraitOptions.forEach { option ->
                 FilterChip(
@@ -1317,7 +1531,7 @@ private fun TypographyHudSettingsContent(
         Text("Landscape Alignment", fontWeight = FontWeight.Bold)
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp)
         ) {
             landscapeOptions.forEach { option ->
                 FilterChip(
@@ -1333,7 +1547,7 @@ private fun TypographyHudSettingsContent(
         Text("Album Art Layout", fontWeight = FontWeight.Bold)
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp)
         ) {
             ArtLayoutOption.entries.forEach { option ->
                 FilterChip(
@@ -1359,11 +1573,18 @@ private fun TypographyHudSettingsContent(
                 )
             }
         }
+    }
+}
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-        // Section: HUD & Progress Displays
-        Text("HUD & Progress Displays", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+@Composable
+private fun HudSettingsContent(
+    displaySettings: DisplaySettings,
+    themeSettings: ThemeSettings,
+    onUpdateDisplaySettings: (DisplaySettings) -> Unit,
+    onUpdateThemeSettings: (ThemeSettings) -> Unit
+) {
+    Column {
+        Text("HUD & Overlay Controls", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
 
         Text("Volume Bar Display Style", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
         Row(
@@ -1406,34 +1627,41 @@ private fun TypographyHudSettingsContent(
             valueRange = 6f..40f
         )
 
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+        Text("Overlay Styles & Glass Features", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            Text("Always Show Volume Overlay", modifier = Modifier.weight(1f))
+            Text("Rounded Corners", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+            Switch(
+                checked = themeSettings.isRounded,
+                onCheckedChange = { checked ->
+                    onUpdateThemeSettings(themeSettings.copy(isRounded = checked))
+                }
+            )
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            Text("Glass Effect (Translucent & Blur)", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+            Switch(
+                checked = themeSettings.isGlass,
+                onCheckedChange = { checked ->
+                    onUpdateThemeSettings(themeSettings.copy(isGlass = checked))
+                }
+            )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+        Text("Screen & Display Modes", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Always Show Volume Overlay", fontWeight = FontWeight.SemiBold)
+            }
             Switch(
                 checked = displaySettings.volumeAlwaysOn,
                 onCheckedChange = { checked ->
                     onUpdateDisplaySettings(displaySettings.copy(volumeAlwaysOn = checked))
                 }
-            )
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            Text("Show Album Art", modifier = Modifier.weight(1f))
-            Switch(
-                checked = displaySettings.showAlbumArt,
-                onCheckedChange = { checked ->
-                    onUpdateDisplaySettings(displaySettings.copy(showAlbumArt = checked))
-                }
-            )
-        }
-
-        if (displaySettings.showAlbumArt) {
-            Text("Album Art Opacity (Behind Titles): ${(displaySettings.albumArtFade * 100).toInt()}%", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
-            Slider(
-                value = displaySettings.albumArtFade,
-                onValueChange = { fade ->
-                    onUpdateDisplaySettings(displaySettings.copy(albumArtFade = fade))
-                },
-                valueRange = 0.1f..1.0f
             )
         }
 
@@ -1512,7 +1740,6 @@ private fun ThemesSettingsContent(
     themeSettings: ThemeSettings,
     displaySettings: DisplaySettings,
     onSelectPreset: (String, Boolean) -> Unit,
-    onUpdateThemeSettings: (ThemeSettings) -> Unit,
     onOpenBgPicker: () -> Unit,
     onOpenSongPicker: () -> Unit,
     onOpenArtistPicker: () -> Unit,
@@ -1535,55 +1762,6 @@ private fun ThemesSettingsContent(
                     onSelectPreset(newThemeName, checked)
                 }
             )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Theme Appearance Options", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            Text("Rounded Corners", modifier = Modifier.weight(1f))
-            Switch(
-                checked = themeSettings.isRounded,
-                onCheckedChange = { checked ->
-                    onUpdateThemeSettings(themeSettings.copy(isRounded = checked))
-                }
-            )
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            Text("Glass Effect (Translucent & Blur)", modifier = Modifier.weight(1f))
-            Switch(
-                checked = themeSettings.isGlass,
-                onCheckedChange = { checked ->
-                    onUpdateThemeSettings(themeSettings.copy(isGlass = checked))
-                }
-            )
-        }
-
-        if (themeSettings.isRounded || themeSettings.isGlass) {
-            val styleBadgeText = when {
-                themeSettings.isRounded && themeSettings.isGlass -> "✨ Round Glass Style Active"
-                themeSettings.isRounded -> "✨ Rounded Style Active"
-                else -> "✨ Glass Style Active"
-            }
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                ),
-                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = styleBadgeText,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -1640,6 +1818,532 @@ private fun AboutSettingsContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 16.dp)
         )
+    }
+}
+
+@Composable
+private fun AndroidAutoSettingsContent(
+    displaySettings: DisplaySettings,
+    onUpdateDisplaySettings: (DisplaySettings) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Card 1: Root Browse Category Preference Order (Re-orderable)
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Browse Category Preference Order",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Re-order how music categories appear when browsing on your Android Auto screen",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val currentCatOrder = displaySettings.autoCategoryOrder
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currentCatOrder.forEachIndexed { index, category ->
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DragHandle,
+                                        contentDescription = "Drag handle",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "${index + 1}. ${category.displayName}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (index > 0) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentCatOrder.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index - 1]
+                                                newOrder[index - 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoCategoryOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowUp,
+                                                contentDescription = "Move Up"
+                                            )
+                                        }
+                                    }
+                                    if (index < currentCatOrder.size - 1) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentCatOrder.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index + 1]
+                                                newOrder[index + 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoCategoryOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowDown,
+                                                contentDescription = "Move Down"
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Card 2: Display Title Preference Order (Re-orderable)
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Display Title Preference Order",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Re-order title metadata fields (Artist, Song, Album)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val currentTitleOrder = displaySettings.titleOrder
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currentTitleOrder.forEachIndexed { index, rowType ->
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DragHandle,
+                                        contentDescription = "Drag handle",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "${index + 1}. ${rowType.displayName}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (index > 0) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentTitleOrder.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index - 1]
+                                                newOrder[index - 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(titleOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowUp,
+                                                contentDescription = "Move Up"
+                                            )
+                                        }
+                                    }
+                                    if (index < currentTitleOrder.size - 1) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentTitleOrder.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index + 1]
+                                                newOrder[index + 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(titleOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowDown,
+                                                contentDescription = "Move Down"
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Card 3: On-Screen Action Buttons (Configure & Re-order)
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "On-Screen Action Buttons",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Configure and re-order playback control buttons displayed on your Android Auto screen",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val currentButtons = displaySettings.autoActionButtonOrder
+                var showAddDropdown by remember { mutableStateOf(false) }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currentButtons.forEachIndexed { index, action ->
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DragHandle,
+                                        contentDescription = "Drag handle",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "${index + 1}. ${action.displayName}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (index > 0) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentButtons.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index - 1]
+                                                newOrder[index - 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowUp,
+                                                contentDescription = "Move Up"
+                                            )
+                                        }
+                                    }
+                                    if (index < currentButtons.size - 1) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentButtons.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index + 1]
+                                                newOrder[index + 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowDown,
+                                                contentDescription = "Move Down"
+                                            )
+                                        }
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            val newOrder = currentButtons.toMutableList().apply { removeAt(index) }
+                                            onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Remove Action",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        val availableActions = GestureAction.entries.filter {
+                            it != GestureAction.UNASSIGNED &&
+                            it != GestureAction.OTHER_OPTION &&
+                            it !in currentButtons
+                        }
+
+                        if (availableActions.isNotEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                OutlinedButton(
+                                    onClick = { showAddDropdown = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Add Action Button")
+                                }
+
+                                DropdownMenu(
+                                    expanded = showAddDropdown,
+                                    onDismissRequest = { showAddDropdown = false }
+                                ) {
+                                    availableActions.forEach { act ->
+                                        DropdownMenuItem(
+                                            text = { Text(act.displayName) },
+                                            onClick = {
+                                                val newOrder = currentButtons.toMutableList().apply { add(act) }
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                                showAddDropdown = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Card 3: Android Auto Display & Behavior Options
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Android Auto Options",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Toggle: Show Album Art
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Show Album Art in Auto",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Display album cover artwork on vehicle screen items",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = displaySettings.autoShowAlbumArt,
+                        onCheckedChange = { checked ->
+                            onUpdateDisplaySettings(displaySettings.copy(autoShowAlbumArt = checked))
+                        }
+                    )
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Layout: Album Browse Style
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Album Browse Style",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Display albums in grid or list view on car screen",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = displaySettings.autoAlbumStyleGrid,
+                            onClick = {
+                                onUpdateDisplaySettings(displaySettings.copy(autoAlbumStyleGrid = true))
+                            },
+                            label = { Text("Grid") }
+                        )
+                        FilterChip(
+                            selected = !displaySettings.autoAlbumStyleGrid,
+                            onClick = {
+                                onUpdateDisplaySettings(displaySettings.copy(autoAlbumStyleGrid = false))
+                            },
+                            label = { Text("List") }
+                        )
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Layout: Artist Browse Style
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Artist Browse Style",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Display artists in list or grid view on car screen",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = displaySettings.autoArtistStyleGrid,
+                            onClick = {
+                                onUpdateDisplaySettings(displaySettings.copy(autoArtistStyleGrid = true))
+                            },
+                            label = { Text("Grid") }
+                        )
+                        FilterChip(
+                            selected = !displaySettings.autoArtistStyleGrid,
+                            onClick = {
+                                onUpdateDisplaySettings(displaySettings.copy(autoArtistStyleGrid = false))
+                            },
+                            label = { Text("List") }
+                        )
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Toggle: Auto-Play on Connect
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Auto-Play on Connect",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Automatically resume playback when connected to Android Auto",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = displaySettings.autoAutoplayOnConnect,
+                        onCheckedChange = { checked ->
+                            onUpdateDisplaySettings(displaySettings.copy(autoAutoplayOnConnect = checked))
+                        }
+                    )
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Toggle: Voice Search Support
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Voice Search Support",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Enable voice search and Google Assistant media integration",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = displaySettings.autoVoiceSearch,
+                        onCheckedChange = { checked ->
+                            onUpdateDisplaySettings(displaySettings.copy(autoVoiceSearch = checked))
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 
