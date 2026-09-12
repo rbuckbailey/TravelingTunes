@@ -253,7 +253,9 @@ fun SettingsScreen(
                                 }
                             },
                             onOpenBgPicker = { activeColorPicker = "BG" },
-                            onOpenTextPicker = { activeColorPicker = "TEXT" }
+                            onOpenSongPicker = { activeColorPicker = "SONG" },
+                            onOpenArtistPicker = { activeColorPicker = "ARTIST" },
+                            onOpenAlbumPicker = { activeColorPicker = "ALBUM" }
                         )
                     }
                 }
@@ -315,7 +317,9 @@ fun SettingsScreen(
                             }
                         },
                         onOpenBgPicker = { activeColorPicker = "BG" },
-                        onOpenTextPicker = { activeColorPicker = "TEXT" }
+                        onOpenSongPicker = { activeColorPicker = "SONG" },
+                        onOpenArtistPicker = { activeColorPicker = "ARTIST" },
+                        onOpenAlbumPicker = { activeColorPicker = "ALBUM" }
                     )
 
                     AboutSettingsCard(
@@ -327,52 +331,106 @@ fun SettingsScreen(
             }
         }
 
-        if (activeColorPicker == "BG") {
-            val initialBg = Color(
-                red = (themeSettings.customBGRed / 255f).coerceIn(0f, 1f),
-                green = (themeSettings.customBGGreen / 255f).coerceIn(0f, 1f),
-                blue = (themeSettings.customBGBlue / 255f).coerceIn(0f, 1f)
-            )
-            ColorPickerDialog(
-                title = "Custom Background Color",
-                initialColor = initialBg,
-                onColorSelected = { selected ->
-                    coroutineScope.launch {
-                        settingsDataStore.updateThemeSettings(
-                            themeSettings.copy(
-                                customBGRed = selected.red * 255f,
-                                customBGGreen = selected.green * 255f,
-                                customBGBlue = selected.blue * 255f,
-                                currentThemeName = "Custom"
+        when (activeColorPicker) {
+            "BG" -> {
+                val initialBg = Color(
+                    red = (themeSettings.customBGRed / 255f).coerceIn(0f, 1f),
+                    green = (themeSettings.customBGGreen / 255f).coerceIn(0f, 1f),
+                    blue = (themeSettings.customBGBlue / 255f).coerceIn(0f, 1f)
+                )
+                ColorPickerDialog(
+                    title = "Custom Background Color",
+                    initialColor = initialBg,
+                    onColorSelected = { selected ->
+                        coroutineScope.launch {
+                            settingsDataStore.updateThemeSettings(
+                                themeSettings.copy(
+                                    customBGRed = selected.red * 255f,
+                                    customBGGreen = selected.green * 255f,
+                                    customBGBlue = selected.blue * 255f,
+                                    currentThemeName = "Custom"
+                                )
                             )
-                        )
-                    }
-                },
-                onDismiss = { activeColorPicker = null }
-            )
-        } else if (activeColorPicker == "TEXT") {
-            val initialText = Color(
-                red = (themeSettings.customTextRed / 255f).coerceIn(0f, 1f),
-                green = (themeSettings.customTextGreen / 255f).coerceIn(0f, 1f),
-                blue = (themeSettings.customTextBlue / 255f).coerceIn(0f, 1f)
-            )
-            ColorPickerDialog(
-                title = "Custom Text / Title Color",
-                initialColor = initialText,
-                onColorSelected = { selected ->
-                    coroutineScope.launch {
-                        settingsDataStore.updateThemeSettings(
-                            themeSettings.copy(
-                                customTextRed = selected.red * 255f,
-                                customTextGreen = selected.green * 255f,
-                                customTextBlue = selected.blue * 255f,
-                                currentThemeName = "Custom"
+                        }
+                    },
+                    onDismiss = { activeColorPicker = null }
+                )
+            }
+            "SONG" -> {
+                val initialSong = Color(
+                    red = (themeSettings.customSongTitleRed / 255f).coerceIn(0f, 1f),
+                    green = (themeSettings.customSongTitleGreen / 255f).coerceIn(0f, 1f),
+                    blue = (themeSettings.customSongTitleBlue / 255f).coerceIn(0f, 1f)
+                )
+                ColorPickerDialog(
+                    title = "Custom Song Title Color",
+                    initialColor = initialSong,
+                    onColorSelected = { selected ->
+                        coroutineScope.launch {
+                            settingsDataStore.updateThemeSettings(
+                                themeSettings.copy(
+                                    customTextRed = selected.red * 255f,
+                                    customTextGreen = selected.green * 255f,
+                                    customTextBlue = selected.blue * 255f,
+                                    customSongTitleRed = selected.red * 255f,
+                                    customSongTitleGreen = selected.green * 255f,
+                                    customSongTitleBlue = selected.blue * 255f,
+                                    currentThemeName = "Custom"
+                                )
                             )
-                        )
-                    }
-                },
-                onDismiss = { activeColorPicker = null }
-            )
+                        }
+                    },
+                    onDismiss = { activeColorPicker = null }
+                )
+            }
+            "ARTIST" -> {
+                val initialArtist = Color(
+                    red = (themeSettings.customArtistTitleRed / 255f).coerceIn(0f, 1f),
+                    green = (themeSettings.customArtistTitleGreen / 255f).coerceIn(0f, 1f),
+                    blue = (themeSettings.customArtistTitleBlue / 255f).coerceIn(0f, 1f)
+                )
+                ColorPickerDialog(
+                    title = "Custom Artist Title Color",
+                    initialColor = initialArtist,
+                    onColorSelected = { selected ->
+                        coroutineScope.launch {
+                            settingsDataStore.updateThemeSettings(
+                                themeSettings.copy(
+                                    customArtistTitleRed = selected.red * 255f,
+                                    customArtistTitleGreen = selected.green * 255f,
+                                    customArtistTitleBlue = selected.blue * 255f,
+                                    currentThemeName = "Custom"
+                                )
+                            )
+                        }
+                    },
+                    onDismiss = { activeColorPicker = null }
+                )
+            }
+            "ALBUM" -> {
+                val initialAlbum = Color(
+                    red = (themeSettings.customAlbumTitleRed / 255f).coerceIn(0f, 1f),
+                    green = (themeSettings.customAlbumTitleGreen / 255f).coerceIn(0f, 1f),
+                    blue = (themeSettings.customAlbumTitleBlue / 255f).coerceIn(0f, 1f)
+                )
+                ColorPickerDialog(
+                    title = "Custom Album Title Color",
+                    initialColor = initialAlbum,
+                    onColorSelected = { selected ->
+                        coroutineScope.launch {
+                            settingsDataStore.updateThemeSettings(
+                                themeSettings.copy(
+                                    customAlbumTitleRed = selected.red * 255f,
+                                    customAlbumTitleGreen = selected.green * 255f,
+                                    customAlbumTitleBlue = selected.blue * 255f,
+                                    currentThemeName = "Custom"
+                                )
+                            )
+                        }
+                    },
+                    onDismiss = { activeColorPicker = null }
+                )
+            }
         }
     }
 }
@@ -823,7 +881,9 @@ private fun ThemesSettingsCard(
     onSelectPreset: (String, Boolean) -> Unit,
     onUpdateThemeSettings: (ThemeSettings) -> Unit,
     onOpenBgPicker: () -> Unit,
-    onOpenTextPicker: () -> Unit,
+    onOpenSongPicker: () -> Unit,
+    onOpenArtistPicker: () -> Unit,
+    onOpenAlbumPicker: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     CollapsibleSettingsCard(
@@ -926,7 +986,9 @@ private fun ThemesSettingsCard(
                 CustomColorPaintBucketsRow(
                     themeSettings = themeSettings,
                     onOpenBgPicker = onOpenBgPicker,
-                    onOpenTextPicker = onOpenTextPicker
+                    onOpenSongPicker = onOpenSongPicker,
+                    onOpenArtistPicker = onOpenArtistPicker,
+                    onOpenAlbumPicker = onOpenAlbumPicker
                 )
             }
         }
@@ -966,7 +1028,9 @@ private fun AboutSettingsCard(
 fun CustomColorPaintBucketsRow(
     themeSettings: ThemeSettings,
     onOpenBgPicker: () -> Unit,
-    onOpenTextPicker: () -> Unit
+    onOpenSongPicker: () -> Unit,
+    onOpenArtistPicker: () -> Unit,
+    onOpenAlbumPicker: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -983,7 +1047,7 @@ fun CustomColorPaintBucketsRow(
         )
 
         Row(
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -992,10 +1056,20 @@ fun CustomColorPaintBucketsRow(
                 green = (themeSettings.customBGGreen / 255f).coerceIn(0f, 1f),
                 blue = (themeSettings.customBGBlue / 255f).coerceIn(0f, 1f)
             )
-            val textColor = Color(
-                red = (themeSettings.customTextRed / 255f).coerceIn(0f, 1f),
-                green = (themeSettings.customTextGreen / 255f).coerceIn(0f, 1f),
-                blue = (themeSettings.customTextBlue / 255f).coerceIn(0f, 1f)
+            val songColor = Color(
+                red = (themeSettings.customSongTitleRed / 255f).coerceIn(0f, 1f),
+                green = (themeSettings.customSongTitleGreen / 255f).coerceIn(0f, 1f),
+                blue = (themeSettings.customSongTitleBlue / 255f).coerceIn(0f, 1f)
+            )
+            val artistColor = Color(
+                red = (themeSettings.customArtistTitleRed / 255f).coerceIn(0f, 1f),
+                green = (themeSettings.customArtistTitleGreen / 255f).coerceIn(0f, 1f),
+                blue = (themeSettings.customArtistTitleBlue / 255f).coerceIn(0f, 1f)
+            )
+            val albumColor = Color(
+                red = (themeSettings.customAlbumTitleRed / 255f).coerceIn(0f, 1f),
+                green = (themeSettings.customAlbumTitleGreen / 255f).coerceIn(0f, 1f),
+                blue = (themeSettings.customAlbumTitleBlue / 255f).coerceIn(0f, 1f)
             )
 
             PaintBucketButton(
@@ -1004,12 +1078,22 @@ fun CustomColorPaintBucketsRow(
                 onClick = onOpenBgPicker
             )
 
-            Spacer(modifier = Modifier.width(36.dp))
+            PaintBucketButton(
+                label = "Song",
+                color = songColor,
+                onClick = onOpenSongPicker
+            )
 
             PaintBucketButton(
-                label = "Text / Title",
-                color = textColor,
-                onClick = onOpenTextPicker
+                label = "Artist",
+                color = artistColor,
+                onClick = onOpenArtistPicker
+            )
+
+            PaintBucketButton(
+                label = "Album",
+                color = albumColor,
+                onClick = onOpenAlbumPicker
             )
         }
     }

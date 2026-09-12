@@ -43,11 +43,14 @@ enum class GestureTrigger(
     TAP_2_1("21Tap", "2-Finger Single Tap", GestureCategory.TWO_FINGER_TAP, "SongPicker"),
     TAP_2_2("22Tap", "2-Finger Double Tap", GestureCategory.TWO_FINGER_TAP, "Next"),
     TAP_2_3("23Tap", "2-Finger Triple Tap", GestureCategory.TWO_FINGER_TAP, "Previous"),
+    TAP_3_1("31Tap", "3-Finger Single Tap", GestureCategory.THREE_FINGER_TAP, "Unassigned"),
+    TAP_3_2("32Tap", "3-Finger Double Tap", GestureCategory.THREE_FINGER_TAP, "Next"),
+    TAP_3_3("33Tap", "3-Finger Triple Tap", GestureCategory.THREE_FINGER_TAP, "Previous"),
 
     // Long Presses
     LONG_PRESS_1("1LongPress", "1-Finger Long Press", GestureCategory.LONG_PRESS, "Menu"),
     LONG_PRESS_2("2LongPress", "2-Finger Long Press", GestureCategory.LONG_PRESS, "Unassigned"),
-    LONG_PRESS_3("3LongPress", "3-Finger Long Press", GestureCategory.LONG_PRESS, "StartDefaultPlaylist"),
+    LONG_PRESS_3("3LongPress", "3-Finger Long Press", GestureCategory.LONG_PRESS, "ShuffleAllSongs"),
 
     // Screen Regions / Corners
     CORNER_TOP_LEFT("TopLeft", "Top-Left Region", GestureCategory.SCREEN_REGION, "ToggleRepeat"),

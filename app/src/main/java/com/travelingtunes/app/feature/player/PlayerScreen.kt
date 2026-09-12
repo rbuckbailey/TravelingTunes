@@ -94,6 +94,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
+private fun resolveGestureBinding(
+    trigger: GestureTrigger,
+    gestureBindings: Map<GestureTrigger, GestureBinding>
+): GestureBinding {
+    return gestureBindings[trigger] ?: GestureBinding(
+        trigger = trigger,
+        action = GestureAction.fromKey(trigger.defaultActionKey),
+        isContinuous = trigger.isContinuousDefault
+    )
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayerScreen(
@@ -185,14 +196,14 @@ fun PlayerScreen(
 
     val gestureListener = object : GestureEventListener {
         override fun onGestureTriggered(trigger: GestureTrigger) {
-            var binding = gestureBindings[trigger]
-            var action = binding?.action ?: GestureAction.UNASSIGNED
+            var binding = resolveGestureBinding(trigger, gestureBindings)
+            var action = binding.action
 
             // When a touch region is unassigned, pass the tap through to the standard tap action
             if (action == GestureAction.UNASSIGNED && trigger.category == GestureCategory.SCREEN_REGION) {
                 val fallbackTrigger = GestureTrigger.TAP_1_1
-                binding = gestureBindings[fallbackTrigger]
-                action = binding?.action ?: GestureAction.UNASSIGNED
+                binding = resolveGestureBinding(fallbackTrigger, gestureBindings)
+                action = binding.action
             }
 
             if (action == GestureAction.UNASSIGNED) return
@@ -234,8 +245,8 @@ fun PlayerScreen(
             totalDx: Float,
             totalDy: Float
         ) {
-            val binding = gestureBindings[trigger]
-            val action = binding?.action ?: GestureAction.UNASSIGNED
+            val binding = resolveGestureBinding(trigger, gestureBindings)
+            val action = binding.action
 
             when (action) {
                 GestureAction.VOLUME_UP, GestureAction.VOLUME_DOWN -> {
@@ -276,40 +287,31 @@ fun PlayerScreen(
         ) { page ->
             val pageSong = currentPlaylist.getOrNull(page) ?: currentSong
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                // Album Art Background for this page
-                PlayerAlbumArtBackground(
-                    song = pageSong,
-                    displaySettings = displaySettings
-                )
+            val hasTopButtons = listOf(
+                GestureTrigger.CORNER_TOP_LEFT,
+                GestureTrigger.CORNER_TOP_CENTER,
+                GestureTrigger.CORNER_TOP_RIGHT
+            ).any { resolveGestureBinding(it, gestureBindings).action != GestureAction.UNASSIGNED }
 
-                val hasTopButtons = listOf(
-                    GestureTrigger.CORNER_TOP_LEFT,
-                    GestureTrigger.CORNER_TOP_CENTER,
-                    GestureTrigger.CORNER_TOP_RIGHT
-                ).any { gestureBindings[it]?.action != GestureAction.UNASSIGNED }
+            val hasBottomButtons = listOf(
+                GestureTrigger.CORNER_BOTTOM_LEFT,
+                GestureTrigger.CORNER_BOTTOM_CENTER,
+                GestureTrigger.CORNER_BOTTOM_RIGHT
+            ).any { resolveGestureBinding(it, gestureBindings).action != GestureAction.UNASSIGNED }
 
-                val hasBottomButtons = listOf(
-                    GestureTrigger.CORNER_BOTTOM_LEFT,
-                    GestureTrigger.CORNER_BOTTOM_CENTER,
-                    GestureTrigger.CORNER_BOTTOM_RIGHT
-                ).any { gestureBindings[it]?.action != GestureAction.UNASSIGNED }
-
-                // Main Song Labels Container for this page
-                SongLabelsLayout(
-                    currentSong = pageSong,
-                    displaySettings = displaySettings,
-                    hasTopButtons = hasTopButtons,
-                    hasBottomButtons = hasBottomButtons
-                )
-            }
+            PlayerPageContent(
+                pageSong = pageSong,
+                displaySettings = displaySettings,
+                hasTopButtons = hasTopButtons,
+                hasBottomButtons = hasBottomButtons
+            )
         }
 
         // 2. Gesture Detector Touch Overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .travelingTunesGestures(gestureListener)
+                .travelingTunesGestures(gestureListener, gestureBindings)
         )
 
         // 3. Geometric Volume HUD Overlay (Bar / Line / Edge)
@@ -435,6 +437,107 @@ fun PlayerScreen(
 }
 
 @Composable
+fun PlayerPageContent(
+    pageSong: Song?,
+    displaySettings: DisplaySettings,
+    hasTopButtons: Boolean,
+    hasBottomButtons: Boolean
+) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
+
+    if (isDocked && displaySettings.showAlbumArt && pageSong != null) {
+        if (isLandscape) {
+            val isDockedRight = displaySettings.artAlignmentLandscape == com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT
+            Row(modifier = Modifier.fillMaxSize()) {
+                if (isDockedRight) {
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        SongLabelsLayout(
+                            currentSong = pageSong,
+                            displaySettings = displaySettings,
+                            hasTopButtons = hasTopButtons,
+                            hasBottomButtons = hasBottomButtons
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        PlayerAlbumArtBackground(
+                            song = pageSong,
+                            displaySettings = displaySettings
+                        )
+                    }
+                } else {
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        PlayerAlbumArtBackground(
+                            song = pageSong,
+                            displaySettings = displaySettings
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        SongLabelsLayout(
+                            currentSong = pageSong,
+                            displaySettings = displaySettings,
+                            hasTopButtons = hasTopButtons,
+                            hasBottomButtons = hasBottomButtons
+                        )
+                    }
+                }
+            }
+        } else {
+            val isDockedBottom = displaySettings.artAlignmentPortrait == com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (isDockedBottom) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        SongLabelsLayout(
+                            currentSong = pageSong,
+                            displaySettings = displaySettings,
+                            hasTopButtons = hasTopButtons,
+                            hasBottomButtons = hasBottomButtons
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        PlayerAlbumArtBackground(
+                            song = pageSong,
+                            displaySettings = displaySettings
+                        )
+                    }
+                } else {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        PlayerAlbumArtBackground(
+                            song = pageSong,
+                            displaySettings = displaySettings
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        SongLabelsLayout(
+                            currentSong = pageSong,
+                            displaySettings = displaySettings,
+                            hasTopButtons = hasTopButtons,
+                            hasBottomButtons = hasBottomButtons
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        Box(modifier = Modifier.fillMaxSize()) {
+            PlayerAlbumArtBackground(
+                song = pageSong,
+                displaySettings = displaySettings
+            )
+
+            SongLabelsLayout(
+                currentSong = pageSong,
+                displaySettings = displaySettings,
+                hasTopButtons = hasTopButtons,
+                hasBottomButtons = hasBottomButtons
+            )
+        }
+    }
+}
+
+@Composable
 fun SongLabelsLayout(
     currentSong: Song?,
     displaySettings: DisplaySettings,
@@ -479,7 +582,7 @@ fun SongLabelsLayout(
             fontSize = artistFontSize,
             lineHeight = artistLineHeight,
             fontFamily = artistFont,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.secondary,
             fontWeight = FontWeight.Medium,
             textAlign = displaySettings.artistAlignment.toComposeAlignment(),
             onTextLayout = { result ->
@@ -521,7 +624,7 @@ fun SongLabelsLayout(
             fontSize = albumFontSize,
             lineHeight = albumLineHeight,
             fontFamily = albumFont,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.tertiary,
             fontWeight = FontWeight.Normal,
             textAlign = displaySettings.albumAlignment.toComposeAlignment(),
             onTextLayout = { result ->
@@ -551,7 +654,6 @@ fun PlayerAlbumArtBackground(
     var bitmap by remember(song.id, song.artworkUri) {
         mutableStateOf(AlbumArtCache.instance.get(song.id))
     }
-    var dominantBgColor by remember(song.id) { mutableStateOf<Color?>(null) }
 
     LaunchedEffect(song.id, song.artworkUri, song.contentUri) {
         val cached = AlbumArtCache.instance.get(song.id)
@@ -565,27 +667,6 @@ fun PlayerAlbumArtBackground(
                     AlbumArtCache.instance.put(song.id, imgBmp)
                     bitmap = imgBmp
                 }
-            }
-        }
-    }
-
-    LaunchedEffect(bitmap) {
-        val imgBmp = bitmap
-        if (imgBmp != null) {
-            withContext(Dispatchers.Default) {
-                try {
-                    val androidBmp = imgBmp.asAndroidBitmap()
-                    val safeBmp = if (androidBmp.config == android.graphics.Bitmap.Config.HARDWARE) {
-                        androidBmp.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
-                    } else {
-                        androidBmp
-                    }
-                    val palette = androidx.palette.graphics.Palette.from(safeBmp ?: androidBmp).generate()
-                    val domSwatch = palette.dominantSwatch
-                    if (domSwatch != null) {
-                        dominantBgColor = Color(domSwatch.rgb)
-                    }
-                } catch (ignored: Exception) {}
             }
         }
     }
@@ -645,17 +726,14 @@ fun PlayerAlbumArtBackground(
         }
     }
 
-    val layoutModifier = when (displaySettings.artDisplayLayout) {
-        ArtLayoutOption.OVERLAY -> Modifier.fillMaxSize()
-        ArtLayoutOption.DOCKED -> Modifier.fillMaxWidth().fillMaxHeight(0.5f)
-    }
+    val letterboxBgColor = MaterialTheme.colorScheme.background
 
     Box(
         modifier = modifier
-            .then(layoutModifier)
+            .fillMaxSize()
             .then(
-                if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT && dominantBgColor != null) {
-                    Modifier.background(dominantBgColor!!.copy(alpha = displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)))
+                if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
+                    Modifier.background(letterboxBgColor.copy(alpha = displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)))
                 } else Modifier
             )
     ) {
@@ -865,6 +943,7 @@ private fun handleGestureAction(
         GestureAction.VOLUME_DOWN -> playbackManager.decreaseVolume()
         GestureAction.TOGGLE_REPEAT -> playbackManager.toggleRepeat()
         GestureAction.TOGGLE_SHUFFLE -> playbackManager.toggleShuffle()
+        GestureAction.SHUFFLE_ALL_SONGS -> playbackManager.shuffleAllSongs()
         GestureAction.PLAY_CURRENT_ALBUM -> playbackManager.playCurrentAlbum()
         GestureAction.PLAY_CURRENT_ARTIST -> playbackManager.playCurrentArtist()
         GestureAction.INCREASE_RATING -> playbackManager.increaseRating()
@@ -873,7 +952,6 @@ private fun handleGestureAction(
         GestureAction.MENU -> onOpenSettings()
         GestureAction.SHOW_QUICK_START -> onOpenQuickStart()
         GestureAction.UNASSIGNED -> {}
-        else -> {}
     }
 }
 
@@ -958,8 +1036,8 @@ fun ScreenRegionIconsOverlay(
 
     Box(modifier = modifier.fillMaxSize()) {
         for ((trigger, alignment) in regionTriggers) {
-            val binding = gestureBindings[trigger]
-            val action = binding?.action ?: GestureAction.UNASSIGNED
+            val binding = resolveGestureBinding(trigger, gestureBindings)
+            val action = binding.action
             if (action != GestureAction.UNASSIGNED) {
                 val paddingModifier = when (alignment) {
                     Alignment.TopStart -> Modifier.padding(top = 8.dp, start = 8.dp)

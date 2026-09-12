@@ -30,7 +30,10 @@ fun TravelingTunesTheme(
             surface = activeTheme.backgroundColor,
             onBackground = activeTheme.textColor,
             onSurface = activeTheme.textColor,
-            primary = activeTheme.textColor
+            primary = activeTheme.textColor,
+            secondary = activeTheme.artistColor,
+            tertiary = activeTheme.albumColor,
+            onSurfaceVariant = activeTheme.secondaryTextColor
         )
     } else {
         lightColorScheme(
@@ -38,7 +41,10 @@ fun TravelingTunesTheme(
             surface = activeTheme.backgroundColor,
             onBackground = activeTheme.textColor,
             onSurface = activeTheme.textColor,
-            primary = activeTheme.textColor
+            primary = activeTheme.textColor,
+            secondary = activeTheme.artistColor,
+            tertiary = activeTheme.albumColor,
+            onSurfaceVariant = activeTheme.secondaryTextColor
         )
     }
 
@@ -58,6 +64,21 @@ fun resolveActiveTheme(
     }
 
     val baseTheme = if (themeSettings.currentThemeName.equals("Custom", ignoreCase = true)) {
+        val songColor = Color(
+            red = (themeSettings.customSongTitleRed / 255f).coerceIn(0f, 1f),
+            green = (themeSettings.customSongTitleGreen / 255f).coerceIn(0f, 1f),
+            blue = (themeSettings.customSongTitleBlue / 255f).coerceIn(0f, 1f)
+        )
+        val artistColor = Color(
+            red = (themeSettings.customArtistTitleRed / 255f).coerceIn(0f, 1f),
+            green = (themeSettings.customArtistTitleGreen / 255f).coerceIn(0f, 1f),
+            blue = (themeSettings.customArtistTitleBlue / 255f).coerceIn(0f, 1f)
+        )
+        val albumColor = Color(
+            red = (themeSettings.customAlbumTitleRed / 255f).coerceIn(0f, 1f),
+            green = (themeSettings.customAlbumTitleGreen / 255f).coerceIn(0f, 1f),
+            blue = (themeSettings.customAlbumTitleBlue / 255f).coerceIn(0f, 1f)
+        )
         ColorTheme(
             name = "Custom",
             backgroundColor = Color(
@@ -65,11 +86,10 @@ fun resolveActiveTheme(
                 green = (themeSettings.customBGGreen / 255f).coerceIn(0f, 1f),
                 blue = (themeSettings.customBGBlue / 255f).coerceIn(0f, 1f)
             ),
-            textColor = Color(
-                red = (themeSettings.customTextRed / 255f).coerceIn(0f, 1f),
-                green = (themeSettings.customTextGreen / 255f).coerceIn(0f, 1f),
-                blue = (themeSettings.customTextBlue / 255f).coerceIn(0f, 1f)
-            )
+            textColor = songColor,
+            secondaryTextColor = artistColor,
+            artistColor = artistColor,
+            albumColor = albumColor
         )
     } else {
         ColorTheme.getByName(themeSettings.currentThemeName)
@@ -83,7 +103,10 @@ fun resolveActiveTheme(
         ColorTheme(
             name = baseTheme.name + " (Inverted)",
             backgroundColor = baseTheme.textColor,
-            textColor = baseTheme.backgroundColor
+            textColor = baseTheme.backgroundColor,
+            secondaryTextColor = baseTheme.backgroundColor,
+            artistColor = baseTheme.backgroundColor,
+            albumColor = baseTheme.backgroundColor
         )
     } else {
         baseTheme

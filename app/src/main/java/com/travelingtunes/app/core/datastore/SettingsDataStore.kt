@@ -95,6 +95,15 @@ class SettingsDataStore(private val context: Context) {
         val KEY_CUSTOM_TEXT_RED = floatPreferencesKey("customTextRed")
         val KEY_CUSTOM_TEXT_GREEN = floatPreferencesKey("customTextGreen")
         val KEY_CUSTOM_TEXT_BLUE = floatPreferencesKey("customTextBlue")
+        val KEY_CUSTOM_SONG_TITLE_RED = floatPreferencesKey("customSongTitleRed")
+        val KEY_CUSTOM_SONG_TITLE_GREEN = floatPreferencesKey("customSongTitleGreen")
+        val KEY_CUSTOM_SONG_TITLE_BLUE = floatPreferencesKey("customSongTitleBlue")
+        val KEY_CUSTOM_ARTIST_TITLE_RED = floatPreferencesKey("customArtistTitleRed")
+        val KEY_CUSTOM_ARTIST_TITLE_GREEN = floatPreferencesKey("customArtistTitleGreen")
+        val KEY_CUSTOM_ARTIST_TITLE_BLUE = floatPreferencesKey("customArtistTitleBlue")
+        val KEY_CUSTOM_ALBUM_TITLE_RED = floatPreferencesKey("customAlbumTitleRed")
+        val KEY_CUSTOM_ALBUM_TITLE_GREEN = floatPreferencesKey("customAlbumTitleGreen")
+        val KEY_CUSTOM_ALBUM_TITLE_BLUE = floatPreferencesKey("customAlbumTitleBlue")
         val KEY_CUSTOM_BG_RED = floatPreferencesKey("customBGRed")
         val KEY_CUSTOM_BG_GREEN = floatPreferencesKey("customBGGreen")
         val KEY_CUSTOM_BG_BLUE = floatPreferencesKey("customBGBlue")
@@ -163,11 +172,23 @@ class SettingsDataStore(private val context: Context) {
     }
 
     val themeSettingsFlow: Flow<ThemeSettings> = context.dataStore.data.map { prefs ->
+        val textRed = prefs[KEY_CUSTOM_TEXT_RED] ?: 22f
+        val textGreen = prefs[KEY_CUSTOM_TEXT_GREEN] ?: 22f
+        val textBlue = prefs[KEY_CUSTOM_TEXT_BLUE] ?: 180f
         ThemeSettings(
             currentThemeName = prefs[KEY_CURRENT_THEME] ?: "White on Grey",
-            customTextRed = prefs[KEY_CUSTOM_TEXT_RED] ?: 22f,
-            customTextGreen = prefs[KEY_CUSTOM_TEXT_GREEN] ?: 22f,
-            customTextBlue = prefs[KEY_CUSTOM_TEXT_BLUE] ?: 180f,
+            customTextRed = textRed,
+            customTextGreen = textGreen,
+            customTextBlue = textBlue,
+            customSongTitleRed = prefs[KEY_CUSTOM_SONG_TITLE_RED] ?: textRed,
+            customSongTitleGreen = prefs[KEY_CUSTOM_SONG_TITLE_GREEN] ?: textGreen,
+            customSongTitleBlue = prefs[KEY_CUSTOM_SONG_TITLE_BLUE] ?: textBlue,
+            customArtistTitleRed = prefs[KEY_CUSTOM_ARTIST_TITLE_RED] ?: textRed,
+            customArtistTitleGreen = prefs[KEY_CUSTOM_ARTIST_TITLE_GREEN] ?: textGreen,
+            customArtistTitleBlue = prefs[KEY_CUSTOM_ARTIST_TITLE_BLUE] ?: textBlue,
+            customAlbumTitleRed = prefs[KEY_CUSTOM_ALBUM_TITLE_RED] ?: textRed,
+            customAlbumTitleGreen = prefs[KEY_CUSTOM_ALBUM_TITLE_GREEN] ?: textGreen,
+            customAlbumTitleBlue = prefs[KEY_CUSTOM_ALBUM_TITLE_BLUE] ?: textBlue,
             customBGRed = prefs[KEY_CUSTOM_BG_RED] ?: 200f,
             customBGGreen = prefs[KEY_CUSTOM_BG_GREEN] ?: 200f,
             customBGBlue = prefs[KEY_CUSTOM_BG_BLUE] ?: 100f,
@@ -371,6 +392,15 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_CUSTOM_TEXT_RED] = update.customTextRed
             prefs[KEY_CUSTOM_TEXT_GREEN] = update.customTextGreen
             prefs[KEY_CUSTOM_TEXT_BLUE] = update.customTextBlue
+            prefs[KEY_CUSTOM_SONG_TITLE_RED] = update.customSongTitleRed
+            prefs[KEY_CUSTOM_SONG_TITLE_GREEN] = update.customSongTitleGreen
+            prefs[KEY_CUSTOM_SONG_TITLE_BLUE] = update.customSongTitleBlue
+            prefs[KEY_CUSTOM_ARTIST_TITLE_RED] = update.customArtistTitleRed
+            prefs[KEY_CUSTOM_ARTIST_TITLE_GREEN] = update.customArtistTitleGreen
+            prefs[KEY_CUSTOM_ARTIST_TITLE_BLUE] = update.customArtistTitleBlue
+            prefs[KEY_CUSTOM_ALBUM_TITLE_RED] = update.customAlbumTitleRed
+            prefs[KEY_CUSTOM_ALBUM_TITLE_GREEN] = update.customAlbumTitleGreen
+            prefs[KEY_CUSTOM_ALBUM_TITLE_BLUE] = update.customAlbumTitleBlue
             prefs[KEY_CUSTOM_BG_RED] = update.customBGRed
             prefs[KEY_CUSTOM_BG_GREEN] = update.customBGGreen
             prefs[KEY_CUSTOM_BG_BLUE] = update.customBGBlue

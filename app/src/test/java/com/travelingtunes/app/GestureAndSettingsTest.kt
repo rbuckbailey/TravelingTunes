@@ -12,6 +12,12 @@ class GestureAndSettingsTest {
     fun testDefaultGestureActionResolution() {
         val action = GestureAction.fromKey("PlayPause")
         assertEquals(GestureAction.PLAY_PAUSE, action)
+
+        val shuffleAll = GestureAction.fromKey("ShuffleAllSongs")
+        assertEquals(GestureAction.SHUFFLE_ALL_SONGS, shuffleAll)
+
+        val legacyDefaultPlaylist = GestureAction.fromKey("StartDefaultPlaylist")
+        assertEquals(GestureAction.SHUFFLE_ALL_SONGS, legacyDefaultPlaylist)
     }
 
     @Test
@@ -19,6 +25,21 @@ class GestureAndSettingsTest {
         val trigger = GestureTrigger.fromKey("1SwipeUp")
         assertEquals(GestureTrigger.SWIPE_1_UP, trigger)
         assertEquals("VolumeUp", trigger?.defaultActionKey)
+
+        val longPress3 = GestureTrigger.LONG_PRESS_3
+        assertEquals("ShuffleAllSongs", longPress3.defaultActionKey)
+    }
+
+    @Test
+    fun testThreeFingerTapTriggers() {
+        val tap31 = GestureTrigger.fromKey("31Tap")
+        assertEquals(GestureTrigger.TAP_3_1, tap31)
+
+        val tap32 = GestureTrigger.fromKey("32Tap")
+        assertEquals(GestureTrigger.TAP_3_2, tap32)
+
+        val tap33 = GestureTrigger.fromKey("33Tap")
+        assertEquals(GestureTrigger.TAP_3_3, tap33)
     }
 
     @Test
@@ -107,5 +128,55 @@ class GestureAndSettingsTest {
         assertEquals("Titles and Art", categories[2])
         assertEquals("Themes", categories[3])
         assertEquals("About", categories[4])
+    }
+
+    @Test
+    fun testColorThemeSecondaryTextColor() {
+        val theme = com.travelingtunes.app.core.model.ColorTheme("Custom Theme", androidx.compose.ui.graphics.Color.Black, androidx.compose.ui.graphics.Color.White, androidx.compose.ui.graphics.Color.LightGray)
+        assertEquals(androidx.compose.ui.graphics.Color.Black, theme.backgroundColor)
+        assertEquals(androidx.compose.ui.graphics.Color.White, theme.textColor)
+        assertEquals(androidx.compose.ui.graphics.Color.LightGray, theme.secondaryTextColor)
+    }
+
+    @Test
+    fun testResolveActiveThemeSecondaryColor() {
+        val dynamicTheme = com.travelingtunes.app.core.model.ColorTheme("Dynamic", androidx.compose.ui.graphics.Color.Blue, androidx.compose.ui.graphics.Color.Yellow, androidx.compose.ui.graphics.Color.Cyan)
+        val resolved = com.travelingtunes.app.core.theme.resolveActiveTheme(
+            themeSettings = ThemeSettings(),
+            dynamicAlbumArtTheme = dynamicTheme,
+            useAlbumArtColors = true
+        )
+        assertEquals(dynamicTheme, resolved)
+        assertEquals(androidx.compose.ui.graphics.Color.Yellow, resolved.textColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Cyan, resolved.secondaryTextColor)
+    }
+
+    @Test
+    fun testResolveActiveCustomThemeSongArtistAlbumColors() {
+        val customThemeSettings = ThemeSettings(
+            currentThemeName = "Custom",
+            customBGRed = 0f, customBGGreen = 0f, customBGBlue = 0f,
+            customSongTitleRed = 255f, customSongTitleGreen = 0f, customSongTitleBlue = 0f,
+            customArtistTitleRed = 0f, customArtistTitleGreen = 255f, customArtistTitleBlue = 0f,
+            customAlbumTitleRed = 0f, customAlbumTitleGreen = 0f, customAlbumTitleBlue = 255f
+        )
+        val resolved = com.travelingtunes.app.core.theme.resolveActiveTheme(
+            themeSettings = customThemeSettings,
+            dynamicAlbumArtTheme = null,
+            useAlbumArtColors = false
+        )
+        assertEquals("Custom", resolved.name)
+        assertEquals(androidx.compose.ui.graphics.Color.Black, resolved.backgroundColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Red, resolved.textColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Green, resolved.artistColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Blue, resolved.albumColor)
+    }
+
+    @Test
+    fun testDockedArtLayoutSettings() {
+        val displaySettings = com.travelingtunes.app.core.model.DisplaySettings(
+            artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED
+        )
+        assertEquals(com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED, displaySettings.artDisplayLayout)
     }
 }

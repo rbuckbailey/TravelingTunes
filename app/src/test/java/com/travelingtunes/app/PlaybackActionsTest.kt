@@ -18,6 +18,11 @@ class PlaybackActionsTest {
     }
 
     @Test
+    fun testShuffleAllSongsActionDisplayName() {
+        assertEquals("Shuffle All Songs", com.travelingtunes.app.core.model.GestureAction.SHUFFLE_ALL_SONGS.displayName)
+    }
+
+    @Test
     fun testPlayCurrentAlbumLogic() {
         val mockUri = Mockito.mock(android.net.Uri::class.java)
         val song1 = Song(1L, "Track 1", "Artist A", "Album A", 10L, 100000L, mockUri, trackNumber = 1)

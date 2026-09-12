@@ -412,10 +412,16 @@ fun SongPickerBottomSheet(
                                     song = song,
                                     onPlay = {
                                         playbackManager.setPlaylistAndPlay(songsList, index)
+                                        if (selectedAlbum != null) {
+                                            playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                        }
                                         onDismiss()
                                     },
                                     onClick = {
                                         playbackManager.setPlaylistAndPlay(songsList, index)
+                                        if (selectedAlbum != null) {
+                                            playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                        }
                                         onDismiss()
                                     }
                                 )
@@ -445,6 +451,7 @@ fun SongPickerBottomSheet(
                                             val playSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
                                             if (playSongs.isNotEmpty()) {
                                                 playbackManager.setPlaylistAndPlay(playSongs, 0)
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
                                             }
                                             onDismiss()
                                         }

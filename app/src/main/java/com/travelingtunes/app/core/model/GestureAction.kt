@@ -15,7 +15,7 @@ enum class GestureAction(val displayName: String) {
     MENU("Menu"),
     VOLUME_UP("Volume Up"),
     VOLUME_DOWN("Volume Down"),
-    START_DEFAULT_PLAYLIST("Start Default Playlist"),
+    SHUFFLE_ALL_SONGS("Shuffle All Songs"),
     PLAY_CURRENT_ARTIST("Play Current Artist"),
     PLAY_CURRENT_ALBUM("Play Current Album"),
     TOGGLE_REPEAT("Toggle Repeat"),
@@ -34,6 +34,9 @@ enum class GestureAction(val displayName: String) {
     companion object {
         fun fromKey(key: String): GestureAction {
             val sanitizedKey = key.filter { it.isLetterOrDigit() }
+            if (sanitizedKey.equals("StartDefaultPlaylist", ignoreCase = true)) {
+                return SHUFFLE_ALL_SONGS
+            }
             return entries.find {
                 it.name.equals(key, ignoreCase = true) ||
                 it.displayName.equals(key, ignoreCase = true) ||
