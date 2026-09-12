@@ -150,13 +150,22 @@ class GestureAndSettingsTest {
 
     @Test
     fun testSettingsCategoriesNaming() {
-        val categories = listOf("Library", "Gestures", "Titles and Art", "Themes", "About")
-        assertEquals(5, categories.size)
-        assertEquals("Library", categories[0])
-        assertEquals("Gestures", categories[1])
-        assertEquals("Titles and Art", categories[2])
-        assertEquals("Themes", categories[3])
-        assertEquals("About", categories[4])
+        val submenus = com.travelingtunes.app.feature.settings.SettingsSubmenu.entries
+        assertEquals(5, submenus.size)
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY, submenus[0])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TYPOGRAPHY_HUD, submenus[1])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, submenus[2])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.THEMES, submenus[3])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[4])
+
+        val found = submenus.find { it.name == "GESTURES" }
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, found)
+    }
+
+    @Test
+    fun testAutoRescanKeyDefinition() {
+        val key = com.travelingtunes.app.core.datastore.SettingsDataStore.KEY_AUTO_RESCAN
+        assertEquals("autoRescan", key.name)
     }
 
     @Test

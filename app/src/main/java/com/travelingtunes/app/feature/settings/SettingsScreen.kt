@@ -1,5 +1,6 @@
 package com.travelingtunes.app.feature.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -55,11 +56,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -150,8 +151,12 @@ fun SettingsScreen(
     artDownloadFailedCount: Int = 0,
     artDownloadTotalCount: Int = 0,
     lastAuditReport: AlbumArtAuditReport? = null,
+    autoRescanEnabled: Boolean = false,
+    autoRescanStatusMessage: String? = null,
+    isAutoRescanWaiting: Boolean = false,
     onPickMusicFolder: () -> Unit = {},
     onRescanMusicFolder: () -> Unit = {},
+    onToggleAutoRescan: (Boolean) -> Unit = {},
     onDownloadMissingArt: () -> Unit = {},
     onCancelDownloadArt: () -> Unit = {},
     onNavigateBack: () -> Unit,
@@ -166,13 +171,30 @@ fun SettingsScreen(
     var activeColorPicker by remember { mutableStateOf<String?>(null) }
     var showAuditDialog by remember { mutableStateOf(false) }
 
-    var selectedSubmenu by rememberSaveable { mutableStateOf<SettingsSubmenu?>(null) }
+    val savedSubmenuName by settingsDataStore.lastSettingsSubmenuFlow.collectAsState(initial = null)
+    val selectedSubmenu = SettingsSubmenu.entries.find { it.name == savedSubmenuName }
 
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp
     val isWideScreen = screenWidthDp >= 600
 
     val activeSubmenu = if (isWideScreen) (selectedSubmenu ?: SettingsSubmenu.LIBRARY) else selectedSubmenu
+
+    val handleBack: () -> Unit = {
+        if (activeColorPicker != null) {
+            activeColorPicker = null
+        } else if (showAuditDialog) {
+            showAuditDialog = false
+        } else if (selectedSubmenu != null) {
+            coroutineScope.launch {
+                settingsDataStore.setLastSettingsSubmenu(null)
+            }
+        } else {
+            onNavigateBack()
+        }
+    }
+
+    BackHandler(enabled = true, onBack = handleBack)
 
     val fontPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -199,15 +221,7 @@ fun SettingsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            if (!isWideScreen && selectedSubmenu != null) {
-                                selectedSubmenu = null
-                            } else {
-                                onNavigateBack()
-                            }
-                        }
-                    ) {
+                    IconButton(onClick = handleBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -248,7 +262,11 @@ fun SettingsScreen(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { selectedSubmenu = submenu }
+                                .clickable {
+                                    coroutineScope.launch {
+                                        settingsDataStore.setLastSettingsSubmenu(submenu.name)
+                                    }
+                                }
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -301,6 +319,10 @@ fun SettingsScreen(
                         artDownloadFailedCount = artDownloadFailedCount,
                         artDownloadTotalCount = artDownloadTotalCount,
                         lastAuditReport = lastAuditReport,
+                        autoRescanEnabled = autoRescanEnabled,
+                        autoRescanStatusMessage = autoRescanStatusMessage,
+                        isAutoRescanWaiting = isAutoRescanWaiting,
+                        onToggleAutoRescan = onToggleAutoRescan,
                         availableFonts = availableFonts,
                         onPickMusicFolder = onPickMusicFolder,
                         onRescanMusicFolder = onRescanMusicFolder,
@@ -367,7 +389,11 @@ fun SettingsScreen(
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { selectedSubmenu = submenu }
+                                    .clickable {
+                                        coroutineScope.launch {
+                                            settingsDataStore.setLastSettingsSubmenu(submenu.name)
+                                        }
+                                    }
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -428,6 +454,10 @@ fun SettingsScreen(
                         artDownloadFailedCount = artDownloadFailedCount,
                         artDownloadTotalCount = artDownloadTotalCount,
                         lastAuditReport = lastAuditReport,
+                        autoRescanEnabled = autoRescanEnabled,
+                        autoRescanStatusMessage = autoRescanStatusMessage,
+                        isAutoRescanWaiting = isAutoRescanWaiting,
+                        onToggleAutoRescan = onToggleAutoRescan,
                         availableFonts = availableFonts,
                         onPickMusicFolder = onPickMusicFolder,
                         onRescanMusicFolder = onRescanMusicFolder,
@@ -548,6 +578,10 @@ private fun SubmenuContent(
     artDownloadFailedCount: Int,
     artDownloadTotalCount: Int,
     lastAuditReport: AlbumArtAuditReport?,
+    autoRescanEnabled: Boolean = false,
+    autoRescanStatusMessage: String? = null,
+    isAutoRescanWaiting: Boolean = false,
+    onToggleAutoRescan: (Boolean) -> Unit = {},
     availableFonts: List<FontOption>,
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
@@ -598,6 +632,10 @@ private fun SubmenuContent(
                     artDownloadFailedCount = artDownloadFailedCount,
                     artDownloadTotalCount = artDownloadTotalCount,
                     lastAuditReport = lastAuditReport,
+                    autoRescanEnabled = autoRescanEnabled,
+                    autoRescanStatusMessage = autoRescanStatusMessage,
+                    isAutoRescanWaiting = isAutoRescanWaiting,
+                    onToggleAutoRescan = onToggleAutoRescan,
                     libraryStats = libraryStats,
                     onPickMusicFolder = onPickMusicFolder,
                     onRescanMusicFolder = onRescanMusicFolder,
@@ -653,6 +691,10 @@ private fun LibrarySettingsContent(
     artDownloadFailedCount: Int = 0,
     artDownloadTotalCount: Int = 0,
     lastAuditReport: AlbumArtAuditReport? = null,
+    autoRescanEnabled: Boolean = false,
+    autoRescanStatusMessage: String? = null,
+    isAutoRescanWaiting: Boolean = false,
+    onToggleAutoRescan: (Boolean) -> Unit = {},
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
     onDownloadMissingArt: () -> Unit = {},
@@ -670,6 +712,26 @@ private fun LibrarySettingsContent(
                 )
             },
             modifier = Modifier.clickable { onPickMusicFolder() }
+        )
+        ListItem(
+            headlineContent = { Text("Automatically Re-scan Library") },
+            supportingContent = {
+                if (!autoRescanStatusMessage.isNullOrBlank()) {
+                    Text(
+                        autoRescanStatusMessage,
+                        color = if (isAutoRescanWaiting) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text("Monitor folder for file changes and auto-rescan after changes complete")
+                }
+            },
+            trailingContent = {
+                Switch(
+                    checked = autoRescanEnabled,
+                    onCheckedChange = { onToggleAutoRescan(it) },
+                    enabled = !musicFolderName.isNullOrBlank()
+                )
+            }
         )
         ListItem(
             headlineContent = { Text("Rescan Music Folder") },
@@ -736,7 +798,7 @@ private fun LibrarySettingsContent(
         }
 
         ListItem(
-            headlineContent = { Text("Downloaded Art Browser") },
+            headlineContent = { Text("Album Art Editor") },
             supportingContent = {
                 Text("Manage, replace, or embed downloaded album artwork into ID3 tags")
             },

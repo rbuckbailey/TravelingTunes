@@ -142,6 +142,12 @@ fun DownloadedArtBrowserScreen(
         refreshList()
     }
 
+    LaunchedEffect(isEmbeddingArt) {
+        if (!isEmbeddingArt) {
+            refreshList()
+        }
+    }
+
     val filteredAlbums = remember(allAlbums, selectedFilter, albumSearchQuery) {
         allAlbums.filter { albumInfo ->
             val matchesType = when (selectedFilter) {
@@ -209,7 +215,7 @@ fun DownloadedArtBrowserScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Album Art Browser", fontWeight = FontWeight.Bold)
+                        Text("Album Art Editor", fontWeight = FontWeight.Bold)
                         Text(
                             text = "${filteredAlbums.size} of ${allAlbums.size} albums",
                             fontSize = 12.sp,

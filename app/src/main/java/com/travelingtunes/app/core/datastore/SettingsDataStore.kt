@@ -52,6 +52,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_MUSIC_FOLDER_NAME = stringPreferencesKey("musicFolderName")
         val KEY_LAST_SCAN_TIME = longPreferencesKey("lastScanTime")
         val KEY_FIRST_RUN_PROMPTED = booleanPreferencesKey("firstRunPrompted")
+        val KEY_AUTO_RESCAN = booleanPreferencesKey("autoRescan")
 
         val KEY_VOLUME_SENSITIVITY = floatPreferencesKey("volumeSensitivity")
         val KEY_SEEK_SENSITIVITY = floatPreferencesKey("seekSensitivity")
@@ -102,6 +103,9 @@ class SettingsDataStore(private val context: Context) {
         val KEY_IMMERSIVE_MODE = booleanPreferencesKey("immersiveMode")
         val KEY_NUM_EDGE_REGIONS = intPreferencesKey("numEdgeRegions")
         val KEY_TITLE_ORDER = stringPreferencesKey("titleOrder")
+
+        // Navigation / Menu State Persistence
+        val KEY_LAST_SETTINGS_SUBMENU = stringPreferencesKey("lastSettingsSubmenu")
 
         // Theme
         val KEY_CURRENT_THEME = stringPreferencesKey("currentTheme")
@@ -262,6 +266,24 @@ class SettingsDataStore(private val context: Context) {
         prefs[KEY_FIRST_RUN_PROMPTED] ?: false
     }
 
+    val autoRescanFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTO_RESCAN] ?: false
+    }
+
+    val lastSettingsSubmenuFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LAST_SETTINGS_SUBMENU]
+    }
+
+    suspend fun setLastSettingsSubmenu(submenuName: String?) {
+        context.dataStore.edit { prefs ->
+            if (submenuName == null) {
+                prefs.remove(KEY_LAST_SETTINGS_SUBMENU)
+            } else {
+                prefs[KEY_LAST_SETTINGS_SUBMENU] = submenuName
+            }
+        }
+    }
+
     val savedPlaybackStateFlow: Flow<SavedPlaybackState> = context.dataStore.data.map { prefs ->
         val queueStr = prefs[KEY_SAVED_QUEUE_IDS] ?: ""
         val queueIds = queueStr.split(",").mapNotNull { it.trim().toLongOrNull() }
@@ -372,6 +394,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setFirstRunPrompted(prompted: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_FIRST_RUN_PROMPTED] = prompted
+        }
+    }
+
+    suspend fun setAutoRescan(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AUTO_RESCAN] = enabled
         }
     }
 

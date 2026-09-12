@@ -1,16 +1,25 @@
 package com.travelingtunes.app.core.media
 
 import android.content.Context
+import android.database.ContentObserver
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.documentfile.provider.DocumentFile
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.model.Song
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -40,6 +49,109 @@ class MusicScanner(
 
     suspend fun downloadMissingArtwork(): Int = albumArtDownloader.downloadMissingArtwork()
     fun cancelDownloadArt() = albumArtDownloader.cancelDownload()
+
+    private val _isAutoRescanWaiting = MutableStateFlow(false)
+    val isAutoRescanWaiting: StateFlow<Boolean> = _isAutoRescanWaiting.asStateFlow()
+
+    private val _autoRescanStatusMessage = MutableStateFlow<String?>(null)
+    val autoRescanStatusMessage: StateFlow<String?> = _autoRescanStatusMessage.asStateFlow()
+
+    @Volatile
+    private var contentObserver: ContentObserver? = null
+    private var autoRescanJob: Job? = null
+    private var lastChangeTimestamp = 0L
+
+    fun startAutoRescanWatcher(
+        treeUri: Uri,
+        coroutineScope: CoroutineScope,
+        debounceMs: Long = 3000L,
+        onScanComplete: suspend () -> Unit = {}
+    ) {
+        stopAutoRescanWatcher()
+
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean, uri: Uri?) {
+                super.onChange(selfChange, uri)
+                onFolderChangeDetected(treeUri, coroutineScope, debounceMs, onScanComplete)
+            }
+        }
+
+        try {
+            context.contentResolver.registerContentObserver(treeUri, true, observer)
+            context.contentResolver.registerContentObserver(
+                android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                true,
+                observer
+            )
+            contentObserver = observer
+            _autoRescanStatusMessage.value = "Monitoring folder for changes..."
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _autoRescanStatusMessage.value = "Auto-rescan setup failed: ${e.localizedMessage}"
+        }
+    }
+
+    fun stopAutoRescanWatcher() {
+        contentObserver?.let {
+            try {
+                context.contentResolver.unregisterContentObserver(it)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        contentObserver = null
+        autoRescanJob?.cancel()
+        autoRescanJob = null
+        _isAutoRescanWaiting.value = false
+        _autoRescanStatusMessage.value = null
+    }
+
+    private fun onFolderChangeDetected(
+        treeUri: Uri,
+        coroutineScope: CoroutineScope,
+        debounceMs: Long,
+        onScanComplete: suspend () -> Unit
+    ) {
+        lastChangeTimestamp = System.currentTimeMillis()
+        _isAutoRescanWaiting.value = true
+        _autoRescanStatusMessage.value = "File changes detected. Waiting for folder to stabilize..."
+
+        autoRescanJob?.cancel()
+        autoRescanJob = coroutineScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                val timeSinceLastChange = System.currentTimeMillis() - lastChangeTimestamp
+                if (timeSinceLastChange >= debounceMs) {
+                    break
+                }
+                delay(debounceMs - timeSinceLastChange)
+            }
+
+            if (!isActive) return@launch
+
+            _autoRescanStatusMessage.value = "Checking folder stability..."
+            val rootDoc = DocumentFile.fromTreeUri(context, treeUri)
+            val initialCount = rootDoc?.listFiles()?.size ?: 0
+            delay(500L)
+            val secondCount = rootDoc?.listFiles()?.size ?: 0
+
+            if (initialCount != secondCount) {
+                onFolderChangeDetected(treeUri, coroutineScope, debounceMs, onScanComplete)
+                return@launch
+            }
+
+            while (_isScanning.value && isActive) {
+                delay(500L)
+            }
+
+            if (!isActive) return@launch
+
+            _autoRescanStatusMessage.value = "Folder stable. Auto-rescanning library..."
+            scanFolder(treeUri)
+            _isAutoRescanWaiting.value = false
+            _autoRescanStatusMessage.value = "Auto-scan complete"
+            onScanComplete()
+        }
+    }
 
     private val _isEmbeddingArt = MutableStateFlow(false)
     val isEmbeddingArt: StateFlow<Boolean> = _isEmbeddingArt.asStateFlow()
@@ -101,6 +213,42 @@ class MusicScanner(
                 val (succ, fail) = Id3ArtworkEmbedder.embedArtworkIntoAlbum(context, songs, uri)
                 totalEmbedded += succ
                 totalFailed += fail
+
+                if (succ > 0) {
+                    try {
+                        val hashKey = hashString("$artist-$album")
+                        val embeddedDir = File(context.cacheDir, "embedded_art").apply { mkdirs() }
+                        val embeddedFile = File(embeddedDir, "art_embedded_$hashKey.jpg")
+
+                        val bytes = try {
+                            if (uri.scheme == "file") {
+                                File(uri.path ?: "").readBytes()
+                            } else {
+                                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                            }
+                        } catch (_: Exception) {
+                            null
+                        }
+
+                        if (bytes != null && bytes.isNotEmpty()) {
+                            FileOutputStream(embeddedFile).use { fos -> fos.write(bytes) }
+                            if (embeddedFile.exists() && embeddedFile.length() > 0) {
+                                val embeddedUri = Uri.fromFile(embeddedFile)
+                                musicDatabase.updateAlbumArtwork(album, artist, embeddedUri)
+
+                                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                if (bitmap != null) {
+                                    val imgBmp = bitmap.asImageBitmap()
+                                    for (song in songs) {
+                                        AlbumArtCache.instance.put(song.id, imgBmp)
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             } else {
                 totalFailed += songs.size
             }

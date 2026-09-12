@@ -115,9 +115,12 @@ class MainActivity : ComponentActivity() {
             val musicFolderName by settingsDataStore.musicFolderNameFlow.collectAsState(initial = null)
             val lastScanTime by settingsDataStore.lastScanTimeFlow.collectAsState(initial = 0L)
             val firstRunPrompted by settingsDataStore.firstRunPromptedFlow.collectAsState(initial = false)
+            val autoRescanEnabled by settingsDataStore.autoRescanFlow.collectAsState(initial = false)
 
             val isScanning by musicScanner.isScanning.collectAsState()
             val scanStatusMessage by musicScanner.statusMessage.collectAsState()
+            val isAutoRescanWaiting by musicScanner.isAutoRescanWaiting.collectAsState()
+            val autoRescanStatusMessage by musicScanner.autoRescanStatusMessage.collectAsState()
 
             val isDownloadingArt by musicScanner.isDownloadingArt.collectAsState()
             val artDownloadStatusMessage by musicScanner.artDownloadStatusMessage.collectAsState()
@@ -130,6 +133,24 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(lastScanTime, isScanning) {
                 libraryStats = musicDatabase.getLibraryStats()
+            }
+
+            LaunchedEffect(autoRescanEnabled, musicFolderUri) {
+                val folderUriStr = musicFolderUri
+                if (autoRescanEnabled && !folderUriStr.isNullOrEmpty()) {
+                    musicScanner.startAutoRescanWatcher(
+                        treeUri = folderUriStr.toUri(),
+                        coroutineScope = lifecycleScope
+                    ) {
+                        settingsDataStore.setLastScanTime(System.currentTimeMillis())
+                        val scannedSongs = musicDatabase.getAllSongs()
+                        if (scannedSongs.isNotEmpty() && playbackManager.currentSong.value == null) {
+                            playbackManager.setPlaylistAndPlay(scannedSongs, 0, shuffle = true)
+                        }
+                    }
+                } else {
+                    musicScanner.stopAutoRescanWatcher()
+                }
             }
 
             LaunchedEffect(gpsVolumeEnabled, gpsSensitivity) {
@@ -234,6 +255,14 @@ class MainActivity : ComponentActivity() {
                         artDownloadFailedCount = artDownloadFailedCount,
                         artDownloadTotalCount = artDownloadTotalCount,
                         lastAuditReport = lastAuditReport,
+                        autoRescanEnabled = autoRescanEnabled,
+                        autoRescanStatusMessage = autoRescanStatusMessage,
+                        isAutoRescanWaiting = isAutoRescanWaiting,
+                        onToggleAutoRescan = { enabled ->
+                            lifecycleScope.launch {
+                                settingsDataStore.setAutoRescan(enabled)
+                            }
+                        },
                         onPickMusicFolder = { folderPickerLauncher.launch(null) },
                         onRescanMusicFolder = {
                             musicFolderUri?.let { uriStr ->
@@ -318,6 +347,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        musicScanner.stopAutoRescanWatcher()
         speedVolumeManager.stopTracking()
         playbackManager.release()
         musicDatabase.close()
@@ -347,6 +377,10 @@ fun TravelingTunesNavHost(
     artDownloadFailedCount: Int = 0,
     artDownloadTotalCount: Int = 0,
     lastAuditReport: com.travelingtunes.app.core.media.AlbumArtAuditReport? = null,
+    autoRescanEnabled: Boolean = false,
+    autoRescanStatusMessage: String? = null,
+    isAutoRescanWaiting: Boolean = false,
+    onToggleAutoRescan: (Boolean) -> Unit = {},
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
     onDownloadMissingArt: () -> Unit = {},
@@ -403,6 +437,10 @@ fun TravelingTunesNavHost(
                 artDownloadFailedCount = artDownloadFailedCount,
                 artDownloadTotalCount = artDownloadTotalCount,
                 lastAuditReport = lastAuditReport,
+                autoRescanEnabled = autoRescanEnabled,
+                autoRescanStatusMessage = autoRescanStatusMessage,
+                isAutoRescanWaiting = isAutoRescanWaiting,
+                onToggleAutoRescan = onToggleAutoRescan,
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = onRescanMusicFolder,
                 onDownloadMissingArt = onDownloadMissingArt,

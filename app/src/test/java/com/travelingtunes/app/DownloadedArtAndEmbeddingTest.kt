@@ -149,6 +149,31 @@ class DownloadedArtAndEmbeddingTest {
     }
 
     @Test
+    fun testClassifyArtworkTypeWithEmbeddedUri() {
+        val method = com.travelingtunes.app.core.database.MusicDatabase::class.java.getDeclaredMethod(
+            "classifyArtworkType",
+            android.content.Context::class.java,
+            Uri::class.java
+        )
+        method.isAccessible = true
+
+        val downloadedUri = Mockito.mock(Uri::class.java)
+        Mockito.`when`(downloadedUri.toString()).thenReturn("file:///data/user/0/com.travelingtunes.app/cache/downloaded_art/art_downloaded_abc123.jpg")
+        Mockito.`when`(downloadedUri.scheme).thenReturn("file")
+
+        val dbMock = Mockito.mock(com.travelingtunes.app.core.database.MusicDatabase::class.java)
+        val downloadedType = method.invoke(dbMock, null, downloadedUri)
+        assertEquals(com.travelingtunes.app.core.database.ArtworkType.DOWNLOADED, downloadedType)
+
+        val embeddedUri = Mockito.mock(Uri::class.java)
+        Mockito.`when`(embeddedUri.toString()).thenReturn("file:///data/user/0/com.travelingtunes.app/cache/embedded_art/art_embedded_abc123.jpg")
+        Mockito.`when`(embeddedUri.scheme).thenReturn("file")
+
+        val embeddedType = method.invoke(dbMock, null, embeddedUri)
+        assertEquals(com.travelingtunes.app.core.database.ArtworkType.EMBEDDED, embeddedType)
+    }
+
+    @Test
     fun testSearchEngineEnumValues() {
         val engines = com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.entries
         assertEquals(4, engines.size)
