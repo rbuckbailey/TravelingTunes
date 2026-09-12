@@ -89,6 +89,7 @@ import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.Song
 import com.travelingtunes.app.core.model.TextAlignmentOption
 import com.travelingtunes.app.core.model.ThemeSettings
+import com.travelingtunes.app.feature.queue.QueueBottomSheet
 import com.travelingtunes.app.feature.songpicker.SongPickerBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -157,6 +158,7 @@ fun PlayerScreen(
     val shuffleMode by playbackManager.shuffleMode.collectAsState()
 
     var showSongPicker by remember { mutableStateOf(false) }
+    var showQueue by remember { mutableStateOf(false) }
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
 
@@ -197,7 +199,7 @@ fun PlayerScreen(
     }
 
     val gestureListener = object : GestureEventListener {
-        override fun onGestureTriggered(trigger: GestureTrigger) {
+        override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean) {
             var binding = resolveGestureBinding(trigger, gestureBindings)
             var action = binding.action
 
@@ -210,14 +212,21 @@ fun PlayerScreen(
 
             if (action == GestureAction.UNASSIGNED) return
 
-            if (trigger.category == GestureCategory.LONG_PRESS) {
+            if (isLongPress || trigger.category == GestureCategory.LONG_PRESS) {
                 if (action == GestureAction.TOGGLE_REPEAT) {
                     showRepeatOptionsDialog = true
-                    return
                 } else if (action == GestureAction.TOGGLE_SHUFFLE) {
                     showShuffleOptionsDialog = true
-                    return
+                } else if (action == GestureAction.MENU) {
+                    onOpenSettings()
+                } else if (action == GestureAction.SHOW_QUICK_START) {
+                    onOpenQuickStart()
+                } else if (action == GestureAction.SONG_PICKER) {
+                    showSongPicker = true
+                } else if (action == GestureAction.SHOW_QUEUE) {
+                    showQueue = true
                 }
+                return
             }
 
             when (action) {
@@ -232,6 +241,7 @@ fun PlayerScreen(
                         action = action,
                         playbackManager = playbackManager,
                         onOpenSongPicker = { showSongPicker = true },
+                        onOpenQueue = { showQueue = true },
                         onOpenSettings = onOpenSettings,
                         onOpenQuickStart = onOpenQuickStart
                     )
@@ -316,6 +326,7 @@ fun PlayerScreen(
                 shuffleMode = shuffleMode,
                 isPlaying = isPlaying,
                 onOpenSongPicker = { showSongPicker = true },
+                onOpenQueue = { showQueue = true },
                 onOpenSettings = onOpenSettings,
                 onOpenQuickStart = onOpenQuickStart,
                 onShowRepeatOptions = { showRepeatOptionsDialog = true },
@@ -377,6 +388,7 @@ fun PlayerScreen(
                 shuffleMode = shuffleMode,
                 isPlaying = isPlaying,
                 onOpenSongPicker = { showSongPicker = true },
+                onOpenQueue = { showQueue = true },
                 onOpenSettings = onOpenSettings,
                 onOpenQuickStart = onOpenQuickStart,
                 onShowRepeatOptions = { showRepeatOptionsDialog = true },
@@ -428,6 +440,15 @@ fun PlayerScreen(
                 musicScanner = musicScanner,
                 settingsDataStore = settingsDataStore,
                 onDismiss = { showSongPicker = false }
+            )
+        }
+
+        // 8. Queue Sheet
+        if (showQueue) {
+            QueueBottomSheet(
+                playbackManager = playbackManager,
+                onOpenSongPicker = { showSongPicker = true },
+                onDismiss = { showQueue = false }
             )
         }
 
@@ -488,6 +509,7 @@ private fun TitleAndButtonsContainer(
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
     onOpenSongPicker: () -> Unit,
+    onOpenQueue: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
@@ -508,10 +530,12 @@ private fun TitleAndButtonsContainer(
             shuffleMode = shuffleMode,
             isPlaying = isPlaying,
             onOpenSongPicker = onOpenSongPicker,
+            onOpenQueue = onOpenQueue,
             onOpenSettings = onOpenSettings,
             onOpenQuickStart = onOpenQuickStart,
             onShowRepeatOptions = onShowRepeatOptions,
-            onShowShuffleOptions = onShowShuffleOptions
+            onShowShuffleOptions = onShowShuffleOptions,
+            numEdgeRegions = displaySettings.numEdgeRegions
         )
     }
 }
@@ -528,6 +552,7 @@ fun PlayerPageContent(
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
     onOpenSongPicker: () -> Unit,
+    onOpenQueue: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
@@ -554,6 +579,7 @@ fun PlayerPageContent(
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         onOpenSongPicker = onOpenSongPicker,
+                        onOpenQueue = onOpenQueue,
                         onOpenSettings = onOpenSettings,
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
@@ -584,6 +610,7 @@ fun PlayerPageContent(
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         onOpenSongPicker = onOpenSongPicker,
+                        onOpenQueue = onOpenQueue,
                         onOpenSettings = onOpenSettings,
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
@@ -607,6 +634,7 @@ fun PlayerPageContent(
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         onOpenSongPicker = onOpenSongPicker,
+                        onOpenQueue = onOpenQueue,
                         onOpenSettings = onOpenSettings,
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
@@ -637,6 +665,7 @@ fun PlayerPageContent(
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         onOpenSongPicker = onOpenSongPicker,
+                        onOpenQueue = onOpenQueue,
                         onOpenSettings = onOpenSettings,
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
@@ -1056,6 +1085,7 @@ private fun handleGestureAction(
     action: GestureAction,
     playbackManager: PlaybackManager,
     onOpenSongPicker: () -> Unit,
+    onOpenQueue: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenQuickStart: () -> Unit
 ) {
@@ -1079,6 +1109,7 @@ private fun handleGestureAction(
         GestureAction.INCREASE_RATING -> playbackManager.increaseRating()
         GestureAction.DECREASE_RATING -> playbackManager.decreaseRating()
         GestureAction.SONG_PICKER -> onOpenSongPicker()
+        GestureAction.SHOW_QUEUE -> onOpenQueue()
         GestureAction.MENU -> onOpenSettings()
         GestureAction.SHOW_QUICK_START -> onOpenQuickStart()
         GestureAction.UNASSIGNED -> {}
@@ -1149,6 +1180,7 @@ fun ScreenRegionIconsOverlay(
     shuffleMode: ShuffleMode,
     isPlaying: Boolean,
     onOpenSongPicker: () -> Unit,
+    onOpenQueue: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
@@ -1171,53 +1203,69 @@ fun ScreenRegionIconsOverlay(
             val trigger = GestureTrigger.TOP_REGION_SLOTS[slotIdx]
             val binding = resolveGestureBinding(trigger, gestureBindings)
             val action = binding.action
-            if (action != GestureAction.UNASSIGNED) {
-                val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
-                val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = -1.0f)
 
-                val startPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
-                val endPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+            val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
+            val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = -1.0f)
 
-                Box(
-                    modifier = Modifier
-                        .align(alignment)
-                        .padding(top = 8.dp, start = startPadding, end = endPadding)
-                        .size(iconBoxSize)
-                        .clip(CircleShape)
-                        .combinedClickable(
-                            onClick = {
+            val startPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
+            val endPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+
+            Box(
+                modifier = Modifier
+                    .align(alignment)
+                    .padding(top = 16.dp, start = startPadding, end = endPadding)
+                    .size(iconBoxSize)
+                    .clip(CircleShape)
+                    .combinedClickable(
+                        onClick = {
+                            if (action != GestureAction.UNASSIGNED) {
                                 handleGestureAction(
                                     action = action,
                                     playbackManager = playbackManager,
                                     onOpenSongPicker = onOpenSongPicker,
+                                    onOpenQueue = onOpenQueue,
                                     onOpenSettings = onOpenSettings,
                                     onOpenQuickStart = onOpenQuickStart
                                 )
-                            },
-                            onLongClick = {
-                                if (action == GestureAction.TOGGLE_REPEAT) {
-                                    onShowRepeatOptions()
-                                } else if (action == GestureAction.TOGGLE_SHUFFLE) {
-                                    onShowShuffleOptions()
-                                } else {
-                                    handleGestureAction(
-                                        action = action,
-                                        playbackManager = playbackManager,
-                                        onOpenSongPicker = onOpenSongPicker,
-                                        onOpenSettings = onOpenSettings,
-                                        onOpenQuickStart = onOpenQuickStart
-                                    )
-                                }
+                            } else {
+                                onOpenSettings()
                             }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                        },
+                        onLongClick = {
+                            if (action == GestureAction.TOGGLE_REPEAT) {
+                                onShowRepeatOptions()
+                            } else if (action == GestureAction.TOGGLE_SHUFFLE) {
+                                onShowShuffleOptions()
+                            } else if (action != GestureAction.UNASSIGNED) {
+                                handleGestureAction(
+                                    action = action,
+                                    playbackManager = playbackManager,
+                                    onOpenSongPicker = onOpenSongPicker,
+                                    onOpenQueue = onOpenQueue,
+                                    onOpenSettings = onOpenSettings,
+                                    onOpenQuickStart = onOpenQuickStart
+                                )
+                            } else {
+                                onOpenSettings()
+                            }
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (action != GestureAction.UNASSIGNED) {
                     ActionIcon(
                         action = action,
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(if (iconBoxSize < 60.dp) 18.dp else 24.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
                     )
                 }
             }
@@ -1228,53 +1276,69 @@ fun ScreenRegionIconsOverlay(
             val trigger = GestureTrigger.BOTTOM_REGION_SLOTS[slotIdx]
             val binding = resolveGestureBinding(trigger, gestureBindings)
             val action = binding.action
-            if (action != GestureAction.UNASSIGNED) {
-                val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
-                val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = 1.0f)
 
-                val startPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
-                val endPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+            val horizontalBias = if (n == 1) 0.0f else (index.toFloat() / (n - 1) * 2.0f - 1.0f)
+            val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = 1.0f)
 
-                Box(
-                    modifier = Modifier
-                        .align(alignment)
-                        .padding(bottom = 16.dp, start = startPadding, end = endPadding)
-                        .size(iconBoxSize)
-                        .clip(CircleShape)
-                        .combinedClickable(
-                            onClick = {
+            val startPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
+            val endPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+
+            Box(
+                modifier = Modifier
+                    .align(alignment)
+                    .padding(bottom = 16.dp, start = startPadding, end = endPadding)
+                    .size(iconBoxSize)
+                    .clip(CircleShape)
+                    .combinedClickable(
+                        onClick = {
+                            if (action != GestureAction.UNASSIGNED) {
                                 handleGestureAction(
                                     action = action,
                                     playbackManager = playbackManager,
                                     onOpenSongPicker = onOpenSongPicker,
+                                    onOpenQueue = onOpenQueue,
                                     onOpenSettings = onOpenSettings,
                                     onOpenQuickStart = onOpenQuickStart
                                 )
-                            },
-                            onLongClick = {
-                                if (action == GestureAction.TOGGLE_REPEAT) {
-                                    onShowRepeatOptions()
-                                } else if (action == GestureAction.TOGGLE_SHUFFLE) {
-                                    onShowShuffleOptions()
-                                } else {
-                                    handleGestureAction(
-                                        action = action,
-                                        playbackManager = playbackManager,
-                                        onOpenSongPicker = onOpenSongPicker,
-                                        onOpenSettings = onOpenSettings,
-                                        onOpenQuickStart = onOpenQuickStart
-                                    )
-                                }
+                            } else {
+                                onOpenSettings()
                             }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                        },
+                        onLongClick = {
+                            if (action == GestureAction.TOGGLE_REPEAT) {
+                                onShowRepeatOptions()
+                            } else if (action == GestureAction.TOGGLE_SHUFFLE) {
+                                onShowShuffleOptions()
+                            } else if (action != GestureAction.UNASSIGNED) {
+                                handleGestureAction(
+                                    action = action,
+                                    playbackManager = playbackManager,
+                                    onOpenSongPicker = onOpenSongPicker,
+                                    onOpenQueue = onOpenQueue,
+                                    onOpenSettings = onOpenSettings,
+                                    onOpenQuickStart = onOpenQuickStart
+                                )
+                            } else {
+                                onOpenSettings()
+                            }
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (action != GestureAction.UNASSIGNED) {
                     ActionIcon(
                         action = action,
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(if (iconBoxSize < 60.dp) 18.dp else 24.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
                     )
                 }
             }

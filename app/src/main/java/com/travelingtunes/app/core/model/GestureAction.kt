@@ -12,6 +12,7 @@ enum class GestureAction(val displayName: String) {
     RESTART("Restart Song"),
     RESTART_PREVIOUS("Restart / Previous"),
     SONG_PICKER("Song Picker"),
+    SHOW_QUEUE("Current Queue"),
     MENU("Menu"),
     VOLUME_UP("Volume Up"),
     VOLUME_DOWN("Volume Down"),

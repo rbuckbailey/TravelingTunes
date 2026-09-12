@@ -109,7 +109,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     suspend fun getAllSongs(): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS ORDER BY $COL_TITLE ASC", null)
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", null)
         cursor.use { c ->
             while (c.moveToNext()) {
                 songs.add(cursorToSong(c))
@@ -131,7 +131,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                OR $COL_GENRE LIKE ? 
                OR $COL_FOLDER_PATH LIKE ? 
                OR $COL_FILE_NAME LIKE ? 
-            ORDER BY $COL_TITLE ASC
+            ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC
         """.trimIndent()
         val cursor = db.rawQuery(sql, arrayOf(pattern, pattern, pattern, pattern, pattern, pattern))
         cursor.use { c ->
@@ -145,7 +145,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     suspend fun getSongsByArtist(artist: String): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ARTIST = ? ORDER BY $COL_ALBUM ASC, $COL_TRACK_NUMBER ASC", arrayOf(artist))
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ARTIST = ? ORDER BY $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(artist))
         cursor.use { c ->
             while (c.moveToNext()) {
                 songs.add(cursorToSong(c))
@@ -157,7 +157,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     suspend fun getSongsByAlbum(album: String): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? ORDER BY $COL_TRACK_NUMBER ASC, $COL_TITLE ASC", arrayOf(album))
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? ORDER BY CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(album))
         cursor.use { c ->
             while (c.moveToNext()) {
                 songs.add(cursorToSong(c))
@@ -169,7 +169,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     suspend fun getSongsByGenre(genre: String): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_GENRE = ? ORDER BY $COL_TITLE ASC", arrayOf(genre))
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_GENRE = ? ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(genre))
         cursor.use { c ->
             while (c.moveToNext()) {
                 songs.add(cursorToSong(c))

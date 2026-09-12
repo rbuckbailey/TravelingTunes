@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.automirrored.filled.VolumeDown
@@ -146,6 +147,13 @@ fun ActionIcon(
 
             GestureAction.SONG_PICKER -> Icon(
                 imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
+            GestureAction.SHOW_QUEUE -> Icon(
+                imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                 contentDescription = action.displayName,
                 tint = effectiveTint,
                 modifier = Modifier.size(iconSize)

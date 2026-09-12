@@ -54,19 +54,19 @@ enum class GestureTrigger(
 
     // Screen Regions / Edge Region Slots (1 to 7)
     CORNER_TOP_LEFT("TopLeft", "Top Region 1", GestureCategory.SCREEN_REGION, "ToggleRepeat"),
-    CORNER_TOP_2("TopRegion2", "Top Region 2", GestureCategory.SCREEN_REGION, "Unassigned"),
-    CORNER_TOP_3("TopRegion3", "Top Region 3", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_TOP_2("TopRegion2", "Top Region 2", GestureCategory.SCREEN_REGION, "Rewind"),
+    CORNER_TOP_3("TopRegion3", "Top Region 3", GestureCategory.SCREEN_REGION, "PlayCurrentArtist"),
     CORNER_TOP_CENTER("TopCenter", "Top Region 4", GestureCategory.SCREEN_REGION, "PlayCurrentAlbum"),
-    CORNER_TOP_5("TopRegion5", "Top Region 5", GestureCategory.SCREEN_REGION, "Unassigned"),
-    CORNER_TOP_6("TopRegion6", "Top Region 6", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_TOP_5("TopRegion5", "Top Region 5", GestureCategory.SCREEN_REGION, "ShuffleAllSongs"),
+    CORNER_TOP_6("TopRegion6", "Top Region 6", GestureCategory.SCREEN_REGION, "FastForward"),
     CORNER_TOP_RIGHT("TopRight", "Top Region 7", GestureCategory.SCREEN_REGION, "ToggleShuffle"),
 
     CORNER_BOTTOM_LEFT("BottomLeft", "Bottom Region 1", GestureCategory.SCREEN_REGION, "SongPicker"),
-    CORNER_BOTTOM_2("BottomRegion2", "Bottom Region 2", GestureCategory.SCREEN_REGION, "Unassigned"),
-    CORNER_BOTTOM_3("BottomRegion3", "Bottom Region 3", GestureCategory.SCREEN_REGION, "Unassigned"),
-    CORNER_BOTTOM_CENTER("BottomCenter", "Bottom Region 4", GestureCategory.SCREEN_REGION, "Unassigned"),
-    CORNER_BOTTOM_5("BottomRegion5", "Bottom Region 5", GestureCategory.SCREEN_REGION, "Unassigned"),
-    CORNER_BOTTOM_6("BottomRegion6", "Bottom Region 6", GestureCategory.SCREEN_REGION, "Unassigned"),
+    CORNER_BOTTOM_2("BottomRegion2", "Bottom Region 2", GestureCategory.SCREEN_REGION, "Previous"),
+    CORNER_BOTTOM_3("BottomRegion3", "Bottom Region 3", GestureCategory.SCREEN_REGION, "ShowQueue"),
+    CORNER_BOTTOM_CENTER("BottomCenter", "Bottom Region 4", GestureCategory.SCREEN_REGION, "PlayPause"),
+    CORNER_BOTTOM_5("BottomRegion5", "Bottom Region 5", GestureCategory.SCREEN_REGION, "ShowQuickStart"),
+    CORNER_BOTTOM_6("BottomRegion6", "Bottom Region 6", GestureCategory.SCREEN_REGION, "Next"),
     CORNER_BOTTOM_RIGHT("BottomRight", "Bottom Region 7", GestureCategory.SCREEN_REGION, "Menu");
 
     companion object {
@@ -92,16 +92,16 @@ enum class GestureTrigger(
 
         fun getActiveRegionSlots(numRegions: Int): List<Int> {
             val n = numRegions.coerceIn(1, 7)
-            if (n == 1) return listOf(3)
-            if (n == 2) return listOf(0, 6)
-            val slots = mutableListOf<Int>()
-            for (i in 0 until n) {
-                val slotIndex = kotlin.math.round(i * 6.0 / (n - 1)).toInt()
-                if (!slots.contains(slotIndex)) {
-                    slots.add(slotIndex)
-                }
+            return when (n) {
+                1 -> listOf(3)                  // Slot 4 (Center)
+                2 -> listOf(0, 6)               // Slot 1 (Left), Slot 7 (Right)
+                3 -> listOf(0, 3, 6)            // Slot 1 (Left), Slot 4 (Center), Slot 7 (Right)
+                4 -> listOf(0, 2, 4, 6)         // Slot 1, Slot 3, Slot 5, Slot 7
+                5 -> listOf(0, 1, 3, 5, 6)      // Slot 1, Slot 2, Slot 4, Slot 6, Slot 7
+                6 -> listOf(0, 1, 2, 4, 5, 6)   // Slot 1, Slot 2, Slot 3, Slot 5, Slot 6, Slot 7
+                7 -> listOf(0, 1, 2, 3, 4, 5, 6)// All 7 slots
+                else -> listOf(0, 3, 6)
             }
-            return slots
         }
 
         fun getActiveTopTriggers(numRegions: Int): List<GestureTrigger> {

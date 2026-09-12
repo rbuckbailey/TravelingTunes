@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
@@ -417,6 +418,9 @@ fun SongPickerBottomSheet(
                                         }
                                         onDismiss()
                                     },
+                                    onAddToQueue = {
+                                        playbackManager.addSongToQueue(song)
+                                    },
                                     onClick = {
                                         playbackManager.setPlaylistAndPlay(songsList, index)
                                         if (selectedAlbum != null) {
@@ -456,6 +460,19 @@ fun SongPickerBottomSheet(
                                             onDismiss()
                                         }
                                     },
+                                    onAddToQueue = {
+                                        coroutineScope.launch {
+                                            val albumSongs = musicDatabase.getSongsByAlbum(album.name)
+                                            val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
+                                                albumSongs.filter {
+                                                    (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
+                                                    (selectedArtist == null || it.artist.equals(selectedArtist, true))
+                                                }
+                                            } else albumSongs
+                                            val addSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
+                                            playbackManager.addSongsToQueue(addSongs)
+                                        }
+                                    },
                                     onClick = {
                                         selectedAlbum = album.name
                                     }
@@ -487,6 +504,16 @@ fun SongPickerBottomSheet(
                                             onDismiss()
                                         }
                                     },
+                                    onAddToQueue = {
+                                        coroutineScope.launch {
+                                            val allSongs = if (selectedGenre != null) {
+                                                musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
+                                            } else {
+                                                musicDatabase.getSongsByArtist(artist)
+                                            }
+                                            playbackManager.addSongsToQueue(allSongs)
+                                        }
+                                    },
                                     onClick = {
                                         selectedArtist = artist
                                     }
@@ -512,6 +539,12 @@ fun SongPickerBottomSheet(
                                                 playbackManager.setPlaylistAndPlay(genreSongs, 0)
                                             }
                                             onDismiss()
+                                        }
+                                    },
+                                    onAddToQueue = {
+                                        coroutineScope.launch {
+                                            val genreSongs = musicDatabase.getSongsByGenre(genre)
+                                            playbackManager.addSongsToQueue(genreSongs)
                                         }
                                     },
                                     onClick = {
@@ -543,6 +576,16 @@ fun SongPickerBottomSheet(
                                                 playbackManager.setPlaylistAndPlay(folderSongs, 0)
                                             }
                                             onDismiss()
+                                        }
+                                    },
+                                    onAddToQueue = {
+                                        coroutineScope.launch {
+                                            val dbSongs = musicDatabase.getAllSongs()
+                                            val folderSongs = dbSongs.filter {
+                                                it.folderPath.equals(folder, ignoreCase = true) ||
+                                                it.folderPath.startsWith(folder, ignoreCase = true)
+                                            }
+                                            playbackManager.addSongsToQueue(folderSongs)
                                         }
                                     },
                                     onClick = {
@@ -805,6 +848,7 @@ private fun StreamingTrackRow(
 private fun GenreItemRow(
     genre: String,
     onPlay: () -> Unit,
+    onAddToQueue: () -> Unit,
     onClick: () -> Unit
 ) {
     ListItem(
@@ -825,12 +869,24 @@ private fun GenreItemRow(
             }
         },
         trailingContent = {
-            IconButton(onClick = onPlay) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play Genre",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = onAddToQueue) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Genre to Queue",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = onPlay) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Genre",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
         modifier = Modifier.clickable { onClick() }
@@ -841,6 +897,7 @@ private fun GenreItemRow(
 private fun ArtistItemRow(
     artist: String,
     onPlay: () -> Unit,
+    onAddToQueue: () -> Unit,
     onClick: () -> Unit
 ) {
     ListItem(
@@ -861,12 +918,24 @@ private fun ArtistItemRow(
             }
         },
         trailingContent = {
-            IconButton(onClick = onPlay) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play Artist",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = onAddToQueue) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Artist to Queue",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = onPlay) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Artist",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
         modifier = Modifier.clickable { onClick() }
@@ -877,6 +946,7 @@ private fun ArtistItemRow(
 private fun AlbumItemRow(
     album: AlbumInfo,
     onPlay: () -> Unit,
+    onAddToQueue: () -> Unit,
     onClick: () -> Unit
 ) {
     ListItem(
@@ -904,12 +974,24 @@ private fun AlbumItemRow(
             )
         },
         trailingContent = {
-            IconButton(onClick = onPlay) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play Album",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = onAddToQueue) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Album to Queue",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = onPlay) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Album",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
         modifier = Modifier.clickable { onClick() }
@@ -920,6 +1002,7 @@ private fun AlbumItemRow(
 private fun SongItemRow(
     song: Song,
     onPlay: () -> Unit,
+    onAddToQueue: () -> Unit,
     onClick: () -> Unit
 ) {
     ListItem(
@@ -950,13 +1033,20 @@ private fun SongItemRow(
         trailingContent = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
                     text = formatDuration(song.durationMs),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                IconButton(onClick = onAddToQueue) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Song to Queue",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
                 IconButton(onClick = onPlay) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
@@ -974,6 +1064,7 @@ private fun SongItemRow(
 private fun FolderItemRow(
     folder: String,
     onPlay: () -> Unit,
+    onAddToQueue: () -> Unit,
     onClick: () -> Unit
 ) {
     ListItem(
@@ -999,12 +1090,24 @@ private fun FolderItemRow(
             }
         },
         trailingContent = {
-            IconButton(onClick = onPlay) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play Folder",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = onAddToQueue) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Folder to Queue",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = onPlay) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Folder",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
         modifier = Modifier.clickable { onClick() }

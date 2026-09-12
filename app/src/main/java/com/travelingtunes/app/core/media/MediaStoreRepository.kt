@@ -101,7 +101,14 @@ class MediaStoreRepository(private val context: Context) {
                 )
             }
         }
-        songs
+        songs.sortedWith(
+            compareBy(
+                String.CASE_INSENSITIVE_ORDER
+            ) { song: Song -> song.artist }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { song -> song.album }
+                .thenBy { song -> if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { song -> song.title }
+        )
     }
 
     suspend fun getSongsByArtist(artistName: String): List<Song> {
