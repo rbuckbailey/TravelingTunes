@@ -87,9 +87,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class PickerCategory(val displayName: String) {
-    ALL("All"),
-    SONGS("Songs"),
     ALBUMS("Albums"),
+    SONGS("Songs"),
     ARTISTS("Artists"),
     GENRES("Genres"),
     FOLDERS("Folders")
@@ -133,7 +132,7 @@ fun SongPickerBottomSheet(
     val artDownloadStatusMessage by musicScanner?.artDownloadStatusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
 
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(PickerCategory.ALL) }
+    var selectedCategory by remember { mutableStateOf(PickerCategory.ALBUMS) }
 
     // Drill-down hierarchy state
     var selectedGenre by remember { mutableStateOf<String?>(null) }
@@ -193,7 +192,7 @@ fun SongPickerBottomSheet(
                 songsList = if (searchQuery.isBlank()) folderSongs else folderSongs.filter { it.title.contains(searchQuery, true) }
             } else {
                 when (selectedCategory) {
-                    PickerCategory.ALL, PickerCategory.SONGS -> {
+                    PickerCategory.SONGS -> {
                         val dbSongs = musicDatabase.searchSongs(searchQuery)
                         val baseList = if (dbSongs.isNotEmpty()) dbSongs else currentPlaylist
                         songsList = if (searchQuery.isBlank()) {
@@ -473,7 +472,7 @@ fun SongPickerBottomSheet(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Content Area depending on current drill-down level
-                val isSongsView = selectedAlbum != null || selectedFolder != null || (selectedCategory in listOf(PickerCategory.ALL, PickerCategory.SONGS) && !hasDrillDown)
+                val isSongsView = selectedAlbum != null || selectedFolder != null || (selectedCategory == PickerCategory.SONGS && !hasDrillDown)
                 val isAlbumsView = selectedArtist != null && selectedAlbum == null
                 val isArtistsView = selectedGenre != null && selectedArtist == null && selectedAlbum == null
 
