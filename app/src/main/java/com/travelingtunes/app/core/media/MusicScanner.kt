@@ -64,6 +64,54 @@ class MusicScanner(
     private val _volumeAnalysisProgressTotal = MutableStateFlow(0)
     val volumeAnalysisProgressTotal: StateFlow<Int> = _volumeAnalysisProgressTotal.asStateFlow()
 
+    private val _cachedDuplicatePairs = MutableStateFlow<List<DuplicateMatchPair>?>(null)
+    val cachedDuplicatePairs: StateFlow<List<DuplicateMatchPair>?> = _cachedDuplicatePairs.asStateFlow()
+
+    private val _isAnalyzingDuplicates = MutableStateFlow(false)
+    val isAnalyzingDuplicates: StateFlow<Boolean> = _isAnalyzingDuplicates.asStateFlow()
+
+    val duplicateScanProgressCurrent = MutableStateFlow(0)
+    val duplicateScanProgressTotal = MutableStateFlow(0)
+
+    suspend fun getOrScanDuplicates(
+        musicFolderName: String? = null,
+        forceRescan: Boolean = false
+    ): List<DuplicateMatchPair> = withContext(Dispatchers.IO) {
+        if (!forceRescan && _cachedDuplicatePairs.value != null) {
+            return@withContext _cachedDuplicatePairs.value!!
+        }
+        if (_isAnalyzingDuplicates.value) {
+            return@withContext _cachedDuplicatePairs.value ?: emptyList()
+        }
+
+        _isAnalyzingDuplicates.value = true
+        val songs = musicDatabase.getAllSongs()
+        val pairs = DuplicateTrackFinder.findDuplicates(
+            context = context,
+            songs = songs,
+            musicFolderName = musicFolderName,
+            onProgress = { current, total ->
+                duplicateScanProgressCurrent.value = current
+                duplicateScanProgressTotal.value = total
+            }
+        )
+        _cachedDuplicatePairs.value = pairs
+        _isAnalyzingDuplicates.value = false
+        pairs
+    }
+
+    fun removeSongFromDuplicateCache(songId: Long) {
+        val current = _cachedDuplicatePairs.value ?: return
+        val updated = current.filter { pair ->
+            pair.trackA.song.id != songId && pair.trackB.song.id != songId
+        }
+        _cachedDuplicatePairs.value = updated
+    }
+
+    fun clearDuplicateCache() {
+        _cachedDuplicatePairs.value = null
+    }
+
     suspend fun getCddbOverridesCount(): Int = cddbManager.getCddbOverridesCount()
     suspend fun embedCddbOverrides(): Pair<Int, Int> = cddbManager.embedAllCddbOverrides()
 
@@ -336,6 +384,7 @@ class MusicScanner(
         )
 
         musicDatabase.clearDatabase()
+        clearDuplicateCache()
         if (foundSongs.isNotEmpty()) {
             musicDatabase.insertOrReplaceSongs(foundSongs)
             _statusMessage.value = "Scanned ${foundSongs.size} songs successfully. Analyzing volume levels..."

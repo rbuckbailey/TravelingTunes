@@ -120,6 +120,7 @@ import com.travelingtunes.app.core.model.getReverseTrigger
 import com.travelingtunes.app.core.ui.SlidingOverlay
 import com.travelingtunes.app.feature.queue.QueueBottomSheet
 import com.travelingtunes.app.feature.settings.DownloadedArtBrowserScreen
+import com.travelingtunes.app.feature.settings.DuplicateTrackIdentifierScreen
 import com.travelingtunes.app.feature.settings.GestureAssignmentScreen
 import com.travelingtunes.app.feature.settings.SettingsScreen
 import com.travelingtunes.app.feature.songpicker.PickerCategory
@@ -175,7 +176,8 @@ fun PlayerScreen(
     onOpenSettings: () -> Unit,
     onOpenQuickStart: () -> Unit,
     onOpenGestureAssignments: () -> Unit = {},
-    onOpenDownloadedArtBrowser: () -> Unit = {}
+    onOpenDownloadedArtBrowser: () -> Unit = {},
+    onOpenDuplicateTrackIdentifier: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -225,6 +227,7 @@ fun PlayerScreen(
 
     var showDownloadedArtBrowser by remember { mutableStateOf(false) }
     var showGestureAssignments by remember { mutableStateOf(false) }
+    var showDuplicateTrackIdentifier by remember { mutableStateOf(false) }
 
     var showRadialMenu by remember { mutableStateOf(false) }
     var activeRadialTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
@@ -382,7 +385,7 @@ fun PlayerScreen(
             var binding = resolveGestureBinding(trigger, gestureBindings)
             var action = binding.action
 
-            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showRadialMenu
+            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier || showRadialMenu
 
             if (isAnyOverlayOpen) {
                 val activeSlideDirection = when {
@@ -415,6 +418,7 @@ fun PlayerScreen(
                     if (showMenu) showMenu = false
                     if (showDownloadedArtBrowser) showDownloadedArtBrowser = false
                     if (showGestureAssignments) showGestureAssignments = false
+                    if (showDuplicateTrackIdentifier) showDuplicateTrackIdentifier = false
                     if (showRadialMenu) showRadialMenu = false
                     return true
                 } else {
@@ -534,7 +538,7 @@ fun PlayerScreen(
             totalDx: Float,
             totalDy: Float
         ) {
-            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments
+            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier
             if (isAnyOverlayOpen) return
 
             val binding = resolveGestureBinding(trigger, gestureBindings)
@@ -561,7 +565,7 @@ fun PlayerScreen(
         }
 
         override fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int) {
-            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments
+            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier
             if (!isAnyOverlayOpen) {
                 playbackManager.persistCurrentPlaybackState()
             }
@@ -790,6 +794,7 @@ fun PlayerScreen(
                 settingsDataStore = settingsDataStore ?: SettingsDataStore(context),
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
+                musicDatabase = musicDatabase,
                 musicFolderName = activeMusicFolderName,
                 lastScanTime = activeLastScanTime,
                 libraryStats = activeLibraryStats,
@@ -840,6 +845,10 @@ fun PlayerScreen(
                 onOpenDownloadedArtBrowser = {
                     showDownloadedArtBrowser = true
                     onOpenDownloadedArtBrowser()
+                },
+                onOpenDuplicateTrackIdentifier = {
+                    showDuplicateTrackIdentifier = true
+                    onOpenDuplicateTrackIdentifier()
                 }
             )
         }
@@ -870,6 +879,21 @@ fun PlayerScreen(
                 settingsDataStore = settingsDataStore ?: SettingsDataStore(context),
                 gestureBindings = gestureBindings,
                 onNavigateBack = { showGestureAssignments = false }
+            )
+        }
+
+        // 12. Duplicate Track Identifier Overlay
+        SlidingOverlay(
+            visible = showDuplicateTrackIdentifier,
+            slideDirection = menuSlideDirection,
+            openingTrigger = menuOpeningTrigger,
+            onDismiss = { showDuplicateTrackIdentifier = false }
+        ) {
+            DuplicateTrackIdentifierScreen(
+                musicDatabase = musicDatabase,
+                musicFolderName = activeMusicFolderName,
+                musicScanner = musicScanner,
+                onNavigateBack = { showDuplicateTrackIdentifier = false }
             )
         }
 

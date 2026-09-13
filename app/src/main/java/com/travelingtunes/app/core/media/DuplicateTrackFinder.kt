@@ -14,7 +14,11 @@ import kotlin.math.min
 data class DuplicateTrackInfo(
     val song: Song,
     val fileSize: Long,
-    val fullPath: String
+    val fullPath: String,
+    val cleanName: String = DuplicateTrackFinder.cleanFileName(song.fileName),
+    val cleanTitle: String = DuplicateTrackFinder.cleanMetadata(song.title),
+    val cleanArtist: String = DuplicateTrackFinder.cleanMetadata(song.artist),
+    val cleanAlbum: String = DuplicateTrackFinder.cleanMetadata(song.album)
 )
 
 data class DuplicateMatchPair(
@@ -28,21 +32,46 @@ data class DuplicateMatchPair(
 object DuplicateTrackFinder {
 
     fun getSongFileSize(context: Context, song: Song): Long {
+        // 1. Direct file access first (instant, 0.001ms kernel stat, no IPC or openFileDescriptor lock)
+        if (song.contentUri.scheme == "file") {
+            try {
+                val file = File(song.contentUri.path ?: "")
+                if (file.exists() && file.length() > 0) return file.length()
+            } catch (_: Exception) {}
+        }
+
+        if (song.folderPath.isNotBlank() && song.fileName.isNotBlank()) {
+            try {
+                val file = File(song.folderPath, song.fileName)
+                if (file.exists() && file.length() > 0) return file.length()
+            } catch (_: Exception) {}
+        }
+
+        // 2. Query MediaColumns.SIZE / OpenableColumns.SIZE via cursor
+        try {
+            context.contentResolver.query(
+                song.contentUri,
+                arrayOf(android.provider.OpenableColumns.SIZE),
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                    if (idx != -1 && !cursor.isNull(idx)) {
+                        val sz = cursor.getLong(idx)
+                        if (sz > 0) return sz
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        // 3. Fallback to openFileDescriptor
         try {
             context.contentResolver.openFileDescriptor(song.contentUri, "r")?.use { pfd ->
                 if (pfd.statSize > 0) return pfd.statSize
             }
         } catch (_: Exception) {}
-
-        if (song.contentUri.scheme == "file") {
-            val file = File(song.contentUri.path ?: "")
-            if (file.exists()) return file.length()
-        }
-
-        if (song.folderPath.isNotBlank() && song.fileName.isNotBlank()) {
-            val file = File(song.folderPath, song.fileName)
-            if (file.exists()) return file.length()
-        }
 
         return 0L
     }
@@ -65,11 +94,21 @@ object DuplicateTrackFinder {
     suspend fun findDuplicates(
         context: Context,
         songs: List<Song>,
-        musicFolderName: String? = null
+        musicFolderName: String? = null,
+        onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
     ): List<DuplicateMatchPair> = withContext(Dispatchers.IO) {
         if (songs.size < 2) return@withContext emptyList()
 
-        val songInfos = songs.map { song ->
+        withContext(Dispatchers.Main) { onProgress(0, songs.size) }
+
+        var lastProgressTime = System.currentTimeMillis()
+
+        val songInfos = songs.mapIndexed { index, song ->
+            val now = System.currentTimeMillis()
+            if (index == 0 || index == songs.lastIndex || now - lastProgressTime >= 80L) {
+                lastProgressTime = now
+                withContext(Dispatchers.Main) { onProgress(index + 1, songs.size) }
+            }
             val size = getSongFileSize(context, song)
             val fullPath = getFullFolderPath(song, musicFolderName)
             DuplicateTrackInfo(song, size, fullPath)
@@ -78,9 +117,43 @@ object DuplicateTrackFinder {
         val pairs = mutableListOf<DuplicateMatchPair>()
 
         for (i in songInfos.indices) {
+            val now = System.currentTimeMillis()
+            if (i == 0 || i == songInfos.lastIndex || now - lastProgressTime >= 80L) {
+                lastProgressTime = now
+                withContext(Dispatchers.Main) { onProgress(i + 1, songInfos.size) }
+            }
+
             val infoA = songInfos[i]
             for (j in i + 1 until songInfos.size) {
                 val infoB = songInfos[j]
+
+                val sizeA = infoA.fileSize
+                val sizeB = infoB.fileSize
+                val durA = infoA.song.durationMs
+                val durB = infoB.song.durationMs
+
+                // Fast pre-filtering to eliminate non-matching candidates instantly
+                val sizeDiff = abs(sizeA - sizeB)
+                val maxSize = max(sizeA, sizeB)
+                val sizeDiffRatio = if (maxSize > 0) sizeDiff.toDouble() / maxSize.toDouble() else 0.0
+
+                val durDiff = abs(durA - durB)
+
+                val prefixLenA = min(4, infoA.cleanName.length)
+                val prefixLenB = min(4, infoB.cleanName.length)
+                val sameNamePrefix = prefixLenA >= 3 && prefixLenB >= 3 &&
+                        (infoA.cleanName.startsWith(infoB.cleanName.substring(0, prefixLenB)) ||
+                         infoB.cleanName.startsWith(infoA.cleanName.substring(0, prefixLenA)))
+
+                val titlePrefixLenA = min(4, infoA.cleanTitle.length)
+                val titlePrefixLenB = min(4, infoB.cleanTitle.length)
+                val sameTitlePrefix = titlePrefixLenA >= 3 && titlePrefixLenB >= 3 &&
+                        (infoA.cleanTitle.startsWith(infoB.cleanTitle.substring(0, titlePrefixLenB)) ||
+                         infoB.cleanTitle.startsWith(infoA.cleanTitle.substring(0, titlePrefixLenA)))
+
+                if (sizeDiffRatio > 0.20 && durDiff > 10000L && !sameNamePrefix && !sameTitlePrefix) {
+                    continue
+                }
 
                 val match = calculateMatch(infoA, infoB)
                 if (match.likelihoodPercentage >= 40) {
@@ -88,6 +161,8 @@ object DuplicateTrackFinder {
                 }
             }
         }
+
+        withContext(Dispatchers.Main) { onProgress(songs.size, songs.size) }
 
         pairs.sortedWith(
             compareByDescending<DuplicateMatchPair> { it.likelihoodPercentage }
@@ -99,17 +174,17 @@ object DuplicateTrackFinder {
         val songA = infoA.song
         val songB = infoB.song
 
-        val nameA = cleanFileName(songA.fileName)
-        val nameB = cleanFileName(songB.fileName)
+        val nameA = infoA.cleanName
+        val nameB = infoB.cleanName
 
-        val titleA = cleanMetadata(songA.title)
-        val titleB = cleanMetadata(songB.title)
+        val titleA = infoA.cleanTitle
+        val titleB = infoB.cleanTitle
 
-        val artistA = cleanMetadata(songA.artist)
-        val artistB = cleanMetadata(songB.artist)
+        val artistA = infoA.cleanArtist
+        val artistB = infoB.cleanArtist
 
-        val albumA = cleanMetadata(songA.album)
-        val albumB = cleanMetadata(songB.album)
+        val albumA = infoA.cleanAlbum
+        val albumB = infoB.cleanAlbum
 
         val fileNameScore = stringSimilarity(nameA, nameB)
         val titleScore = stringSimilarity(titleA, titleB)

@@ -1,6 +1,5 @@
 package com.travelingtunes.app.feature.settings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +32,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -44,7 +44,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -62,7 +64,9 @@ import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.media.DuplicateMatchPair
 import com.travelingtunes.app.core.media.DuplicateTrackFinder
 import com.travelingtunes.app.core.media.DuplicateTrackInfo
+import com.travelingtunes.app.core.media.MusicScanner
 import com.travelingtunes.app.core.model.Song
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,29 +74,41 @@ import kotlinx.coroutines.launch
 fun DuplicateTrackIdentifierScreen(
     musicDatabase: MusicDatabase,
     musicFolderName: String?,
+    musicScanner: MusicScanner? = null,
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var isLoading by remember { mutableStateOf(true) }
-    var duplicatePairs by remember { mutableStateOf<List<DuplicateMatchPair>>(emptyList()) }
-    var minLikelihoodThreshold by remember { mutableStateOf(50) }
+    val cachedPairs by (musicScanner?.cachedDuplicatePairs ?: remember { MutableStateFlow<List<DuplicateMatchPair>?>(null) }).collectAsState()
+    val isAnalyzing by (musicScanner?.isAnalyzingDuplicates ?: remember { MutableStateFlow(false) }).collectAsState()
+    val scanProgressCurrent by (musicScanner?.duplicateScanProgressCurrent ?: remember { MutableStateFlow(0) }).collectAsState()
+    val scanProgressTotal by (musicScanner?.duplicateScanProgressTotal ?: remember { MutableStateFlow(0) }).collectAsState()
+
+    var fallbackPairs by remember { mutableStateOf<List<DuplicateMatchPair>?>(null) }
+    var minLikelihoodThreshold by remember { mutableIntStateOf(50) }
     var trackToDelete by remember { mutableStateOf<Song?>(null) }
     var isDeleting by remember { mutableStateOf(false) }
 
-    val scanDuplicates = {
+    val duplicatePairs = cachedPairs ?: fallbackPairs ?: emptyList()
+    val isLoading = isAnalyzing || (cachedPairs == null && fallbackPairs == null)
+
+    val scanDuplicates = { forceRescan: Boolean ->
         coroutineScope.launch {
-            isLoading = true
-            val songs = musicDatabase.getAllSongs()
-            duplicatePairs = DuplicateTrackFinder.findDuplicates(context, songs, musicFolderName)
-            isLoading = false
+            if (musicScanner != null) {
+                musicScanner.getOrScanDuplicates(musicFolderName, forceRescan = forceRescan)
+            } else {
+                val songs = musicDatabase.getAllSongs()
+                fallbackPairs = DuplicateTrackFinder.findDuplicates(context, songs, musicFolderName)
+            }
         }
     }
 
     LaunchedEffect(Unit) {
-        scanDuplicates()
+        if (cachedPairs == null && fallbackPairs == null) {
+            scanDuplicates(false)
+        }
     }
 
     val filteredPairs = remember(duplicatePairs, minLikelihoodThreshold) {
@@ -109,7 +125,7 @@ fun DuplicateTrackIdentifierScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { scanDuplicates() }, enabled = !isLoading) {
+                    IconButton(onClick = { scanDuplicates(true) }, enabled = !isLoading) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh scan")
                     }
                 }
@@ -161,12 +177,32 @@ fun DuplicateTrackIdentifierScreen(
                         .fillMaxWidth()
                         .weight(1f)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(16.dp))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        val progress = if (scanProgressTotal > 0) scanProgressCurrent.toFloat() / scanProgressTotal.toFloat() else 0f
+                        val pct = (progress * 100).toInt().coerceIn(0, 100)
+
+                        CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         Text(
-                            text = "Analyzing library tracks for duplicates...",
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = "Analyzing Library Tracks ($pct%)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (scanProgressTotal > 0) "Processed $scanProgressCurrent of $scanProgressTotal tracks..." else "Preparing library scan...",
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -271,7 +307,11 @@ fun DuplicateTrackIdentifierScreen(
                             } else {
                                 snackbarHostState.showSnackbar("Removed ${song.title} from library")
                             }
-                            scanDuplicates()
+                            if (musicScanner != null) {
+                                musicScanner.removeSongFromDuplicateCache(song.id)
+                            } else {
+                                fallbackPairs = fallbackPairs?.filter { it.trackA.song.id != song.id && it.trackB.song.id != song.id }
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),

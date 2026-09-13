@@ -3,6 +3,7 @@ package com.travelingtunes.app.feature.settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.travelingtunes.app.core.database.MusicDatabase
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -180,6 +181,7 @@ fun SettingsScreen(
     settingsDataStore: SettingsDataStore,
     displaySettings: DisplaySettings,
     themeSettings: ThemeSettings,
+    musicDatabase: MusicDatabase? = null,
     musicFolderName: String? = null,
     lastScanTime: Long = 0L,
     libraryStats: LibraryStats = LibraryStats(),
@@ -212,7 +214,9 @@ fun SettingsScreen(
     onOpenGestureAssignments: () -> Unit,
     onOpenQuickStart: () -> Unit,
     onOpenDownloadedArtBrowser: () -> Unit = {},
-    onOpenDuplicateTrackIdentifier: () -> Unit = {}
+    onOpenDuplicateTrackIdentifier: () -> Unit = {},
+    onBackupMetadata: () -> Unit = {},
+    onRestoreMetadata: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -266,6 +270,58 @@ fun SettingsScreen(
                     e.printStackTrace()
                     withContext(Dispatchers.Main) {
                         statusToastMessage = "Failed to restore settings."
+                    }
+                }
+            }
+        }
+    }
+
+    val activeMusicDatabase = musicDatabase ?: remember { MusicDatabase(context) }
+    var metadataRestoreJsonString by remember { mutableStateOf<String?>(null) }
+    var showMetadataRestoreDialog by remember { mutableStateOf(false) }
+
+    val createMetadataBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    val jsonString = com.travelingtunes.app.core.media.MusicMetadataBackupHelper.exportMetadataToJson(context, activeMusicDatabase)
+                    context.contentResolver.openOutputStream(uri)?.use { stream ->
+                        stream.write(jsonString.toByteArray(Charsets.UTF_8))
+                    }
+                    withContext(Dispatchers.Main) {
+                        statusToastMessage = "Music metadata exported successfully."
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) {
+                        statusToastMessage = "Failed to export metadata."
+                    }
+                }
+            }
+        }
+    }
+
+    val restoreMetadataLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    val jsonString = context.contentResolver.openInputStream(uri)?.use { stream ->
+                        stream.bufferedReader().readText()
+                    } ?: ""
+                    if (jsonString.isNotBlank()) {
+                        withContext(Dispatchers.Main) {
+                            metadataRestoreJsonString = jsonString
+                            showMetadataRestoreDialog = true
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) {
+                        statusToastMessage = "Failed to read metadata backup file."
                     }
                 }
             }
@@ -495,6 +551,8 @@ fun SettingsScreen(
                                 onViewAudit = { showAuditDialog = true },
                                 onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
                                 onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
+                                onBackupMetadata = { createMetadataBackupLauncher.launch("traveling_tunes_metadata_backup.json") },
+                                onRestoreMetadata = { restoreMetadataLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
                                 onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
                                 onUpdateDisplaySettings = { newSettings ->
                                     coroutineScope.launch {
@@ -720,6 +778,8 @@ fun SettingsScreen(
                         onViewAudit = { showAuditDialog = true },
                         onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
                         onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
+                        onBackupMetadata = { createMetadataBackupLauncher.launch("traveling_tunes_metadata_backup.json") },
+                        onRestoreMetadata = { restoreMetadataLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
                         onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
                         onUpdateDisplaySettings = { newSettings ->
                             coroutineScope.launch {
@@ -775,6 +835,22 @@ fun SettingsScreen(
         AlbumArtAuditDialog(
             report = currentAuditReport,
             onDismiss = { showAuditDialog = false }
+        )
+    }
+
+    if (showMetadataRestoreDialog && metadataRestoreJsonString != null) {
+        MetadataRestoreDialog(
+            jsonString = metadataRestoreJsonString!!,
+            musicDatabase = activeMusicDatabase,
+            onDismiss = {
+                showMetadataRestoreDialog = false
+                metadataRestoreJsonString = null
+            },
+            onRestoreComplete = { succ, fail ->
+                showMetadataRestoreDialog = false
+                metadataRestoreJsonString = null
+                statusToastMessage = "Restored metadata for $succ tracks ($fail skipped)."
+            }
         )
     }
 
@@ -882,6 +958,8 @@ private fun SubmenuContent(
     onOpenQuickStart: () -> Unit,
     onOpenDownloadedArtBrowser: () -> Unit = {},
     onOpenDuplicateTrackIdentifier: () -> Unit = {},
+    onBackupMetadata: () -> Unit = {},
+    onRestoreMetadata: () -> Unit = {},
     onBackupSettings: () -> Unit = {},
     onRestoreSettings: () -> Unit = {}
 ) {
@@ -937,6 +1015,8 @@ private fun SubmenuContent(
                     onViewAudit = onViewAudit,
                     onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
                     onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
+                    onBackupMetadata = onBackupMetadata,
+                    onRestoreMetadata = onRestoreMetadata,
                     onBackupSettings = onBackupSettings,
                     onRestoreSettings = onRestoreSettings
                 )
@@ -1023,6 +1103,8 @@ private fun LibrarySettingsContent(
     onViewAudit: () -> Unit = {},
     onOpenDownloadedArtBrowser: () -> Unit = {},
     onOpenDuplicateTrackIdentifier: () -> Unit = {},
+    onBackupMetadata: () -> Unit = {},
+    onRestoreMetadata: () -> Unit = {},
     onBackupSettings: () -> Unit = {},
     onRestoreSettings: () -> Unit = {}
 ) {
@@ -1292,30 +1374,49 @@ private fun LibrarySettingsContent(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Backup & Restore Settings",
+                    text = "Backup & Restore",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Backup your theme, layout, and gesture configurations to a JSON file, or restore from a backup.",
+                    text = "Backup app settings or export ID3 metadata (genre, album art, ratings) to restore across devices.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+                Text("App Settings", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = onBackupSettings,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Backup")
+                        Text("Backup Settings")
                     }
                     OutlinedButton(
                         onClick = onRestoreSettings,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Restore")
+                        Text("Restore Settings")
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("ID3 Music Metadata & Artwork", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = onBackupMetadata,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Export Metadata")
+                    }
+                    OutlinedButton(
+                        onClick = onRestoreMetadata,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Restore Metadata")
                     }
                 }
             }

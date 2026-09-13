@@ -194,6 +194,35 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         db.update(TABLE_SONGS, cv, "$COL_ID = ?", arrayOf(songId.toString()))
     }
 
+    suspend fun updateSongMetadata(
+        songId: Long,
+        title: String? = null,
+        artist: String? = null,
+        album: String? = null,
+        genre: String? = null,
+        year: Int? = null,
+        trackNumber: Int? = null,
+        discNumber: Int? = null,
+        userRating: Int? = null,
+        artworkUri: Uri? = null
+    ) = withContext(Dispatchers.IO) {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            title?.let { put(COL_TITLE, it) }
+            artist?.let { put(COL_ARTIST, it) }
+            album?.let { put(COL_ALBUM, it) }
+            genre?.let { put(COL_GENRE, it) }
+            year?.let { put(COL_YEAR, it) }
+            trackNumber?.let { put(COL_TRACK_NUMBER, it) }
+            discNumber?.let { put(COL_DISC_NUMBER, it) }
+            userRating?.let { put(COL_USER_RATING, it) }
+            artworkUri?.let { put(COL_ARTWORK_URI, it.toString()) }
+        }
+        if (cv.size() > 0) {
+            db.update(TABLE_SONGS, cv, "$COL_ID = ?", arrayOf(songId.toString()))
+        }
+    }
+
     suspend fun updateSongTrackAndDisc(songId: Long, trackNumber: Int, discNumber: Int) = withContext(Dispatchers.IO) {
         val db = writableDatabase
         val cv = ContentValues().apply {

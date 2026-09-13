@@ -472,7 +472,8 @@ fun TravelingTunesNavHost(
                 onOpenSettings = { navController.navigate("settings") },
                 onOpenQuickStart = { navController.navigate("quickstart") },
                 onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
-                onOpenDownloadedArtBrowser = { navController.navigate("downloaded_art_browser") }
+                onOpenDownloadedArtBrowser = { navController.navigate("downloaded_art_browser") },
+                onOpenDuplicateTrackIdentifier = { navController.navigate("duplicate_track_identifier") }
             )
         }
         composable("settings") {
@@ -480,6 +481,7 @@ fun TravelingTunesNavHost(
                 settingsDataStore = settingsDataStore,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
+                musicDatabase = musicDatabase,
                 musicFolderName = musicFolderName,
                 lastScanTime = lastScanTime,
                 libraryStats = libraryStats,
@@ -540,6 +542,7 @@ fun TravelingTunesNavHost(
             DuplicateTrackIdentifierScreen(
                 musicDatabase = musicDatabase,
                 musicFolderName = musicFolderName,
+                musicScanner = musicScanner,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
