@@ -170,6 +170,7 @@ class MusicPlaybackService : MediaLibraryService() {
             GestureAction.SELECT_ARTIST_VIEW -> "com.travelingtunes.app.ACTION_SELECT_ARTIST_VIEW"
             GestureAction.SHOW_QUEUE -> "com.travelingtunes.app.ACTION_SHOW_QUEUE"
             GestureAction.MENU -> "com.travelingtunes.app.ACTION_MENU"
+            GestureAction.TOGGLE_DRIVING_MODE -> "com.travelingtunes.app.ACTION_TOGGLE_DRIVING_MODE"
             else -> return null
         }
         return SessionCommand(actionString, Bundle.EMPTY)
@@ -432,7 +433,8 @@ class MusicPlaybackService : MediaLibraryService() {
                 GestureAction.SELECT_ALBUM_VIEW,
                 GestureAction.SELECT_ARTIST_VIEW,
                 GestureAction.SHOW_QUEUE,
-                GestureAction.MENU
+                GestureAction.MENU,
+                GestureAction.TOGGLE_DRIVING_MODE
             )
 
             for (act in allActions) {
@@ -472,6 +474,11 @@ class MusicPlaybackService : MediaLibraryService() {
                 "com.travelingtunes.app.ACTION_TOGGLE_SHUFFLE" -> {
                     val player = session.player
                     player.shuffleModeEnabled = !player.shuffleModeEnabled
+                }
+                "com.travelingtunes.app.ACTION_TOGGLE_DRIVING_MODE" -> {
+                    serviceScope.launch {
+                        settingsDataStore.toggleDrivingMode()
+                    }
                 }
                 "com.travelingtunes.app.ACTION_PLAY_PAUSE", "com.travelingtunes.app.ACTION_PLAY", "com.travelingtunes.app.ACTION_PAUSE" -> {
                     val player = session.player

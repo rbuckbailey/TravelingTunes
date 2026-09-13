@@ -722,4 +722,40 @@ class GestureAndSettingsTest {
         )
         assertTrue(jsonStr.contains("\"autoActionButtonOrder\": \"PLAY_CURRENT_ARTIST,PLAY_CURRENT_ALBUM\""))
     }
+
+    @Test
+    fun testDrivingModeAndSpeedVolumeDefaults() {
+        val display = com.travelingtunes.app.core.model.DisplaySettings()
+        org.junit.Assert.assertFalse(display.drivingModeEnabled)
+        org.junit.Assert.assertFalse(display.autoEnableDrivingMode)
+        org.junit.Assert.assertFalse(display.autoSpeedVolumeEnabled)
+        assertEquals(50, display.autoDefaultVolume)
+        assertEquals(15f, display.autoMinSpeedThreshold, 0.01f)
+        assertEquals(1.0f, display.autoSpeedVolumeRatio, 0.01f)
+        assertEquals("MPH", display.autoSpeedUnit)
+
+        val updated = display.copy(
+            drivingModeEnabled = true,
+            autoEnableDrivingMode = true,
+            autoSpeedVolumeEnabled = true,
+            autoDefaultVolume = 70,
+            autoMinSpeedThreshold = 20f,
+            autoSpeedVolumeRatio = 1.5f,
+            autoSpeedUnit = "KPH"
+        )
+        assertTrue(updated.drivingModeEnabled)
+        assertTrue(updated.autoEnableDrivingMode)
+        assertTrue(updated.autoSpeedVolumeEnabled)
+        assertEquals(70, updated.autoDefaultVolume)
+        assertEquals(20f, updated.autoMinSpeedThreshold, 0.01f)
+        assertEquals(1.5f, updated.autoSpeedVolumeRatio, 0.01f)
+        assertEquals("KPH", updated.autoSpeedUnit)
+    }
+
+    @Test
+    fun testToggleDrivingModeAction() {
+        val action = GestureAction.fromKey("TOGGLE_DRIVING_MODE")
+        assertEquals(GestureAction.TOGGLE_DRIVING_MODE, action)
+        assertEquals("Toggle Driving Mode", GestureAction.TOGGLE_DRIVING_MODE.displayName)
+    }
 }

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Directions
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DonutLarge
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
@@ -241,6 +242,13 @@ fun ActionIcon(
 
             GestureAction.DELETE_DOWNLOADED_ART -> Icon(
                 imageVector = Icons.Default.Delete,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
+            GestureAction.TOGGLE_DRIVING_MODE -> Icon(
+                imageVector = Icons.Default.DirectionsCar,
                 contentDescription = action.displayName,
                 tint = effectiveTint,
                 modifier = Modifier.size(iconSize)

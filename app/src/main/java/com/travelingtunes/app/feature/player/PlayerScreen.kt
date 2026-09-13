@@ -1780,6 +1780,13 @@ private fun handleGestureAction(
         GestureAction.SHOW_QUEUE -> onOpenQueue(direction)
         GestureAction.MENU -> onOpenSettings(direction)
         GestureAction.SHOW_QUICK_START -> onOpenQuickStart()
+        GestureAction.TOGGLE_DRIVING_MODE -> {
+            if (settingsDataStore != null && coroutineScope != null) {
+                coroutineScope.launch {
+                    settingsDataStore.toggleDrivingMode()
+                }
+            }
+        }
         GestureAction.DELETE_DOWNLOADED_ART -> {
             val song = playbackManager.currentSong.value
             if (song != null && musicScanner != null && musicDatabase != null && coroutineScope != null) {

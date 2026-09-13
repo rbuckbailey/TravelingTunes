@@ -78,7 +78,12 @@ data class ConfigOption(
 
             // Music Library
             ConfigOption("LIBRARY_autoRescan", "Music Library", "Auto Rescan Library", isBooleanToggle = true),
-            ConfigOption("LIBRARY_gpsVolume", "Music Library", "Speed-Dependent Volume", isBooleanToggle = true)
+            ConfigOption("LIBRARY_gpsVolume", "Music Library", "Speed-Dependent Volume", isBooleanToggle = true),
+
+            // Android Auto & Driving Mode
+            ConfigOption("AUTO_drivingMode", "Android Auto", "Driving Mode", isBooleanToggle = true),
+            ConfigOption("AUTO_autoEnableDrivingMode", "Android Auto", "Auto-Enable Driving Mode", isBooleanToggle = true),
+            ConfigOption("AUTO_speedVolume", "Android Auto", "Speed-Based Volume Adjustment", isBooleanToggle = true)
         )
 
         fun findByKey(key: String?): ConfigOption? {

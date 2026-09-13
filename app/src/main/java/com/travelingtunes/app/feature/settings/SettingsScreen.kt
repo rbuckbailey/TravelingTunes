@@ -211,7 +211,8 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onOpenGestureAssignments: () -> Unit,
     onOpenQuickStart: () -> Unit,
-    onOpenDownloadedArtBrowser: () -> Unit = {}
+    onOpenDownloadedArtBrowser: () -> Unit = {},
+    onOpenDuplicateTrackIdentifier: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -493,6 +494,7 @@ fun SettingsScreen(
                                 onEmbedCddbOverrides = onEmbedCddbOverrides,
                                 onViewAudit = { showAuditDialog = true },
                                 onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
+                                onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
                                 onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
                                 onUpdateDisplaySettings = { newSettings ->
                                     coroutineScope.launch {
@@ -717,6 +719,7 @@ fun SettingsScreen(
                         onEmbedCddbOverrides = onEmbedCddbOverrides,
                         onViewAudit = { showAuditDialog = true },
                         onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
+                        onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
                         onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
                         onUpdateDisplaySettings = { newSettings ->
                             coroutineScope.launch {
@@ -878,6 +881,7 @@ private fun SubmenuContent(
     onOpenAlbumPicker: () -> Unit,
     onOpenQuickStart: () -> Unit,
     onOpenDownloadedArtBrowser: () -> Unit = {},
+    onOpenDuplicateTrackIdentifier: () -> Unit = {},
     onBackupSettings: () -> Unit = {},
     onRestoreSettings: () -> Unit = {}
 ) {
@@ -932,6 +936,7 @@ private fun SubmenuContent(
                     onEmbedCddbOverrides = onEmbedCddbOverrides,
                     onViewAudit = onViewAudit,
                     onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
+                    onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
                     onBackupSettings = onBackupSettings,
                     onRestoreSettings = onRestoreSettings
                 )
@@ -1017,6 +1022,7 @@ private fun LibrarySettingsContent(
     onEmbedCddbOverrides: () -> Unit = {},
     onViewAudit: () -> Unit = {},
     onOpenDownloadedArtBrowser: () -> Unit = {},
+    onOpenDuplicateTrackIdentifier: () -> Unit = {},
     onBackupSettings: () -> Unit = {},
     onRestoreSettings: () -> Unit = {}
 ) {
@@ -1120,6 +1126,14 @@ private fun LibrarySettingsContent(
                 Text("Manage, replace, or embed downloaded album artwork into ID3 tags")
             },
             modifier = Modifier.clickable { onOpenDownloadedArtBrowser() }
+        )
+
+        ListItem(
+            headlineContent = { Text("Duplicate Track Identifier") },
+            supportingContent = {
+                Text("Compare tracks by file name, size, and metadata to find & remove duplicates")
+            },
+            modifier = Modifier.clickable { onOpenDuplicateTrackIdentifier() }
         )
 
         if (lastAuditReport != null) {
@@ -2461,6 +2475,249 @@ private fun AndroidAutoSettingsContent(
                             onUpdateDisplaySettings(displaySettings.copy(autoVoiceSearch = checked))
                         }
                     )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Card 4: Driving Mode & Speed-Based Volume Adjustment
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Driving Mode & Speed Volume",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Toggle: Driving Mode
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Driving Mode",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Manually engage driving mode for driving-optimized behavior",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = displaySettings.drivingModeEnabled,
+                        onCheckedChange = { checked ->
+                            onUpdateDisplaySettings(displaySettings.copy(drivingModeEnabled = checked))
+                        }
+                    )
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Toggle: Automatically Enable Driving Mode
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Automatically Enable Driving Mode",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Engage driving mode automatically when vehicular motion is detected",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = displaySettings.autoEnableDrivingMode,
+                        onCheckedChange = { checked ->
+                            onUpdateDisplaySettings(displaySettings.copy(autoEnableDrivingMode = checked))
+                        }
+                    )
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Toggle: Speed-Based Volume Adjustment
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Speed-Based Volume Adjustment",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Automatically adjust volume based on vehicle speed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = displaySettings.autoSpeedVolumeEnabled,
+                        onCheckedChange = { checked ->
+                            onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeEnabled = checked))
+                        }
+                    )
+                }
+
+                if (displaySettings.autoSpeedVolumeEnabled) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                    // Speed Unit Selector
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Speed Unit",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Choose units for speed measurements",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = displaySettings.autoSpeedUnit.equals("MPH", ignoreCase = true),
+                                onClick = {
+                                    onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "MPH"))
+                                },
+                                label = { Text("MPH") }
+                            )
+                            FilterChip(
+                                selected = displaySettings.autoSpeedUnit.equals("KPH", ignoreCase = true),
+                                onClick = {
+                                    onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "KPH"))
+                                },
+                                label = { Text("KPH") }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Configurable Default Volume
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Configurable Default Volume",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "${displaySettings.autoDefaultVolume}%",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Text(
+                            text = "Baseline volume level before speed-based increase",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value = displaySettings.autoDefaultVolume.toFloat(),
+                            onValueChange = { value ->
+                                onUpdateDisplaySettings(displaySettings.copy(autoDefaultVolume = value.roundToInt()))
+                            },
+                            valueRange = 0f..100f,
+                            steps = 99
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Minimum Speed Threshold
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Minimum Speed Threshold",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "${displaySettings.autoMinSpeedThreshold.roundToInt()} ${displaySettings.autoSpeedUnit}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Text(
+                            text = "Speed at which volume auto-increase begins",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value = displaySettings.autoMinSpeedThreshold,
+                            onValueChange = { value ->
+                                onUpdateDisplaySettings(displaySettings.copy(autoMinSpeedThreshold = value))
+                            },
+                            valueRange = 5f..60f,
+                            steps = 54
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Rate-of-Increase Ratio
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Volume Increase Rate",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "${"%.1f".format(displaySettings.autoSpeedVolumeRatio)} vol step / 10 ${displaySettings.autoSpeedUnit}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Text(
+                            text = "Rate of volume increase per 10 ${displaySettings.autoSpeedUnit} above threshold",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value = displaySettings.autoSpeedVolumeRatio,
+                            onValueChange = { value ->
+                                onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeRatio = value))
+                            },
+                            valueRange = 0.1f..5.0f,
+                            steps = 48
+                        )
+                    }
                 }
             }
         }

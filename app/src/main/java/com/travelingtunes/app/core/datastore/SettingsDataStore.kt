@@ -116,6 +116,13 @@ class SettingsDataStore(private val context: Context) {
         val KEY_AUTO_ARTIST_STYLE_GRID = booleanPreferencesKey("autoArtistStyleGrid")
         val KEY_AUTO_AUTOPLAY_ON_CONNECT = booleanPreferencesKey("autoAutoplayOnConnect")
         val KEY_AUTO_VOICE_SEARCH = booleanPreferencesKey("autoVoiceSearch")
+        val KEY_AUTO_SPEED_VOLUME_ENABLED = booleanPreferencesKey("autoSpeedVolumeEnabled")
+        val KEY_AUTO_DEFAULT_VOLUME = intPreferencesKey("autoDefaultVolume")
+        val KEY_AUTO_MIN_SPEED_THRESHOLD = floatPreferencesKey("autoMinSpeedThreshold")
+        val KEY_AUTO_SPEED_VOLUME_RATIO = floatPreferencesKey("autoSpeedVolumeRatio")
+        val KEY_AUTO_SPEED_UNIT = stringPreferencesKey("autoSpeedUnit")
+        val KEY_DRIVING_MODE_ENABLED = booleanPreferencesKey("drivingModeEnabled")
+        val KEY_AUTO_ENABLE_DRIVING_MODE = booleanPreferencesKey("autoEnableDrivingMode")
         val KEY_AUTO_ACTION_BUTTON_ORDER = stringPreferencesKey("autoActionButtonOrder")
 
         // Navigation / Menu State Persistence
@@ -237,6 +244,13 @@ class SettingsDataStore(private val context: Context) {
             autoArtistStyleGrid = prefs[KEY_AUTO_ARTIST_STYLE_GRID] ?: false,
             autoAutoplayOnConnect = prefs[KEY_AUTO_AUTOPLAY_ON_CONNECT] ?: false,
             autoVoiceSearch = prefs[KEY_AUTO_VOICE_SEARCH] ?: true,
+            autoSpeedVolumeEnabled = prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false,
+            autoDefaultVolume = prefs[KEY_AUTO_DEFAULT_VOLUME] ?: 50,
+            autoMinSpeedThreshold = prefs[KEY_AUTO_MIN_SPEED_THRESHOLD] ?: 15f,
+            autoSpeedVolumeRatio = prefs[KEY_AUTO_SPEED_VOLUME_RATIO] ?: 1.0f,
+            autoSpeedUnit = prefs[KEY_AUTO_SPEED_UNIT] ?: "MPH",
+            drivingModeEnabled = prefs[KEY_DRIVING_MODE_ENABLED] ?: false,
+            autoEnableDrivingMode = prefs[KEY_AUTO_ENABLE_DRIVING_MODE] ?: false,
             autoActionButtonOrder = (prefs[KEY_AUTO_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
                 .split(",")
                 .mapNotNull { name ->
@@ -495,6 +509,19 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
+    suspend fun setDrivingModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_DRIVING_MODE_ENABLED] = enabled
+        }
+    }
+
+    suspend fun toggleDrivingMode() {
+        context.dataStore.edit { prefs ->
+            val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false
+            prefs[KEY_DRIVING_MODE_ENABLED] = !current
+        }
+    }
+
     suspend fun updateGestureBinding(
         trigger: GestureTrigger,
         action: GestureAction,
@@ -558,6 +585,9 @@ class SettingsDataStore(private val context: Context) {
                     "THEME_isGlass" -> prefs[KEY_THEME_GLASS] = !(prefs[KEY_THEME_GLASS] ?: false)
                     "LIBRARY_autoRescan" -> prefs[KEY_AUTO_RESCAN] = !(prefs[KEY_AUTO_RESCAN] ?: false)
                     "LIBRARY_gpsVolume" -> prefs[KEY_GPS_VOLUME] = !(prefs[KEY_GPS_VOLUME] ?: false)
+                    "AUTO_drivingMode" -> prefs[KEY_DRIVING_MODE_ENABLED] = !(prefs[KEY_DRIVING_MODE_ENABLED] ?: false)
+                    "AUTO_autoEnableDrivingMode" -> prefs[KEY_AUTO_ENABLE_DRIVING_MODE] = !(prefs[KEY_AUTO_ENABLE_DRIVING_MODE] ?: false)
+                    "AUTO_speedVolume" -> prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = !(prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false)
                 }
             } else {
                 val priorKey = stringPreferencesKey("${triggerKey}_prior_value")
@@ -745,6 +775,13 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_AUTO_ARTIST_STYLE_GRID] = update.autoArtistStyleGrid
             prefs[KEY_AUTO_AUTOPLAY_ON_CONNECT] = update.autoAutoplayOnConnect
             prefs[KEY_AUTO_VOICE_SEARCH] = update.autoVoiceSearch
+            prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = update.autoSpeedVolumeEnabled
+            prefs[KEY_AUTO_DEFAULT_VOLUME] = update.autoDefaultVolume
+            prefs[KEY_AUTO_MIN_SPEED_THRESHOLD] = update.autoMinSpeedThreshold
+            prefs[KEY_AUTO_SPEED_VOLUME_RATIO] = update.autoSpeedVolumeRatio
+            prefs[KEY_AUTO_SPEED_UNIT] = update.autoSpeedUnit
+            prefs[KEY_DRIVING_MODE_ENABLED] = update.drivingModeEnabled
+            prefs[KEY_AUTO_ENABLE_DRIVING_MODE] = update.autoEnableDrivingMode
             prefs[KEY_AUTO_ACTION_BUTTON_ORDER] = update.autoActionButtonOrder.joinToString(",") { it.name }
         }
     }
@@ -877,6 +914,13 @@ class SettingsDataStore(private val context: Context) {
                     autoArtistStyleGrid = dJson.optBoolean("autoArtistStyleGrid", currentDisplay.autoArtistStyleGrid),
                     autoAutoplayOnConnect = dJson.optBoolean("autoAutoplayOnConnect", currentDisplay.autoAutoplayOnConnect),
                     autoVoiceSearch = dJson.optBoolean("autoVoiceSearch", currentDisplay.autoVoiceSearch),
+                    autoSpeedVolumeEnabled = dJson.optBoolean("autoSpeedVolumeEnabled", currentDisplay.autoSpeedVolumeEnabled),
+                    autoDefaultVolume = dJson.optInt("autoDefaultVolume", currentDisplay.autoDefaultVolume),
+                    autoMinSpeedThreshold = dJson.optDouble("autoMinSpeedThreshold", currentDisplay.autoMinSpeedThreshold.toDouble()).toFloat(),
+                    autoSpeedVolumeRatio = dJson.optDouble("autoSpeedVolumeRatio", currentDisplay.autoSpeedVolumeRatio.toDouble()).toFloat(),
+                    autoSpeedUnit = dJson.optString("autoSpeedUnit", currentDisplay.autoSpeedUnit),
+                    drivingModeEnabled = dJson.optBoolean("drivingModeEnabled", currentDisplay.drivingModeEnabled),
+                    autoEnableDrivingMode = dJson.optBoolean("autoEnableDrivingMode", currentDisplay.autoEnableDrivingMode),
                     autoActionButtonOrder = dJson.optString("autoActionButtonOrder", "")
                         .split(",")
                         .mapNotNull { name -> runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim()) }

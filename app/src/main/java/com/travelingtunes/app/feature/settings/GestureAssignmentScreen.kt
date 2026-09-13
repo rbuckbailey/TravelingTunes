@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,12 +18,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -720,58 +724,267 @@ private fun GestureAssignmentItem(
     }
 }
 
+private fun ConfigOption.getSubmenu(): SettingsSubmenu {
+    return when {
+        key.startsWith("LIBRARY_") -> SettingsSubmenu.LIBRARY
+        key.startsWith("ALIGN_") || key.startsWith("DISPLAY_artist") ||
+        key.startsWith("DISPLAY_song") || key.startsWith("DISPLAY_album") ||
+        key.startsWith("DISPLAY_title") -> SettingsSubmenu.TITLES
+        key.startsWith("ART_") || key == "DISPLAY_showAlbumArt" ||
+        key == "DISPLAY_albumArtColors" -> SettingsSubmenu.ART
+        key.startsWith("HUD_TYPE_") || key.startsWith("SCRUB_HUD_TYPE_") ||
+        key == "DISPLAY_volumeAlwaysOn" || key == "DISPLAY_showStatusBar" ||
+        key == "DISPLAY_showActions" || key == "DISPLAY_keepScreenOn" ||
+        key == "DISPLAY_immersiveMode" -> SettingsSubmenu.HUD
+        key.startsWith("THEME_") -> SettingsSubmenu.THEMES
+        else -> SettingsSubmenu.THEMES
+    }
+}
+
+private fun ConfigOption.getSectionName(): String {
+    return when {
+        key.startsWith("ALIGN_ARTIST_") -> "Artist Alignment"
+        key.startsWith("ALIGN_SONG_") -> "Song Alignment"
+        key.startsWith("ALIGN_ALBUM_") -> "Album Alignment"
+        key.startsWith("DISPLAY_artist") || key.startsWith("DISPLAY_song") || key.startsWith("DISPLAY_album") -> "Text Styling"
+        key.startsWith("DISPLAY_title") -> "Title Behavior"
+        key == "DISPLAY_showAlbumArt" || key == "DISPLAY_albumArtColors" -> "Visibility & Dynamic Colors"
+        key.startsWith("ART_SCALE_") || key.startsWith("ART_LAYOUT_") -> "Scale & Layout"
+        key.startsWith("ART_ALIGN_PORT_") -> "Portrait Alignment"
+        key.startsWith("ART_ALIGN_LAND_") -> "Landscape Alignment"
+        key.startsWith("HUD_TYPE_") -> "Volume HUD Type"
+        key.startsWith("SCRUB_HUD_TYPE_") -> "Scrub HUD Type"
+        key == "DISPLAY_volumeAlwaysOn" || key == "DISPLAY_showStatusBar" ||
+        key == "DISPLAY_showActions" || key == "DISPLAY_keepScreenOn" ||
+        key == "DISPLAY_immersiveMode" -> "Display Toggles"
+        key.startsWith("THEME_") && !key.startsWith("THEME_dim") && !key.startsWith("THEME_invert") && !key.startsWith("THEME_is") -> "Theme Presets"
+        key.startsWith("THEME_") -> "Theme Effects"
+        key.startsWith("LIBRARY_") -> "Library & Audio Preferences"
+        else -> "General Options"
+    }
+}
+
 @Composable
 fun ConfigOptionPickerDialog(
     initialKey: String?,
     onOptionSelected: (ConfigOption) -> Unit,
     onDismissRequest: () -> Unit
 ) {
-    val categories = remember { ConfigOption.ALL_OPTIONS.map { it.category }.distinct() }
+    var selectedSubmenu by remember { mutableStateOf<SettingsSubmenu?>(null) }
+    val initialOption = remember(initialKey) { ConfigOption.findByKey(initialKey) }
+    val initialSubmenu = remember(initialOption) { initialOption?.getSubmenu() }
+
+    BackHandler(enabled = selectedSubmenu != null) {
+        selectedSubmenu = null
+    }
+
+    val optionSubmenus = remember {
+        listOf(
+            SettingsSubmenu.LIBRARY,
+            SettingsSubmenu.TITLES,
+            SettingsSubmenu.ART,
+            SettingsSubmenu.HUD,
+            SettingsSubmenu.THEMES
+        )
+    }
+
+    val standaloneSubmenus = remember { optionSubmenus.filter { it.categoryGroup == null } }
+    val groupedSubmenus = remember { optionSubmenus.filter { it.categoryGroup != null }.groupBy { it.categoryGroup!! } }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Select Configuration Option") },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (selectedSubmenu != null) {
+                    IconButton(
+                        onClick = { selectedSubmenu = null },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back to Menu Overview"
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Column {
+                    Text(
+                        text = selectedSubmenu?.title ?: "Select Menu Option",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (selectedSubmenu != null) {
+                            selectedSubmenu!!.description
+                        } else {
+                            "Navigate settings submenus to choose an option"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
         text = {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                    .height(420.dp)
             ) {
-                categories.forEach { category ->
-                    Text(
-                        text = category,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
-                    )
-                    ConfigOption.ALL_OPTIONS.filter { it.category == category }.forEach { option ->
-                        val isSelected = option.key == initialKey
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                AnimatedContent(
+                    targetState = selectedSubmenu,
+                    transitionSpec = {
+                        if (targetState != null) {
+                            (slideInHorizontally { fullWidth -> fullWidth } + fadeIn())
+                                .togetherWith(slideOutHorizontally { fullWidth -> -fullWidth } + fadeOut())
+                        } else {
+                            (slideInHorizontally { fullWidth -> -fullWidth } + fadeIn())
+                                .togetherWith(slideOutHorizontally { fullWidth -> fullWidth } + fadeOut())
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    label = "ConfigOptionMenuTransition"
+                ) { targetSubmenu ->
+                    if (targetSubmenu == null) {
+                        // Level 1: Simulated Main Settings Menu
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOptionSelected(option) }
-                                .padding(vertical = 8.dp, horizontal = 4.dp)
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = option.title,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
+                            if (initialOption != null && initialSubmenu != null) {
+                                Card(
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 12.dp)
+                                        .clickable { selectedSubmenu = initialSubmenu }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(12.dp)
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Currently Assigned Option",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = "${initialSubmenu.title} › ${initialOption.title}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                            contentDescription = "Open ${initialSubmenu.title}",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                             }
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Selected",
-                                    tint = MaterialTheme.colorScheme.primary
+
+                            // Standalone items (Music Library)
+                            standaloneSubmenus.forEach { submenu ->
+                                SubmenuCategoryCard(
+                                    submenu = submenu,
+                                    isActiveSubmenu = initialSubmenu == submenu,
+                                    activeOptionTitle = if (initialSubmenu == submenu) initialOption?.title else null,
+                                    onClick = { selectedSubmenu = submenu }
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            // Grouped items (Appearance: Titles, Art, HUD, Colors)
+                            groupedSubmenus.forEach { (groupName, submenus) ->
+                                Text(
+                                    text = groupName,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp)
+                                )
+                                submenus.forEach { submenu ->
+                                    SubmenuCategoryCard(
+                                        submenu = submenu,
+                                        isActiveSubmenu = initialSubmenu == submenu,
+                                        activeOptionTitle = if (initialSubmenu == submenu) initialOption?.title else null,
+                                        onClick = { selectedSubmenu = submenu }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            }
+                        }
+                    } else {
+                        // Level 2: Submenu Options List
+                        val submenuOptions = remember(targetSubmenu) {
+                            ConfigOption.ALL_OPTIONS.filter { it.getSubmenu() == targetSubmenu }
+                        }
+                        val sections = remember(submenuOptions) {
+                            submenuOptions.groupBy { it.getSectionName() }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            sections.forEach { (sectionName, options) ->
+                                Text(
+                                    text = sectionName,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(top = 10.dp, bottom = 4.dp, start = 4.dp)
+                                )
+                                options.forEach { option ->
+                                    val isSelected = option.key == initialKey
+                                    Card(
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (isSelected)
+                                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                            else
+                                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 3.dp)
+                                            .clickable { onOptionSelected(option) }
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                        ) {
+                                            Text(
+                                                text = option.title,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            if (isSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = "Selected",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             }
                         }
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 }
             }
         },
@@ -781,4 +994,77 @@ fun ConfigOptionPickerDialog(
             }
         }
     )
+}
+
+@Composable
+private fun SubmenuCategoryCard(
+    submenu: SettingsSubmenu,
+    isActiveSubmenu: Boolean,
+    activeOptionTitle: String?,
+    onClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActiveSubmenu)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isActiveSubmenu) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.primaryContainer
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = submenu.icon,
+                    contentDescription = null,
+                    tint = if (isActiveSubmenu) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = submenu.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = submenu.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (activeOptionTitle != null) {
+                    Text(
+                        text = "Active: $activeOptionTitle",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }

@@ -114,6 +114,13 @@ data class DisplaySettings(
     val autoArtistStyleGrid: Boolean = false,
     val autoAutoplayOnConnect: Boolean = false,
     val autoVoiceSearch: Boolean = true,
+    val autoSpeedVolumeEnabled: Boolean = false,
+    val autoDefaultVolume: Int = 50,
+    val autoMinSpeedThreshold: Float = 15f,
+    val autoSpeedVolumeRatio: Float = 1.0f,
+    val autoSpeedUnit: String = "MPH",
+    val drivingModeEnabled: Boolean = false,
+    val autoEnableDrivingMode: Boolean = false,
     val autoActionButtonOrder: List<GestureAction> = listOf(
         GestureAction.PLAY_CURRENT_ALBUM,
         GestureAction.PLAY_CURRENT_ARTIST,

@@ -42,6 +42,7 @@ import com.travelingtunes.app.core.theme.TravelingTunesTheme
 import com.travelingtunes.app.feature.player.PlayerScreen
 import com.travelingtunes.app.feature.quickstart.QuickStartScreen
 import com.travelingtunes.app.feature.settings.DownloadedArtBrowserScreen
+import com.travelingtunes.app.feature.settings.DuplicateTrackIdentifierScreen
 import com.travelingtunes.app.feature.settings.GestureAssignmentScreen
 import com.travelingtunes.app.feature.settings.SettingsScreen
 import kotlinx.coroutines.flow.first
@@ -163,8 +164,33 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            LaunchedEffect(gpsVolumeEnabled, gpsSensitivity) {
-                if (gpsVolumeEnabled) {
+            LaunchedEffect(
+                gpsVolumeEnabled,
+                gpsSensitivity,
+                displaySettings.autoSpeedVolumeEnabled,
+                displaySettings.autoDefaultVolume,
+                displaySettings.autoMinSpeedThreshold,
+                displaySettings.autoSpeedVolumeRatio,
+                displaySettings.autoSpeedUnit,
+                displaySettings.drivingModeEnabled,
+                displaySettings.autoEnableDrivingMode
+            ) {
+                val shouldTrack = gpsVolumeEnabled || displaySettings.autoSpeedVolumeEnabled || displaySettings.autoEnableDrivingMode || displaySettings.drivingModeEnabled
+                if (shouldTrack) {
+                    speedVolumeManager.updateConfig(
+                        speedVolumeEnabled = displaySettings.autoSpeedVolumeEnabled || gpsVolumeEnabled,
+                        defaultVolumePercent = displaySettings.autoDefaultVolume,
+                        minSpeedThreshold = displaySettings.autoMinSpeedThreshold,
+                        speedVolumeRatio = displaySettings.autoSpeedVolumeRatio,
+                        speedUnit = displaySettings.autoSpeedUnit,
+                        drivingModeEnabled = displaySettings.drivingModeEnabled,
+                        autoEnableDrivingMode = displaySettings.autoEnableDrivingMode,
+                        onMotionDetected = {
+                            lifecycleScope.launch {
+                                settingsDataStore.setDrivingModeEnabled(true)
+                            }
+                        }
+                    )
                     speedVolumeManager.startTracking(gpsSensitivity)
                 } else {
                     speedVolumeManager.stopTracking()
@@ -485,7 +511,8 @@ fun TravelingTunesNavHost(
                 onNavigateBack = { navController.popBackStack() },
                 onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
                 onOpenQuickStart = { navController.navigate("quickstart") },
-                onOpenDownloadedArtBrowser = { navController.navigate("downloaded_art_browser") }
+                onOpenDownloadedArtBrowser = { navController.navigate("downloaded_art_browser") },
+                onOpenDuplicateTrackIdentifier = { navController.navigate("duplicate_track_identifier") }
             )
         }
         composable("gesture_assignments") {
@@ -506,6 +533,13 @@ fun TravelingTunesNavHost(
                 albumArtDownloader = musicScanner.albumArtDownloader,
                 playbackManager = playbackManager,
                 musicScanner = musicScanner,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("duplicate_track_identifier") {
+            DuplicateTrackIdentifierScreen(
+                musicDatabase = musicDatabase,
+                musicFolderName = musicFolderName,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

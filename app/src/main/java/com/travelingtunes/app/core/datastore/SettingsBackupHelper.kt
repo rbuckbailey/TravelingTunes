@@ -66,6 +66,13 @@ object SettingsBackupHelper {
         sb.append("    \"autoArtistStyleGrid\": ${display.autoArtistStyleGrid},\n")
         sb.append("    \"autoAutoplayOnConnect\": ${display.autoAutoplayOnConnect},\n")
         sb.append("    \"autoVoiceSearch\": ${display.autoVoiceSearch},\n")
+        sb.append("    \"autoSpeedVolumeEnabled\": ${display.autoSpeedVolumeEnabled},\n")
+        sb.append("    \"autoDefaultVolume\": ${display.autoDefaultVolume},\n")
+        sb.append("    \"autoMinSpeedThreshold\": ${display.autoMinSpeedThreshold},\n")
+        sb.append("    \"autoSpeedVolumeRatio\": ${display.autoSpeedVolumeRatio},\n")
+        sb.append("    \"autoSpeedUnit\": \"${display.autoSpeedUnit}\",\n")
+        sb.append("    \"drivingModeEnabled\": ${display.drivingModeEnabled},\n")
+        sb.append("    \"autoEnableDrivingMode\": ${display.autoEnableDrivingMode},\n")
         sb.append("    \"autoActionButtonOrder\": \"${display.autoActionButtonOrder.joinToString(",") { it.name }}\"\n")
         sb.append("  },\n")
 
