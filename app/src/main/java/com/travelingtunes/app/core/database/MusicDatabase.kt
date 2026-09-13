@@ -477,9 +477,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             val contentUri = Uri.parse(contentUriStr)
             val mmr = android.media.MediaMetadataRetriever()
             return try {
-                context.contentResolver.openFileDescriptor(contentUri, "r")?.use { pfd ->
-                    mmr.setDataSource(pfd.fileDescriptor)
-                } ?: mmr.setDataSource(context, contentUri)
+                mmr.setDataSource(context, contentUri)
                 val bytes = mmr.embeddedPicture
                 bytes == null
             } catch (_: Exception) {

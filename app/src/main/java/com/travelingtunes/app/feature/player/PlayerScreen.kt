@@ -1860,10 +1860,7 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
     // 3. Try MediaMetadataRetriever on song.contentUri (embedded ID3 artwork)
     val mmr = MediaMetadataRetriever()
     try {
-        context.contentResolver.openFileDescriptor(song.contentUri, "r")?.use { pfd ->
-            mmr.setDataSource(pfd.fileDescriptor)
-        } ?: mmr.setDataSource(context, song.contentUri)
-
+        mmr.setDataSource(context, song.contentUri)
         val bytes = mmr.embeddedPicture
         if (bytes != null) {
             val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)

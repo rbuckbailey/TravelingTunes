@@ -7,6 +7,7 @@ import android.media.MediaFormat
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.model.Song
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.nio.ByteOrder
 import kotlin.math.abs
@@ -48,16 +49,21 @@ object AudioVolumeAnalyzer {
     suspend fun analyzeSong(context: Context, song: Song): VolumeAnalysisResult = withContext(Dispatchers.IO) {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
+        var pfd: android.os.ParcelFileDescriptor? = null
 
         var sumSquares = 0.0
         var totalSamples = 0L
         var maxPeakVal = 0.0f
 
         try {
-            val pfd = context.contentResolver.openFileDescriptor(song.contentUri, "r")
+            pfd = try {
+                context.contentResolver.openFileDescriptor(song.contentUri, "r")
+            } catch (_: Exception) {
+                null
+            }
+
             if (pfd != null) {
                 extractor.setDataSource(pfd.fileDescriptor)
-                pfd.close()
             } else {
                 extractor.setDataSource(context, song.contentUri, null)
             }
@@ -87,8 +93,13 @@ object AudioVolumeAnalyzer {
                 val timeoutUs = 5000L
                 var decodedFrames = 0
                 val maxFramesToDecode = 3000
+                var emptyAttempts = 0
+                val maxEmptyAttempts = 100
 
-                while (!isEOS && decodedFrames < maxFramesToDecode) {
+                while (!isEOS && decodedFrames < maxFramesToDecode && emptyAttempts < maxEmptyAttempts) {
+                    kotlin.coroutines.coroutineContext.ensureActive()
+
+                    var processedSomething = false
                     val inputIdx = codec.dequeueInputBuffer(timeoutUs)
                     if (inputIdx >= 0) {
                         val inputBuf = codec.getInputBuffer(inputIdx)
@@ -102,6 +113,7 @@ object AudioVolumeAnalyzer {
                                 codec.queueInputBuffer(inputIdx, 0, sampleSize, sampleTime, 0)
                                 extractor.advance()
                             }
+                            processedSomething = true
                         }
                     }
 
@@ -125,8 +137,15 @@ object AudioVolumeAnalyzer {
                                 }
                             }
                             decodedFrames++
+                            processedSomething = true
                         }
                         codec.releaseOutputBuffer(outputIdx, false)
+                    }
+
+                    if (!processedSomething) {
+                        emptyAttempts++
+                    } else {
+                        emptyAttempts = 0
                     }
                 }
             }
@@ -135,10 +154,15 @@ object AudioVolumeAnalyzer {
         } finally {
             try {
                 codec?.stop()
+            } catch (_: Exception) {}
+            try {
                 codec?.release()
             } catch (_: Exception) {}
             try {
                 extractor.release()
+            } catch (_: Exception) {}
+            try {
+                pfd?.close()
             } catch (_: Exception) {}
         }
 

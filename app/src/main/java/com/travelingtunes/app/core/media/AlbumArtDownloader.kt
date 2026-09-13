@@ -864,10 +864,7 @@ class AlbumArtDownloader(
             for (song in songs) {
                 val mmr = android.media.MediaMetadataRetriever()
                 try {
-                    context.contentResolver.openFileDescriptor(song.contentUri, "r")?.use { pfd ->
-                        mmr.setDataSource(pfd.fileDescriptor)
-                    } ?: mmr.setDataSource(context, song.contentUri)
-
+                    mmr.setDataSource(context, song.contentUri)
                     val bytes = mmr.embeddedPicture
                     if (bytes != null) {
                         if (!embeddedFile.exists()) {
@@ -926,9 +923,7 @@ class AlbumArtDownloader(
             if (file.exists() && file.length() > 0) {
                 val mmr = android.media.MediaMetadataRetriever()
                 return try {
-                    context.contentResolver.openFileDescriptor(song.contentUri, "r")?.use { pfd ->
-                        mmr.setDataSource(pfd.fileDescriptor)
-                    } ?: mmr.setDataSource(context, song.contentUri)
+                    mmr.setDataSource(context, song.contentUri)
                     val bytes = mmr.embeddedPicture
                     bytes == null
                 } catch (_: Exception) {

@@ -48,7 +48,7 @@ object AlbumArtColorExtractor {
         )
 
         val targetMinContrastStrict = 4.5
-        val targetMinDistanceStrict = 80.0
+        val targetMinDistanceStrict = 35.0 // Perceptual distance in CIELAB space
 
         // Pass 1: Try text candidates down the line matching strict contrast and distinctness
         for (bgSwatch in bgCandidates) {
@@ -75,7 +75,7 @@ object AlbumArtColorExtractor {
             }
         }
 
-        // Pass 2: Moderately strict fallbackpass (moving down the line for contrast >= 3.5 and distance >= 55.0)
+        // Pass 2: Moderately strict fallbackpass (moving down the line for contrast >= 3.5 and distance >= 22.0)
         for (bgSwatch in bgCandidates) {
             val bgInt = bgSwatch.rgb
             val textCandidates = (preferredTextSwatches + allSwatches)
@@ -87,7 +87,7 @@ object AlbumArtColorExtractor {
                 val contrast = ColorUtils.calculateContrast(primaryInt, bgInt)
                 val distance = colorDistance(primaryInt, bgInt)
 
-                if (contrast >= 3.5 && distance >= 55.0) {
+                if (contrast >= 3.5 && distance >= 22.0) {
                     val secondaryInt = findSecondaryTextColor(bgInt, primaryInt, textCandidates)
                     return@withContext ColorTheme(
                         name = "Album Art Dynamic",
@@ -131,15 +131,9 @@ object AlbumArtColorExtractor {
             val height = bitmap.height
             if (width <= 0 || height <= 0) return emptyList()
 
-            val scaledBmp = if (width > 100 || height > 100) {
-                Bitmap.createScaledBitmap(bitmap, 100, 100, false)
-            } else {
-                bitmap
-            }
-
-            val sw = scaledBmp.width
-            val sh = scaledBmp.height
-            val border = (sw * 0.03f).toInt().coerceIn(1, 3)
+            // Sample directly from unscaled bitmap edge to preserve exact edge colors without scaling artifacts
+            val borderX = (width * 0.015f).toInt().coerceIn(1, 8)
+            val borderY = (height * 0.015f).toInt().coerceIn(1, 8)
 
             val edgePixels: IntArray
             var index = 0
@@ -147,70 +141,104 @@ object AlbumArtColorExtractor {
             if (innerEdge != null) {
                 when (innerEdge) {
                     InnerEdge.RIGHT -> {
-                        edgePixels = IntArray(sh * border)
-                        for (y in 0 until sh) {
-                            for (x in (sw - border) until sw) {
-                                edgePixels[index++] = scaledBmp.getPixel(x, y)
+                        edgePixels = IntArray(height * borderX)
+                        for (y in 0 until height) {
+                            for (x in (width - borderX) until width) {
+                                edgePixels[index++] = bitmap.getPixel(x, y)
                             }
                         }
                     }
                     InnerEdge.LEFT -> {
-                        edgePixels = IntArray(sh * border)
-                        for (y in 0 until sh) {
-                            for (x in 0 until border) {
-                                edgePixels[index++] = scaledBmp.getPixel(x, y)
+                        edgePixels = IntArray(height * borderX)
+                        for (y in 0 until height) {
+                            for (x in 0 until borderX) {
+                                edgePixels[index++] = bitmap.getPixel(x, y)
                             }
                         }
                     }
                     InnerEdge.BOTTOM -> {
-                        edgePixels = IntArray(sw * border)
-                        for (y in (sh - border) until sh) {
-                            for (x in 0 until sw) {
-                                edgePixels[index++] = scaledBmp.getPixel(x, y)
+                        edgePixels = IntArray(width * borderY)
+                        for (y in (height - borderY) until height) {
+                            for (x in 0 until width) {
+                                edgePixels[index++] = bitmap.getPixel(x, y)
                             }
                         }
                     }
                     InnerEdge.TOP -> {
-                        edgePixels = IntArray(sw * border)
-                        for (y in 0 until border) {
-                            for (x in 0 until sw) {
-                                edgePixels[index++] = scaledBmp.getPixel(x, y)
+                        edgePixels = IntArray(width * borderY)
+                        for (y in 0 until borderY) {
+                            for (x in 0 until width) {
+                                edgePixels[index++] = bitmap.getPixel(x, y)
                             }
                         }
                     }
                 }
             } else {
                 // All 4 borders
-                val totalCap = sw * border * 2 + (sh - border * 2) * border * 2
+                val totalCap = width * borderY * 2 + (height - borderY * 2) * borderX * 2
                 edgePixels = IntArray(totalCap)
                 // Top border
-                for (y in 0 until border) {
-                    for (x in 0 until sw) {
-                        edgePixels[index++] = scaledBmp.getPixel(x, y)
+                for (y in 0 until borderY) {
+                    for (x in 0 until width) {
+                        edgePixels[index++] = bitmap.getPixel(x, y)
                     }
                 }
                 // Bottom border
-                for (y in (sh - border) until sh) {
-                    for (x in 0 until sw) {
-                        edgePixels[index++] = scaledBmp.getPixel(x, y)
+                for (y in (height - borderY) until height) {
+                    for (x in 0 until width) {
+                        edgePixels[index++] = bitmap.getPixel(x, y)
                     }
                 }
                 // Left & Right borders (middle)
-                for (y in border until (sh - border)) {
-                    for (x in 0 until border) {
-                        edgePixels[index++] = scaledBmp.getPixel(x, y)
+                for (y in borderY until (height - borderY)) {
+                    for (x in 0 until borderX) {
+                        edgePixels[index++] = bitmap.getPixel(x, y)
                     }
-                    for (x in (sw - border) until sw) {
-                        edgePixels[index++] = scaledBmp.getPixel(x, y)
+                    for (x in (width - borderX) until width) {
+                        edgePixels[index++] = bitmap.getPixel(x, y)
                     }
                 }
             }
 
             if (index <= 0) return emptyList()
 
-            val edgeBmp = Bitmap.createBitmap(edgePixels, 0, index.coerceAtMost(edgePixels.size), index, 1, Bitmap.Config.ARGB_8888)
-            val edgePalette = Palette.from(edgeBmp).generate()
-            edgePalette.swatches.sortedByDescending { it.population }
+            // Count frequency distribution of exact pixel RGB values along the edge
+            val exactCounts = HashMap<Int, Int>()
+            for (i in 0 until index) {
+                val pixel = edgePixels[i] or 0xFF000000.toInt()
+                exactCounts[pixel] = (exactCounts[pixel] ?: 0) + 1
+            }
+
+            // Cluster near-identical pixel colors (e.g. JPEG noise) while keeping exact pixel RGB values
+            val sortedExact = exactCounts.entries.sortedByDescending { it.value }
+            val clusters = mutableListOf<Palette.Swatch>()
+            val visited = HashSet<Int>()
+
+            val lab1 = DoubleArray(3)
+            val lab2 = DoubleArray(3)
+
+            for (entry in sortedExact) {
+                val exactColor = entry.key
+                if (exactColor in visited) continue
+
+                var totalPopulation = 0
+                ColorUtils.colorToLAB(exactColor, lab1)
+
+                for (otherEntry in sortedExact) {
+                    val otherColor = otherEntry.key
+                    if (otherColor in visited) continue
+
+                    ColorUtils.colorToLAB(otherColor, lab2)
+                    if (ColorUtils.distanceEuclidean(lab1, lab2) <= 5.0) {
+                        totalPopulation += otherEntry.value
+                        visited.add(otherColor)
+                    }
+                }
+
+                clusters.add(Palette.Swatch(exactColor, totalPopulation))
+            }
+
+            clusters.sortedByDescending { it.population }
         } catch (e: Exception) {
             emptyList()
         }
@@ -229,10 +257,10 @@ object AlbumArtColorExtractor {
             if (contrastToBg < 2.5) continue
 
             val distToBg = colorDistance(candInt, bgInt)
-            if (distToBg < 45.0) continue
+            if (distToBg < 18.0) continue
 
             val distToPrimary = colorDistance(candInt, primaryTextInt)
-            if (distToPrimary >= 25.0) {
+            if (distToPrimary >= 12.0) {
                 return candInt
             }
         }
@@ -241,16 +269,11 @@ object AlbumArtColorExtractor {
     }
 
     private fun colorDistance(c1: Int, c2: Int): Double {
-        val r1 = android.graphics.Color.red(c1)
-        val g1 = android.graphics.Color.green(c1)
-        val b1 = android.graphics.Color.blue(c1)
-        val r2 = android.graphics.Color.red(c2)
-        val g2 = android.graphics.Color.green(c2)
-        val b2 = android.graphics.Color.blue(c2)
-        val dr = r1 - r2
-        val dg = g1 - g2
-        val db = b1 - b2
-        return Math.sqrt((dr * dr + dg * dg + db * db).toDouble())
+        val lab1 = DoubleArray(3)
+        val lab2 = DoubleArray(3)
+        ColorUtils.colorToLAB(c1, lab1)
+        ColorUtils.colorToLAB(c2, lab2)
+        return ColorUtils.distanceEuclidean(lab1, lab2)
     }
 
     private fun blendSecondaryColor(bgInt: Int, primaryTextInt: Int): Int {

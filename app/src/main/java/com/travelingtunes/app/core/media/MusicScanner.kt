@@ -399,11 +399,7 @@ class MusicScanner(
         val mmr = MediaMetadataRetriever()
 
         return try {
-            context.contentResolver.openFileDescriptor(contentUri, "r")?.use { pfd ->
-                mmr.setDataSource(pfd.fileDescriptor)
-            } ?: run {
-                mmr.setDataSource(context, contentUri)
-            }
+            mmr.setDataSource(context, contentUri)
 
             val rawTitle = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)?.trim()
             val rawArtist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)?.trim()

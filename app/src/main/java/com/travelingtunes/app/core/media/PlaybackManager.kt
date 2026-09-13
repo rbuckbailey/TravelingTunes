@@ -69,6 +69,9 @@ class PlaybackManager(
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
+    private var consecutiveErrorCount = 0
+    private var lastErrorTimestampMs = 0L
+
     init {
         updateVolumeRatio()
         if (settingsDataStore != null) {
@@ -82,6 +85,9 @@ class PlaybackManager(
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _isPlaying.value = isPlaying
+                if (isPlaying) {
+                    consecutiveErrorCount = 0
+                }
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -100,6 +106,23 @@ class PlaybackManager(
 
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                 android.util.Log.e("PlaybackManager", "Player error encountered: ${error.message}", error)
+                val now = System.currentTimeMillis()
+                if (now - lastErrorTimestampMs < 3000L) {
+                    consecutiveErrorCount++
+                } else {
+                    consecutiveErrorCount = 1
+                }
+                lastErrorTimestampMs = now
+
+                if (consecutiveErrorCount >= 3) {
+                    android.util.Log.w("PlaybackManager", "Circuit breaker triggered: Stopping player to prevent audio server lockup.")
+                    _isPlaying.value = false
+                    _actionHudText.value = "Audio engine busy"
+                    player.stop()
+                    consecutiveErrorCount = 0
+                    return
+                }
+
                 if (player.hasNextMediaItem()) {
                     player.seekToNextMediaItem()
                     player.prepare()
