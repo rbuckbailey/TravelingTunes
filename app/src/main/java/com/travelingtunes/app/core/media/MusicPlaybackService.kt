@@ -293,21 +293,8 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 
     private fun shuffleAllSongs() {
-        val player = sharedPlayer ?: return
-        serviceScope.launch {
-            val allSongs = getAllSongsHelper()
-            if (allSongs.isNotEmpty()) {
-                val mediaItems = allSongs.map { songToMediaItem(it) }
-                val randomIndex = if (allSongs.size > 1) allSongs.indices.random() else 0
-                launch(Dispatchers.Main) {
-                    player.setMediaItems(mediaItems, randomIndex, 0L)
-                    player.repeatMode = Player.REPEAT_MODE_OFF
-                    player.shuffleModeEnabled = true
-                    player.prepare()
-                    player.play()
-                }
-            }
-        }
+        val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+        playbackManager.shuffleAllSongs()
     }
 
     @OptIn(UnstableApi::class)
@@ -472,8 +459,8 @@ class MusicPlaybackService : MediaLibraryService() {
                     }
                 }
                 "com.travelingtunes.app.ACTION_TOGGLE_SHUFFLE" -> {
-                    val player = session.player
-                    player.shuffleModeEnabled = !player.shuffleModeEnabled
+                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                    playbackManager.toggleShuffle()
                 }
                 "com.travelingtunes.app.ACTION_TOGGLE_DRIVING_MODE" -> {
                     serviceScope.launch {

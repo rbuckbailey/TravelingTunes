@@ -28,6 +28,25 @@ class PlaybackManager(
     private val musicDatabase: MusicDatabase? = null
 ) {
 
+    companion object {
+        @Volatile
+        private var instance: PlaybackManager? = null
+
+        fun getInstance(
+            context: Context,
+            settingsDataStore: SettingsDataStore? = null,
+            musicDatabase: MusicDatabase? = null
+        ): PlaybackManager {
+            return instance ?: synchronized(this) {
+                instance ?: PlaybackManager(
+                    context.applicationContext,
+                    settingsDataStore ?: SettingsDataStore(context.applicationContext),
+                    musicDatabase ?: MusicDatabase(context.applicationContext)
+                ).also { instance = it }
+            }
+        }
+    }
+
     val player: ExoPlayer = MusicPlaybackService.getOrCreatePlayer(context)
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -73,6 +92,7 @@ class PlaybackManager(
     private var lastErrorTimestampMs = 0L
 
     init {
+        instance = this
         updateVolumeRatio()
         if (settingsDataStore != null) {
             scope.launch {
@@ -212,11 +232,11 @@ class PlaybackManager(
             masterPlaylist = songs
         }
         _currentPlaylist.value = songs
-        player.clearMediaItems()
 
         val mediaItems = songs.map { songToMediaItem(it) }
+        val safeIndex = startIndex.coerceIn(0, songs.size - 1)
+        val safePos = positionMs.coerceAtLeast(0L)
 
-        player.setMediaItems(mediaItems)
         _repeatMode.value = repeatMode
         _shuffleMode.value = shuffleMode
 
@@ -227,12 +247,11 @@ class PlaybackManager(
             else -> Player.REPEAT_MODE_OFF
         }
 
-        val safeIndex = startIndex.coerceIn(0, songs.size - 1)
-        player.seekTo(safeIndex, positionMs.coerceAtLeast(0L))
+        player.setMediaItems(mediaItems, safeIndex, safePos)
         player.prepare()
 
         _currentSong.value = songs.getOrNull(safeIndex)
-        _currentPositionMs.value = positionMs.coerceAtLeast(0L)
+        _currentPositionMs.value = safePos
         _durationMs.value = player.duration.coerceAtLeast(0L)
         AlbumArtCache.instance.preCacheSurroundingSongs(context, songs, safeIndex)
     }
@@ -266,7 +285,10 @@ class PlaybackManager(
             RepeatMode.OFF -> Player.REPEAT_MODE_OFF
         }
 
-        val safeIndex = if (isShuffle && startIndex == 0 && songs.size > 1) {
+        // Only choose a random starting index when explicit shuffle play (shuffle = true) was requested.
+        // If shuffle is false (e.g. user selected a specific song from the song picker), keep startIndex
+        // so the selected song plays first before continuing shuffle.
+        val safeIndex = if (shuffle && startIndex == 0 && songs.size > 1) {
             songs.indices.random()
         } else {
             startIndex.coerceIn(0, songs.size - 1)
@@ -317,15 +339,13 @@ class PlaybackManager(
         }
 
         _currentPlaylist.value = activeQueue
-        player.clearMediaItems()
-        player.setMediaItems(activeQueue.map { songToMediaItem(it) })
-        player.shuffleModeEnabled = false
+        _currentSong.value = activeQueue.getOrNull(playIndex)
 
-        player.seekTo(playIndex, 0L)
+        player.shuffleModeEnabled = false
+        player.setMediaItems(activeQueue.map { songToMediaItem(it) }, playIndex, 0L)
         player.prepare()
         player.play()
 
-        _currentSong.value = activeQueue.getOrNull(playIndex)
         AlbumArtCache.instance.preCacheSurroundingSongs(context, activeQueue, playIndex)
         persistCurrentPlaybackState()
     }
@@ -348,12 +368,10 @@ class PlaybackManager(
 
                 val shuffledList = allSongs.shuffled()
                 _currentPlaylist.value = shuffledList
+                _currentSong.value = shuffledList.firstOrNull()
 
-                player.clearMediaItems()
-                player.setMediaItems(shuffledList.map { songToMediaItem(it) })
                 player.shuffleModeEnabled = false
-
-                player.seekTo(0, 0L)
+                player.setMediaItems(shuffledList.map { songToMediaItem(it) }, 0, 0L)
                 player.prepare()
                 player.play()
 

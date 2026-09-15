@@ -37,4 +37,38 @@ class PlaybackActionsTest {
         assertEquals("Track 1", albumSongs[0].title)
         assertEquals("Track 2", albumSongs[1].title)
     }
+
+    @Test
+    fun testSelectedSongFirstInShuffleMode_IndexZero() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(1L, "Song 1", "Artist", "Album", 1L, 1000L, mockUri)
+        val s2 = Song(2L, "Song 2", "Artist", "Album", 1L, 1000L, mockUri)
+        val s3 = Song(3L, "Song 3", "Artist", "Album", 1L, 1000L, mockUri)
+
+        val songs = listOf(s1, s2, s3)
+        val chosenSong = songs[0] // User picked index 0
+
+        val remainingSongs = songs.filter { it.id != chosenSong.id }
+        val activeQueue = listOf(chosenSong) + remainingSongs.shuffled()
+
+        assertEquals("Song 1", activeQueue[0].title)
+        assertEquals(3, activeQueue.size)
+    }
+
+    @Test
+    fun testSelectedSongFirstInShuffleMode_IndexNonZero() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(1L, "Song 1", "Artist", "Album", 1L, 1000L, mockUri)
+        val s2 = Song(2L, "Song 2", "Artist", "Album", 1L, 1000L, mockUri)
+        val s3 = Song(3L, "Song 3", "Artist", "Album", 1L, 1000L, mockUri)
+
+        val songs = listOf(s1, s2, s3)
+        val chosenSong = songs[2] // User picked index 2 ("Song 3")
+
+        val remainingSongs = songs.filter { it.id != chosenSong.id }
+        val activeQueue = listOf(chosenSong) + remainingSongs.shuffled()
+
+        assertEquals("Song 3", activeQueue[0].title)
+        assertEquals(3, activeQueue.size)
+    }
 }

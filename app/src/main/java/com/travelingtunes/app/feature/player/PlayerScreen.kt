@@ -357,13 +357,10 @@ fun PlayerScreen(
         }
     }
 
-    // Sync PlaybackManager -> pagerState when song changes externally
-    LaunchedEffect(currentSong?.id) {
-        if (songIndex in 0 until pageCount && pagerState.settledPage != songIndex) {
-            pagerState.animateScrollToPage(
-                page = songIndex,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
-            )
+    // Sync PlaybackManager -> pagerState when song or playlist changes externally
+    LaunchedEffect(currentSong?.id, currentPlaylist) {
+        if (songIndex in 0 until pageCount && pagerState.currentPage != songIndex) {
+            pagerState.scrollToPage(songIndex)
         }
     }
 
