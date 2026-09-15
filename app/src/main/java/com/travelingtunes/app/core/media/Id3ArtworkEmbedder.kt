@@ -79,8 +79,8 @@ object Id3ArtworkEmbedder {
         context: Context,
         songs: List<Song>,
         artworkUri: Uri
-    ): Pair<Int, Int> = withContext(Dispatchers.IO) {
-        if (songs.isEmpty()) return@withContext Pair(0, 0)
+    ): Pair<Int, Int> = BackgroundTaskGate.runAsBackgroundTask {
+        if (songs.isEmpty()) return@runAsBackgroundTask Pair(0, 0)
 
         val imageBytes = try {
             if (artworkUri.scheme == "file") {
@@ -93,13 +93,14 @@ object Id3ArtworkEmbedder {
         }
 
         if (imageBytes == null || imageBytes.isEmpty()) {
-            return@withContext Pair(0, songs.size)
+            return@runAsBackgroundTask Pair(0, songs.size)
         }
 
         var successCount = 0
         var failedCount = 0
 
         for (song in songs) {
+            BackgroundTaskGate.checkYieldAndPause()
             val ok = embedArtworkIntoSong(context, song, imageBytes)
             if (ok) successCount++ else failedCount++
         }

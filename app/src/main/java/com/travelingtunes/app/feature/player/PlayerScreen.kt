@@ -366,11 +366,16 @@ fun PlayerScreen(
     }
 
     // Sync PlaybackManager -> pagerState when song or playlist changes externally
-    LaunchedEffect(currentSong?.id, currentPlaylist) {
+    LaunchedEffect(currentSong?.id, currentPlaylist, lastTransitionReason) {
         if (songIndex in 0 until pageCount && pagerState.currentPage != songIndex) {
-            if (lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
-                lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
-                pagerState.animateScrollToPage(songIndex)
+            val isNextTrackAuto = lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                    lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT ||
+                    songIndex == pagerState.currentPage + 1
+            if (isNextTrackAuto) {
+                pagerState.animateScrollToPage(
+                    page = songIndex,
+                    animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                )
             } else {
                 pagerState.scrollToPage(songIndex)
             }
@@ -436,6 +441,16 @@ fun PlayerScreen(
     var activePageTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
     var activePageOtherKey by remember { mutableStateOf<String?>(null) }
     var dragStartTimeMs by remember { mutableStateOf(0L) }
+
+    val isForegroundBusy = pagerState.isScrollInProgress ||
+            activePageAction != null ||
+            showSongPicker || showQueue || showMenu ||
+            showDownloadedArtBrowser || showGestureAssignments ||
+            showDuplicateTrackIdentifier || showRadialMenu
+
+    LaunchedEffect(isForegroundBusy) {
+        com.travelingtunes.app.core.media.BackgroundTaskGate.notifyForegroundBusy(isForegroundBusy)
+    }
 
     val gestureListener = object : GestureEventListener {
         override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean, touchOffset: Offset): Boolean {
@@ -592,7 +607,10 @@ fun PlayerScreen(
                     val nextIndex = pagerState.currentPage + 1
                     if (nextIndex in 0 until pageCount) {
                         coroutineScope.launch {
-                            pagerState.animateScrollToPage(nextIndex)
+                            pagerState.animateScrollToPage(
+                                page = nextIndex,
+                                animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                            )
                         }
                     } else {
                         playbackManager.next()
@@ -602,7 +620,10 @@ fun PlayerScreen(
                     val prevIndex = pagerState.currentPage - 1
                     if (prevIndex >= 0) {
                         coroutineScope.launch {
-                            pagerState.animateScrollToPage(prevIndex)
+                            pagerState.animateScrollToPage(
+                                page = prevIndex,
+                                animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                            )
                         }
                     } else {
                         playbackManager.previous()
@@ -2311,7 +2332,10 @@ private fun handleGestureAction(
                 val nextIndex = pagerState.currentPage + 1
                 if (nextIndex < pageCount) {
                     coroutineScope.launch {
-                        pagerState.animateScrollToPage(nextIndex)
+                        pagerState.animateScrollToPage(
+                            page = nextIndex,
+                            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                        )
                     }
                 } else {
                     playbackManager.next()
@@ -2325,7 +2349,10 @@ private fun handleGestureAction(
                 val prevIndex = pagerState.currentPage - 1
                 if (prevIndex >= 0) {
                     coroutineScope.launch {
-                        pagerState.animateScrollToPage(prevIndex)
+                        pagerState.animateScrollToPage(
+                            page = prevIndex,
+                            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                        )
                     }
                 } else {
                     playbackManager.previous()

@@ -76,12 +76,12 @@ class MusicScanner(
     suspend fun getOrScanDuplicates(
         musicFolderName: String? = null,
         forceRescan: Boolean = false
-    ): List<DuplicateMatchPair> = withContext(Dispatchers.IO) {
+    ): List<DuplicateMatchPair> = BackgroundTaskGate.runAsBackgroundTask {
         if (!forceRescan && _cachedDuplicatePairs.value != null) {
-            return@withContext _cachedDuplicatePairs.value!!
+            return@runAsBackgroundTask _cachedDuplicatePairs.value!!
         }
         if (_isAnalyzingDuplicates.value) {
-            return@withContext _cachedDuplicatePairs.value ?: emptyList()
+            return@runAsBackgroundTask _cachedDuplicatePairs.value ?: emptyList()
         }
 
         _isAnalyzingDuplicates.value = true
@@ -274,11 +274,10 @@ class MusicScanner(
         targets: List<Pair<String, String>>,
         artworkUris: Map<Pair<String, String>, Uri?> = emptyMap(),
         playbackManager: PlaybackManager? = null
-    ): Pair<Int, Int> = withContext(Dispatchers.IO) {
-        if (_isEmbeddingArt.value || targets.isEmpty()) return@withContext Pair(0, 0)
+    ): Pair<Int, Int> = BackgroundTaskGate.runAsBackgroundTask {
+        if (_isEmbeddingArt.value || targets.isEmpty()) return@runAsBackgroundTask Pair(0, 0)
         _isEmbeddingArt.value = true
         isEmbeddingCancelled = false
-        activeEmbeddingJob = coroutineContext[kotlinx.coroutines.Job]
 
         _embeddingProgressCurrent.value = 0
         _embeddingProgressTotal.value = targets.size
@@ -289,7 +288,8 @@ class MusicScanner(
         var totalFailed = 0
 
         for ((index, pair) in targets.withIndex()) {
-            if (isEmbeddingCancelled || !coroutineContext.isActive) {
+            BackgroundTaskGate.checkYieldAndPause()
+            if (isEmbeddingCancelled) {
                 _embeddingStatusMessage.value = "Embedding stopped ($totalEmbedded songs updated)"
                 break
             }
@@ -359,8 +359,8 @@ class MusicScanner(
 
     private val supportedExtensions = setOf("mp3", "m4a", "flac", "wav", "aac", "ogg", "opus", "wma")
 
-    suspend fun scanFolder(treeUri: Uri) = withContext(Dispatchers.IO) {
-        if (_isScanning.value) return@withContext
+    suspend fun scanFolder(treeUri: Uri) = BackgroundTaskGate.runAsBackgroundTask {
+        if (_isScanning.value) return@runAsBackgroundTask
         _isScanning.value = true
         _scannedCount.value = 0
         _statusMessage.value = "Scanning library folder..."
@@ -369,7 +369,7 @@ class MusicScanner(
         if (rootDoc == null || !rootDoc.canRead()) {
             _statusMessage.value = "Cannot read selected folder"
             _isScanning.value = false
-            return@withContext
+            return@runAsBackgroundTask
         }
 
         val foundSongs = mutableListOf<Song>()
@@ -397,7 +397,7 @@ class MusicScanner(
         _isScanning.value = false
     }
 
-    private fun traverseDocumentTree(
+    private suspend fun traverseDocumentTree(
         rootDir: DocumentFile,
         currentDir: DocumentFile,
         relativePath: String,
@@ -406,6 +406,7 @@ class MusicScanner(
     ) {
         val files = currentDir.listFiles()
         for (file in files) {
+            BackgroundTaskGate.checkYieldAndPause()
             if (file.isDirectory) {
                 val subFolder = if (relativePath.isEmpty()) file.name.orEmpty() else "$relativePath/${file.name}"
                 traverseDocumentTree(rootDir, file, subFolder, foundSongs, artworkCacheDir)

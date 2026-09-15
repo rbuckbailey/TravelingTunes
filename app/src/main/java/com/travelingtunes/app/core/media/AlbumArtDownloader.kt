@@ -126,12 +126,11 @@ class AlbumArtDownloader(
         _statusMessage.value = "Album art download stopped"
     }
 
-    suspend fun downloadMissingArtwork(): Int = withContext(Dispatchers.IO) {
-        if (_isDownloading.value) return@withContext 0
+    suspend fun downloadMissingArtwork(): Int = BackgroundTaskGate.runAsBackgroundTask {
+        if (_isDownloading.value) return@runAsBackgroundTask 0
 
         _isDownloading.value = true
         isCancelled = false
-        activeJob = coroutineContext[kotlinx.coroutines.Job]
         _downloadedCount.value = 0
         _failedCount.value = 0
         _totalToDownload.value = 0
@@ -141,7 +140,7 @@ class AlbumArtDownloader(
         if (allSongs.isEmpty()) {
             _statusMessage.value = "Library is empty"
             _isDownloading.value = false
-            return@withContext 0
+            return@runAsBackgroundTask 0
         }
 
         // Group songs by (artist, album)
@@ -149,6 +148,7 @@ class AlbumArtDownloader(
         val missingGroups = mutableListOf<Pair<Pair<String, String>, List<Song>>>()
 
         for ((key, songs) in albumGroups) {
+            BackgroundTaskGate.checkYieldAndPause()
             val (artist, album) = key
             if (artist.isBlank() || album.isBlank()) continue
 
@@ -168,7 +168,7 @@ class AlbumArtDownloader(
         if (missingGroups.isEmpty()) {
             _statusMessage.value = "All albums already have album art"
             _isDownloading.value = false
-            return@withContext 0
+            return@runAsBackgroundTask 0
         }
 
         _totalToDownload.value = missingGroups.size
@@ -179,7 +179,8 @@ class AlbumArtDownloader(
         val auditItems = mutableListOf<AlbumArtAuditItem>()
 
         for ((index, group) in missingGroups.withIndex()) {
-            if (isCancelled || !coroutineContext.isActive) {
+            BackgroundTaskGate.checkYieldAndPause()
+            if (isCancelled) {
                 _statusMessage.value = "Album art download stopped ($successCount of ${missingGroups.size} downloaded)"
                 break
             }
@@ -258,7 +259,7 @@ class AlbumArtDownloader(
         }
 
         _isDownloading.value = false
-        return@withContext successCount
+        return@runAsBackgroundTask successCount
     }
 
     private fun isGenericName(name: String): Boolean {

@@ -88,4 +88,17 @@ class PlaybackActionsTest {
         assertEquals(0, androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT)
         assertEquals(2, androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_SEEK)
     }
+
+    @Test
+    fun testBackgroundTaskGatePauseState() {
+        val gate = com.travelingtunes.app.core.media.BackgroundTaskGate
+        gate.notifyForegroundBusy(false)
+        assertEquals(false, gate.isForegroundBusy.value)
+
+        gate.notifyForegroundBusy(true)
+        assertEquals(true, gate.isForegroundBusy.value)
+
+        gate.notifyForegroundBusy(false)
+        assertEquals(false, gate.isForegroundBusy.value)
+    }
 }

@@ -289,8 +289,8 @@ class CddbManager(
         }
     }
 
-    suspend fun embedAllCddbOverrides(): Pair<Int, Int> = withContext(Dispatchers.IO) {
-        if (_isEmbeddingCddb.value) return@withContext Pair(0, 0)
+    suspend fun embedAllCddbOverrides(): Pair<Int, Int> = BackgroundTaskGate.runAsBackgroundTask {
+        if (_isEmbeddingCddb.value) return@runAsBackgroundTask Pair(0, 0)
         _isEmbeddingCddb.value = true
         _embeddingCddbStatusMessage.value = "Starting CDDB ID3 tag embedding..."
 
@@ -301,6 +301,7 @@ class CddbManager(
         var fail = 0
 
         for ((idx, rec) in overrides.withIndex()) {
+            BackgroundTaskGate.checkYieldAndPause()
             _embeddingCddbStatusMessage.value = "Embedding CDDB tags: ${rec.title} (${idx + 1}/${overrides.size})"
             val song = allSongsMap[rec.songId]
             if (song != null) {

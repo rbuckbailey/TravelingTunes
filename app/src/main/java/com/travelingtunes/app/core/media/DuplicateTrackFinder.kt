@@ -96,14 +96,15 @@ object DuplicateTrackFinder {
         songs: List<Song>,
         musicFolderName: String? = null,
         onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
-    ): List<DuplicateMatchPair> = withContext(Dispatchers.IO) {
-        if (songs.size < 2) return@withContext emptyList()
+    ): List<DuplicateMatchPair> = BackgroundTaskGate.runAsBackgroundTask {
+        if (songs.size < 2) return@runAsBackgroundTask emptyList()
 
         withContext(Dispatchers.Main) { onProgress(0, songs.size) }
 
         var lastProgressTime = System.currentTimeMillis()
 
         val songInfos = songs.mapIndexed { index, song ->
+            BackgroundTaskGate.checkYieldAndPause()
             val now = System.currentTimeMillis()
             if (index == 0 || index == songs.lastIndex || now - lastProgressTime >= 80L) {
                 lastProgressTime = now
@@ -117,6 +118,7 @@ object DuplicateTrackFinder {
         val pairs = mutableListOf<DuplicateMatchPair>()
 
         for (i in songInfos.indices) {
+            BackgroundTaskGate.checkYieldAndPause()
             val now = System.currentTimeMillis()
             if (i == 0 || i == songInfos.lastIndex || now - lastProgressTime >= 80L) {
                 lastProgressTime = now

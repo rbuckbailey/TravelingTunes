@@ -98,6 +98,7 @@ object AudioVolumeAnalyzer {
 
                 while (!isEOS && decodedFrames < maxFramesToDecode && emptyAttempts < maxEmptyAttempts) {
                     kotlin.coroutines.coroutineContext.ensureActive()
+                    BackgroundTaskGate.checkYieldAndPause()
 
                     var processedSomething = false
                     val inputIdx = codec.dequeueInputBuffer(timeoutUs)
@@ -181,15 +182,16 @@ object AudioVolumeAnalyzer {
         context: Context,
         database: MusicDatabase,
         onProgress: (current: Int, total: Int, status: String) -> Unit = { _, _, _ -> }
-    ): Pair<Int, Int> = withContext(Dispatchers.IO) {
+    ): Pair<Int, Int> = BackgroundTaskGate.runAsBackgroundTask {
         val allSongs = database.getAllSongs()
-        if (allSongs.isEmpty()) return@withContext Pair(0, 0)
+        if (allSongs.isEmpty()) return@runAsBackgroundTask Pair(0, 0)
 
         var analyzedCount = 0
         var failedCount = 0
 
         val total = allSongs.size
         for ((index, song) in allSongs.withIndex()) {
+            BackgroundTaskGate.checkYieldAndPause()
             onProgress(index + 1, total, "Analyzing volume: ${song.title}")
             try {
                 val result = analyzeSong(context, song)
@@ -210,6 +212,7 @@ object AudioVolumeAnalyzer {
         val updatedSongs = database.getAllSongs()
         val albumGroups = updatedSongs.groupBy { Pair(it.album, it.artist) }
         for ((albumPair, albumSongs) in albumGroups) {
+            BackgroundTaskGate.checkYieldAndPause()
             val (albumName, artistName) = albumPair
             val albumGain = calculateAlbumGain(albumSongs)
             database.updateAlbumGain(albumName, artistName, albumGain)
