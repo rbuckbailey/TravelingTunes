@@ -123,6 +123,7 @@ data class DisplaySettings(
     val keepScreenOn: Boolean = true,
     val immersiveMode: Boolean = true,
     val numEdgeRegions: Int = 3,
+    val numArtEdgeRegions: Int = 3,
     val titleOrder: List<TitleRowType> = listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM),
     val autoCategoryOrder: List<AutoCategory> = listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS),
     val autoShowAlbumArt: Boolean = true,

@@ -2019,13 +2019,14 @@ private fun GesturesSettingsContent(
 ) {
     Column {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            val isSeparate = displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
             Text(
-                text = "Number of Edge Regions: ${displaySettings.numEdgeRegions}",
+                text = if (isSeparate) "Number of Title Edge Regions: ${displaySettings.numEdgeRegions}" else "Number of Edge Regions: ${displaySettings.numEdgeRegions}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "Configures active region slots (1 to 7) along top & bottom screen edges",
+                text = if (isSeparate) "Configures active Title region slots (1 to 7) along top & bottom Title edges" else "Configures active region slots (1 to 7) along top & bottom screen edges",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -2038,6 +2039,29 @@ private fun GesturesSettingsContent(
                 valueRange = 1f..7f,
                 steps = 5
             )
+
+            if (isSeparate) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Number of Art Edge Regions: ${displaySettings.numArtEdgeRegions}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Configures active Art region slots (1 to 7) along top & bottom Art edges",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Slider(
+                    value = displaySettings.numArtEdgeRegions.toFloat(),
+                    onValueChange = { newValue ->
+                        onUpdateDisplaySettings(displaySettings.copy(numArtEdgeRegions = newValue.roundToInt()))
+                    },
+                    valueRange = 1f..7f,
+                    steps = 5
+                )
+            }
         }
         HorizontalDivider()
         ListItem(

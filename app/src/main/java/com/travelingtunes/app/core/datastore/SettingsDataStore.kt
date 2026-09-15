@@ -21,6 +21,7 @@ import com.travelingtunes.app.core.model.ConfigOption
 import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
+import com.travelingtunes.app.core.model.GestureCategory
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
 import com.travelingtunes.app.core.model.NormalizationMode
@@ -112,6 +113,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
         val KEY_IMMERSIVE_MODE = booleanPreferencesKey("immersiveMode")
         val KEY_NUM_EDGE_REGIONS = intPreferencesKey("numEdgeRegions")
+        val KEY_NUM_ART_EDGE_REGIONS = intPreferencesKey("numArtEdgeRegions")
         val KEY_TITLE_ORDER = stringPreferencesKey("titleOrder")
 
         // Android Auto Preferences
@@ -236,6 +238,7 @@ class SettingsDataStore(private val context: Context) {
             keepScreenOn = prefs[KEY_KEEP_SCREEN_ON] ?: prefs[KEY_DISABLE_AUTOLOCK] ?: true,
             immersiveMode = prefs[KEY_IMMERSIVE_MODE] ?: true,
             numEdgeRegions = prefs[KEY_NUM_EDGE_REGIONS] ?: 3,
+            numArtEdgeRegions = prefs[KEY_NUM_ART_EDGE_REGIONS] ?: 3,
             titleOrder = (prefs[KEY_TITLE_ORDER] ?: "ARTIST,SONG,ALBUM")
                 .split(",")
                 .mapNotNull { name ->
@@ -320,7 +323,8 @@ class SettingsDataStore(private val context: Context) {
             val artActionKey = prefs[stringPreferencesKey("${trigger.key}_art")] ?: GestureAction.UNASSIGNED.name
             val artOtherOptionKey = prefs[stringPreferencesKey("${trigger.key}_art_other_target")]
 
-            val titleActionKey = prefs[stringPreferencesKey("${trigger.key}_title")] ?: GestureAction.UNASSIGNED.name
+            val defaultTitleKey = if (trigger.category == GestureCategory.SCREEN_REGION) actionKey else GestureAction.UNASSIGNED.name
+            val titleActionKey = prefs[stringPreferencesKey("${trigger.key}_title")] ?: defaultTitleKey
             val titleOtherOptionKey = prefs[stringPreferencesKey("${trigger.key}_title_other_target")]
 
             GestureBinding(
@@ -821,6 +825,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_KEEP_SCREEN_ON] = update.keepScreenOn
             prefs[KEY_IMMERSIVE_MODE] = update.immersiveMode
             prefs[KEY_NUM_EDGE_REGIONS] = update.numEdgeRegions
+            prefs[KEY_NUM_ART_EDGE_REGIONS] = update.numArtEdgeRegions
             prefs[KEY_TITLE_ORDER] = update.titleOrder.joinToString(",") { it.name }
             prefs[KEY_AUTO_CATEGORY_ORDER] = update.autoCategoryOrder.joinToString(",") { it.name }
             prefs[KEY_AUTO_SHOW_ALBUM_ART] = update.autoShowAlbumArt
@@ -963,6 +968,7 @@ class SettingsDataStore(private val context: Context) {
                     keepScreenOn = dJson.optBoolean("keepScreenOn", currentDisplay.keepScreenOn),
                     immersiveMode = dJson.optBoolean("immersiveMode", currentDisplay.immersiveMode),
                     numEdgeRegions = dJson.optInt("numEdgeRegions", currentDisplay.numEdgeRegions),
+                    numArtEdgeRegions = dJson.optInt("numArtEdgeRegions", currentDisplay.numArtEdgeRegions),
                     titleOrder = dJson.optString("titleOrder", "")
                         .split(",")
                         .mapNotNull { name -> runCatching { TitleRowType.valueOf(name.trim()) }.getOrNull() }

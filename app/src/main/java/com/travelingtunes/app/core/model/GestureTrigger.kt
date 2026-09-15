@@ -146,12 +146,13 @@ enum class GestureTrigger(
         }
     }
 
-    fun getDisplayName(numRegions: Int = 3): String {
+    fun getDisplayName(numRegions: Int = 3, isArt: Boolean = false, isTitle: Boolean = false): String {
         if (category != GestureCategory.SCREEN_REGION) return displayName
         val userFacingNum = getUserFacingRegionNumber(numRegions)
         val isTop = this in TOP_REGION_SLOTS
-        val prefix = if (isTop) "Top Region " else "Bottom Region "
-        return "$prefix$userFacingNum"
+        val regionType = if (isArt) "Art Region " else if (isTitle) "Title Region " else "Region "
+        val prefix = if (isTop) "Top " else "Bottom "
+        return "$prefix$regionType$userFacingNum"
     }
 }
 

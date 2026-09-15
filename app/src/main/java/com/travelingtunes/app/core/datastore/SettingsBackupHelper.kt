@@ -63,6 +63,7 @@ object SettingsBackupHelper {
         sb.append("    \"keepScreenOn\": ${display.keepScreenOn},\n")
         sb.append("    \"immersiveMode\": ${display.immersiveMode},\n")
         sb.append("    \"numEdgeRegions\": ${display.numEdgeRegions},\n")
+        sb.append("    \"numArtEdgeRegions\": ${display.numArtEdgeRegions},\n")
         sb.append("    \"titleOrder\": \"${display.titleOrder.joinToString(",") { it.name }}\",\n")
         sb.append("    \"autoCategoryOrder\": \"${display.autoCategoryOrder.joinToString(",") { it.name }}\",\n")
         sb.append("    \"autoShowAlbumArt\": ${display.autoShowAlbumArt},\n")

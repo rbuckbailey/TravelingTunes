@@ -365,6 +365,7 @@ class GestureAndSettingsTest {
             separateTouchZones = true
         )
         assertTrue(displaySettings.separateTouchZones)
+        assertEquals(3, displaySettings.numArtEdgeRegions)
 
         val binding = com.travelingtunes.app.core.model.GestureBinding(
             trigger = GestureTrigger.SWIPE_1_LEFT,
@@ -376,6 +377,49 @@ class GestureAndSettingsTest {
         assertEquals(GestureAction.UNASSIGNED, binding.action)
         assertEquals(GestureAction.NEXT, binding.artAction)
         assertEquals(GestureAction.PREVIOUS, binding.titleAction)
+    }
+
+    @Test
+    fun testNumArtEdgeRegionsDefaultAndSlider() {
+        val defaultDisplay = com.travelingtunes.app.core.model.DisplaySettings()
+        assertEquals(3, defaultDisplay.numArtEdgeRegions)
+
+        val updatedDisplay = defaultDisplay.copy(numArtEdgeRegions = 5)
+        assertEquals(5, updatedDisplay.numArtEdgeRegions)
+    }
+
+    @Test
+    fun testSubmenuTriggersForSeparateTouchZones() {
+        val standardSubmenu = com.travelingtunes.app.feature.settings.getTriggersForSubmenu(
+            submenu = com.travelingtunes.app.feature.settings.GestureSubmenu.BUTTON,
+            numEdgeRegions = 3,
+            numArtEdgeRegions = 3,
+            isSeparateTouchZones = false
+        )
+        assertTrue(standardSubmenu.containsKey("Top Edge Regions"))
+        assertTrue(standardSubmenu.containsKey("Bottom Edge Regions"))
+
+        val separateSubmenu = com.travelingtunes.app.feature.settings.getTriggersForSubmenu(
+            submenu = com.travelingtunes.app.feature.settings.GestureSubmenu.BUTTON,
+            numEdgeRegions = 3,
+            numArtEdgeRegions = 4,
+            isSeparateTouchZones = true
+        )
+        assertTrue(separateSubmenu.containsKey("Top Title Edge Regions"))
+        assertTrue(separateSubmenu.containsKey("Bottom Title Edge Regions"))
+        assertTrue(separateSubmenu.containsKey("Top Art Edge Regions"))
+        assertTrue(separateSubmenu.containsKey("Bottom Art Edge Regions"))
+
+        assertEquals(3, separateSubmenu["Top Title Edge Regions"]?.size)
+        assertEquals(4, separateSubmenu["Top Art Edge Regions"]?.size)
+    }
+
+    @Test
+    fun testGestureTriggerDisplayNameForArtAndTitle() {
+        val top1 = GestureTrigger.CORNER_TOP_LEFT
+        assertEquals("Top Region 1", top1.getDisplayName(3))
+        assertEquals("Top Art Region 1", top1.getDisplayName(3, isArt = true))
+        assertEquals("Top Title Region 1", top1.getDisplayName(3, isTitle = true))
     }
 
     @Test

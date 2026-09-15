@@ -1001,6 +1001,9 @@ fun PlayerScreen(
                     gestureBindings = gestureBindings,
                     numEdgeRegions = displaySettings.numEdgeRegions,
                     regionBounds = regionBounds,
+                    numArtEdgeRegions = displaySettings.numArtEdgeRegions,
+                    artRegionBounds = artRegionBoundsNormalized,
+                    isSeparateTouchZones = isSeparateTouchZones,
                     isOverlayOpen = false
                 )
         )
@@ -1557,6 +1560,7 @@ fun PlayerPageContent(
             )
         }
 
+        val isSeparateTouchZones = isDocked && displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
         val albumArtContainer: @Composable (Modifier) -> Unit = { mod ->
             Box(modifier = mod) {
                 PlayerAlbumArtBackground(
@@ -1565,6 +1569,26 @@ fun PlayerPageContent(
                     themeSettings = themeSettings,
                     modifier = Modifier.fillMaxSize()
                 )
+                if (isSeparateTouchZones) {
+                    ScreenRegionIconsOverlay(
+                        gestureBindings = gestureBindings,
+                        playbackManager = playbackManager,
+                        musicScanner = musicScanner,
+                        musicDatabase = musicDatabase,
+                        repeatMode = repeatMode,
+                        shuffleMode = shuffleMode,
+                        isPlaying = isPlaying,
+                        onOpenSongPicker = onOpenSongPicker,
+                        onOpenQueue = onOpenQueue,
+                        onOpenSettings = onOpenSettings,
+                        onOpenQuickStart = onOpenQuickStart,
+                        onShowRepeatOptions = onShowRepeatOptions,
+                        onShowShuffleOptions = onShowShuffleOptions,
+                        numEdgeRegions = displaySettings.numArtEdgeRegions,
+                        useArtBindings = true,
+                        dockAdjacentEdge = dockEdge
+                    )
+                }
             }
         }
 
@@ -2408,6 +2432,7 @@ fun ScreenRegionIconsOverlay(
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
     numEdgeRegions: Int = 3,
+    useArtBindings: Boolean = false,
     dockAdjacentEdge: DockAdjacentEdge? = null,
     modifier: Modifier = Modifier
 ) {
@@ -2431,7 +2456,15 @@ fun ScreenRegionIconsOverlay(
         for ((index, slotIdx) in activeSlotIndices.withIndex()) {
             val trigger = GestureTrigger.TOP_REGION_SLOTS[slotIdx]
             val binding = resolveGestureBinding(trigger, gestureBindings)
-            val action = binding.action
+            val action = if (useArtBindings) {
+                binding.artAction
+            } else {
+                if (binding.titleAction != GestureAction.UNASSIGNED) binding.titleAction else binding.action
+            }
+
+            if (useArtBindings && action == GestureAction.UNASSIGNED) {
+                continue
+            }
 
             if (action == GestureAction.DELETE_DOWNLOADED_ART && !isDownloadedArt) {
                 continue
@@ -2519,7 +2552,15 @@ fun ScreenRegionIconsOverlay(
         for ((index, slotIdx) in activeSlotIndices.withIndex()) {
             val trigger = GestureTrigger.BOTTOM_REGION_SLOTS[slotIdx]
             val binding = resolveGestureBinding(trigger, gestureBindings)
-            val action = binding.action
+            val action = if (useArtBindings) {
+                binding.artAction
+            } else {
+                if (binding.titleAction != GestureAction.UNASSIGNED) binding.titleAction else binding.action
+            }
+
+            if (useArtBindings && action == GestureAction.UNASSIGNED) {
+                continue
+            }
 
             if (action == GestureAction.DELETE_DOWNLOADED_ART && !isDownloadedArt) {
                 continue

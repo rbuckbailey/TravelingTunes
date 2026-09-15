@@ -42,17 +42,23 @@ fun Modifier.travelingTunesGestures(
     gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
     numEdgeRegions: Int = 3,
     regionBounds: Rect = Rect(0f, 0f, 1f, 1f),
+    numArtEdgeRegions: Int = 3,
+    artRegionBounds: Rect = Rect(0f, 0f, 0f, 0f),
+    isSeparateTouchZones: Boolean = false,
     isOverlayOpen: Boolean = false
 ): Modifier {
     val currentListener by rememberUpdatedState(listener)
     val currentBindings by rememberUpdatedState(gestureBindings)
 
-    return this.pointerInput(isOverlayOpen, regionBounds, numEdgeRegions) {
+    return this.pointerInput(isOverlayOpen, regionBounds, numEdgeRegions, artRegionBounds, numArtEdgeRegions, isSeparateTouchZones) {
         detectTravelingTunesGestures(
             listener = currentListener,
             gestureBindings = currentBindings,
             numEdgeRegions = numEdgeRegions,
             regionBounds = regionBounds,
+            numArtEdgeRegions = numArtEdgeRegions,
+            artRegionBounds = artRegionBounds,
+            isSeparateTouchZones = isSeparateTouchZones,
             isOverlayOpen = isOverlayOpen
         )
     }
@@ -63,6 +69,9 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
     gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
     numEdgeRegions: Int = 3,
     regionBounds: Rect = Rect(0f, 0f, 1f, 1f),
+    numArtEdgeRegions: Int = 3,
+    artRegionBounds: Rect = Rect(0f, 0f, 0f, 0f),
+    isSeparateTouchZones: Boolean = false,
     isOverlayOpen: Boolean = false
 ) {
     val minTranslationPx = 12f * density
@@ -71,7 +80,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
 
     awaitEachGesture {
         val firstDown = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-        val tap1 = awaitPressResult(firstDown, minTranslationPx, listener, numEdgeRegions, regionBounds)
+        val tap1 = awaitPressResult(firstDown, minTranslationPx, listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
 
         if (tap1.isSwipe || tap1.isLongPress) {
             return@awaitEachGesture
@@ -85,7 +94,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
         val canTriple1 = hasTripleTap(tap1.fingers, gestureBindings)
 
         if (!canDouble1 && !canTriple1) {
-            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
+            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
             return@awaitEachGesture
         }
 
@@ -100,7 +109,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
 
         if (secondDown == null) {
             if (!isOverlayOpen || tap1.fingers > 1) {
-                emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
+                emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
             }
             return@awaitEachGesture
         }
@@ -108,14 +117,14 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
         val dist12 = hypot(secondDown.position.x - tap1.startPosition.x, secondDown.position.y - tap1.startPosition.y)
         if (dist12 > slopPx) {
             if (!isOverlayOpen || tap1.fingers > 1) {
-                emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
+                emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
             }
             return@awaitEachGesture
         }
 
-        val tap2 = awaitPressResult(secondDown, minTranslationPx, listener, numEdgeRegions, regionBounds)
+        val tap2 = awaitPressResult(secondDown, minTranslationPx, listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
         if (tap2.isSwipe || tap2.isLongPress) {
-            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds)
+            emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
             return@awaitEachGesture
         }
 
@@ -146,7 +155,7 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
             return@awaitEachGesture
         }
 
-        val tap3 = awaitPressResult(thirdDown, minTranslationPx, listener, numEdgeRegions, regionBounds)
+        val tap3 = awaitPressResult(thirdDown, minTranslationPx, listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
         if (tap3.isSwipe || tap3.isLongPress) {
             emitDoubleTap(effectiveFingers2, listener)
             return@awaitEachGesture
@@ -172,7 +181,10 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
     minTranslationPx: Float,
     listener: GestureEventListener,
     numEdgeRegions: Int = 3,
-    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f),
+    numArtEdgeRegions: Int = 3,
+    artRegionBounds: Rect = Rect(0f, 0f, 0f, 0f),
+    isSeparateTouchZones: Boolean = false
 ): TapPressResult {
     val startTime = System.currentTimeMillis()
     val startPosition = firstDown.position
@@ -226,7 +238,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
                 val totalDist = hypot(totalDx, totalDy)
                 if (totalDist < longPressSlopPx) {
                     val trigger = if (maxFingers == 1) {
-                        detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds) ?: GestureTrigger.LONG_PRESS_1
+                        detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones) ?: GestureTrigger.LONG_PRESS_1
                     } else {
                         when (maxFingers) {
                             2 -> GestureTrigger.LONG_PRESS_2
@@ -377,7 +389,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
             val totalDist = hypot(totalDx, totalDy)
             if (totalDist < longPressSlopPx) {
                 val trigger = if (maxFingers == 1) {
-                    detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds) ?: GestureTrigger.LONG_PRESS_1
+                    detectCornerRegion(startPosition, size.width.toFloat(), size.height.toFloat(), numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones) ?: GestureTrigger.LONG_PRESS_1
                 } else {
                     when (maxFingers) {
                         2 -> GestureTrigger.LONG_PRESS_2
@@ -443,10 +455,13 @@ private fun emitSingleTap(
     height: Float,
     listener: GestureEventListener,
     numEdgeRegions: Int = 3,
-    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f),
+    numArtEdgeRegions: Int = 3,
+    artRegionBounds: Rect = Rect(0f, 0f, 0f, 0f),
+    isSeparateTouchZones: Boolean = false
 ): Boolean {
     if (fingers == 1) {
-        val cornerTrigger = detectCornerRegion(startPosition, width, height, numEdgeRegions, regionBounds)
+        val cornerTrigger = detectCornerRegion(startPosition, width, height, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
         if (cornerTrigger != null) {
             return listener.onGestureTriggered(cornerTrigger, touchOffset = startPosition)
         }
@@ -513,31 +528,39 @@ private fun detectCornerRegion(
     width: Float,
     height: Float,
     numEdgeRegions: Int = 3,
-    regionBounds: Rect = Rect(0f, 0f, 1f, 1f)
+    regionBounds: Rect = Rect(0f, 0f, 1f, 1f),
+    numArtEdgeRegions: Int = 3,
+    artRegionBounds: Rect = Rect(0f, 0f, 0f, 0f),
+    isSeparateTouchZones: Boolean = false
 ): GestureTrigger? {
     if (width <= 0 || height <= 0) return null
 
     val normX = pos.x / width
     val normY = pos.y / height
 
-    if (normX < regionBounds.left || normX > regionBounds.right ||
-        normY < regionBounds.top || normY > regionBounds.bottom) {
-        return null
-    }
+    val inArt = isSeparateTouchZones && artRegionBounds.width > 0f && artRegionBounds.height > 0f &&
+            artRegionBounds.contains(Offset(normX, normY))
+    val inTitle = normX >= regionBounds.left && normX <= regionBounds.right &&
+            normY >= regionBounds.top && normY <= regionBounds.bottom
 
-    val containerWidthNorm = regionBounds.width
-    val containerHeightNorm = regionBounds.height
+    if (!inArt && !inTitle) return null
+
+    val targetBounds = if (inArt) artRegionBounds else regionBounds
+    val nRegions = if (inArt) numArtEdgeRegions else numEdgeRegions
+
+    val containerWidthNorm = targetBounds.width
+    val containerHeightNorm = targetBounds.height
     if (containerWidthNorm <= 0f || containerHeightNorm <= 0f) return null
 
-    val relX = (normX - regionBounds.left) / containerWidthNorm
-    val relY = (normY - regionBounds.top) / containerHeightNorm
+    val relX = (normX - targetBounds.left) / containerWidthNorm
+    val relY = (normY - targetBounds.top) / containerHeightNorm
 
     val isTop = relY < 0.22f
     val isBottom = relY > 0.78f
 
     if (!isTop && !isBottom) return null
 
-    val n = numEdgeRegions.coerceIn(1, 7)
+    val n = nRegions.coerceIn(1, 7)
     val regionIndex = (relX * n).toInt().coerceIn(0, n - 1)
     val activeSlots = GestureTrigger.getActiveRegionSlots(n)
     val slotIndex = activeSlots[regionIndex]

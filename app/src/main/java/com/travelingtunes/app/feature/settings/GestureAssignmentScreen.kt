@@ -125,7 +125,9 @@ fun GestureTrigger.getSubmenu(): GestureSubmenu {
 
 fun getTriggersForSubmenu(
     submenu: GestureSubmenu,
-    numEdgeRegions: Int
+    numEdgeRegions: Int,
+    numArtEdgeRegions: Int = 3,
+    isSeparateTouchZones: Boolean = false
 ): Map<String, List<GestureTrigger>> {
     return when (submenu) {
         GestureSubmenu.SWIPE -> mapOf(
@@ -170,10 +172,21 @@ fun getTriggersForSubmenu(
                 GestureTrigger.LONG_PRESS_3
             )
         )
-        GestureSubmenu.BUTTON -> mapOf(
-            "Top Edge Regions" to GestureTrigger.getActiveTopTriggers(numEdgeRegions),
-            "Bottom Edge Regions" to GestureTrigger.getActiveBottomTriggers(numEdgeRegions)
-        )
+        GestureSubmenu.BUTTON -> {
+            if (isSeparateTouchZones) {
+                mapOf(
+                    "Top Title Edge Regions" to GestureTrigger.getActiveTopTriggers(numEdgeRegions),
+                    "Bottom Title Edge Regions" to GestureTrigger.getActiveBottomTriggers(numEdgeRegions),
+                    "Top Art Edge Regions" to GestureTrigger.getActiveTopTriggers(numArtEdgeRegions),
+                    "Bottom Art Edge Regions" to GestureTrigger.getActiveBottomTriggers(numArtEdgeRegions)
+                )
+            } else {
+                mapOf(
+                    "Top Edge Regions" to GestureTrigger.getActiveTopTriggers(numEdgeRegions),
+                    "Bottom Edge Regions" to GestureTrigger.getActiveBottomTriggers(numEdgeRegions)
+                )
+            }
+        }
         GestureSubmenu.RADIAL_MENU -> emptyMap()
     }
 }
@@ -391,8 +404,10 @@ fun GestureAssignmentScreen(
                 }
             } else {
                 // Swipe, Tap, or Button Actions list
-                val sections = remember(sub, numEdgeRegions) {
-                    getTriggersForSubmenu(sub, numEdgeRegions)
+                val isSeparate = displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
+                val numArtEdgeRegions = displaySettings.numArtEdgeRegions
+                val sections = remember(sub, numEdgeRegions, numArtEdgeRegions, isSeparate) {
+                    getTriggersForSubmenu(sub, numEdgeRegions, numArtEdgeRegions, isSeparate)
                 }
 
                 LazyColumn(
@@ -413,17 +428,23 @@ fun GestureAssignmentScreen(
                                 )
                             }
                         }
-                        items(triggers, key = { it.name }) { trigger ->
+                        items(triggers, key = { "${sectionTitle}_${it.name}" }) { trigger ->
                             val currentBinding = gestureBindings[trigger] ?: GestureBinding(
                                 trigger = trigger,
                                 action = GestureAction.fromKey(trigger.defaultActionKey),
                                 isContinuous = trigger.isContinuousDefault
                             )
 
+                            val isArtSection = sectionTitle.contains("Art")
+                            val isTitleSection = sectionTitle.contains("Title")
+                            val numRegions = if (isArtSection) numArtEdgeRegions else numEdgeRegions
+
                             GestureAssignmentItem(
                                 trigger = trigger,
                                 binding = currentBinding,
-                                numEdgeRegions = numEdgeRegions,
+                                numEdgeRegions = numRegions,
+                                isArtSection = isArtSection,
+                                isTitleSection = isTitleSection,
                                 onActionSelected = { regionTarget, newAction, otherKey ->
                                     coroutineScope.launch {
                                         when (regionTarget) {
@@ -672,16 +693,20 @@ private fun GestureAssignmentItem(
     trigger: GestureTrigger,
     binding: GestureBinding,
     numEdgeRegions: Int,
+    isArtSection: Boolean = false,
+    isTitleSection: Boolean = false,
     onActionSelected: (com.travelingtunes.app.core.model.TouchRegionTarget, GestureAction, String?) -> Unit
 ) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
     var editingOptionRegion by remember { mutableStateOf<com.travelingtunes.app.core.model.TouchRegionTarget?>(null) }
 
+    val isButton = trigger.category == GestureCategory.SCREEN_REGION
+
     val hasArtAction = binding.artAction != GestureAction.UNASSIGNED
     val hasTitleAction = binding.titleAction != GestureAction.UNASSIGNED
     val hasBothAction = binding.action != GestureAction.UNASSIGNED
 
-    val displayLines = remember(binding) {
+    val displayLines = remember(binding, isButton) {
         val list = mutableListOf<Triple<String, GestureAction, String?>>()
         if (hasArtAction) {
             list.add(Triple("Art", binding.artAction, binding.artOtherOptionKey))
@@ -689,8 +714,14 @@ private fun GestureAssignmentItem(
         if (hasTitleAction) {
             list.add(Triple("Title", binding.titleAction, binding.titleOtherOptionKey))
         }
-        if (hasBothAction || list.isEmpty()) {
+        if (!isButton && (hasBothAction || list.isEmpty())) {
             list.add(Triple("Both", binding.action, binding.otherOptionKey))
+        } else if (isButton && list.isEmpty()) {
+            if (hasBothAction) {
+                list.add(Triple("Title", binding.action, binding.otherOptionKey))
+            } else {
+                list.add(Triple("Title", GestureAction.UNASSIGNED, null))
+            }
         }
         list
     }
@@ -703,7 +734,7 @@ private fun GestureAssignmentItem(
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = trigger.getDisplayName(numEdgeRegions), fontWeight = FontWeight.SemiBold)
+            Text(text = trigger.getDisplayName(numEdgeRegions, isArt = isArtSection, isTitle = isTitleSection), fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(2.dp))
             displayLines.forEach { (regionName, action, otherKey) ->
                 val optionTitle = remember(otherKey) {
@@ -796,18 +827,20 @@ private fun GestureAssignmentItem(
                                         },
                                         label = { Text("Title", fontSize = 11.sp) }
                                     )
-                                    FilterChip(
-                                        selected = isBoth,
-                                        onClick = {
-                                            isDropdownExpanded = false
-                                            if (choice == GestureAction.OTHER_OPTION) {
-                                                editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
-                                            } else {
-                                                onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.BOTH, choice, null)
-                                            }
-                                        },
-                                        label = { Text("Both", fontSize = 11.sp) }
-                                    )
+                                    if (!isButton) {
+                                        FilterChip(
+                                            selected = isBoth,
+                                            onClick = {
+                                                isDropdownExpanded = false
+                                                if (choice == GestureAction.OTHER_OPTION) {
+                                                    editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
+                                                } else {
+                                                    onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.BOTH, choice, null)
+                                                }
+                                            },
+                                            label = { Text("Both", fontSize = 11.sp) }
+                                        )
+                                    }
                                 }
                             }
                         },
