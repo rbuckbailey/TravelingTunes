@@ -56,6 +56,8 @@ object AlbumArtColorExtractor {
         val targetMinContrastStrict = 4.5
         val targetMinDistanceStrict = 35.0 // Perceptual distance in CIELAB space
 
+        val matchedSwatchesInts = (preferredTextSwatches + allSwatches).map { it.rgb }.distinct()
+
         // Pass 1: Try text candidates down the line matching strict contrast and distinctness
         for (bgSwatch in bgCandidates) {
             val bgInt = bgSwatch.rgb
@@ -75,7 +77,8 @@ object AlbumArtColorExtractor {
                         name = "Album Art Dynamic",
                         backgroundColor = Color(bgInt),
                         textColor = Color(primaryInt),
-                        secondaryTextColor = Color(secondaryInt)
+                        secondaryTextColor = Color(secondaryInt),
+                        matchedSwatches = matchedSwatchesInts
                     )
                 }
             }
@@ -99,7 +102,8 @@ object AlbumArtColorExtractor {
                         name = "Album Art Dynamic",
                         backgroundColor = Color(bgInt),
                         textColor = Color(primaryInt),
-                        secondaryTextColor = Color(secondaryInt)
+                        secondaryTextColor = Color(secondaryInt),
+                        matchedSwatches = matchedSwatchesInts
                     )
                 }
             }
@@ -127,7 +131,8 @@ object AlbumArtColorExtractor {
             name = "Album Art Dynamic",
             backgroundColor = Color(primaryBgInt),
             textColor = Color(primaryTextInt),
-            secondaryTextColor = Color(secondaryTextInt)
+            secondaryTextColor = Color(secondaryTextInt),
+            matchedSwatches = matchedSwatchesInts
         )
     }
 

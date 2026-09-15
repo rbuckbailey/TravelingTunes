@@ -444,6 +444,34 @@ class PlaybackManager(
         }
     }
 
+    private var isContinuousSeeking = false
+
+    fun seekByDeltaContinuous(deltaMs: Long) {
+        isContinuousSeeking = true
+        val duration = _durationMs.value.coerceAtLeast(0L)
+        val currentPos = _currentPositionMs.value
+        val targetPos = (currentPos + deltaMs).coerceIn(0L, duration)
+
+        _currentPositionMs.value = targetPos
+
+        if (duration > 0L) {
+            val currentSec = targetPos / 1000L
+            val durSec = duration / 1000L
+            val formatted = String.format(java.util.Locale.US, "%02d:%02d / %02d:%02d", currentSec / 60, currentSec % 60, durSec / 60, durSec % 60)
+            showHudAction(formatted)
+        }
+    }
+
+    fun commitContinuousSeek() {
+        if (isContinuousSeeking) {
+            isContinuousSeeking = false
+            val finalPos = _currentPositionMs.value
+            try {
+                player.seekTo(finalPos)
+            } catch (ignored: Exception) {}
+        }
+    }
+
     fun seekByDelta(deltaMs: Long) {
         val duration = _durationMs.value.coerceAtLeast(0L)
         val currentPos = _currentPositionMs.value

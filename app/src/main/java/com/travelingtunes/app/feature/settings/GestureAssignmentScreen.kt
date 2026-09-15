@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -567,6 +568,7 @@ private fun RadialMenuConfigurator(
 
                     DropdownMenu(
                         expanded = isDropdownExpanded,
+                        modifier = Modifier.fillMaxWidth(0.85f).widthIn(min = 280.dp, max = 560.dp),
                         onDismissRequest = { isDropdownExpanded = false }
                     ) {
                         GestureAction.entries.filter { it != GestureAction.RADIAL_MENU }.forEach { choice ->
@@ -738,6 +740,7 @@ private fun GestureAssignmentItem(
 
             DropdownMenu(
                 expanded = isDropdownExpanded,
+                modifier = Modifier.fillMaxWidth(0.92f).widthIn(min = 360.dp, max = 680.dp),
                 onDismissRequest = { isDropdownExpanded = false }
             ) {
                 GestureAction.entries.forEach { choice ->
@@ -903,6 +906,7 @@ fun ConfigOptionPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
+        modifier = Modifier.fillMaxWidth(0.95f).widthIn(max = 680.dp),
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

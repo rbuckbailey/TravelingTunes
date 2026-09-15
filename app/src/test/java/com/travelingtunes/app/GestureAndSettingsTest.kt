@@ -9,6 +9,8 @@ import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.model.getSlideDirection
 import com.travelingtunes.app.core.model.getReverseTrigger
 import com.travelingtunes.app.core.model.ThemeSettings
+import com.travelingtunes.app.core.theme.adjustContrastForBackground
+import androidx.compose.ui.graphics.toArgb
 import com.travelingtunes.app.core.datastore.SettingsBackupHelper
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.feature.settings.GestureSubmenu
@@ -221,7 +223,7 @@ class GestureAndSettingsTest {
             customBGRed = 0f, customBGGreen = 0f, customBGBlue = 0f,
             customSongTitleRed = 255f, customSongTitleGreen = 0f, customSongTitleBlue = 0f,
             customArtistTitleRed = 0f, customArtistTitleGreen = 255f, customArtistTitleBlue = 0f,
-            customAlbumTitleRed = 0f, customAlbumTitleGreen = 0f, customAlbumTitleBlue = 255f
+            customAlbumTitleRed = 0f, customAlbumTitleGreen = 255f, customAlbumTitleBlue = 255f
         )
         val resolved = com.travelingtunes.app.core.theme.resolveActiveTheme(
             themeSettings = customThemeSettings,
@@ -232,7 +234,41 @@ class GestureAndSettingsTest {
         assertEquals(androidx.compose.ui.graphics.Color.Black, resolved.backgroundColor)
         assertEquals(androidx.compose.ui.graphics.Color.Red, resolved.textColor)
         assertEquals(androidx.compose.ui.graphics.Color.Green, resolved.artistColor)
-        assertEquals(androidx.compose.ui.graphics.Color.Blue, resolved.albumColor)
+        assertEquals(androidx.compose.ui.graphics.Color.Cyan, resolved.albumColor)
+    }
+
+    @Test
+    fun testAdjustContrastForBackgroundLowContrastStaticTheme() {
+        val lightText = androidx.compose.ui.graphics.Color(0xFFE0E0E0)
+        val lightBg = androidx.compose.ui.graphics.Color(0xFFF5F5F5)
+
+        val adjusted = adjustContrastForBackground(
+            textColor = lightText,
+            backgroundColor = lightBg,
+            isMatchedTheme = false
+        )
+
+        val contrastRatio = com.travelingtunes.app.core.theme.calculateWcagContrast(
+            adjusted.toArgb(),
+            lightBg.toArgb()
+        )
+        assertTrue("Contrast ratio should be >= 4.5, was $contrastRatio", contrastRatio >= 4.5)
+    }
+
+    @Test
+    fun testAdjustContrastForBackgroundMatchedThemeCycling() {
+        val lowContrastText = androidx.compose.ui.graphics.Color(0xFF303030)
+        val darkBg = androidx.compose.ui.graphics.Color(0xFF121212)
+        val highContrastMatchedSwatch = android.graphics.Color.YELLOW
+
+        val adjusted = adjustContrastForBackground(
+            textColor = lowContrastText,
+            backgroundColor = darkBg,
+            matchedSwatches = listOf(android.graphics.Color.BLACK, highContrastMatchedSwatch),
+            isMatchedTheme = true
+        )
+
+        assertEquals(androidx.compose.ui.graphics.Color(highContrastMatchedSwatch), adjusted)
     }
 
     @Test

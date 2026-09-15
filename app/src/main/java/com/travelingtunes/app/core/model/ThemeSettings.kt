@@ -8,7 +8,8 @@ data class ColorTheme(
     val textColor: Color,
     val secondaryTextColor: Color = textColor,
     val artistColor: Color = secondaryTextColor,
-    val albumColor: Color = secondaryTextColor
+    val albumColor: Color = secondaryTextColor,
+    val matchedSwatches: List<Int> = emptyList()
 ) {
     companion object {
         val MATCH_ALBUM_ART = ColorTheme("Match Album Art", Color(0xFF1E1E2C), Color(0xFFE0E0E0), Color(0xFFB0B0B0))

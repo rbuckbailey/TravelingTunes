@@ -14,6 +14,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import com.travelingtunes.app.core.model.ColorTheme
+import com.travelingtunes.app.core.theme.TravelingTunesTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -420,6 +422,8 @@ fun PlayerScreen(
         Rect(0f, 0f, 1f, 1f)
     }
 
+    var activeContinuousAction by remember { mutableStateOf<GestureAction?>(null) }
+
     val gestureListener = object : GestureEventListener {
         override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean, touchOffset: Offset): Boolean {
             var binding = resolveGestureBinding(trigger, gestureBindings)
@@ -461,6 +465,7 @@ fun PlayerScreen(
             }
 
             var action = resolvedAction
+            activeContinuousAction = action
 
             val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier || showRadialMenu
 
@@ -551,10 +556,24 @@ fun PlayerScreen(
 
             when (action) {
                 GestureAction.NEXT -> {
-                    playbackManager.next()
+                    val nextIndex = pagerState.currentPage + 1
+                    if (nextIndex in 0 until pageCount) {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(nextIndex)
+                        }
+                    } else {
+                        playbackManager.next()
+                    }
                 }
-                GestureAction.PREVIOUS -> {
-                    playbackManager.previous()
+                GestureAction.PREVIOUS, GestureAction.RESTART_PREVIOUS -> {
+                    val prevIndex = pagerState.currentPage - 1
+                    if (prevIndex >= 0) {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(prevIndex)
+                        }
+                    } else {
+                        playbackManager.previous()
+                    }
                 }
                 else -> {
                     handleGestureAction(
@@ -570,7 +589,10 @@ fun PlayerScreen(
                         onOpenSettings = { dir -> openMenu(dir, trigger) },
                         onOpenQuickStart = onOpenQuickStart,
                         settingsDataStore = effectiveSettingsDataStore,
-                        gestureBindings = gestureBindings
+                        gestureBindings = gestureBindings,
+                        overrideOtherOptionKey = resolvedOtherKey,
+                        pagerState = pagerState,
+                        pageCount = pageCount
                     )
                 }
             }
@@ -619,7 +641,10 @@ fun PlayerScreen(
             if (isAnyOverlayOpen) return
 
             val binding = resolveGestureBinding(trigger, gestureBindings)
-            val action = binding.action
+            val action = activeContinuousAction
+                ?: binding.artAction.takeIf { it != GestureAction.UNASSIGNED }
+                ?: binding.titleAction.takeIf { it != GestureAction.UNASSIGNED }
+                ?: binding.action
 
             val msPerPixel = ((playbackManager.durationMs.value.coerceAtLeast(30000L)).toFloat() / screenWidthPx.coerceAtLeast(1f) * 0.5f).coerceIn(20f, 250f)
 
@@ -627,13 +652,9 @@ fun PlayerScreen(
                 GestureAction.VOLUME_UP, GestureAction.VOLUME_DOWN -> {
                     playbackManager.adjustVolumeByDelta(deltaY, screenHeightPx)
                 }
-                GestureAction.FAST_FORWARD -> {
+                GestureAction.FAST_FORWARD, GestureAction.REWIND -> {
                     val deltaMs = (deltaX * msPerPixel).toLong()
-                    playbackManager.seekByDelta(deltaMs)
-                }
-                GestureAction.REWIND -> {
-                    val deltaMs = (deltaX * msPerPixel).toLong()
-                    playbackManager.seekByDelta(deltaMs)
+                    playbackManager.seekByDeltaContinuous(deltaMs)
                 }
                 else -> {
                     // Actions not explicitly bound to Volume or Seek should not trigger continuous Volume or Seeking
@@ -642,6 +663,8 @@ fun PlayerScreen(
         }
 
         override fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int) {
+            playbackManager.commitContinuousSeek()
+            activeContinuousAction = null
             val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier
             if (!isAnyOverlayOpen) {
                 playbackManager.persistCurrentPlaybackState()
@@ -650,12 +673,7 @@ fun PlayerScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .then(
-                if (isMondrian) Modifier
-                else Modifier.background(MaterialTheme.colorScheme.background)
-            )
+        modifier = Modifier.fillMaxSize()
     ) {
         if (isMondrian) {
             MondrianBackground(
@@ -1155,6 +1173,67 @@ private fun TitleAndButtonsContainer(
 }
 
 @Composable
+fun rememberPageTheme(
+    song: Song?,
+    themeSettings: ThemeSettings,
+    displaySettings: DisplaySettings
+): ColorTheme {
+    val context = LocalContext.current
+    var extractedTheme: ColorTheme? by remember(song?.id, song?.artworkUri, displaySettings.matchArtColorPriority) {
+        mutableStateOf<ColorTheme?>(null)
+    }
+
+    val isMatchArt = displaySettings.albumArtColors && (
+        themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) ||
+        themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true)
+    )
+
+    LaunchedEffect(song?.id, song?.artworkUri, displaySettings.matchArtColorPriority, isMatchArt) {
+        if (isMatchArt && song != null) {
+            val bitmap = withContext(Dispatchers.IO) {
+                loadSongArtwork(context, song)
+            }
+            if (bitmap != null) {
+                val innerEdge = if (displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED) {
+                    val configuration = context.resources.configuration
+                    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                    if (isLandscape) {
+                        when (displaySettings.artAlignmentLandscape) {
+                            com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
+                            com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
+                            com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
+                            else -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
+                        }
+                    } else {
+                        when (displaySettings.artAlignmentPortrait) {
+                            com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
+                            com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
+                            com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
+                            else -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
+                        }
+                    }
+                } else null
+
+                val extracted = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(
+                    bitmap = bitmap,
+                    innerEdge = innerEdge,
+                    priority = displaySettings.matchArtColorPriority
+                )
+                extractedTheme = extracted
+            }
+        }
+    }
+
+    return remember(themeSettings, extractedTheme, displaySettings.albumArtColors) {
+        com.travelingtunes.app.core.theme.resolveActiveTheme(
+            themeSettings = themeSettings,
+            dynamicAlbumArtTheme = extractedTheme,
+            useAlbumArtColors = displaySettings.albumArtColors
+        )
+    }
+}
+
+@Composable
 fun PlayerPageContent(
     pageSong: Song?,
     displaySettings: DisplaySettings,
@@ -1182,16 +1261,30 @@ fun PlayerPageContent(
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (isMondrian) {
-            MondrianBackground(
-                song = pageSong,
-                currentPositionMs = currentPositionMs,
-                durationMs = durationMs,
-                volumeRatio = volumeRatio,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+    val pageTheme = rememberPageTheme(pageSong, themeSettings, displaySettings)
+
+    TravelingTunesTheme(
+        themeSettings = themeSettings,
+        dynamicAlbumArtTheme = pageTheme,
+        useAlbumArtColors = displaySettings.albumArtColors
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (isMondrian) Modifier
+                    else Modifier.background(pageTheme.backgroundColor)
+                )
+        ) {
+            if (isMondrian) {
+                MondrianBackground(
+                    song = pageSong,
+                    currentPositionMs = currentPositionMs,
+                    durationMs = durationMs,
+                    volumeRatio = volumeRatio,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
     val contextLayout = LocalContext.current
     val isMultiWindowLayout = (contextLayout as? android.app.Activity)?.isInMultiWindowMode == true ||
@@ -1372,6 +1465,7 @@ fun PlayerPageContent(
             )
         }
     }
+}
 }
 }
 
@@ -1892,17 +1986,44 @@ private fun handleGestureAction(
     settingsDataStore: SettingsDataStore? = null,
     gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
     radialSlotIndex: Int? = null,
-    overrideOtherOptionKey: String? = null
+    overrideOtherOptionKey: String? = null,
+    pagerState: androidx.compose.foundation.pager.PagerState? = null,
+    pageCount: Int = 0
 ) {
     val direction = trigger?.getSlideDirection() ?: SlideDirection.BOTTOM
     when (action) {
         GestureAction.PLAY_PAUSE -> playbackManager.togglePlayPause()
         GestureAction.PLAY -> playbackManager.play()
         GestureAction.PAUSE -> playbackManager.pause()
-        GestureAction.NEXT -> playbackManager.next()
-        GestureAction.PREVIOUS -> playbackManager.previous()
+        GestureAction.NEXT -> {
+            if (pagerState != null && coroutineScope != null && pageCount > 0) {
+                val nextIndex = pagerState.currentPage + 1
+                if (nextIndex < pageCount) {
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(nextIndex)
+                    }
+                } else {
+                    playbackManager.next()
+                }
+            } else {
+                playbackManager.next()
+            }
+        }
+        GestureAction.PREVIOUS, GestureAction.RESTART_PREVIOUS -> {
+            if (pagerState != null && coroutineScope != null && pageCount > 0) {
+                val prevIndex = pagerState.currentPage - 1
+                if (prevIndex >= 0) {
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(prevIndex)
+                    }
+                } else {
+                    playbackManager.previous()
+                }
+            } else {
+                playbackManager.previous()
+            }
+        }
         GestureAction.RESTART -> playbackManager.restart()
-        GestureAction.RESTART_PREVIOUS -> playbackManager.restartOrPrevious()
         GestureAction.FAST_FORWARD -> playbackManager.fastForward()
         GestureAction.REWIND -> playbackManager.rewind()
         GestureAction.VOLUME_UP -> playbackManager.increaseVolume()
@@ -2370,6 +2491,7 @@ private fun StretchedEdgeBackground(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current.density
     var bitmap by remember(song?.id, song?.artworkUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
 
     LaunchedEffect(song?.id, song?.artworkUri) {
@@ -2410,27 +2532,38 @@ private fun StretchedEdgeBackground(
     } ?: return
 
     val targetFade = albumArtFade.coerceIn(0.1f, 1.0f)
-    val gradientBrush = remember(dockEdge, targetFade) {
-        when (dockEdge) {
-            DockAdjacentEdge.LEFT -> androidx.compose.ui.graphics.Brush.horizontalGradient(
-                listOf(Color.Black.copy(alpha = 1.0f), Color.Black.copy(alpha = targetFade))
-            )
-            DockAdjacentEdge.RIGHT -> androidx.compose.ui.graphics.Brush.horizontalGradient(
-                listOf(Color.Black.copy(alpha = targetFade), Color.Black.copy(alpha = 1.0f))
-            )
-            DockAdjacentEdge.TOP -> androidx.compose.ui.graphics.Brush.verticalGradient(
-                listOf(Color.Black.copy(alpha = 1.0f), Color.Black.copy(alpha = targetFade))
-            )
-            DockAdjacentEdge.BOTTOM -> androidx.compose.ui.graphics.Brush.verticalGradient(
-                listOf(Color.Black.copy(alpha = targetFade), Color.Black.copy(alpha = 1.0f))
-            )
-        }
-    }
 
     Box(
         modifier = modifier
             .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
             .drawWithContent {
+                val containerLength = if (dockEdge == DockAdjacentEdge.LEFT || dockEdge == DockAdjacentEdge.RIGHT) size.width else size.height
+                val quarterInchPx = 40f * density
+                val quarterFraction = if (containerLength > 0f) (quarterInchPx / containerLength).coerceIn(0.02f, 0.40f) else 0.20f
+                val stop1 = quarterFraction
+                val stop2 = (1.0f - quarterFraction).coerceAtLeast(stop1)
+
+                val colorStops = when (dockEdge) {
+                    DockAdjacentEdge.LEFT, DockAdjacentEdge.TOP -> arrayOf(
+                        0.0f to Color.Black.copy(alpha = 1.0f),
+                        stop1 to Color.Black.copy(alpha = targetFade),
+                        stop2 to Color.Black.copy(alpha = targetFade),
+                        1.0f to Color.Black.copy(alpha = 0.0f)
+                    )
+                    DockAdjacentEdge.RIGHT, DockAdjacentEdge.BOTTOM -> arrayOf(
+                        0.0f to Color.Black.copy(alpha = 0.0f),
+                        stop1 to Color.Black.copy(alpha = targetFade),
+                        stop2 to Color.Black.copy(alpha = targetFade),
+                        1.0f to Color.Black.copy(alpha = 1.0f)
+                    )
+                }
+
+                val gradientBrush = if (dockEdge == DockAdjacentEdge.LEFT || dockEdge == DockAdjacentEdge.RIGHT) {
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(colorStops = colorStops)
+                } else {
+                    androidx.compose.ui.graphics.Brush.verticalGradient(colorStops = colorStops)
+                }
+
                 drawContent()
                 drawRect(
                     brush = gradientBrush,
