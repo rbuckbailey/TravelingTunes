@@ -786,6 +786,223 @@ class PlaybackManager(
         }
     }
 
+    fun nextAlbum() {
+        val current = _currentSong.value ?: return
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        if (baseList.isEmpty()) return
+
+        val scopeSongs = when (_repeatMode.value) {
+            RepeatMode.ARTIST -> {
+                val artistName = current.artist
+                if (artistName.isNotBlank()) {
+                    baseList.filter { it.artist.equals(artistName, ignoreCase = true) }
+                } else baseList
+            }
+            RepeatMode.GENRE -> {
+                val genreName = current.genre
+                if (genreName.isNotBlank()) {
+                    baseList.filter { it.genre.equals(genreName, ignoreCase = true) }
+                } else baseList
+            }
+            else -> baseList
+        }
+
+        val albumsMap = scopeSongs.groupBy { getAlbumKey(it) }
+        val sortedAlbumKeys = albumsMap.keys.sortedWith(
+            compareBy<String, String>(String.CASE_INSENSITIVE_ORDER) { key -> albumsMap[key]?.firstOrNull()?.artist ?: "" }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { key -> albumsMap[key]?.firstOrNull()?.album ?: "" }
+        )
+
+        if (sortedAlbumKeys.isEmpty()) return
+
+        val currentKey = getAlbumKey(current)
+        val currentIdx = sortedAlbumKeys.indexOf(currentKey)
+
+        val nextIdx = if (currentIdx != -1) {
+            (currentIdx + 1) % sortedAlbumKeys.size
+        } else 0
+
+        val nextAlbumKey = sortedAlbumKeys[nextIdx]
+        val nextAlbumSongs = sortAlbumSongs(albumsMap[nextAlbumKey] ?: emptyList())
+        val firstTrack = nextAlbumSongs.firstOrNull() ?: return
+
+        _currentSong.value = firstTrack
+        updateQueuePreservingCurrentSong()
+
+        val queueIndex = _currentPlaylist.value.indexOfFirst { it.id == firstTrack.id }
+        if (queueIndex != -1) {
+            player.seekTo(queueIndex, 0L)
+            player.play()
+        }
+    }
+
+    fun previousAlbum() {
+        val current = _currentSong.value ?: return
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        if (baseList.isEmpty()) return
+
+        val scopeSongs = when (_repeatMode.value) {
+            RepeatMode.ARTIST -> {
+                val artistName = current.artist
+                if (artistName.isNotBlank()) {
+                    baseList.filter { it.artist.equals(artistName, ignoreCase = true) }
+                } else baseList
+            }
+            RepeatMode.GENRE -> {
+                val genreName = current.genre
+                if (genreName.isNotBlank()) {
+                    baseList.filter { it.genre.equals(genreName, ignoreCase = true) }
+                } else baseList
+            }
+            else -> baseList
+        }
+
+        val albumsMap = scopeSongs.groupBy { getAlbumKey(it) }
+        val sortedAlbumKeys = albumsMap.keys.sortedWith(
+            compareBy<String, String>(String.CASE_INSENSITIVE_ORDER) { key -> albumsMap[key]?.firstOrNull()?.artist ?: "" }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { key -> albumsMap[key]?.firstOrNull()?.album ?: "" }
+        )
+
+        if (sortedAlbumKeys.isEmpty()) return
+
+        val currentKey = getAlbumKey(current)
+        val currentIdx = sortedAlbumKeys.indexOf(currentKey)
+
+        val currentAlbumSongs = sortAlbumSongs(albumsMap[currentKey] ?: emptyList())
+        val currentAlbumTrack1 = currentAlbumSongs.firstOrNull()
+
+        val isPastThreshold = player.currentPosition > 3000L && currentAlbumTrack1 != null && current.id != currentAlbumTrack1.id
+
+        val prevIdx = if (isPastThreshold) {
+            currentIdx.coerceAtLeast(0)
+        } else if (currentIdx != -1) {
+            if (currentIdx - 1 < 0) sortedAlbumKeys.size - 1 else currentIdx - 1
+        } else 0
+
+        val prevAlbumKey = sortedAlbumKeys[prevIdx]
+        val prevAlbumSongs = sortAlbumSongs(albumsMap[prevAlbumKey] ?: emptyList())
+        val targetTrack = prevAlbumSongs.firstOrNull() ?: return
+
+        _currentSong.value = targetTrack
+        updateQueuePreservingCurrentSong()
+
+        val queueIndex = _currentPlaylist.value.indexOfFirst { it.id == targetTrack.id }
+        if (queueIndex != -1) {
+            player.seekTo(queueIndex, 0L)
+            player.play()
+        }
+    }
+
+    fun getNextSong(): Song? {
+        val playlist = _currentPlaylist.value
+        val current = _currentSong.value ?: return null
+        val idx = playlist.indexOfFirst { it.id == current.id }
+        return if (idx != -1 && idx + 1 in playlist.indices) playlist[idx + 1] else playlist.firstOrNull()
+    }
+
+    fun getPreviousSong(): Song? {
+        val playlist = _currentPlaylist.value
+        val current = _currentSong.value ?: return null
+        val idx = playlist.indexOfFirst { it.id == current.id }
+        return if (idx != -1 && idx - 1 in playlist.indices) playlist[idx - 1] else playlist.lastOrNull()
+    }
+
+    fun getNextAlbumFirstTrack(): Song? {
+        val current = _currentSong.value ?: return null
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        if (baseList.isEmpty()) return null
+
+        val scopeSongs = when (_repeatMode.value) {
+            RepeatMode.ARTIST -> {
+                val artistName = current.artist
+                if (artistName.isNotBlank()) baseList.filter { it.artist.equals(artistName, ignoreCase = true) } else baseList
+            }
+            RepeatMode.GENRE -> {
+                val genreName = current.genre
+                if (genreName.isNotBlank()) baseList.filter { it.genre.equals(genreName, ignoreCase = true) } else baseList
+            }
+            else -> baseList
+        }
+
+        val albumsMap = scopeSongs.groupBy { getAlbumKey(it) }
+        val sortedAlbumKeys = albumsMap.keys.sortedWith(
+            compareBy<String, String>(String.CASE_INSENSITIVE_ORDER) { key -> albumsMap[key]?.firstOrNull()?.artist ?: "" }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { key -> albumsMap[key]?.firstOrNull()?.album ?: "" }
+        )
+        if (sortedAlbumKeys.isEmpty()) return null
+
+        val currentKey = getAlbumKey(current)
+        val currentIdx = sortedAlbumKeys.indexOf(currentKey)
+        val nextIdx = if (currentIdx != -1) (currentIdx + 1) % sortedAlbumKeys.size else 0
+
+        val nextAlbumKey = sortedAlbumKeys[nextIdx]
+        val nextAlbumSongs = sortAlbumSongs(albumsMap[nextAlbumKey] ?: emptyList())
+        return nextAlbumSongs.firstOrNull()
+    }
+
+    fun getPreviousAlbumFirstTrack(): Song? {
+        val current = _currentSong.value ?: return null
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        if (baseList.isEmpty()) return null
+
+        val scopeSongs = when (_repeatMode.value) {
+            RepeatMode.ARTIST -> {
+                val artistName = current.artist
+                if (artistName.isNotBlank()) baseList.filter { it.artist.equals(artistName, ignoreCase = true) } else baseList
+            }
+            RepeatMode.GENRE -> {
+                val genreName = current.genre
+                if (genreName.isNotBlank()) baseList.filter { it.genre.equals(genreName, ignoreCase = true) } else baseList
+            }
+            else -> baseList
+        }
+
+        val albumsMap = scopeSongs.groupBy { getAlbumKey(it) }
+        val sortedAlbumKeys = albumsMap.keys.sortedWith(
+            compareBy<String, String>(String.CASE_INSENSITIVE_ORDER) { key -> albumsMap[key]?.firstOrNull()?.artist ?: "" }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { key -> albumsMap[key]?.firstOrNull()?.album ?: "" }
+        )
+        if (sortedAlbumKeys.isEmpty()) return null
+
+        val currentKey = getAlbumKey(current)
+        val currentIdx = sortedAlbumKeys.indexOf(currentKey)
+        val currentAlbumSongs = sortAlbumSongs(albumsMap[currentKey] ?: emptyList())
+        val currentAlbumTrack1 = currentAlbumSongs.firstOrNull()
+
+        val isPastThreshold = player.currentPosition > 3000L && currentAlbumTrack1 != null && current.id != currentAlbumTrack1.id
+
+        val prevIdx = if (isPastThreshold) {
+            currentIdx.coerceAtLeast(0)
+        } else if (currentIdx != -1) {
+            if (currentIdx - 1 < 0) sortedAlbumKeys.size - 1 else currentIdx - 1
+        } else 0
+
+        val prevAlbumKey = sortedAlbumKeys[prevIdx]
+        val prevAlbumSongs = sortAlbumSongs(albumsMap[prevAlbumKey] ?: emptyList())
+        return prevAlbumSongs.firstOrNull()
+    }
+
+    fun getArtistFirstTrack(): Song? {
+        val current = _currentSong.value ?: return null
+        val artistName = current.artist
+        if (artistName.isBlank()) return null
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        return baseList.filter { it.artist.equals(artistName, ignoreCase = true) }.firstOrNull()
+    }
+
+    fun getAlbumFirstTrack(): Song? {
+        val current = _currentSong.value ?: return null
+        val currentKey = getAlbumKey(current)
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        return sortAlbumSongs(baseList.filter { getAlbumKey(it) == currentKey }).firstOrNull()
+    }
+
     fun increaseRating() {
         if (_currentRating.value < 5) {
             _currentRating.value += 1

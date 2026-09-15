@@ -155,6 +155,8 @@ class MusicPlaybackService : MediaLibraryService() {
         val actionString = when (action) {
             GestureAction.PLAY_CURRENT_ALBUM -> "com.travelingtunes.app.ACTION_PLAY_CURRENT_ALBUM"
             GestureAction.PLAY_CURRENT_ARTIST -> "com.travelingtunes.app.ACTION_PLAY_CURRENT_ARTIST"
+            GestureAction.NEXT_ALBUM -> "com.travelingtunes.app.ACTION_NEXT_ALBUM"
+            GestureAction.PREVIOUS_ALBUM -> "com.travelingtunes.app.ACTION_PREVIOUS_ALBUM"
             GestureAction.SHUFFLE_ALL_SONGS -> "com.travelingtunes.app.ACTION_SHUFFLE_ALL_SONGS"
             GestureAction.TOGGLE_REPEAT -> "com.travelingtunes.app.ACTION_TOGGLE_REPEAT"
             GestureAction.TOGGLE_SHUFFLE -> "com.travelingtunes.app.ACTION_TOGGLE_SHUFFLE"
@@ -408,6 +410,14 @@ class MusicPlaybackService : MediaLibraryService() {
                 }
                 "com.travelingtunes.app.ACTION_PLAY_CURRENT_ARTIST" -> {
                     playCurrentArtist()
+                }
+                "com.travelingtunes.app.ACTION_NEXT_ALBUM" -> {
+                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                    playbackManager.nextAlbum()
+                }
+                "com.travelingtunes.app.ACTION_PREVIOUS_ALBUM" -> {
+                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                    playbackManager.previousAlbum()
                 }
                 "com.travelingtunes.app.ACTION_SHUFFLE_ALL_SONGS" -> {
                     shuffleAllSongs()

@@ -205,6 +205,20 @@ fun ActionIcon(
                 modifier = Modifier.size(iconSize)
             )
 
+            GestureAction.NEXT_ALBUM -> Icon(
+                imageVector = Icons.Default.SkipNext,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
+            GestureAction.PREVIOUS_ALBUM -> Icon(
+                imageVector = Icons.Default.SkipPrevious,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
             GestureAction.SELECT_ALBUM_VIEW -> Icon(
                 imageVector = Icons.Default.Album,
                 contentDescription = action.displayName,

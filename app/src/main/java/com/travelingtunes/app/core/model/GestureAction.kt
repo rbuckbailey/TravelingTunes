@@ -21,6 +21,8 @@ enum class GestureAction(val displayName: String) {
     SHUFFLE_ALL_SONGS("Shuffle All Songs"),
     PLAY_CURRENT_ARTIST("Play Current Artist"),
     PLAY_CURRENT_ALBUM("Play Current Album"),
+    NEXT_ALBUM("Next Album"),
+    PREVIOUS_ALBUM("Previous Album"),
     TOGGLE_REPEAT("Toggle Repeat"),
     TOGGLE_SHUFFLE("Toggle Shuffle"),
     INCREASE_RATING("Increase Rating"),

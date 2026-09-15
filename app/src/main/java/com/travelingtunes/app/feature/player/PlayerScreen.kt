@@ -423,6 +423,12 @@ fun PlayerScreen(
     }
 
     var activeContinuousAction by remember { mutableStateOf<GestureAction?>(null) }
+    var pageDragOffsetX by remember { mutableStateOf(0f) }
+    var pageDragOffsetY by remember { mutableStateOf(0f) }
+    var activePageAction by remember { mutableStateOf<GestureAction?>(null) }
+    var activePageTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
+    var activePageOtherKey by remember { mutableStateOf<String?>(null) }
+    var dragStartTimeMs by remember { mutableStateOf(0L) }
 
     val gestureListener = object : GestureEventListener {
         override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean, touchOffset: Offset): Boolean {
@@ -554,6 +560,26 @@ fun PlayerScreen(
                 return true
             }
 
+            val isPageSlideAction = action in listOf(
+                GestureAction.NEXT,
+                GestureAction.PREVIOUS,
+                GestureAction.RESTART_PREVIOUS,
+                GestureAction.NEXT_ALBUM,
+                GestureAction.PREVIOUS_ALBUM,
+                GestureAction.PLAY_CURRENT_ARTIST,
+                GestureAction.PLAY_CURRENT_ALBUM
+            )
+
+            if (isPageSlideAction && trigger.category != GestureCategory.LONG_PRESS && trigger.category != GestureCategory.SCREEN_REGION) {
+                activePageAction = action
+                activePageTrigger = trigger
+                activePageOtherKey = resolvedOtherKey
+                dragStartTimeMs = System.currentTimeMillis()
+                pageDragOffsetX = 0f
+                pageDragOffsetY = 0f
+                return true
+            }
+
             when (action) {
                 GestureAction.NEXT -> {
                     val nextIndex = pagerState.currentPage + 1
@@ -640,6 +666,27 @@ fun PlayerScreen(
             val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier
             if (isAnyOverlayOpen) return
 
+            if (activePageAction != null) {
+                val isHorizontalGesture = when (activePageTrigger) {
+                    GestureTrigger.SWIPE_1_LEFT, GestureTrigger.SWIPE_1_RIGHT,
+                    GestureTrigger.SWIPE_2_LEFT, GestureTrigger.SWIPE_2_RIGHT,
+                    GestureTrigger.SWIPE_3_LEFT, GestureTrigger.SWIPE_3_RIGHT -> true
+                    GestureTrigger.SWIPE_1_UP, GestureTrigger.SWIPE_1_DOWN,
+                    GestureTrigger.SWIPE_2_UP, GestureTrigger.SWIPE_2_DOWN,
+                    GestureTrigger.SWIPE_3_UP, GestureTrigger.SWIPE_3_DOWN -> false
+                    else -> kotlin.math.abs(totalDx) >= kotlin.math.abs(totalDy)
+                }
+
+                if (isHorizontalGesture) {
+                    pageDragOffsetX = totalDx
+                    pageDragOffsetY = 0f
+                } else {
+                    pageDragOffsetX = 0f
+                    pageDragOffsetY = totalDy
+                }
+                return
+            }
+
             val binding = resolveGestureBinding(trigger, gestureBindings)
             val action = activeContinuousAction
                 ?: binding.artAction.takeIf { it != GestureAction.UNASSIGNED }
@@ -665,10 +712,117 @@ fun PlayerScreen(
         override fun onGestureEnd(totalDx: Float, totalDy: Float, fingers: Int) {
             playbackManager.commitContinuousSeek()
             activeContinuousAction = null
+
+            val currentSlideAction = activePageAction
+            val currentSlideTrigger = activePageTrigger
+            val currentOtherKey = activePageOtherKey
+
+            if (currentSlideAction != null && currentSlideTrigger != null) {
+                val durationMs = (System.currentTimeMillis() - dragStartTimeMs).coerceAtLeast(1L)
+                val isHorizontal = kotlin.math.abs(totalDx) >= kotlin.math.abs(totalDy)
+                val netDisplacement = if (isHorizontal) totalDx else totalDy
+                val screenSizePx = if (isHorizontal) screenWidthPx else screenHeightPx
+                val commitThresholdPx = screenSizePx * 0.12f
+
+                val isCommitted = when (currentSlideTrigger) {
+                    GestureTrigger.SWIPE_1_LEFT, GestureTrigger.SWIPE_2_LEFT, GestureTrigger.SWIPE_3_LEFT -> totalDx < -commitThresholdPx
+                    GestureTrigger.SWIPE_1_RIGHT, GestureTrigger.SWIPE_2_RIGHT, GestureTrigger.SWIPE_3_RIGHT -> totalDx > commitThresholdPx
+                    GestureTrigger.SWIPE_1_UP, GestureTrigger.SWIPE_2_UP, GestureTrigger.SWIPE_3_UP -> totalDy < -commitThresholdPx
+                    GestureTrigger.SWIPE_1_DOWN, GestureTrigger.SWIPE_2_DOWN, GestureTrigger.SWIPE_3_DOWN -> totalDy > commitThresholdPx
+                    else -> kotlin.math.abs(netDisplacement) > commitThresholdPx
+                }
+
+                if (isCommitted) {
+                    val speedPxPerMs = (kotlin.math.abs(netDisplacement) / durationMs.toFloat()).coerceIn(0.6f, 3.5f)
+                    val remainingPx = screenSizePx - kotlin.math.abs(netDisplacement)
+                    val slideOutDurationMs = (remainingPx / speedPxPerMs).toLong().coerceIn(120L, 400L)
+
+                    val exitTargetX = if (isHorizontal) (if (totalDx < 0) -screenSizePx else screenSizePx) else 0f
+                    val exitTargetY = if (!isHorizontal) (if (totalDy < 0) -screenSizePx else screenSizePx) else 0f
+
+                    coroutineScope.launch {
+                        val animX = androidx.compose.animation.core.Animatable(pageDragOffsetX)
+                        val animY = androidx.compose.animation.core.Animatable(pageDragOffsetY)
+                        launch { animX.animateTo(exitTargetX, androidx.compose.animation.core.tween(slideOutDurationMs.toInt(), easing = androidx.compose.animation.core.LinearOutSlowInEasing)) { pageDragOffsetX = value } }
+                        launch { animY.animateTo(exitTargetY, androidx.compose.animation.core.tween(slideOutDurationMs.toInt(), easing = androidx.compose.animation.core.LinearOutSlowInEasing)) { pageDragOffsetY = value } }.join()
+
+                        handleGestureAction(
+                            action = currentSlideAction,
+                            trigger = currentSlideTrigger,
+                            playbackManager = playbackManager,
+                            musicScanner = musicScanner,
+                            musicDatabase = musicDatabase,
+                            coroutineScope = coroutineScope,
+                            onOpenSongPicker = { dir -> openSongPicker(dir, currentSlideTrigger) },
+                            onOpenSongPickerWithFilter = { dir, cat, art, alb -> openSongPicker(dir, currentSlideTrigger, cat, art, alb) },
+                            onOpenQueue = { dir -> openQueue(dir, currentSlideTrigger) },
+                            onOpenSettings = { dir -> openMenu(dir, currentSlideTrigger) },
+                            onOpenQuickStart = onOpenQuickStart,
+                            settingsDataStore = effectiveSettingsDataStore,
+                            gestureBindings = gestureBindings,
+                            overrideOtherOptionKey = currentOtherKey,
+                            pagerState = pagerState,
+                            pageCount = pageCount
+                        )
+
+                        delay(16L)
+
+                        pageDragOffsetX = 0f
+                        pageDragOffsetY = 0f
+                        activePageAction = null
+                        activePageTrigger = null
+                        activePageOtherKey = null
+                    }
+                } else {
+                    coroutineScope.launch {
+                        val animX = androidx.compose.animation.core.Animatable(pageDragOffsetX)
+                        val animY = androidx.compose.animation.core.Animatable(pageDragOffsetY)
+                        launch { animX.animateTo(0f, androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { pageDragOffsetX = value } }
+                        launch { animY.animateTo(0f, androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { pageDragOffsetY = value } }.join()
+
+                        pageDragOffsetX = 0f
+                        pageDragOffsetY = 0f
+                        activePageAction = null
+                        activePageTrigger = null
+                        activePageOtherKey = null
+                    }
+                }
+            }
+
             val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier
             if (!isAnyOverlayOpen) {
                 playbackManager.persistCurrentPlaybackState()
             }
+        }
+    }
+
+    var frozenAdjacentSong by remember { mutableStateOf<Song?>(null) }
+    val contextForArt = LocalContext.current
+
+    LaunchedEffect(activePageAction, currentSong) {
+        if (activePageAction != null) {
+            val resolved = when (activePageAction) {
+                GestureAction.NEXT -> playbackManager.getNextSong() ?: currentPlaylist.getOrNull(pagerState.currentPage + 1)
+                GestureAction.PREVIOUS, GestureAction.RESTART_PREVIOUS -> playbackManager.getPreviousSong() ?: currentPlaylist.getOrNull(pagerState.currentPage - 1)
+                GestureAction.NEXT_ALBUM -> playbackManager.getNextAlbumFirstTrack()
+                GestureAction.PREVIOUS_ALBUM -> playbackManager.getPreviousAlbumFirstTrack()
+                GestureAction.PLAY_CURRENT_ARTIST -> playbackManager.getArtistFirstTrack()
+                GestureAction.PLAY_CURRENT_ALBUM -> playbackManager.getAlbumFirstTrack()
+                else -> null
+            }
+            if (resolved != null) {
+                frozenAdjacentSong = resolved
+                val cached = AlbumArtCache.instance.get(resolved.id)
+                if (cached == null) {
+                    withContext(Dispatchers.IO) {
+                        loadSongArtwork(contextForArt, resolved)?.let {
+                            AlbumArtCache.instance.put(resolved.id, it.asImageBitmap())
+                        }
+                    }
+                }
+            }
+        } else {
+            frozenAdjacentSong = null
         }
     }
 
@@ -689,7 +843,12 @@ fun PlayerScreen(
         HorizontalPager(
             state = pagerState,
             beyondViewportPageCount = 1,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    translationX = pageDragOffsetX
+                    translationY = pageDragOffsetY
+                }
         ) { page ->
             val pageSong = currentPlaylist.getOrNull(page) ?: currentSong
 
@@ -729,6 +888,67 @@ fun PlayerScreen(
                 onShowRepeatOptions = { showRepeatOptionsDialog = true },
                 onShowShuffleOptions = { showShuffleOptionsDialog = true }
             )
+        }
+
+        // 1b. Pre-rendered Adjacent Page locked to current page edge during drag
+        val adjacentSong = frozenAdjacentSong
+
+        val isDraggingHorizontally = kotlin.math.abs(pageDragOffsetX) > 0f
+        val isDraggingVertically = kotlin.math.abs(pageDragOffsetY) > 0f
+
+        val adjacentOffsetX = if (isDraggingHorizontally) {
+            pageDragOffsetX + if (pageDragOffsetX < 0) screenWidthPx else -screenWidthPx
+        } else 0f
+
+        val adjacentOffsetY = if (isDraggingVertically) {
+            pageDragOffsetY + if (pageDragOffsetY < 0) screenHeightPx else -screenHeightPx
+        } else 0f
+
+        if (adjacentSong != null && (isDraggingHorizontally || isDraggingVertically)) {
+            val activeTopTriggersAdj = GestureTrigger.getActiveTopTriggers(displaySettings.numEdgeRegions)
+            val activeBottomTriggersAdj = GestureTrigger.getActiveBottomTriggers(displaySettings.numEdgeRegions)
+            val isAdjDownloadedArt = musicScanner?.albumArtDownloader?.isDownloadedArtwork(adjacentSong) == true
+            val hasTopBtns = activeTopTriggersAdj.any {
+                val act = resolveGestureBinding(it, gestureBindings).action
+                act != GestureAction.UNASSIGNED && !(act == GestureAction.DELETE_DOWNLOADED_ART && !isAdjDownloadedArt)
+            }
+            val hasBottomBtns = activeBottomTriggersAdj.any {
+                val act = resolveGestureBinding(it, gestureBindings).action
+                act != GestureAction.UNASSIGNED && !(act == GestureAction.DELETE_DOWNLOADED_ART && !isAdjDownloadedArt)
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        translationX = adjacentOffsetX
+                        translationY = adjacentOffsetY
+                    }
+            ) {
+                PlayerPageContent(
+                    pageSong = adjacentSong,
+                    displaySettings = displaySettings,
+                    themeSettings = themeSettings,
+                    currentPositionMs = 0L,
+                    durationMs = adjacentSong.durationMs,
+                    volumeRatio = currentVolumeRatio,
+                    hasTopButtons = hasTopBtns,
+                    hasBottomButtons = hasBottomBtns,
+                    gestureBindings = gestureBindings,
+                    playbackManager = playbackManager,
+                    musicScanner = musicScanner,
+                    musicDatabase = musicDatabase,
+                    repeatMode = repeatMode,
+                    shuffleMode = shuffleMode,
+                    isPlaying = isPlaying,
+                    onOpenSongPicker = {},
+                    onOpenQueue = {},
+                    onOpenSettings = {},
+                    onOpenQuickStart = {},
+                    onShowRepeatOptions = {},
+                    onShowShuffleOptions = {}
+                )
+            }
         }
 
         // 2. Gesture Detector Configuration
@@ -1366,8 +1586,8 @@ fun PlayerPageContent(
             Row(modifier = Modifier.fillMaxSize()) {
                 val artMod = Modifier
                     .fillMaxHeight()
-                    .widthIn(max = (screenWidthDp * artFractionX).dp)
-                    .aspectRatio(1f)
+                    .widthIn(max = if (isLandscape) screenHeightDp.dp else (screenWidthDp * artFractionX).dp)
+                    .aspectRatio(1f, matchHeightConstraintsFirst = true)
                 if (dockEdge == DockAdjacentEdge.LEFT) {
                     albumArtContainer(artMod)
                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -2033,6 +2253,8 @@ private fun handleGestureAction(
         GestureAction.SHUFFLE_ALL_SONGS -> playbackManager.shuffleAllSongs()
         GestureAction.PLAY_CURRENT_ALBUM -> playbackManager.playCurrentAlbum()
         GestureAction.PLAY_CURRENT_ARTIST -> playbackManager.playCurrentArtist()
+        GestureAction.NEXT_ALBUM -> playbackManager.nextAlbum()
+        GestureAction.PREVIOUS_ALBUM -> playbackManager.previousAlbum()
         GestureAction.INCREASE_RATING -> playbackManager.increaseRating()
         GestureAction.DECREASE_RATING -> playbackManager.decreaseRating()
         GestureAction.SONG_PICKER -> onOpenSongPicker(direction)

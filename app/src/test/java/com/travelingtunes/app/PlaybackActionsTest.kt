@@ -75,4 +75,10 @@ class PlaybackActionsTest {
         assertEquals("Song 3", activeQueue[0].title)
         assertEquals(3, activeQueue.size)
     }
+
+    @Test
+    fun testNextAndPreviousAlbumActionDisplayNames() {
+        assertEquals("Next Album", com.travelingtunes.app.core.model.GestureAction.NEXT_ALBUM.displayName)
+        assertEquals("Previous Album", com.travelingtunes.app.core.model.GestureAction.PREVIOUS_ALBUM.displayName)
+    }
 }
