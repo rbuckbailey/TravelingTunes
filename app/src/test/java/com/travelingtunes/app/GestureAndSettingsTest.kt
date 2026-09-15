@@ -1,5 +1,8 @@
 package com.travelingtunes.app
 
+import android.content.Context
+import android.media.AudioManager
+import com.travelingtunes.app.core.location.SpeedVolumeManager
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.SlideDirection
@@ -10,8 +13,10 @@ import com.travelingtunes.app.feature.settings.GestureSubmenu
 import com.travelingtunes.app.feature.settings.getSubmenu
 import com.travelingtunes.app.feature.settings.getTriggersForSubmenu
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.mockito.Mockito
 
 class GestureAndSettingsTest {
 
@@ -757,5 +762,72 @@ class GestureAndSettingsTest {
         val action = GestureAction.fromKey("TOGGLE_DRIVING_MODE")
         assertEquals(GestureAction.TOGGLE_DRIVING_MODE, action)
         assertEquals("Toggle Driving Mode", GestureAction.TOGGLE_DRIVING_MODE.displayName)
+    }
+
+    @Test
+    fun testSpeedVolumeAdjustmentDisabledWhenDrivingModeOff() {
+        val mockContext = Mockito.mock(Context::class.java)
+        val mockAudioManager = Mockito.mock(AudioManager::class.java)
+        Mockito.`when`(mockContext.applicationContext).thenReturn(mockContext)
+        Mockito.`when`(mockContext.getSystemService(Context.AUDIO_SERVICE)).thenReturn(mockAudioManager)
+        Mockito.`when`(mockAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)).thenReturn(15)
+        Mockito.`when`(mockAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)).thenReturn(7)
+
+        val manager = SpeedVolumeManager(mockContext)
+        manager.updateConfig(
+            speedVolumeEnabled = true,
+            defaultVolumePercent = 50,
+            minSpeedThreshold = 15f,
+            speedVolumeRatio = 1.0f,
+            speedUnit = "MPH",
+            drivingModeEnabled = false,
+            autoEnableDrivingMode = false
+        )
+
+        assertFalse(manager.isSpeedVolumeActive)
+
+        var defaultVolChanged = false
+        manager.onDefaultVolumeChanged = { defaultVolChanged = true }
+
+        manager.onManualVolumeChanged(10)
+        assertEquals(50, manager.defaultVolumePercent)
+        assertFalse(defaultVolChanged)
+    }
+
+    @Test
+    fun testSpeedVolumeAdjustmentManualChangeProportionalUpdate() {
+        val mockContext = Mockito.mock(Context::class.java)
+        val mockAudioManager = Mockito.mock(AudioManager::class.java)
+        Mockito.`when`(mockContext.applicationContext).thenReturn(mockContext)
+        Mockito.`when`(mockContext.getSystemService(Context.AUDIO_SERVICE)).thenReturn(mockAudioManager)
+        Mockito.`when`(mockAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)).thenReturn(15)
+        Mockito.`when`(mockAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)).thenReturn(7)
+
+        val manager = SpeedVolumeManager(mockContext)
+        var updatedDefaultVol = -1
+        manager.updateConfig(
+            speedVolumeEnabled = true,
+            defaultVolumePercent = 50,
+            minSpeedThreshold = 15f,
+            speedVolumeRatio = 1.0f,
+            speedUnit = "MPH",
+            drivingModeEnabled = true,
+            autoEnableDrivingMode = false,
+            onDefaultVolumeChanged = { updatedDefaultVol = it }
+        )
+
+        assertTrue(manager.isSpeedVolumeActive)
+
+        // Simulate driving at 35 MPH (20 MPH above threshold of 15 MPH)
+        // excessSpeed = 20 -> boostIndex = (20 / 10) * 1.0 = 2
+        manager.adjustVolumeForSpeed(35f)
+
+        // System volume index set by speed boost was 7 + 2 = 9
+        // User manually changes volume to 11 (bumping up volume by 2 steps)
+        manager.onManualVolumeChanged(11)
+
+        // newBaseVolIndex = 11 - 2 = 9 out of 15 max -> (9 / 15) * 100 = 60%
+        assertEquals(60, manager.defaultVolumePercent)
+        assertEquals(60, updatedDefaultVol)
     }
 }

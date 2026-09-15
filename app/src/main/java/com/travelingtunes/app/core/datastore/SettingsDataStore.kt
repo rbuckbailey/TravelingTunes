@@ -515,6 +515,12 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
+    suspend fun setAutoDefaultVolume(volumePercent: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AUTO_DEFAULT_VOLUME] = volumePercent.coerceIn(0, 100)
+        }
+    }
+
     suspend fun toggleDrivingMode() {
         context.dataStore.edit { prefs ->
             val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false

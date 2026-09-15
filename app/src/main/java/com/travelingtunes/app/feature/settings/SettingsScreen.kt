@@ -2671,13 +2671,14 @@ private fun AndroidAutoSettingsContent(
                     }
                     Switch(
                         checked = displaySettings.autoSpeedVolumeEnabled,
+                        enabled = displaySettings.drivingModeEnabled,
                         onCheckedChange = { checked ->
                             onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeEnabled = checked))
                         }
                     )
                 }
 
-                if (displaySettings.autoSpeedVolumeEnabled) {
+                if (displaySettings.drivingModeEnabled && displaySettings.autoSpeedVolumeEnabled) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
                     // Speed Unit Selector

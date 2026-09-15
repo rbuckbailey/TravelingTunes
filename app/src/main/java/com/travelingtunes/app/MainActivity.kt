@@ -175,10 +175,11 @@ class MainActivity : ComponentActivity() {
                 displaySettings.drivingModeEnabled,
                 displaySettings.autoEnableDrivingMode
             ) {
-                val shouldTrack = gpsVolumeEnabled || displaySettings.autoSpeedVolumeEnabled || displaySettings.autoEnableDrivingMode || displaySettings.drivingModeEnabled
+                val isSpeedVolumeActive = displaySettings.autoSpeedVolumeEnabled && displaySettings.drivingModeEnabled
+                val shouldTrack = gpsVolumeEnabled || isSpeedVolumeActive || displaySettings.autoEnableDrivingMode || displaySettings.drivingModeEnabled
                 if (shouldTrack) {
                     speedVolumeManager.updateConfig(
-                        speedVolumeEnabled = displaySettings.autoSpeedVolumeEnabled || gpsVolumeEnabled,
+                        speedVolumeEnabled = isSpeedVolumeActive || gpsVolumeEnabled,
                         defaultVolumePercent = displaySettings.autoDefaultVolume,
                         minSpeedThreshold = displaySettings.autoMinSpeedThreshold,
                         speedVolumeRatio = displaySettings.autoSpeedVolumeRatio,
@@ -188,6 +189,11 @@ class MainActivity : ComponentActivity() {
                         onMotionDetected = {
                             lifecycleScope.launch {
                                 settingsDataStore.setDrivingModeEnabled(true)
+                            }
+                        },
+                        onDefaultVolumeChanged = { newDefaultPercent ->
+                            lifecycleScope.launch {
+                                settingsDataStore.setAutoDefaultVolume(newDefaultPercent)
                             }
                         }
                     )
