@@ -54,6 +54,18 @@ enum class ArtLayoutOption(val displayName: String) {
     }
 }
 
+enum class ArtColorPriority(val displayName: String) {
+    CENTER("Center"),
+    OUTER_EDGE("Outer Edge"),
+    WHOLE("Whole Edge");
+
+    companion object {
+        fun fromOrdinal(ordinal: Int): ArtColorPriority {
+            return entries.getOrNull(ordinal) ?: CENTER
+        }
+    }
+}
+
 enum class HudTypeOption(val value: Int, val displayName: String) {
     NONE(0, "None"),
     EDGE_HUD(1, "Edge Bar"),
@@ -86,6 +98,9 @@ data class DisplaySettings(
     val artAlignmentLandscape: ArtAlignmentLandscape = ArtAlignmentLandscape.CENTER,
     val albumArtFade: Float = 1.0f,
     val artDisplayLayout: ArtLayoutOption = ArtLayoutOption.OVERLAY,
+    val stretchArt: Boolean = false,
+    val matchArtColorPriority: ArtColorPriority = ArtColorPriority.CENTER,
+    val adaptiveDockedArt: Boolean = false,
     val separateTouchZones: Boolean = false,
     val hudType: HudTypeOption = HudTypeOption.BAR_VOLUME,
     val scrubHudType: ScrubHudTypeOption = ScrubHudTypeOption.EDGE_HUD,

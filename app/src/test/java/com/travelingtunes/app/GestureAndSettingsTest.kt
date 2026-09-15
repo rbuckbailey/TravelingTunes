@@ -9,11 +9,14 @@ import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.model.getSlideDirection
 import com.travelingtunes.app.core.model.getReverseTrigger
 import com.travelingtunes.app.core.model.ThemeSettings
+import com.travelingtunes.app.core.datastore.SettingsBackupHelper
+import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.feature.settings.GestureSubmenu
 import com.travelingtunes.app.feature.settings.getSubmenu
 import com.travelingtunes.app.feature.settings.getTriggersForSubmenu
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.Mockito
@@ -858,5 +861,80 @@ class GestureAndSettingsTest {
         // newBaseVolIndex = 11 - 2 = 9 out of 15 max -> (9 / 15) * 100 = 60%
         assertEquals(60, manager.defaultVolumePercent)
         assertEquals(60, updatedDefaultVol)
+    }
+
+    @Test
+    fun testArtColorPriorityEnumAndDisplaySettingsDefaults() {
+        val display = com.travelingtunes.app.core.model.DisplaySettings()
+        assertFalse(display.stretchArt)
+        assertFalse(display.adaptiveDockedArt)
+        assertEquals(com.travelingtunes.app.core.model.ArtColorPriority.CENTER, display.matchArtColorPriority)
+
+        assertEquals("Center", com.travelingtunes.app.core.model.ArtColorPriority.CENTER.displayName)
+        assertEquals("Outer Edge", com.travelingtunes.app.core.model.ArtColorPriority.OUTER_EDGE.displayName)
+        assertEquals("Whole Edge", com.travelingtunes.app.core.model.ArtColorPriority.WHOLE.displayName)
+
+        assertEquals(com.travelingtunes.app.core.model.ArtColorPriority.CENTER, com.travelingtunes.app.core.model.ArtColorPriority.fromOrdinal(0))
+        assertEquals(com.travelingtunes.app.core.model.ArtColorPriority.OUTER_EDGE, com.travelingtunes.app.core.model.ArtColorPriority.fromOrdinal(1))
+        assertEquals(com.travelingtunes.app.core.model.ArtColorPriority.WHOLE, com.travelingtunes.app.core.model.ArtColorPriority.fromOrdinal(2))
+    }
+
+    @Test
+    fun testToggleDockedArtAction() {
+        val action = GestureAction.fromKey("TOGGLE_DOCKED_ART")
+        assertEquals(GestureAction.TOGGLE_DOCKED_ART, action)
+        assertEquals("Toggle Docked Art", GestureAction.TOGGLE_DOCKED_ART.displayName)
+    }
+
+    @Test
+    fun testSettingsBackupAndRestoreWithNewDockedAndEdgeOptions() {
+        val display = com.travelingtunes.app.core.model.DisplaySettings(
+            stretchArt = true,
+            adaptiveDockedArt = true,
+            matchArtColorPriority = com.travelingtunes.app.core.model.ArtColorPriority.WHOLE
+        )
+        val json = SettingsBackupHelper.exportToJson(
+            display = display,
+            theme = ThemeSettings(),
+            bindings = emptyMap<GestureTrigger, GestureBinding>(),
+            gpsVolume = false,
+            gpsSens = 1.0f,
+            autoRescan = false
+        )
+
+        assertTrue(json.contains("\"stretchArt\": true"))
+        assertTrue(json.contains("\"adaptiveDockedArt\": true"))
+        assertTrue(json.contains("\"matchArtColorPriority\": \"WHOLE\""))
+    }
+
+    @Test
+    fun testAlbumArtColorExtractorPriorityModes() {
+        kotlinx.coroutines.runBlocking {
+            val mockBitmap = Mockito.mock(android.graphics.Bitmap::class.java)
+            Mockito.`when`(mockBitmap.width).thenReturn(100)
+            Mockito.`when`(mockBitmap.height).thenReturn(100)
+            Mockito.`when`(mockBitmap.getPixel(Mockito.anyInt(), Mockito.anyInt())).thenReturn(android.graphics.Color.BLUE)
+
+            val themeCenter = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(
+                bitmap = mockBitmap,
+                innerEdge = com.travelingtunes.app.core.theme.InnerEdge.RIGHT,
+                priority = com.travelingtunes.app.core.model.ArtColorPriority.CENTER
+            )
+            assertNotNull(themeCenter)
+
+            val themeOuter = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(
+                bitmap = mockBitmap,
+                innerEdge = com.travelingtunes.app.core.theme.InnerEdge.RIGHT,
+                priority = com.travelingtunes.app.core.model.ArtColorPriority.OUTER_EDGE
+            )
+            assertNotNull(themeOuter)
+
+            val themeWhole = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(
+                bitmap = mockBitmap,
+                innerEdge = com.travelingtunes.app.core.theme.InnerEdge.RIGHT,
+                priority = com.travelingtunes.app.core.model.ArtColorPriority.WHOLE
+            )
+            assertNotNull(themeWhole)
+        }
     }
 }

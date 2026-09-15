@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
+import com.travelingtunes.app.core.model.ArtColorPriority
 import com.travelingtunes.app.core.model.ColorTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +17,8 @@ object AlbumArtColorExtractor {
 
     suspend fun extractThemeFromBitmap(
         bitmap: Bitmap,
-        innerEdge: InnerEdge? = null
+        innerEdge: InnerEdge? = null,
+        priority: ArtColorPriority = ArtColorPriority.CENTER
     ): ColorTheme = withContext(Dispatchers.Default) {
         val safeBmp = if (bitmap.config == Bitmap.Config.HARDWARE) {
             bitmap.copy(Bitmap.Config.ARGB_8888, false)
@@ -31,11 +33,15 @@ object AlbumArtColorExtractor {
             return@withContext ColorTheme.MATCH_ALBUM_ART
         }
 
-        // Favor edge colors for letterboxing / background extraction
-        val edgeSwatches = extractEdgeSwatches(targetBmp, innerEdge)
+        // Favor edge colors for letterboxing / background extraction according to priority
+        val edgeSwatches = extractEdgeSwatches(targetBmp, innerEdge, priority)
 
-        // Combine edge swatches first to favor edge colors, followed by full image swatches
-        val bgCandidates = (edgeSwatches + allSwatches).distinctBy { it.rgb }
+        // Separate palette swatches into non-black and near-black
+        val nonBlackPalette = allSwatches.filter { !isNearBlack(it.rgb) }
+        val nearBlackPalette = allSwatches.filter { isNearBlack(it.rgb) }
+
+        // Combine edge swatches first to favor edge colors, followed by non-black palette, then near-black palette
+        val bgCandidates = (edgeSwatches + nonBlackPalette + nearBlackPalette).distinctBy { it.rgb }
 
         // Ordered text candidates from palette swatches
         val preferredTextSwatches = listOfNotNull(
@@ -75,7 +81,7 @@ object AlbumArtColorExtractor {
             }
         }
 
-        // Pass 2: Moderately strict fallbackpass (moving down the line for contrast >= 3.5 and distance >= 22.0)
+        // Pass 2: Moderately strict fallback pass (contrast >= 3.5 and distance >= 22.0)
         for (bgSwatch in bgCandidates) {
             val bgInt = bgSwatch.rgb
             val textCandidates = (preferredTextSwatches + allSwatches)
@@ -125,123 +131,206 @@ object AlbumArtColorExtractor {
         )
     }
 
-    private fun extractEdgeSwatches(bitmap: Bitmap, innerEdge: InnerEdge? = null): List<Palette.Swatch> {
+    private fun extractEdgeSwatches(
+        bitmap: Bitmap,
+        innerEdge: InnerEdge? = null,
+        priority: ArtColorPriority = ArtColorPriority.CENTER
+    ): List<Palette.Swatch> {
         return try {
             val width = bitmap.width
             val height = bitmap.height
             if (width <= 0 || height <= 0) return emptyList()
 
-            // Sample directly from unscaled bitmap edge to preserve exact edge colors without scaling artifacts
             val borderX = (width * 0.015f).toInt().coerceIn(1, 8)
             val borderY = (height * 0.015f).toInt().coerceIn(1, 8)
 
-            val edgePixels: IntArray
-            var index = 0
+            // Collect edge pixels classified into primary (prioritized) vs secondary regions based on normalized position t
+            val primaryPixels = mutableListOf<Int>()
+            val secondaryPixels = mutableListOf<Int>()
+
+            fun addPixel(x: Int, y: Int, isVerticalEdge: Boolean) {
+                val pixel = bitmap.getPixel(x, y) or 0xFF000000.toInt()
+                val t = if (isVerticalEdge) y.toFloat() / height.coerceAtLeast(1) else x.toFloat() / width.coerceAtLeast(1)
+                val isCenter = t in 0.25f..0.75f
+
+                when (priority) {
+                    ArtColorPriority.CENTER -> {
+                        if (isCenter) primaryPixels.add(pixel) else secondaryPixels.add(pixel)
+                    }
+                    ArtColorPriority.OUTER_EDGE -> {
+                        if (!isCenter) primaryPixels.add(pixel) else secondaryPixels.add(pixel)
+                    }
+                    ArtColorPriority.WHOLE -> {
+                        primaryPixels.add(pixel)
+                    }
+                }
+            }
 
             if (innerEdge != null) {
                 when (innerEdge) {
                     InnerEdge.RIGHT -> {
-                        edgePixels = IntArray(height * borderX)
                         for (y in 0 until height) {
                             for (x in (width - borderX) until width) {
-                                edgePixels[index++] = bitmap.getPixel(x, y)
+                                addPixel(x, y, isVerticalEdge = true)
                             }
                         }
                     }
                     InnerEdge.LEFT -> {
-                        edgePixels = IntArray(height * borderX)
                         for (y in 0 until height) {
                             for (x in 0 until borderX) {
-                                edgePixels[index++] = bitmap.getPixel(x, y)
+                                addPixel(x, y, isVerticalEdge = true)
                             }
                         }
                     }
                     InnerEdge.BOTTOM -> {
-                        edgePixels = IntArray(width * borderY)
                         for (y in (height - borderY) until height) {
                             for (x in 0 until width) {
-                                edgePixels[index++] = bitmap.getPixel(x, y)
+                                addPixel(x, y, isVerticalEdge = false)
                             }
                         }
                     }
                     InnerEdge.TOP -> {
-                        edgePixels = IntArray(width * borderY)
                         for (y in 0 until borderY) {
                             for (x in 0 until width) {
-                                edgePixels[index++] = bitmap.getPixel(x, y)
+                                addPixel(x, y, isVerticalEdge = false)
                             }
                         }
                     }
                 }
             } else {
                 // All 4 borders
-                val totalCap = width * borderY * 2 + (height - borderY * 2) * borderX * 2
-                edgePixels = IntArray(totalCap)
-                // Top border
                 for (y in 0 until borderY) {
                     for (x in 0 until width) {
-                        edgePixels[index++] = bitmap.getPixel(x, y)
+                        addPixel(x, y, isVerticalEdge = false)
                     }
                 }
-                // Bottom border
                 for (y in (height - borderY) until height) {
                     for (x in 0 until width) {
-                        edgePixels[index++] = bitmap.getPixel(x, y)
+                        addPixel(x, y, isVerticalEdge = false)
                     }
                 }
-                // Left & Right borders (middle)
                 for (y in borderY until (height - borderY)) {
                     for (x in 0 until borderX) {
-                        edgePixels[index++] = bitmap.getPixel(x, y)
+                        addPixel(x, y, isVerticalEdge = true)
                     }
                     for (x in (width - borderX) until width) {
-                        edgePixels[index++] = bitmap.getPixel(x, y)
+                        addPixel(x, y, isVerticalEdge = true)
                     }
                 }
             }
 
-            if (index <= 0) return emptyList()
+            fun clusterPixels(pixels: List<Int>): List<Palette.Swatch> {
+                if (pixels.isEmpty()) return emptyList()
 
-            // Count frequency distribution of exact pixel RGB values along the edge
-            val exactCounts = HashMap<Int, Int>()
-            for (i in 0 until index) {
-                val pixel = edgePixels[i] or 0xFF000000.toInt()
-                exactCounts[pixel] = (exactCounts[pixel] ?: 0) + 1
-            }
-
-            // Cluster near-identical pixel colors (e.g. JPEG noise) while keeping exact pixel RGB values
-            val sortedExact = exactCounts.entries.sortedByDescending { it.value }
-            val clusters = mutableListOf<Palette.Swatch>()
-            val visited = HashSet<Int>()
-
-            val lab1 = DoubleArray(3)
-            val lab2 = DoubleArray(3)
-
-            for (entry in sortedExact) {
-                val exactColor = entry.key
-                if (exactColor in visited) continue
-
-                var totalPopulation = 0
-                ColorUtils.colorToLAB(exactColor, lab1)
-
-                for (otherEntry in sortedExact) {
-                    val otherColor = otherEntry.key
-                    if (otherColor in visited) continue
-
-                    ColorUtils.colorToLAB(otherColor, lab2)
-                    if (ColorUtils.distanceEuclidean(lab1, lab2) <= 5.0) {
-                        totalPopulation += otherEntry.value
-                        visited.add(otherColor)
-                    }
+                val exactCounts = HashMap<Int, Int>()
+                for (pixel in pixels) {
+                    exactCounts[pixel] = (exactCounts[pixel] ?: 0) + 1
                 }
 
-                clusters.add(Palette.Swatch(exactColor, totalPopulation))
+                val sortedExact = exactCounts.entries.sortedByDescending { it.value }
+                val clusters = mutableListOf<Palette.Swatch>()
+                val visited = HashSet<Int>()
+
+                val lab1 = DoubleArray(3)
+                val lab2 = DoubleArray(3)
+
+                for (entry in sortedExact) {
+                    val exactColor = entry.key
+                    if (exactColor in visited) continue
+
+                    var totalPopulation = 0
+                    ColorUtils.colorToLAB(exactColor, lab1)
+
+                    for (otherEntry in sortedExact) {
+                        val otherColor = otherEntry.key
+                        if (otherColor in visited) continue
+
+                        ColorUtils.colorToLAB(otherColor, lab2)
+                        if (ColorUtils.distanceEuclidean(lab1, lab2) <= 5.0) {
+                            totalPopulation += otherEntry.value
+                            visited.add(otherColor)
+                        }
+                    }
+
+                    clusters.add(Palette.Swatch(exactColor, totalPopulation))
+                }
+
+                return clusters.sortedByDescending { it.population }
             }
 
-            clusters.sortedByDescending { it.population }
+            val primarySwatches = clusterPixels(primaryPixels)
+
+            if (priority == ArtColorPriority.WHOLE) {
+                val totalPop = primarySwatches.sumOf { it.population }
+                val topSwatch = primarySwatches.firstOrNull()
+                val secondSwatch = primarySwatches.getOrNull(1)
+
+                val hasClearWinner = when {
+                    topSwatch == null -> false
+                    secondSwatch == null -> true
+                    totalPop > 0 && (topSwatch.population.toFloat() / totalPop) >= 0.40f -> true
+                    secondSwatch.population > 0 && (topSwatch.population.toFloat() / secondSwatch.population) >= 1.8f -> true
+                    else -> false
+                }
+
+                val nonBlackSwatches = primarySwatches.filter { !isNearBlack(it.rgb) }
+                val nearBlackSwatches = primarySwatches.filter { isNearBlack(it.rgb) }
+
+                if (hasClearWinner || nonBlackSwatches.size <= 1) {
+                    (nonBlackSwatches + nearBlackSwatches).distinctBy { it.rgb }
+                } else {
+                    // Blend top edge swatches into a unified edge swatch
+                    val blendedRgb = blendColors(nonBlackSwatches.take(3))
+                    val blendedSwatch = Palette.Swatch(blendedRgb, totalPop)
+                    (listOf(blendedSwatch) + nonBlackSwatches + nearBlackSwatches).distinctBy { it.rgb }
+                }
+            } else {
+                val secondarySwatches = clusterPixels(secondaryPixels)
+
+                val primaryNonBlack = primarySwatches.filter { !isNearBlack(it.rgb) }
+                val secondaryNonBlack = secondarySwatches.filter { !isNearBlack(it.rgb) }
+                val primaryNearBlack = primarySwatches.filter { isNearBlack(it.rgb) }
+                val secondaryNearBlack = secondarySwatches.filter { isNearBlack(it.rgb) }
+
+                (primaryNonBlack + secondaryNonBlack + primaryNearBlack + secondaryNearBlack).distinctBy { it.rgb }
+            }
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    private fun isNearBlack(colorInt: Int): Boolean {
+        val lum = ColorUtils.calculateLuminance(colorInt)
+        val r = (colorInt shr 16) and 0xFF
+        val g = (colorInt shr 8) and 0xFF
+        val b = colorInt and 0xFF
+        return lum < 0.06 || (r < 25 && g < 25 && b < 25)
+    }
+
+    private fun blendColors(swatches: List<Palette.Swatch>): Int {
+        if (swatches.isEmpty()) return android.graphics.Color.DKGRAY
+        if (swatches.size == 1) return swatches[0].rgb
+
+        var totalPop = 0L
+        var rSum = 0.0
+        var gSum = 0.0
+        var bSum = 0.0
+
+        for (s in swatches) {
+            val pop = s.population.toLong().coerceAtLeast(1L)
+            totalPop += pop
+            rSum += ((s.rgb shr 16) and 0xFF) * pop
+            gSum += ((s.rgb shr 8) and 0xFF) * pop
+            bSum += (s.rgb and 0xFF) * pop
+        }
+
+        if (totalPop == 0L) return swatches[0].rgb
+
+        val r = (rSum / totalPop).toInt().coerceIn(0, 255)
+        val g = (gSum / totalPop).toInt().coerceIn(0, 255)
+        val b = (bSum / totalPop).toInt().coerceIn(0, 255)
+
+        return android.graphics.Color.rgb(r, g, b)
     }
 
     private fun findSecondaryTextColor(
@@ -278,12 +367,7 @@ object AlbumArtColorExtractor {
 
     private fun blendSecondaryColor(bgInt: Int, primaryTextInt: Int): Int {
         val bgLuminance = ColorUtils.calculateLuminance(bgInt)
-        val primaryLuminance = ColorUtils.calculateLuminance(primaryTextInt)
 
-        return if (primaryLuminance > bgLuminance) {
-            ColorUtils.blendARGB(primaryTextInt, bgInt, 0.30f)
-        } else {
-            ColorUtils.blendARGB(primaryTextInt, bgInt, 0.30f)
-        }
+        return ColorUtils.blendARGB(primaryTextInt, bgInt, 0.30f)
     }
 }

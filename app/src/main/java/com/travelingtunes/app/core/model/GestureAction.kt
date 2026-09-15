@@ -28,6 +28,7 @@ enum class GestureAction(val displayName: String) {
     SHOW_QUICK_START("Show Quick Start"),
     DELETE_DOWNLOADED_ART("Delete Downloaded Art"),
     TOGGLE_DRIVING_MODE("Toggle Driving Mode"),
+    TOGGLE_DOCKED_ART("Toggle Docked Art"),
     RADIAL_MENU("Radial Menu"),
     OTHER_OPTION("Other Option");
     // Navigation actions disabled/commented out:

@@ -254,6 +254,13 @@ fun ActionIcon(
                 modifier = Modifier.size(iconSize)
             )
 
+            GestureAction.TOGGLE_DOCKED_ART -> Icon(
+                imageVector = Icons.Default.Album,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
             GestureAction.RADIAL_MENU -> Icon(
                 imageVector = Icons.Default.DonutLarge,
                 contentDescription = action.displayName,

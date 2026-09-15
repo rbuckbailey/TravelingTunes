@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.travelingtunes.app.core.model.ArtAlignmentLandscape
 import com.travelingtunes.app.core.model.ArtAlignmentPortrait
+import com.travelingtunes.app.core.model.ArtColorPriority
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
 import com.travelingtunes.app.core.model.AutoCategory
@@ -86,6 +87,9 @@ class SettingsDataStore(private val context: Context) {
         val KEY_ART_ALIGNMENT_LANDSCAPE = stringPreferencesKey("artAlignmentLandscape")
         val KEY_ALBUM_ART_FADE = floatPreferencesKey("albumArtFade")
         val KEY_ART_DISPLAY_LAYOUT = intPreferencesKey("artDisplayLayout")
+        val KEY_STRETCH_ART = booleanPreferencesKey("stretchArt")
+        val KEY_MATCH_ART_COLOR_PRIORITY = intPreferencesKey("matchArtColorPriority")
+        val KEY_ADAPTIVE_DOCKED_ART = booleanPreferencesKey("adaptiveDockedArt")
         val KEY_SEPARATE_TOUCH_ZONES = booleanPreferencesKey("separateTouchZones")
         val KEY_HUD_TYPE = intPreferencesKey("hudType")
         val KEY_SCRUB_HUD_TYPE = intPreferencesKey("scrubHudType")
@@ -207,6 +211,9 @@ class SettingsDataStore(private val context: Context) {
             } ?: ArtAlignmentLandscape.CENTER,
             albumArtFade = (prefs[KEY_ALBUM_ART_FADE] ?: 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
             artDisplayLayout = ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY },
+            stretchArt = prefs[KEY_STRETCH_ART] ?: false,
+            matchArtColorPriority = ArtColorPriority.entries.getOrElse(prefs[KEY_MATCH_ART_COLOR_PRIORITY] ?: 0) { ArtColorPriority.CENTER },
+            adaptiveDockedArt = prefs[KEY_ADAPTIVE_DOCKED_ART] ?: false,
             separateTouchZones = prefs[KEY_SEPARATE_TOUCH_ZONES] ?: false,
             hudType = HudTypeOption.entries.find { it.value == (prefs[KEY_HUD_TYPE] ?: 1) } ?: HudTypeOption.BAR_VOLUME,
             scrubHudType = ScrubHudTypeOption.entries.find { it.value == (prefs[KEY_SCRUB_HUD_TYPE] ?: 2) } ?: ScrubHudTypeOption.EDGE_HUD,
@@ -789,6 +796,9 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_ART_ALIGNMENT_LANDSCAPE] = update.artAlignmentLandscape.name
             prefs[KEY_ALBUM_ART_FADE] = update.albumArtFade
             prefs[KEY_ART_DISPLAY_LAYOUT] = update.artDisplayLayout.ordinal
+            prefs[KEY_STRETCH_ART] = update.stretchArt
+            prefs[KEY_MATCH_ART_COLOR_PRIORITY] = update.matchArtColorPriority.ordinal
+            prefs[KEY_ADAPTIVE_DOCKED_ART] = update.adaptiveDockedArt
             prefs[KEY_SEPARATE_TOUCH_ZONES] = update.separateTouchZones
             prefs[KEY_HUD_TYPE] = update.hudType.value
             prefs[KEY_SCRUB_HUD_TYPE] = update.scrubHudType.value
@@ -928,6 +938,9 @@ class SettingsDataStore(private val context: Context) {
                     artAlignmentLandscape = runCatching { ArtAlignmentLandscape.valueOf(dJson.getString("artAlignmentLandscape")) }.getOrDefault(currentDisplay.artAlignmentLandscape),
                     albumArtFade = dJson.optDouble("albumArtFade", currentDisplay.albumArtFade.toDouble()).toFloat(),
                     artDisplayLayout = runCatching { ArtLayoutOption.valueOf(dJson.getString("artDisplayLayout")) }.getOrDefault(currentDisplay.artDisplayLayout),
+                    stretchArt = dJson.optBoolean("stretchArt", currentDisplay.stretchArt),
+                    matchArtColorPriority = runCatching { ArtColorPriority.valueOf(dJson.getString("matchArtColorPriority")) }.getOrDefault(currentDisplay.matchArtColorPriority),
+                    adaptiveDockedArt = dJson.optBoolean("adaptiveDockedArt", currentDisplay.adaptiveDockedArt),
                     separateTouchZones = dJson.optBoolean("separateTouchZones", currentDisplay.separateTouchZones),
                     hudType = runCatching { HudTypeOption.valueOf(dJson.getString("hudType")) }.getOrDefault(currentDisplay.hudType),
                     scrubHudType = runCatching { ScrubHudTypeOption.valueOf(dJson.getString("scrubHudType")) }.getOrDefault(currentDisplay.scrubHudType),

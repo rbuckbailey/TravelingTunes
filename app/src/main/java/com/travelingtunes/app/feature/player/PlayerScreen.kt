@@ -69,10 +69,14 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
@@ -379,8 +383,11 @@ fun PlayerScreen(
 
     val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian
-    val isSeparateTouchZones = isDockedScreen && displaySettings.separateTouchZones
+    val isMultiWindow = (context as? android.app.Activity)?.isInMultiWindowMode == true ||
+            (if (isLandscape) configuration.screenHeightDp < 420 else configuration.screenHeightDp < 500)
+    val isAdaptiveDockedActive = displaySettings.adaptiveDockedArt && isMultiWindow
+    val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian && !isAdaptiveDockedActive
+    val isSeparateTouchZones = isDockedScreen && displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
 
     val artFractionX = if (isLandscape) {
         if (screenWidthPx > 0f) (screenHeightPx / screenWidthPx).coerceIn(0.2f, 0.45f) else 0.45f
@@ -709,7 +716,11 @@ fun PlayerScreen(
         // 2. Gesture Detector Configuration
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian
+        val contextGesture = LocalContext.current
+        val isMultiWindowGesture = (contextGesture as? android.app.Activity)?.isInMultiWindowMode == true ||
+                (if (isLandscape) configuration.screenHeightDp < 420 else configuration.screenHeightDp < 500)
+        val isAdaptiveDockedActiveGesture = displaySettings.adaptiveDockedArt && isMultiWindowGesture
+        val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian && !isAdaptiveDockedActiveGesture
 
         val screenWidth = configuration.screenWidthDp.toFloat()
         val screenHeight = configuration.screenHeightDp.toFloat()
@@ -1182,7 +1193,11 @@ fun PlayerPageContent(
             )
         }
 
-    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian
+    val contextLayout = LocalContext.current
+    val isMultiWindowLayout = (contextLayout as? android.app.Activity)?.isInMultiWindowMode == true ||
+            (if (isLandscape) configuration.screenHeightDp < 420 else configuration.screenHeightDp < 500)
+    val isAdaptiveDockedActiveLayout = displaySettings.adaptiveDockedArt && isMultiWindowLayout
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian && !isAdaptiveDockedActiveLayout
 
     if (isDocked) {
         val (dockEdge, isRow) = if (isLandscape) {
@@ -1262,9 +1277,29 @@ fun PlayerPageContent(
                     .aspectRatio(1f)
                 if (dockEdge == DockAdjacentEdge.LEFT) {
                     albumArtContainer(artMod)
-                    titlesContainer(Modifier.weight(1f).fillMaxHeight())
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        if (displaySettings.stretchArt) {
+                            StretchedEdgeBackground(
+                                song = pageSong,
+                                dockEdge = dockEdge,
+                                albumArtFade = displaySettings.albumArtFade,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        titlesContainer(Modifier.fillMaxSize())
+                    }
                 } else {
-                    titlesContainer(Modifier.weight(1f).fillMaxHeight())
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        if (displaySettings.stretchArt) {
+                            StretchedEdgeBackground(
+                                song = pageSong,
+                                dockEdge = dockEdge,
+                                albumArtFade = displaySettings.albumArtFade,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        titlesContainer(Modifier.fillMaxSize())
+                    }
                     albumArtContainer(artMod)
                 }
             }
@@ -1276,9 +1311,29 @@ fun PlayerPageContent(
                     .aspectRatio(1f)
                 if (dockEdge == DockAdjacentEdge.TOP) {
                     albumArtContainer(artMod)
-                    titlesContainer(Modifier.weight(1f).fillMaxWidth())
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        if (displaySettings.stretchArt) {
+                            StretchedEdgeBackground(
+                                song = pageSong,
+                                dockEdge = dockEdge,
+                                albumArtFade = displaySettings.albumArtFade,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        titlesContainer(Modifier.fillMaxSize())
+                    }
                 } else {
-                    titlesContainer(Modifier.weight(1f).fillMaxWidth())
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        if (displaySettings.stretchArt) {
+                            StretchedEdgeBackground(
+                                song = pageSong,
+                                dockEdge = dockEdge,
+                                albumArtFade = displaySettings.albumArtFade,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        titlesContainer(Modifier.fillMaxSize())
+                    }
                     albumArtContainer(artMod)
                 }
             }
@@ -1517,7 +1572,13 @@ fun PlayerAlbumArtBackground(
     }
 
     val imgBitmap = bitmap
-    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
+    val contextBg = LocalContext.current
+    val configurationBg = LocalConfiguration.current
+    val isLandscapeBg = configurationBg.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isMultiWindowBg = (contextBg as? android.app.Activity)?.isInMultiWindowMode == true ||
+            (if (isLandscapeBg) configurationBg.screenHeightDp < 420 else configurationBg.screenHeightDp < 500)
+    val isAdaptiveDockedActiveBg = displaySettings.adaptiveDockedArt && isMultiWindowBg
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && !isAdaptiveDockedActiveBg
 
     if (imgBitmap != null) {
         val contentScale = when (displaySettings.albumArtScale) {
@@ -1887,6 +1948,15 @@ private fun handleGestureAction(
                     val songsInAlbum = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
                     musicScanner.albumArtDownloader.deleteDownloadedArtworkForAlbum(song.album, song.artist, songsInAlbum)
                     playbackManager.refreshCurrentSongArtwork()
+                }
+            }
+        }
+        GestureAction.TOGGLE_DOCKED_ART -> {
+            if (settingsDataStore != null && coroutineScope != null) {
+                coroutineScope.launch {
+                    val currentDisplay = settingsDataStore.displaySettingsFlow.first()
+                    val newLayout = if (currentDisplay.artDisplayLayout == ArtLayoutOption.DOCKED) ArtLayoutOption.OVERLAY else ArtLayoutOption.DOCKED
+                    settingsDataStore.updateDisplaySettings(currentDisplay.copy(artDisplayLayout = newLayout))
                 }
             }
         }
@@ -2290,4 +2360,89 @@ fun ShuffleOptionsDialog(
             }
         }
     )
+}
+
+@Composable
+private fun StretchedEdgeBackground(
+    song: Song?,
+    dockEdge: DockAdjacentEdge,
+    albumArtFade: Float,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var bitmap by remember(song?.id, song?.artworkUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(song?.id, song?.artworkUri) {
+        if (song != null) {
+            bitmap = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                loadSongArtwork(context, song)
+            }
+        } else {
+            bitmap = null
+        }
+    }
+
+    val imgBitmap = bitmap ?: return
+
+    val edgeBitmap = remember(imgBitmap, dockEdge) {
+        val w = imgBitmap.width
+        val h = imgBitmap.height
+        if (w <= 0 || h <= 0) null else {
+            try {
+                when (dockEdge) {
+                    DockAdjacentEdge.LEFT -> {
+                        android.graphics.Bitmap.createBitmap(imgBitmap, (w - 1).coerceAtLeast(0), 0, 1, h)
+                    }
+                    DockAdjacentEdge.RIGHT -> {
+                        android.graphics.Bitmap.createBitmap(imgBitmap, 0, 0, 1, h)
+                    }
+                    DockAdjacentEdge.TOP -> {
+                        android.graphics.Bitmap.createBitmap(imgBitmap, 0, (h - 1).coerceAtLeast(0), w, 1)
+                    }
+                    DockAdjacentEdge.BOTTOM -> {
+                        android.graphics.Bitmap.createBitmap(imgBitmap, 0, 0, w, 1)
+                    }
+                }.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        }
+    } ?: return
+
+    val targetFade = albumArtFade.coerceIn(0.1f, 1.0f)
+    val gradientBrush = remember(dockEdge, targetFade) {
+        when (dockEdge) {
+            DockAdjacentEdge.LEFT -> androidx.compose.ui.graphics.Brush.horizontalGradient(
+                listOf(Color.Black.copy(alpha = 1.0f), Color.Black.copy(alpha = targetFade))
+            )
+            DockAdjacentEdge.RIGHT -> androidx.compose.ui.graphics.Brush.horizontalGradient(
+                listOf(Color.Black.copy(alpha = targetFade), Color.Black.copy(alpha = 1.0f))
+            )
+            DockAdjacentEdge.TOP -> androidx.compose.ui.graphics.Brush.verticalGradient(
+                listOf(Color.Black.copy(alpha = 1.0f), Color.Black.copy(alpha = targetFade))
+            )
+            DockAdjacentEdge.BOTTOM -> androidx.compose.ui.graphics.Brush.verticalGradient(
+                listOf(Color.Black.copy(alpha = targetFade), Color.Black.copy(alpha = 1.0f))
+            )
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+            .drawWithContent {
+                drawContent()
+                drawRect(
+                    brush = gradientBrush,
+                    blendMode = BlendMode.DstIn
+                )
+            }
+    ) {
+        Image(
+            bitmap = edgeBitmap,
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 }

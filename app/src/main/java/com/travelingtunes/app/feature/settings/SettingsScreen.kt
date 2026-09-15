@@ -94,6 +94,7 @@ import com.travelingtunes.app.core.datastore.SettingsDataStore
 import com.travelingtunes.app.core.media.AlbumArtAuditReport
 import com.travelingtunes.app.core.model.ArtAlignmentLandscape
 import com.travelingtunes.app.core.model.ArtAlignmentPortrait
+import com.travelingtunes.app.core.model.ArtColorPriority
 import com.travelingtunes.app.core.model.ArtLayoutOption
 import com.travelingtunes.app.core.model.ArtScaleOption
 import com.travelingtunes.app.core.model.AutoCategory
@@ -1043,6 +1044,7 @@ private fun SubmenuContent(
                 SettingsSubmenu.THEMES -> ThemesSettingsContent(
                     themeSettings = themeSettings,
                     displaySettings = displaySettings,
+                    onUpdateDisplaySettings = onUpdateDisplaySettings,
                     onSelectPreset = onSelectPreset,
                     onOpenBgPicker = onOpenBgPicker,
                     onOpenSongPicker = onOpenSongPicker,
@@ -1818,6 +1820,55 @@ private fun ArtSettingsContent(
                     .padding(vertical = 4.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
+                    Text("Stretch Art", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Expand inner edge colors of artwork across background behind titles",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = displaySettings.stretchArt,
+                    onCheckedChange = { checked ->
+                        onUpdateDisplaySettings(displaySettings.copy(stretchArt = checked))
+                    }
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Adaptive Docked Art", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Place art to side when space is available, or behind titles when reduced for split-screen",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = displaySettings.adaptiveDockedArt,
+                    onCheckedChange = { checked ->
+                        onUpdateDisplaySettings(
+                            displaySettings.copy(
+                                adaptiveDockedArt = checked,
+                                separateTouchZones = if (checked) false else displaySettings.separateTouchZones
+                            )
+                        )
+                    }
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text("Separate Touch Zones", fontWeight = FontWeight.SemiBold)
                     Text(
                         "Art and Titles regions have separate gesture-mapped actions",
@@ -1826,9 +1877,15 @@ private fun ArtSettingsContent(
                     )
                 }
                 Switch(
-                    checked = displaySettings.separateTouchZones,
+                    checked = displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt,
+                    enabled = !displaySettings.adaptiveDockedArt,
                     onCheckedChange = { checked ->
-                        onUpdateDisplaySettings(displaySettings.copy(separateTouchZones = checked))
+                        onUpdateDisplaySettings(
+                            displaySettings.copy(
+                                separateTouchZones = checked,
+                                adaptiveDockedArt = if (checked) false else displaySettings.adaptiveDockedArt
+                            )
+                        )
                     }
                 )
             }
@@ -1999,6 +2056,7 @@ private fun GesturesSettingsContent(
 private fun ThemesSettingsContent(
     themeSettings: ThemeSettings,
     displaySettings: DisplaySettings,
+    onUpdateDisplaySettings: (DisplaySettings) -> Unit = {},
     onSelectPreset: (String, Boolean) -> Unit,
     onOpenBgPicker: () -> Unit,
     onOpenSongPicker: () -> Unit,
@@ -2022,6 +2080,30 @@ private fun ThemesSettingsContent(
                     onSelectPreset(newThemeName, checked)
                 }
             )
+        }
+
+        if (isMatchAlbumArtActive) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Match Album Art Edge Focus", fontWeight = FontWeight.Bold)
+            Text(
+                "Prioritize center region, outer edges, or whole edge (with blending)",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp)
+            ) {
+                ArtColorPriority.entries.forEach { option ->
+                    FilterChip(
+                        selected = displaySettings.matchArtColorPriority == option,
+                        onClick = {
+                            onUpdateDisplaySettings(displaySettings.copy(matchArtColorPriority = option))
+                        },
+                        label = { Text(option.displayName) }
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
