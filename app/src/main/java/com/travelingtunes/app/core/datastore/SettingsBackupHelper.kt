@@ -38,6 +38,7 @@ object SettingsBackupHelper {
         sb.append("    \"artAlignmentLandscape\": \"${display.artAlignmentLandscape.name}\",\n")
         sb.append("    \"albumArtFade\": ${display.albumArtFade},\n")
         sb.append("    \"artDisplayLayout\": \"${display.artDisplayLayout.name}\",\n")
+        sb.append("    \"separateTouchZones\": ${display.separateTouchZones},\n")
         sb.append("    \"hudType\": \"${display.hudType.name}\",\n")
         sb.append("    \"scrubHudType\": \"${display.scrubHudType.name}\",\n")
         sb.append("    \"volumeAlwaysOn\": ${display.volumeAlwaysOn},\n")
@@ -107,7 +108,7 @@ object SettingsBackupHelper {
         val bindingsList = bindings.entries.toList()
         bindingsList.forEachIndexed { index, (trigger, binding) ->
             val comma = if (index < bindingsList.size - 1) "," else ""
-            sb.append("    \"${trigger.key}\": { \"action\": \"${binding.action.name}\", \"isContinuous\": ${binding.isContinuous} }$comma\n")
+            sb.append("    \"${trigger.key}\": { \"action\": \"${binding.action.name}\", \"isContinuous\": ${binding.isContinuous}, \"artAction\": \"${binding.artAction.name}\", \"titleAction\": \"${binding.titleAction.name}\" }$comma\n")
         }
         sb.append("  },\n")
 

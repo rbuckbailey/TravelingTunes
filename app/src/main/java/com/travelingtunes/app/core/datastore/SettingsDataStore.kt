@@ -86,6 +86,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_ART_ALIGNMENT_LANDSCAPE = stringPreferencesKey("artAlignmentLandscape")
         val KEY_ALBUM_ART_FADE = floatPreferencesKey("albumArtFade")
         val KEY_ART_DISPLAY_LAYOUT = intPreferencesKey("artDisplayLayout")
+        val KEY_SEPARATE_TOUCH_ZONES = booleanPreferencesKey("separateTouchZones")
         val KEY_HUD_TYPE = intPreferencesKey("hudType")
         val KEY_SCRUB_HUD_TYPE = intPreferencesKey("scrubHudType")
         val KEY_VOLUME_ALWAYS_ON = booleanPreferencesKey("volumeAlwaysOn")
@@ -206,6 +207,7 @@ class SettingsDataStore(private val context: Context) {
             } ?: ArtAlignmentLandscape.CENTER,
             albumArtFade = (prefs[KEY_ALBUM_ART_FADE] ?: 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
             artDisplayLayout = ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY },
+            separateTouchZones = prefs[KEY_SEPARATE_TOUCH_ZONES] ?: false,
             hudType = HudTypeOption.entries.find { it.value == (prefs[KEY_HUD_TYPE] ?: 1) } ?: HudTypeOption.BAR_VOLUME,
             scrubHudType = ScrubHudTypeOption.entries.find { it.value == (prefs[KEY_SCRUB_HUD_TYPE] ?: 2) } ?: ScrubHudTypeOption.EDGE_HUD,
             volumeAlwaysOn = prefs[KEY_VOLUME_ALWAYS_ON] ?: true,
@@ -307,7 +309,23 @@ class SettingsDataStore(private val context: Context) {
             val actionKey = prefs[stringPreferencesKey(trigger.key)] ?: trigger.defaultActionKey
             val isContinuous = prefs[booleanPreferencesKey("${trigger.key}Continuous")] ?: trigger.isContinuousDefault
             val otherOptionKey = prefs[stringPreferencesKey("${trigger.key}_other_target")]
-            GestureBinding(trigger, GestureAction.fromKey(actionKey), isContinuous, otherOptionKey)
+
+            val artActionKey = prefs[stringPreferencesKey("${trigger.key}_art")] ?: GestureAction.UNASSIGNED.name
+            val artOtherOptionKey = prefs[stringPreferencesKey("${trigger.key}_art_other_target")]
+
+            val titleActionKey = prefs[stringPreferencesKey("${trigger.key}_title")] ?: GestureAction.UNASSIGNED.name
+            val titleOtherOptionKey = prefs[stringPreferencesKey("${trigger.key}_title_other_target")]
+
+            GestureBinding(
+                trigger = trigger,
+                action = GestureAction.fromKey(actionKey),
+                isContinuous = isContinuous,
+                otherOptionKey = otherOptionKey,
+                artAction = GestureAction.fromKey(artActionKey),
+                artOtherOptionKey = artOtherOptionKey,
+                titleAction = GestureAction.fromKey(titleActionKey),
+                titleOtherOptionKey = titleOtherOptionKey
+            )
         }
     }
 
@@ -530,9 +548,13 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun updateGestureBinding(
         trigger: GestureTrigger,
-        action: GestureAction,
+        action: GestureAction = GestureAction.UNASSIGNED,
         isContinuous: Boolean = false,
-        otherOptionKey: String? = null
+        otherOptionKey: String? = null,
+        artAction: GestureAction = GestureAction.UNASSIGNED,
+        artOtherOptionKey: String? = null,
+        titleAction: GestureAction = GestureAction.UNASSIGNED,
+        titleOtherOptionKey: String? = null
     ) {
         context.dataStore.edit { prefs ->
             prefs[stringPreferencesKey(trigger.key)] = action.name
@@ -541,6 +563,20 @@ class SettingsDataStore(private val context: Context) {
                 prefs[stringPreferencesKey("${trigger.key}_other_target")] = otherOptionKey
             } else {
                 prefs.remove(stringPreferencesKey("${trigger.key}_other_target"))
+            }
+
+            prefs[stringPreferencesKey("${trigger.key}_art")] = artAction.name
+            if (artOtherOptionKey != null) {
+                prefs[stringPreferencesKey("${trigger.key}_art_other_target")] = artOtherOptionKey
+            } else {
+                prefs.remove(stringPreferencesKey("${trigger.key}_art_other_target"))
+            }
+
+            prefs[stringPreferencesKey("${trigger.key}_title")] = titleAction.name
+            if (titleOtherOptionKey != null) {
+                prefs[stringPreferencesKey("${trigger.key}_title_other_target")] = titleOtherOptionKey
+            } else {
+                prefs.remove(stringPreferencesKey("${trigger.key}_title_other_target"))
             }
         }
     }
@@ -753,6 +789,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_ART_ALIGNMENT_LANDSCAPE] = update.artAlignmentLandscape.name
             prefs[KEY_ALBUM_ART_FADE] = update.albumArtFade
             prefs[KEY_ART_DISPLAY_LAYOUT] = update.artDisplayLayout.ordinal
+            prefs[KEY_SEPARATE_TOUCH_ZONES] = update.separateTouchZones
             prefs[KEY_HUD_TYPE] = update.hudType.value
             prefs[KEY_SCRUB_HUD_TYPE] = update.scrubHudType.value
             prefs[KEY_VOLUME_ALWAYS_ON] = update.volumeAlwaysOn
@@ -824,6 +861,11 @@ class SettingsDataStore(private val context: Context) {
             GestureTrigger.entries.forEach { trigger ->
                 prefs[stringPreferencesKey(trigger.key)] = trigger.defaultActionKey
                 prefs[booleanPreferencesKey("${trigger.key}Continuous")] = trigger.isContinuousDefault
+                prefs.remove(stringPreferencesKey("${trigger.key}_other_target"))
+                prefs.remove(stringPreferencesKey("${trigger.key}_art"))
+                prefs.remove(stringPreferencesKey("${trigger.key}_art_other_target"))
+                prefs.remove(stringPreferencesKey("${trigger.key}_title"))
+                prefs.remove(stringPreferencesKey("${trigger.key}_title_other_target"))
                 prefs.remove(stringPreferencesKey("radial_actions_${trigger.key}"))
             }
         }
@@ -886,6 +928,7 @@ class SettingsDataStore(private val context: Context) {
                     artAlignmentLandscape = runCatching { ArtAlignmentLandscape.valueOf(dJson.getString("artAlignmentLandscape")) }.getOrDefault(currentDisplay.artAlignmentLandscape),
                     albumArtFade = dJson.optDouble("albumArtFade", currentDisplay.albumArtFade.toDouble()).toFloat(),
                     artDisplayLayout = runCatching { ArtLayoutOption.valueOf(dJson.getString("artDisplayLayout")) }.getOrDefault(currentDisplay.artDisplayLayout),
+                    separateTouchZones = dJson.optBoolean("separateTouchZones", currentDisplay.separateTouchZones),
                     hudType = runCatching { HudTypeOption.valueOf(dJson.getString("hudType")) }.getOrDefault(currentDisplay.hudType),
                     scrubHudType = runCatching { ScrubHudTypeOption.valueOf(dJson.getString("scrubHudType")) }.getOrDefault(currentDisplay.scrubHudType),
                     volumeAlwaysOn = dJson.optBoolean("volumeAlwaysOn", currentDisplay.volumeAlwaysOn),
@@ -974,7 +1017,17 @@ class SettingsDataStore(private val context: Context) {
                         val actionName = bJson.optString("action", trigger.defaultActionKey)
                         val action = GestureAction.fromKey(actionName)
                         val isContinuous = bJson.optBoolean("isContinuous", trigger.isContinuousDefault)
-                        updateGestureBinding(trigger, action, isContinuous)
+                        val artActionName = bJson.optString("artAction", GestureAction.UNASSIGNED.name)
+                        val artAction = GestureAction.fromKey(artActionName)
+                        val titleActionName = bJson.optString("titleAction", GestureAction.UNASSIGNED.name)
+                        val titleAction = GestureAction.fromKey(titleActionName)
+                        updateGestureBinding(
+                            trigger = trigger,
+                            action = action,
+                            isContinuous = isContinuous,
+                            artAction = artAction,
+                            titleAction = titleAction
+                        )
                     }
                 }
             }

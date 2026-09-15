@@ -46,6 +46,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,6 +69,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.datastore.SettingsDataStore
 import com.travelingtunes.app.core.model.ConfigOption
 import com.travelingtunes.app.core.model.DisplaySettings
@@ -421,9 +423,46 @@ fun GestureAssignmentScreen(
                                 trigger = trigger,
                                 binding = currentBinding,
                                 numEdgeRegions = numEdgeRegions,
-                                onActionSelected = { newAction, otherKey ->
+                                onActionSelected = { regionTarget, newAction, otherKey ->
                                     coroutineScope.launch {
-                                        settingsDataStore.updateGestureBinding(trigger, newAction, currentBinding.isContinuous, otherKey)
+                                        when (regionTarget) {
+                                            com.travelingtunes.app.core.model.TouchRegionTarget.BOTH -> {
+                                                settingsDataStore.updateGestureBinding(
+                                                    trigger = trigger,
+                                                    action = newAction,
+                                                    isContinuous = currentBinding.isContinuous,
+                                                    otherOptionKey = otherKey,
+                                                    artAction = GestureAction.UNASSIGNED,
+                                                    artOtherOptionKey = null,
+                                                    titleAction = GestureAction.UNASSIGNED,
+                                                    titleOtherOptionKey = null
+                                                )
+                                            }
+                                            com.travelingtunes.app.core.model.TouchRegionTarget.ART -> {
+                                                settingsDataStore.updateGestureBinding(
+                                                    trigger = trigger,
+                                                    action = GestureAction.UNASSIGNED,
+                                                    isContinuous = currentBinding.isContinuous,
+                                                    otherOptionKey = null,
+                                                    artAction = newAction,
+                                                    artOtherOptionKey = otherKey,
+                                                    titleAction = currentBinding.titleAction,
+                                                    titleOtherOptionKey = currentBinding.titleOtherOptionKey
+                                                )
+                                            }
+                                            com.travelingtunes.app.core.model.TouchRegionTarget.TITLE -> {
+                                                settingsDataStore.updateGestureBinding(
+                                                    trigger = trigger,
+                                                    action = GestureAction.UNASSIGNED,
+                                                    isContinuous = currentBinding.isContinuous,
+                                                    otherOptionKey = null,
+                                                    artAction = currentBinding.artAction,
+                                                    artOtherOptionKey = currentBinding.artOtherOptionKey,
+                                                    titleAction = newAction,
+                                                    titleOtherOptionKey = otherKey
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             )
@@ -631,13 +670,27 @@ private fun GestureAssignmentItem(
     trigger: GestureTrigger,
     binding: GestureBinding,
     numEdgeRegions: Int,
-    onActionSelected: (GestureAction, String?) -> Unit
+    onActionSelected: (com.travelingtunes.app.core.model.TouchRegionTarget, GestureAction, String?) -> Unit
 ) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
-    var isConfigOptionPickerOpen by remember { mutableStateOf(false) }
+    var editingOptionRegion by remember { mutableStateOf<com.travelingtunes.app.core.model.TouchRegionTarget?>(null) }
 
-    val assignedOption = remember(binding.otherOptionKey) {
-        ConfigOption.findByKey(binding.otherOptionKey) ?: ConfigOption.ALL_OPTIONS.first()
+    val hasArtAction = binding.artAction != GestureAction.UNASSIGNED
+    val hasTitleAction = binding.titleAction != GestureAction.UNASSIGNED
+    val hasBothAction = binding.action != GestureAction.UNASSIGNED
+
+    val displayLines = remember(binding) {
+        val list = mutableListOf<Triple<String, GestureAction, String?>>()
+        if (hasArtAction) {
+            list.add(Triple("Art", binding.artAction, binding.artOtherOptionKey))
+        }
+        if (hasTitleAction) {
+            list.add(Triple("Title", binding.titleAction, binding.titleOtherOptionKey))
+        }
+        if (hasBothAction || list.isEmpty()) {
+            list.add(Triple("Both", binding.action, binding.otherOptionKey))
+        }
+        list
     }
 
     Row(
@@ -649,34 +702,36 @@ private fun GestureAssignmentItem(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = trigger.getDisplayName(numEdgeRegions), fontWeight = FontWeight.SemiBold)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                ActionIcon(
-                    action = binding.action,
-                    iconSize = 20.dp,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Column {
+            Spacer(modifier = Modifier.height(2.dp))
+            displayLines.forEach { (regionName, action, otherKey) ->
+                val optionTitle = remember(otherKey) {
+                    if (action == GestureAction.OTHER_OPTION) {
+                        ConfigOption.findByKey(otherKey)?.title ?: ConfigOption.ALL_OPTIONS.first().title
+                    } else null
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 1.dp)
+                ) {
+                    ActionIcon(
+                        action = action,
+                        iconSize = 18.dp,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = binding.action.displayName,
+                        text = "$regionName: ${action.displayName}${if (optionTitle != null) " ($optionTitle)" else ""}",
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    if (binding.action == GestureAction.OTHER_OPTION) {
-                        Text(
-                            text = assignedOption.title,
-                            color = MaterialTheme.colorScheme.secondary,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.clickable { isConfigOptionPickerOpen = true }
-                        )
-                    }
                 }
             }
         }
 
         Box {
+            val primaryAction = displayLines.firstOrNull()?.second ?: binding.action
             ActionIcon(
-                action = binding.action,
+                action = primaryAction,
                 iconSize = 28.dp,
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -685,41 +740,96 @@ private fun GestureAssignmentItem(
                 expanded = isDropdownExpanded,
                 onDismissRequest = { isDropdownExpanded = false }
             ) {
-                GestureAction.entries.forEach { action ->
+                GestureAction.entries.forEach { choice ->
                     DropdownMenuItem(
                         text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                ActionIcon(
-                                    action = action,
-                                    iconSize = 22.dp,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(action.displayName)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    ActionIcon(
+                                        action = choice,
+                                        iconSize = 20.dp,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = choice.displayName,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    val isArt = binding.artAction == choice
+                                    val isTitle = binding.titleAction == choice
+                                    val isBoth = binding.action == choice && !hasArtAction && !hasTitleAction
+
+                                    FilterChip(
+                                        selected = isArt,
+                                        onClick = {
+                                            isDropdownExpanded = false
+                                            if (choice == GestureAction.OTHER_OPTION) {
+                                                editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.ART
+                                            } else {
+                                                onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.ART, choice, null)
+                                            }
+                                        },
+                                        label = { Text("Art", fontSize = 11.sp) }
+                                    )
+                                    FilterChip(
+                                        selected = isTitle,
+                                        onClick = {
+                                            isDropdownExpanded = false
+                                            if (choice == GestureAction.OTHER_OPTION) {
+                                                editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.TITLE
+                                            } else {
+                                                onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.TITLE, choice, null)
+                                            }
+                                        },
+                                        label = { Text("Title", fontSize = 11.sp) }
+                                    )
+                                    FilterChip(
+                                        selected = isBoth,
+                                        onClick = {
+                                            isDropdownExpanded = false
+                                            if (choice == GestureAction.OTHER_OPTION) {
+                                                editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
+                                            } else {
+                                                onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.BOTH, choice, null)
+                                            }
+                                        },
+                                        label = { Text("Both", fontSize = 11.sp) }
+                                    )
+                                }
                             }
                         },
-                        onClick = {
-                            isDropdownExpanded = false
-                            if (action == GestureAction.OTHER_OPTION) {
-                                isConfigOptionPickerOpen = true
-                            } else {
-                                onActionSelected(action, null)
-                            }
-                        }
+                        onClick = {}
                     )
                 }
             }
         }
     }
 
-    if (isConfigOptionPickerOpen) {
+    val activeEditingRegion = editingOptionRegion
+    if (activeEditingRegion != null) {
+        val currentKey = when (activeEditingRegion) {
+            com.travelingtunes.app.core.model.TouchRegionTarget.ART -> binding.artOtherOptionKey
+            com.travelingtunes.app.core.model.TouchRegionTarget.TITLE -> binding.titleOtherOptionKey
+            com.travelingtunes.app.core.model.TouchRegionTarget.BOTH -> binding.otherOptionKey
+        }
+        val initialOpt = ConfigOption.findByKey(currentKey) ?: ConfigOption.ALL_OPTIONS.first()
         ConfigOptionPickerDialog(
-            initialKey = binding.otherOptionKey ?: assignedOption.key,
+            initialKey = currentKey ?: initialOpt.key,
             onOptionSelected = { selectedOption ->
-                isConfigOptionPickerOpen = false
-                onActionSelected(GestureAction.OTHER_OPTION, selectedOption.key)
+                editingOptionRegion = null
+                onActionSelected(activeEditingRegion, GestureAction.OTHER_OPTION, selectedOption.key)
             },
-            onDismissRequest = { isConfigOptionPickerOpen = false }
+            onDismissRequest = { editingOptionRegion = null }
         )
     }
 }

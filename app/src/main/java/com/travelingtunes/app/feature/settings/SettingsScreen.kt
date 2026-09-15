@@ -1808,6 +1808,31 @@ private fun ArtSettingsContent(
                 )
             }
         }
+
+        if (displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Separate Touch Zones", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Art and Titles regions have separate gesture-mapped actions",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = displaySettings.separateTouchZones,
+                    onCheckedChange = { checked ->
+                        onUpdateDisplaySettings(displaySettings.copy(separateTouchZones = checked))
+                    }
+                )
+            }
+        }
     }
 }
 

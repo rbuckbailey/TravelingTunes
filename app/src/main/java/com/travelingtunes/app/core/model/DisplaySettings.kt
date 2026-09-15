@@ -86,6 +86,7 @@ data class DisplaySettings(
     val artAlignmentLandscape: ArtAlignmentLandscape = ArtAlignmentLandscape.CENTER,
     val albumArtFade: Float = 1.0f,
     val artDisplayLayout: ArtLayoutOption = ArtLayoutOption.OVERLAY,
+    val separateTouchZones: Boolean = false,
     val hudType: HudTypeOption = HudTypeOption.BAR_VOLUME,
     val scrubHudType: ScrubHudTypeOption = ScrubHudTypeOption.EDGE_HUD,
     val volumeAlwaysOn: Boolean = true,

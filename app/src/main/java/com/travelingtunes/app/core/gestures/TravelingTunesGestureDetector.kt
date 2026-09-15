@@ -180,6 +180,9 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
     val longPressThresholdMs = 380L
     val longPressSlopPx = 32f * density
 
+    val systemEdgeMarginPx = maxOf(32f * density, size.height.toFloat() * 0.05f)
+    val isSystemEdgeDrag = startPosition.y < systemEdgeMarginPx || startPosition.y > (size.height.toFloat() - systemEdgeMarginPx)
+
     val seenPointerIds = mutableSetOf<PointerId>()
     seenPointerIds.add(firstDown.id)
 
@@ -331,7 +334,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
 
             if (!isSwipeHandled && !isLongPressHandled) {
                 val hasMovedPastMin = abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx
-                val canCommitSwipe = hasMovedPastMin
+                val canCommitSwipe = hasMovedPastMin && !isSystemEdgeDrag
 
                 if (canCommitSwipe) {
                     swipedTrigger = determineSwipeTrigger(maxFingers, totalDx, totalDy)

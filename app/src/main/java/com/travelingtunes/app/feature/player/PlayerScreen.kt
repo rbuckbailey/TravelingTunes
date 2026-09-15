@@ -377,10 +377,83 @@ fun PlayerScreen(
         }
     }
 
+    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isDockedScreen = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian
+    val isSeparateTouchZones = isDockedScreen && displaySettings.separateTouchZones
+
+    val artFractionX = if (isLandscape) {
+        if (screenWidthPx > 0f) (screenHeightPx / screenWidthPx).coerceIn(0.2f, 0.45f) else 0.45f
+    } else {
+        0.45f
+    }
+    val artFractionY = if (!isLandscape) {
+        if (screenHeightPx > 0f) (screenWidthPx / screenHeightPx).coerceIn(0.2f, 0.45f) else 0.45f
+    } else {
+        0.45f
+    }
+
+    val artRegionBoundsNormalized = if (isDockedScreen) {
+        if (isLandscape) {
+            when (displaySettings.artAlignmentLandscape) {
+                com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> Rect(1f - artFractionX, 0f, 1f, 1f)
+                com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> Rect(0f, 0f, 1f, artFractionY)
+                com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> Rect(0f, 1f - artFractionY, 1f, 1f)
+                else -> Rect(0f, 0f, artFractionX, 1f)
+            }
+        } else {
+            when (displaySettings.artAlignmentPortrait) {
+                com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> Rect(0f, 1f - artFractionY, 1f, 1f)
+                com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> Rect(0f, 0f, artFractionX, 1f)
+                com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> Rect(1f - artFractionX, 0f, 1f, 1f)
+                else -> Rect(0f, 0f, 1f, artFractionY)
+            }
+        }
+    } else {
+        Rect(0f, 0f, 1f, 1f)
+    }
+
     val gestureListener = object : GestureEventListener {
         override fun onGestureTriggered(trigger: GestureTrigger, isLongPress: Boolean, touchOffset: Offset): Boolean {
             var binding = resolveGestureBinding(trigger, gestureBindings)
-            var action = binding.action
+
+            val touchRegion = if (isSeparateTouchZones && touchOffset != Offset.Unspecified && screenWidthPx > 0f && screenHeightPx > 0f) {
+                val normX = touchOffset.x / screenWidthPx
+                val normY = touchOffset.y / screenHeightPx
+                if (artRegionBoundsNormalized.contains(Offset(normX, normY))) {
+                    com.travelingtunes.app.core.model.TouchRegionTarget.ART
+                } else {
+                    com.travelingtunes.app.core.model.TouchRegionTarget.TITLE
+                }
+            } else {
+                com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
+            }
+
+            val (resolvedAction, resolvedOtherKey) = when (touchRegion) {
+                com.travelingtunes.app.core.model.TouchRegionTarget.ART -> {
+                    if (binding.artAction != GestureAction.UNASSIGNED) {
+                        binding.artAction to binding.artOtherOptionKey
+                    } else if (binding.action != GestureAction.UNASSIGNED) {
+                        binding.action to binding.otherOptionKey
+                    } else {
+                        GestureAction.UNASSIGNED to null
+                    }
+                }
+                com.travelingtunes.app.core.model.TouchRegionTarget.TITLE -> {
+                    if (binding.titleAction != GestureAction.UNASSIGNED) {
+                        binding.titleAction to binding.titleOtherOptionKey
+                    } else if (binding.action != GestureAction.UNASSIGNED) {
+                        binding.action to binding.otherOptionKey
+                    } else {
+                        GestureAction.UNASSIGNED to null
+                    }
+                }
+                com.travelingtunes.app.core.model.TouchRegionTarget.BOTH -> {
+                    binding.action to binding.otherOptionKey
+                }
+            }
+
+            var action = resolvedAction
 
             val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier || showRadialMenu
 
@@ -568,8 +641,6 @@ fun PlayerScreen(
             }
         }
     }
-
-    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
 
     Box(
         modifier = Modifier
@@ -1759,7 +1830,8 @@ private fun handleGestureAction(
     onOpenQuickStart: () -> Unit,
     settingsDataStore: SettingsDataStore? = null,
     gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
-    radialSlotIndex: Int? = null
+    radialSlotIndex: Int? = null,
+    overrideOtherOptionKey: String? = null
 ) {
     val direction = trigger?.getSlideDirection() ?: SlideDirection.BOTTOM
     when (action) {
@@ -1822,10 +1894,13 @@ private fun handleGestureAction(
             if (settingsDataStore != null && coroutineScope != null) {
                 val trig = trigger ?: GestureTrigger.TAP_1_1
                 val binding = gestureBindings?.get(trig)
-                if (binding?.action == GestureAction.OTHER_OPTION && binding.otherOptionKey != null) {
-                    val otherKey = binding.otherOptionKey
+                val targetKey = overrideOtherOptionKey
+                    ?: if (binding?.artAction == GestureAction.OTHER_OPTION) binding.artOtherOptionKey
+                    else if (binding?.titleAction == GestureAction.OTHER_OPTION) binding.titleOtherOptionKey
+                    else binding?.otherOptionKey
+                if (targetKey != null) {
                     coroutineScope.launch {
-                        settingsDataStore.toggleOtherOption(trig.key, otherKey)
+                        settingsDataStore.toggleOtherOption(trig.key, targetKey)
                     }
                 } else {
                     val slotIndex = radialSlotIndex ?: 0

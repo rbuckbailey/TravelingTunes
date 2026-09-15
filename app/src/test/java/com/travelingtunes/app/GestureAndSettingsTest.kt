@@ -320,6 +320,35 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testSeparateTouchZonesSettingAndGestureBindings() {
+        val displaySettings = com.travelingtunes.app.core.model.DisplaySettings(
+            artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED,
+            separateTouchZones = true
+        )
+        assertTrue(displaySettings.separateTouchZones)
+
+        val binding = com.travelingtunes.app.core.model.GestureBinding(
+            trigger = GestureTrigger.SWIPE_1_LEFT,
+            action = GestureAction.UNASSIGNED,
+            artAction = GestureAction.NEXT,
+            titleAction = GestureAction.PREVIOUS
+        )
+
+        assertEquals(GestureAction.UNASSIGNED, binding.action)
+        assertEquals(GestureAction.NEXT, binding.artAction)
+        assertEquals(GestureAction.PREVIOUS, binding.titleAction)
+    }
+
+    @Test
+    fun testTouchRegionTargetEnum() {
+        val targets = com.travelingtunes.app.core.model.TouchRegionTarget.entries
+        assertEquals(3, targets.size)
+        assertEquals("Both", com.travelingtunes.app.core.model.TouchRegionTarget.BOTH.displayName)
+        assertEquals("Art", com.travelingtunes.app.core.model.TouchRegionTarget.ART.displayName)
+        assertEquals("Title", com.travelingtunes.app.core.model.TouchRegionTarget.TITLE.displayName)
+    }
+
+    @Test
     fun testMondrianThemePreset() {
         val theme = com.travelingtunes.app.core.model.ColorTheme.getByName("Mondrian")
         assertEquals("Mondrian", theme.name)
