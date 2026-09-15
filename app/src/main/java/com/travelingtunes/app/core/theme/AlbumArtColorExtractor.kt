@@ -28,20 +28,16 @@ object AlbumArtColorExtractor {
         val targetBmp = safeBmp ?: bitmap
         val palette = Palette.from(targetBmp).generate()
 
-        val allSwatches = palette.swatches.sortedByDescending { it.population }
-        if (allSwatches.isEmpty()) {
-            return@withContext ColorTheme.MATCH_ALBUM_ART
-        }
-
         // Favor edge colors for letterboxing / background extraction according to priority
         val edgeSwatches = extractEdgeSwatches(targetBmp, innerEdge, priority)
 
-        // Separate palette swatches into non-black and near-black
-        val nonBlackPalette = allSwatches.filter { !isNearBlack(it.rgb) }
-        val nearBlackPalette = allSwatches.filter { isNearBlack(it.rgb) }
+        val allSwatches = palette.swatches.sortedByDescending { it.population }
+        if (allSwatches.isEmpty() && edgeSwatches.isEmpty()) {
+            return@withContext ColorTheme.MATCH_ALBUM_ART
+        }
 
-        // Combine edge swatches first to favor edge colors, followed by non-black palette, then near-black palette
-        val bgCandidates = (edgeSwatches + nonBlackPalette + nearBlackPalette).distinctBy { it.rgb }
+        // Prioritize edge swatches for background candidates to match the image's edge background
+        val bgCandidates = edgeSwatches.ifEmpty { allSwatches }.distinctBy { it.rgb }
 
         // Ordered text candidates from palette swatches
         val preferredTextSwatches = listOfNotNull(
@@ -60,15 +56,15 @@ object AlbumArtColorExtractor {
 
         // Pass 1: Try text candidates down the line matching strict contrast and distinctness
         for (bgSwatch in bgCandidates) {
-            val bgInt = bgSwatch.rgb
+            val bgInt = bgSwatch.rgb or 0xFF000000.toInt()
 
             val textCandidates = (preferredTextSwatches + allSwatches)
                 .distinctBy { it.rgb }
-                .filter { it.rgb != bgInt }
+                .filter { (it.rgb or 0xFF000000.toInt()) != bgInt }
 
             for (primaryTextSwatch in textCandidates) {
-                val primaryInt = primaryTextSwatch.rgb
-                val contrast = ColorUtils.calculateContrast(primaryInt, bgInt)
+                val primaryInt = primaryTextSwatch.rgb or 0xFF000000.toInt()
+                val contrast = calculateContrastSafe(primaryInt, bgInt)
                 val distance = colorDistance(primaryInt, bgInt)
 
                 if (contrast >= targetMinContrastStrict && distance >= targetMinDistanceStrict) {
@@ -86,14 +82,14 @@ object AlbumArtColorExtractor {
 
         // Pass 2: Moderately strict fallback pass (contrast >= 3.5 and distance >= 22.0)
         for (bgSwatch in bgCandidates) {
-            val bgInt = bgSwatch.rgb
+            val bgInt = bgSwatch.rgb or 0xFF000000.toInt()
             val textCandidates = (preferredTextSwatches + allSwatches)
                 .distinctBy { it.rgb }
-                .filter { it.rgb != bgInt }
+                .filter { (it.rgb or 0xFF000000.toInt()) != bgInt }
 
             for (primaryTextSwatch in textCandidates) {
-                val primaryInt = primaryTextSwatch.rgb
-                val contrast = ColorUtils.calculateContrast(primaryInt, bgInt)
+                val primaryInt = primaryTextSwatch.rgb or 0xFF000000.toInt()
+                val contrast = calculateContrastSafe(primaryInt, bgInt)
                 val distance = colorDistance(primaryInt, bgInt)
 
                 if (contrast >= 3.5 && distance >= 22.0) {
@@ -110,18 +106,18 @@ object AlbumArtColorExtractor {
         }
 
         // Pass 3: Select the artwork swatch down the line that offers the highest distinctness
-        val primaryBgInt = (edgeSwatches.firstOrNull() ?: palette.dominantSwatch ?: allSwatches.first()).rgb
-        val allTextCandidates = (preferredTextSwatches + allSwatches).distinctBy { it.rgb }.filter { it.rgb != primaryBgInt }
+        val primaryBgInt = ((edgeSwatches.firstOrNull() ?: palette.dominantSwatch ?: allSwatches.firstOrNull())?.rgb ?: android.graphics.Color.BLACK) or 0xFF000000.toInt()
+        val allTextCandidates = (preferredTextSwatches + allSwatches).distinctBy { it.rgb }.filter { (it.rgb or 0xFF000000.toInt()) != primaryBgInt }
 
         val bestArtworkCandidate = allTextCandidates.maxByOrNull {
-            ColorUtils.calculateContrast(it.rgb, primaryBgInt) * colorDistance(it.rgb, primaryBgInt)
+            calculateContrastSafe(it.rgb, primaryBgInt) * colorDistance(it.rgb, primaryBgInt)
         }
 
-        val primaryTextInt = if (bestArtworkCandidate != null && ColorUtils.calculateContrast(bestArtworkCandidate.rgb, primaryBgInt) >= 2.8) {
-            bestArtworkCandidate.rgb
+        val primaryTextInt = if (bestArtworkCandidate != null && calculateContrastSafe(bestArtworkCandidate.rgb, primaryBgInt) >= 2.8) {
+            bestArtworkCandidate.rgb or 0xFF000000.toInt()
         } else {
-            val whiteContrast = ColorUtils.calculateContrast(android.graphics.Color.WHITE, primaryBgInt)
-            val blackContrast = ColorUtils.calculateContrast(android.graphics.Color.BLACK, primaryBgInt)
+            val whiteContrast = calculateContrastSafe(android.graphics.Color.WHITE, primaryBgInt)
+            val blackContrast = calculateContrastSafe(android.graphics.Color.BLACK, primaryBgInt)
             if (whiteContrast >= blackContrast) android.graphics.Color.WHITE else android.graphics.Color.BLACK
         }
 
@@ -146,8 +142,8 @@ object AlbumArtColorExtractor {
             val height = bitmap.height
             if (width <= 0 || height <= 0) return emptyList()
 
-            val borderX = (width * 0.015f).toInt().coerceIn(1, 8)
-            val borderY = (height * 0.015f).toInt().coerceIn(1, 8)
+            val borderX = (width * 0.03f).toInt().coerceIn(2, 16)
+            val borderY = (height * 0.03f).toInt().coerceIn(2, 16)
 
             // Collect edge pixels classified into primary (prioritized) vs secondary regions based on normalized position t
             val primaryPixels = mutableListOf<Int>()
@@ -278,38 +274,33 @@ object AlbumArtColorExtractor {
                     else -> false
                 }
 
-                val nonBlackSwatches = primarySwatches.filter { !isNearBlack(it.rgb) }
-                val nearBlackSwatches = primarySwatches.filter { isNearBlack(it.rgb) }
-
-                if (hasClearWinner || nonBlackSwatches.size <= 1) {
-                    (nonBlackSwatches + nearBlackSwatches).distinctBy { it.rgb }
+                if (hasClearWinner || primarySwatches.size <= 1) {
+                    primarySwatches.distinctBy { it.rgb }
                 } else {
-                    // Blend top edge swatches into a unified edge swatch
-                    val blendedRgb = blendColors(nonBlackSwatches.take(3))
-                    val blendedSwatch = Palette.Swatch(blendedRgb, totalPop)
-                    (listOf(blendedSwatch) + nonBlackSwatches + nearBlackSwatches).distinctBy { it.rgb }
+                    // Only blend top swatches if they are color-similar (LAB distance <= 25.0)
+                    val topSwatches = primarySwatches.take(3)
+                    val firstLab = DoubleArray(3)
+                    val otherLab = DoubleArray(3)
+                    topSwatch?.rgb?.let { ColorUtils.colorToLAB(it, firstLab) }
+                    val similarSwatches = topSwatches.filter { s ->
+                        ColorUtils.colorToLAB(s.rgb, otherLab)
+                        ColorUtils.distanceEuclidean(firstLab, otherLab) <= 25.0
+                    }
+                    if (similarSwatches.size > 1) {
+                        val blendedRgb = blendColors(similarSwatches)
+                        val blendedSwatch = Palette.Swatch(blendedRgb, totalPop)
+                        (listOf(blendedSwatch) + primarySwatches).distinctBy { it.rgb }
+                    } else {
+                        primarySwatches.distinctBy { it.rgb }
+                    }
                 }
             } else {
                 val secondarySwatches = clusterPixels(secondaryPixels)
-
-                val primaryNonBlack = primarySwatches.filter { !isNearBlack(it.rgb) }
-                val secondaryNonBlack = secondarySwatches.filter { !isNearBlack(it.rgb) }
-                val primaryNearBlack = primarySwatches.filter { isNearBlack(it.rgb) }
-                val secondaryNearBlack = secondarySwatches.filter { isNearBlack(it.rgb) }
-
-                (primaryNonBlack + secondaryNonBlack + primaryNearBlack + secondaryNearBlack).distinctBy { it.rgb }
+                (primarySwatches + secondarySwatches).distinctBy { it.rgb }
             }
         } catch (e: Exception) {
             emptyList()
         }
-    }
-
-    private fun isNearBlack(colorInt: Int): Boolean {
-        val lum = ColorUtils.calculateLuminance(colorInt)
-        val r = (colorInt shr 16) and 0xFF
-        val g = (colorInt shr 8) and 0xFF
-        val b = colorInt and 0xFF
-        return lum < 0.06 || (r < 25 && g < 25 && b < 25)
     }
 
     private fun blendColors(swatches: List<Palette.Swatch>): Int {
@@ -343,23 +334,114 @@ object AlbumArtColorExtractor {
         primaryTextInt: Int,
         candidates: List<Palette.Swatch>
     ): Int {
+        val primaryHsl = FloatArray(3)
+        ColorUtils.colorToHSL(primaryTextInt, primaryHsl)
+
+        // Pass 1: Strict pass requiring bg contrast >= 3.0, LAB dist to primary >= 28.0, and hue diff >= 30 degrees (if saturated)
         for (swatch in candidates) {
-            val candInt = swatch.rgb
+            val candInt = swatch.rgb or 0xFF000000.toInt()
             if (candInt == primaryTextInt) continue
 
-            val contrastToBg = ColorUtils.calculateContrast(candInt, bgInt)
-            if (contrastToBg < 2.5) continue
+            val contrastToBg = calculateContrastSafe(candInt, bgInt)
+            if (contrastToBg < 3.0) continue
 
             val distToBg = colorDistance(candInt, bgInt)
             if (distToBg < 18.0) continue
 
             val distToPrimary = colorDistance(candInt, primaryTextInt)
-            if (distToPrimary >= 12.0) {
-                return candInt
+            if (distToPrimary < 28.0) continue
+
+            val candHsl = FloatArray(3)
+            ColorUtils.colorToHSL(candInt, candHsl)
+
+            if (primaryHsl[1] >= 0.15f && candHsl[1] >= 0.15f) {
+                val hueDiff = calculateHueDifference(primaryHsl[0], candHsl[0])
+                if (hueDiff < 30f) continue
             }
+
+            return candInt
         }
 
-        return blendSecondaryColor(bgInt, primaryTextInt)
+        // Pass 2: Relaxed pass (bg contrast >= 2.5, LAB dist to primary >= 20.0, hue diff >= 20 degrees if saturated)
+        for (swatch in candidates) {
+            val candInt = swatch.rgb or 0xFF000000.toInt()
+            if (candInt == primaryTextInt) continue
+
+            val contrastToBg = calculateContrastSafe(candInt, bgInt)
+            if (contrastToBg < 2.5) continue
+
+            val distToPrimary = colorDistance(candInt, primaryTextInt)
+            if (distToPrimary < 20.0) continue
+
+            val candHsl = FloatArray(3)
+            ColorUtils.colorToHSL(candInt, candHsl)
+
+            if (primaryHsl[1] >= 0.15f && candHsl[1] >= 0.15f) {
+                val hueDiff = calculateHueDifference(primaryHsl[0], candHsl[0])
+                if (hueDiff < 20f) continue
+            }
+
+            return candInt
+        }
+
+        // Pass 3: Maximize score among valid candidates with bg contrast >= 2.5
+        val validCandidates = candidates.map { it.rgb or 0xFF000000.toInt() }.filter { it != primaryTextInt && calculateContrastSafe(it, bgInt) >= 2.5 }
+        val bestCandidate = validCandidates.maxByOrNull { candInt ->
+            val candHsl = FloatArray(3)
+            ColorUtils.colorToHSL(candInt, candHsl)
+            val hueDiff = calculateHueDifference(primaryHsl[0], candHsl[0])
+            val distToPrimary = colorDistance(candInt, primaryTextInt)
+            val contrastToBg = calculateContrastSafe(candInt, bgInt)
+            contrastToBg * (hueDiff.toDouble() + distToPrimary)
+        }
+
+        if (bestCandidate != null) {
+            return bestCandidate
+        }
+
+        return synthesizeSecondaryColor(bgInt, primaryTextInt)
+    }
+
+    private fun calculateHueDifference(h1: Float, h2: Float): Float {
+        val diff = kotlin.math.abs(h1 - h2)
+        return minOf(diff, 360f - diff)
+    }
+
+    private fun synthesizeSecondaryColor(bgInt: Int, primaryTextInt: Int): Int {
+        val primaryHsl = FloatArray(3)
+        ColorUtils.colorToHSL(primaryTextInt, primaryHsl)
+
+        val bgLum = ColorUtils.calculateLuminance(bgInt)
+        val isBgDark = bgLum < 0.5
+
+        if (primaryHsl[1] >= 0.15f) {
+            primaryHsl[0] = (primaryHsl[0] + 50f) % 360f
+        } else {
+            if (isBgDark) {
+                primaryHsl[2] = (primaryHsl[2] - 0.35f).coerceIn(0.55f, 0.85f)
+            } else {
+                primaryHsl[2] = (primaryHsl[2] + 0.35f).coerceIn(0.15f, 0.45f)
+            }
+        }
+        val synthesized = ColorUtils.HSLToColor(primaryHsl) or 0xFF000000.toInt()
+        if (calculateContrastSafe(synthesized, bgInt) >= 2.8) {
+            return synthesized
+        }
+        return ColorUtils.blendARGB(primaryTextInt, bgInt, 0.35f) or 0xFF000000.toInt()
+    }
+
+    private fun calculateContrastSafe(foreground: Int, background: Int): Double {
+        val fgOpaque = foreground or 0xFF000000.toInt()
+        val bgOpaque = background or 0xFF000000.toInt()
+        return try {
+            ColorUtils.calculateContrast(fgOpaque, bgOpaque)
+        } catch (e: IllegalArgumentException) {
+            val lum1 = ColorUtils.calculateLuminance(fgOpaque)
+            val lum2 = ColorUtils.calculateLuminance(bgOpaque)
+            val maxLum = maxOf(lum1, lum2)
+            val minLum = minOf(lum1, lum2)
+            (maxLum + 0.05) / (minLum + 0.05)
+        }
     }
 
     private fun colorDistance(c1: Int, c2: Int): Double {
@@ -368,11 +450,5 @@ object AlbumArtColorExtractor {
         ColorUtils.colorToLAB(c1, lab1)
         ColorUtils.colorToLAB(c2, lab2)
         return ColorUtils.distanceEuclidean(lab1, lab2)
-    }
-
-    private fun blendSecondaryColor(bgInt: Int, primaryTextInt: Int): Int {
-        val bgLuminance = ColorUtils.calculateLuminance(bgInt)
-
-        return ColorUtils.blendARGB(primaryTextInt, bgInt, 0.30f)
     }
 }

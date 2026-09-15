@@ -83,6 +83,9 @@ class PlaybackManager(
     private val _normalizationMode = MutableStateFlow(NormalizationMode.ALBUM)
     val normalizationMode: StateFlow<NormalizationMode> = _normalizationMode.asStateFlow()
 
+    private val _lastMediaItemTransitionReason = MutableStateFlow<Int>(Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)
+    val lastMediaItemTransitionReason: StateFlow<Int> = _lastMediaItemTransitionReason.asStateFlow()
+
     private var unshuffledPlaylist: List<Song> = emptyList()
     private var masterPlaylist: List<Song> = emptyList()
 
@@ -111,6 +114,7 @@ class PlaybackManager(
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                _lastMediaItemTransitionReason.value = reason
                 val playlist = _currentPlaylist.value
                 val currentIndex = player.currentMediaItemIndex
                 val song = if (currentIndex in playlist.indices) {

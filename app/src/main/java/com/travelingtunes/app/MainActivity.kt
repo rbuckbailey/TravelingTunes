@@ -248,20 +248,14 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(currentSong?.id, currentSong?.artworkUri, innerEdge, displaySettings.matchArtColorPriority) {
                 val song = currentSong
                 if (song != null) {
-                    val bitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        com.travelingtunes.app.feature.player.loadSongArtwork(applicationContext, song)
-                    }
-                    if (bitmap != null) {
-                        val extracted = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(
-                            bitmap = bitmap,
-                            innerEdge = innerEdge,
-                            priority = displaySettings.matchArtColorPriority
-                        )
-                        lastExtractedTheme = extracted
-                        dynamicAlbumArtTheme = extracted
-                    } else {
-                        dynamicAlbumArtTheme = lastExtractedTheme
-                    }
+                    val extracted = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getOrExtract(
+                        context = applicationContext,
+                        song = song,
+                        innerEdge = innerEdge,
+                        priority = displaySettings.matchArtColorPriority
+                    )
+                    lastExtractedTheme = extracted
+                    dynamicAlbumArtTheme = extracted
                 } else {
                     dynamicAlbumArtTheme = lastExtractedTheme
                 }

@@ -81,4 +81,11 @@ class PlaybackActionsTest {
         assertEquals("Next Album", com.travelingtunes.app.core.model.GestureAction.NEXT_ALBUM.displayName)
         assertEquals("Previous Album", com.travelingtunes.app.core.model.GestureAction.PREVIOUS_ALBUM.displayName)
     }
+
+    @Test
+    fun testMediaItemTransitionReasonValues() {
+        assertEquals(1, androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_AUTO)
+        assertEquals(0, androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT)
+        assertEquals(2, androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_SEEK)
+    }
 }

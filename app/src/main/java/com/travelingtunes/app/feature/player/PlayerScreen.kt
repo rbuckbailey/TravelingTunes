@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.media3.common.Player
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -215,6 +216,7 @@ fun PlayerScreen(
     val isPlaying by playbackManager.isPlaying.collectAsState()
     val repeatMode by playbackManager.repeatMode.collectAsState()
     val shuffleMode by playbackManager.shuffleMode.collectAsState()
+    val lastTransitionReason by playbackManager.lastMediaItemTransitionReason.collectAsState()
 
     var showSongPicker by remember { mutableStateOf(false) }
     var songPickerSlideDirection by remember { mutableStateOf(SlideDirection.BOTTOM) }
@@ -366,7 +368,12 @@ fun PlayerScreen(
     // Sync PlaybackManager -> pagerState when song or playlist changes externally
     LaunchedEffect(currentSong?.id, currentPlaylist) {
         if (songIndex in 0 until pageCount && pagerState.currentPage != songIndex) {
-            pagerState.scrollToPage(songIndex)
+            if (lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
+                pagerState.animateScrollToPage(songIndex)
+            } else {
+                pagerState.scrollToPage(songIndex)
+            }
         }
     }
 
@@ -799,6 +806,52 @@ fun PlayerScreen(
     var frozenAdjacentSong by remember { mutableStateOf<Song?>(null) }
     val contextForArt = LocalContext.current
 
+    val innerEdgeForCache = remember(displaySettings.artDisplayLayout, displaySettings.artAlignmentLandscape, displaySettings.artAlignmentPortrait, contextForArt) {
+        if (displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED) {
+            val configuration = contextForArt.resources.configuration
+            val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            if (isLandscape) {
+                when (displaySettings.artAlignmentLandscape) {
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
+                    else -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
+                }
+            } else {
+                when (displaySettings.artAlignmentPortrait) {
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
+                    else -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
+                }
+            }
+        } else null
+    }
+
+    LaunchedEffect(currentSong?.id, currentPlaylist, pagerState.currentPage, displaySettings.matchArtColorPriority, displaySettings.albumArtColors, innerEdgeForCache) {
+        if (displaySettings.albumArtColors && currentSong != null) {
+            val candidateSongs = listOfNotNull(
+                currentSong,
+                playbackManager.getNextSong(),
+                playbackManager.getPreviousSong(),
+                currentPlaylist.getOrNull(pagerState.currentPage + 1),
+                currentPlaylist.getOrNull(pagerState.currentPage - 1),
+                currentPlaylist.getOrNull(pagerState.currentPage + 2),
+                currentPlaylist.getOrNull(pagerState.currentPage - 2),
+                playbackManager.getNextAlbumFirstTrack(),
+                playbackManager.getPreviousAlbumFirstTrack(),
+                playbackManager.getArtistFirstTrack(),
+                playbackManager.getAlbumFirstTrack()
+            )
+            com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.preCacheSongs(
+                context = contextForArt,
+                songs = candidateSongs,
+                innerEdge = innerEdgeForCache,
+                priority = displaySettings.matchArtColorPriority
+            )
+        }
+    }
+
     LaunchedEffect(activePageAction, currentSong) {
         if (activePageAction != null) {
             val resolved = when (activePageAction) {
@@ -820,6 +873,12 @@ fun PlayerScreen(
                         }
                     }
                 }
+                com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getOrExtract(
+                    context = contextForArt,
+                    song = resolved,
+                    innerEdge = innerEdgeForCache,
+                    priority = displaySettings.matchArtColorPriority
+                )
             }
         } else {
             frozenAdjacentSong = null
@@ -1402,8 +1461,27 @@ fun rememberPageTheme(
     displaySettings: DisplaySettings
 ): ColorTheme {
     val context = LocalContext.current
-    var extractedTheme: ColorTheme? by remember(song?.id, song?.artworkUri, displaySettings.matchArtColorPriority) {
-        mutableStateOf<ColorTheme?>(null)
+
+    val innerEdge = remember(displaySettings.artDisplayLayout, displaySettings.artAlignmentLandscape, displaySettings.artAlignmentPortrait, context) {
+        if (displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED) {
+            val configuration = context.resources.configuration
+            val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            if (isLandscape) {
+                when (displaySettings.artAlignmentLandscape) {
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
+                    com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
+                    else -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
+                }
+            } else {
+                when (displaySettings.artAlignmentPortrait) {
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
+                    com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
+                    else -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
+                }
+            }
+        } else null
     }
 
     val isMatchArt = displaySettings.albumArtColors && (
@@ -1411,38 +1489,27 @@ fun rememberPageTheme(
         themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true)
     )
 
-    LaunchedEffect(song?.id, song?.artworkUri, displaySettings.matchArtColorPriority, isMatchArt) {
-        if (isMatchArt && song != null) {
-            val bitmap = withContext(Dispatchers.IO) {
-                loadSongArtwork(context, song)
-            }
-            if (bitmap != null) {
-                val innerEdge = if (displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED) {
-                    val configuration = context.resources.configuration
-                    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-                    if (isLandscape) {
-                        when (displaySettings.artAlignmentLandscape) {
-                            com.travelingtunes.app.core.model.ArtAlignmentLandscape.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
-                            com.travelingtunes.app.core.model.ArtAlignmentLandscape.TOP -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
-                            com.travelingtunes.app.core.model.ArtAlignmentLandscape.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
-                            else -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
-                        }
-                    } else {
-                        when (displaySettings.artAlignmentPortrait) {
-                            com.travelingtunes.app.core.model.ArtAlignmentPortrait.BOTTOM -> com.travelingtunes.app.core.theme.InnerEdge.TOP
-                            com.travelingtunes.app.core.model.ArtAlignmentPortrait.LEFT -> com.travelingtunes.app.core.theme.InnerEdge.RIGHT
-                            com.travelingtunes.app.core.model.ArtAlignmentPortrait.RIGHT -> com.travelingtunes.app.core.theme.InnerEdge.LEFT
-                            else -> com.travelingtunes.app.core.theme.InnerEdge.BOTTOM
-                        }
-                    }
-                } else null
+    val cacheKey = remember(song?.id, song?.artworkUri, innerEdge, displaySettings.matchArtColorPriority) {
+        if (song != null) com.travelingtunes.app.core.theme.AlbumArtColorCache.makeKey(song.id, innerEdge, displaySettings.matchArtColorPriority) else ""
+    }
 
-                val extracted = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(
-                    bitmap = bitmap,
+    var extractedTheme: ColorTheme? by remember(cacheKey, isMatchArt) {
+        mutableStateOf(if (isMatchArt && cacheKey.isNotEmpty()) com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.get(cacheKey) else null)
+    }
+
+    LaunchedEffect(cacheKey, isMatchArt) {
+        if (isMatchArt && song != null) {
+            val cached = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.get(cacheKey)
+            if (cached != null) {
+                extractedTheme = cached
+            } else {
+                val theme = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getOrExtract(
+                    context = context,
+                    song = song,
                     innerEdge = innerEdge,
                     priority = displaySettings.matchArtColorPriority
                 )
-                extractedTheme = extracted
+                extractedTheme = theme
             }
         }
     }

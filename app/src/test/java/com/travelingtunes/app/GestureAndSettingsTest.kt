@@ -272,6 +272,24 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testAdjustSecondaryContrastForBackgroundDistinctHueAndContrast() {
+        val darkBg = androidx.compose.ui.graphics.Color(0xFF000020)
+        val primaryYellowText = androidx.compose.ui.graphics.Color(0xFFFFD700)
+        val sameHueLightYellow = 0xFFFFE033.toInt()
+        val distinctHueCyan = 0xFF00E5FF.toInt()
+
+        val adjustedSecondary = com.travelingtunes.app.core.theme.adjustSecondaryContrastForBackground(
+            secondaryColor = primaryYellowText,
+            primaryColor = primaryYellowText,
+            backgroundColor = darkBg,
+            matchedSwatches = listOf(sameHueLightYellow, distinctHueCyan),
+            isMatchedTheme = true
+        )
+
+        assertEquals(androidx.compose.ui.graphics.Color(distinctHueCyan), adjustedSecondary)
+    }
+
+    @Test
     fun testDockedArtLayoutSettings() {
         val displaySettings = com.travelingtunes.app.core.model.DisplaySettings(
             artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED,
@@ -1016,5 +1034,77 @@ class GestureAndSettingsTest {
             )
             assertNotNull(themeWhole)
         }
+    }
+
+    @Test
+    fun testAlbumArtColorExtractorPrefersBlackEdgeBackgroundOverLighterColor() {
+        kotlinx.coroutines.runBlocking {
+            val blackColor = 0xFF000000.toInt()
+            val whiteColor = 0xFFFFFFFF.toInt()
+            val mockBitmap = Mockito.mock(android.graphics.Bitmap::class.java)
+            Mockito.`when`(mockBitmap.width).thenReturn(100)
+            Mockito.`when`(mockBitmap.height).thenReturn(100)
+            Mockito.`when`(mockBitmap.getPixel(Mockito.anyInt(), Mockito.anyInt())).thenAnswer { invocation ->
+                val x = invocation.getArgument<Int>(0)
+                val y = invocation.getArgument<Int>(1)
+                if (x == 0 && y == 0) whiteColor else blackColor
+            }
+
+            val theme = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(
+                bitmap = mockBitmap,
+                priority = com.travelingtunes.app.core.model.ArtColorPriority.WHOLE
+            )
+            assertEquals(androidx.compose.ui.graphics.Color(blackColor), theme.backgroundColor)
+        }
+    }
+
+    @Test
+    fun testAlbumArtColorExtractorPrefersRedEdgeBackgroundOverLighterColor() {
+        kotlinx.coroutines.runBlocking {
+            val darkRed = 0xFF800000.toInt()
+            val lightPink = 0xFFFFE6E6.toInt()
+            val mockBitmap = Mockito.mock(android.graphics.Bitmap::class.java)
+            Mockito.`when`(mockBitmap.width).thenReturn(100)
+            Mockito.`when`(mockBitmap.height).thenReturn(100)
+            Mockito.`when`(mockBitmap.getPixel(Mockito.anyInt(), Mockito.anyInt())).thenAnswer { invocation ->
+                val x = invocation.getArgument<Int>(0)
+                val y = invocation.getArgument<Int>(1)
+                if (x == 0 && y == 0) lightPink else darkRed
+            }
+
+            val theme = com.travelingtunes.app.core.theme.AlbumArtColorExtractor.extractThemeFromBitmap(
+                bitmap = mockBitmap,
+                priority = com.travelingtunes.app.core.model.ArtColorPriority.WHOLE
+            )
+            assertEquals(androidx.compose.ui.graphics.Color(darkRed), theme.backgroundColor)
+        }
+    }
+
+    @Test
+    fun testAlbumArtColorCacheStorageAndRetrieval() {
+        val cache = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance
+        cache.clear()
+
+        val sampleTheme = com.travelingtunes.app.core.model.ColorTheme(
+            name = "Test Dynamic Theme",
+            backgroundColor = androidx.compose.ui.graphics.Color.Red,
+            textColor = androidx.compose.ui.graphics.Color.White,
+            secondaryTextColor = androidx.compose.ui.graphics.Color.LightGray
+        )
+
+        val key = com.travelingtunes.app.core.theme.AlbumArtColorCache.makeKey(
+            songId = 123L,
+            innerEdge = com.travelingtunes.app.core.theme.InnerEdge.LEFT,
+            priority = com.travelingtunes.app.core.model.ArtColorPriority.CENTER
+        )
+
+        org.junit.Assert.assertNull(cache.get(key))
+
+        cache.put(key, sampleTheme)
+
+        val retrieved = cache.get(key)
+        assertNotNull(retrieved)
+        assertEquals(androidx.compose.ui.graphics.Color.Red, retrieved!!.backgroundColor)
+        assertEquals(sampleTheme, cache.get(123L, com.travelingtunes.app.core.theme.InnerEdge.LEFT, com.travelingtunes.app.core.model.ArtColorPriority.CENTER))
     }
 }

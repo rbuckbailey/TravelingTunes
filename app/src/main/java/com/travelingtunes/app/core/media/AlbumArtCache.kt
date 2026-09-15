@@ -43,6 +43,12 @@ class AlbumArtCache private constructor() {
                         cache.put(song.id, bmp.asImageBitmap())
                     }
                 }
+                com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.preCacheSongTheme(
+                    context = context,
+                    song = song,
+                    innerEdge = null,
+                    priority = com.travelingtunes.app.core.model.ArtColorPriority.CENTER
+                )
             }
         }
     }
