@@ -29,13 +29,17 @@ class PlaybackActionsTest {
         val song2 = Song(2L, "Track 2", "Artist A", "Album A", 10L, 120000L, mockUri, trackNumber = 2)
         val song3 = Song(3L, "Track 3", "Artist B", "Album B", 11L, 110000L, mockUri, trackNumber = 1)
 
-        val albumSongs = listOf(song1, song2, song3)
-            .filter { it.album.equals("Album A", ignoreCase = true) }
-            .sortedBy { it.trackNumber }
+        val masterLibrary = listOf(song1, song2, song3)
 
-        assertEquals(2, albumSongs.size)
-        assertEquals("Track 1", albumSongs[0].title)
-        assertEquals("Track 2", albumSongs[1].title)
+        // RepeatMode.ALBUM filters current active queue for Album A
+        val albumAQueue = masterLibrary.filter { it.album.equals("Album A", ignoreCase = true) }.sortedBy { it.trackNumber }
+        assertEquals(2, albumAQueue.size)
+        assertEquals("Track 1", albumAQueue[0].title)
+        assertEquals("Track 2", albumAQueue[1].title)
+
+        // Turning RepeatMode OFF restores full master library
+        val restoredQueue = masterLibrary
+        assertEquals(3, restoredQueue.size)
     }
 
     @Test

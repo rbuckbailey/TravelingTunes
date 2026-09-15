@@ -721,21 +721,69 @@ class PlaybackManager(
     }
 
     fun playCurrentAlbum() {
-        val song = _currentSong.value ?: return
-        if (song.album.isBlank()) return
+        val current = _currentSong.value ?: return
+        if (current.album.isBlank()) return
+        val currentKey = getAlbumKey(current)
+
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        val albumSongs = sortAlbumSongs(baseList.filter { getAlbumKey(it) == currentKey })
+        val firstTrack = albumSongs.firstOrNull() ?: current
+
+        _shuffleMode.value = ShuffleMode.OFF
+        _currentSong.value = firstTrack
         setRepeatMode(RepeatMode.ALBUM)
+
+        val queueIndex = _currentPlaylist.value.indexOfFirst { it.id == firstTrack.id }
+        if (queueIndex != -1) {
+            player.seekTo(queueIndex, 0L)
+            player.play()
+        }
     }
 
     fun playCurrentArtist() {
-        val song = _currentSong.value ?: return
-        if (song.artist.isBlank()) return
+        val current = _currentSong.value ?: return
+        val artistName = current.artist
+        if (artistName.isBlank()) return
+
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        val artistSongs = baseList.filter { it.artist.equals(artistName, ignoreCase = true) }
+        val firstTrack = artistSongs.firstOrNull() ?: current
+
+        _shuffleMode.value = ShuffleMode.OFF
+        _currentSong.value = firstTrack
         setRepeatMode(RepeatMode.ARTIST)
+
+        val queueIndex = _currentPlaylist.value.indexOfFirst { it.id == firstTrack.id }
+        if (queueIndex != -1) {
+            player.seekTo(queueIndex, 0L)
+            player.play()
+        }
     }
 
     fun playCurrentFolder() {
-        val song = _currentSong.value ?: return
-        if (song.folderPath.isBlank()) return
+        val current = _currentSong.value ?: return
+        val folderPath = current.folderPath
+        if (folderPath.isBlank()) return
+
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } }
+        val baseList = sortLibrarySongs(rawBase)
+        val folderSongs = baseList.filter {
+            it.folderPath.equals(folderPath, ignoreCase = true) ||
+            it.folderPath.startsWith(folderPath, ignoreCase = true)
+        }
+        val firstTrack = folderSongs.firstOrNull() ?: current
+
+        _shuffleMode.value = ShuffleMode.OFF
+        _currentSong.value = firstTrack
         setRepeatMode(RepeatMode.FOLDER)
+
+        val queueIndex = _currentPlaylist.value.indexOfFirst { it.id == firstTrack.id }
+        if (queueIndex != -1) {
+            player.seekTo(queueIndex, 0L)
+            player.play()
+        }
     }
 
     fun increaseRating() {

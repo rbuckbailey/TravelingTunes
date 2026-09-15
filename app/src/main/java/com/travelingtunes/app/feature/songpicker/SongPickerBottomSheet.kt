@@ -571,21 +571,53 @@ fun SongPickerBottomSheet(
                                 SongItemRow(
                                     song = song,
                                     onPlay = {
-                                        playbackManager.setPlaylistAndPlay(songsList, index)
-                                        if (selectedAlbum != null) {
-                                            playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                        coroutineScope.launch {
+                                            val selectedSong = songsList[index]
+                                            val fullList = if (selectedCategory == PickerCategory.SONGS && !hasDrillDown) {
+                                                songsList
+                                            } else {
+                                                val dbSongs = musicDatabase.getAllSongs()
+                                                if (dbSongs.isNotEmpty()) dbSongs else songsList
+                                            }
+                                            val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
+                                            playbackManager.setPlaylistAndPlay(fullList, indexInFull)
+                                            if (selectedAlbum != null) {
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                            } else if (selectedArtist != null) {
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
+                                            } else if (selectedGenre != null) {
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
+                                            } else if (selectedFolder != null) {
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
+                                            }
+                                            onDismiss()
                                         }
-                                        onDismiss()
                                     },
                                     onAddToQueue = {
                                         playbackManager.addSongToQueue(song)
                                     },
                                     onClick = {
-                                        playbackManager.setPlaylistAndPlay(songsList, index)
-                                        if (selectedAlbum != null) {
-                                            playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                        coroutineScope.launch {
+                                            val selectedSong = songsList[index]
+                                            val fullList = if (selectedCategory == PickerCategory.SONGS && !hasDrillDown) {
+                                                songsList
+                                            } else {
+                                                val dbSongs = musicDatabase.getAllSongs()
+                                                if (dbSongs.isNotEmpty()) dbSongs else songsList
+                                            }
+                                            val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
+                                            playbackManager.setPlaylistAndPlay(fullList, indexInFull)
+                                            if (selectedAlbum != null) {
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                            } else if (selectedArtist != null) {
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
+                                            } else if (selectedGenre != null) {
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
+                                            } else if (selectedFolder != null) {
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
+                                            }
+                                            onDismiss()
                                         }
-                                        onDismiss()
                                     }
                                 )
                             }
@@ -604,6 +636,7 @@ fun SongPickerBottomSheet(
                                     album = album,
                                     onPlay = {
                                         coroutineScope.launch {
+                                            val fullLibrary = musicDatabase.getAllSongs()
                                             val albumSongs = musicDatabase.getSongsByAlbum(album.name)
                                             val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
                                                 albumSongs.filter {
@@ -613,7 +646,10 @@ fun SongPickerBottomSheet(
                                             } else albumSongs
                                             val playSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
                                             if (playSongs.isNotEmpty()) {
-                                                playbackManager.setPlaylistAndPlay(playSongs, 0)
+                                                val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else playSongs
+                                                val targetSong = playSongs.first()
+                                                val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                                                playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
                                                 playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
                                             }
                                             onDismiss()
@@ -652,13 +688,18 @@ fun SongPickerBottomSheet(
                                     artist = artist,
                                     onPlay = {
                                         coroutineScope.launch {
-                                            val allSongs = if (selectedGenre != null) {
+                                            val fullLibrary = musicDatabase.getAllSongs()
+                                            val artistSongs = if (selectedGenre != null) {
                                                 musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
                                             } else {
                                                 musicDatabase.getSongsByArtist(artist)
                                             }
-                                            if (allSongs.isNotEmpty()) {
-                                                playbackManager.setPlaylistAndPlay(allSongs, 0)
+                                            if (artistSongs.isNotEmpty()) {
+                                                val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else artistSongs
+                                                val targetSong = artistSongs.first()
+                                                val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                                                playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
                                             }
                                             onDismiss()
                                         }
@@ -693,9 +734,14 @@ fun SongPickerBottomSheet(
                                     genre = genre,
                                     onPlay = {
                                         coroutineScope.launch {
+                                            val fullLibrary = musicDatabase.getAllSongs()
                                             val genreSongs = musicDatabase.getSongsByGenre(genre)
                                             if (genreSongs.isNotEmpty()) {
-                                                playbackManager.setPlaylistAndPlay(genreSongs, 0)
+                                                val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else genreSongs
+                                                val targetSong = genreSongs.first()
+                                                val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                                                playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
                                             }
                                             onDismiss()
                                         }
@@ -732,7 +778,10 @@ fun SongPickerBottomSheet(
                                                 it.folderPath.startsWith(folder, ignoreCase = true)
                                             }
                                             if (folderSongs.isNotEmpty()) {
-                                                playbackManager.setPlaylistAndPlay(folderSongs, 0)
+                                                val targetSong = folderSongs.first()
+                                                val indexInMaster = dbSongs.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                                                playbackManager.setPlaylistAndPlay(dbSongs, indexInMaster)
+                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
                                             }
                                             onDismiss()
                                         }

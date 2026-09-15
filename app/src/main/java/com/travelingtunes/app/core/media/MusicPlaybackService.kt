@@ -245,51 +245,13 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 
     private fun playCurrentAlbum() {
-        val player = sharedPlayer ?: return
-        val currentItem = player.currentMediaItem ?: return
-        val albumName = currentItem.mediaMetadata.albumTitle?.toString() ?: ""
-
-        serviceScope.launch {
-            val allSongs = getAllSongsHelper()
-            val albumSongs = if (albumName.isNotBlank()) {
-                allSongs.filter { it.album.equals(albumName, ignoreCase = true) }
-            } else emptyList()
-
-            val finalQueue = albumSongs.ifEmpty { listOfNotNull(allSongs.find { it.id.toString() == currentItem.mediaId }) }
-            if (finalQueue.isNotEmpty()) {
-                val mediaItems = finalQueue.map { songToMediaItem(it) }
-                launch(Dispatchers.Main) {
-                    player.setMediaItems(mediaItems, 0, 0L)
-                    player.repeatMode = Player.REPEAT_MODE_ALL
-                    player.prepare()
-                    player.play()
-                }
-            }
-        }
+        val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+        playbackManager.playCurrentAlbum()
     }
 
     private fun playCurrentArtist() {
-        val player = sharedPlayer ?: return
-        val currentItem = player.currentMediaItem ?: return
-        val artistName = currentItem.mediaMetadata.artist?.toString() ?: ""
-
-        serviceScope.launch {
-            val allSongs = getAllSongsHelper()
-            val artistSongs = if (artistName.isNotBlank()) {
-                allSongs.filter { it.artist.equals(artistName, ignoreCase = true) }
-            } else emptyList()
-
-            val finalQueue = artistSongs.ifEmpty { listOfNotNull(allSongs.find { it.id.toString() == currentItem.mediaId }) }
-            if (finalQueue.isNotEmpty()) {
-                val mediaItems = finalQueue.map { songToMediaItem(it) }
-                launch(Dispatchers.Main) {
-                    player.setMediaItems(mediaItems, 0, 0L)
-                    player.repeatMode = Player.REPEAT_MODE_ALL
-                    player.prepare()
-                    player.play()
-                }
-            }
-        }
+        val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+        playbackManager.playCurrentArtist()
     }
 
     private fun shuffleAllSongs() {
