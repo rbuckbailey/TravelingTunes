@@ -192,7 +192,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
     val longPressThresholdMs = 380L
     val longPressSlopPx = 32f * density
 
-    val systemInsetPx = 12f * density
+    val systemInsetPx = 20f * density
     val isSystemTopEdge = startPosition.y < systemInsetPx
     val isSystemBottomEdge = startPosition.y > (size.height.toFloat() - systemInsetPx)
 
@@ -234,7 +234,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
         // Long press timeout expired while finger is still held down
         if (event == null) {
             val currDuration = System.currentTimeMillis() - startTime
-            if (!isSwipeHandled && !isLongPressHandled && currDuration >= longPressThresholdMs) {
+            if (!isSwipeHandled && !isLongPressHandled && !isSystemTopEdge && !isSystemBottomEdge && currDuration >= longPressThresholdMs) {
                 val totalDist = hypot(totalDx, totalDy)
                 if (totalDist < longPressSlopPx) {
                     val trigger = if (maxFingers == 1) {
@@ -312,13 +312,16 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
             if (isSwipeHandled) {
                 listener.onGestureEnd(totalDx, totalDy, maxFingers)
             }
+            val hasMovedPastMin = abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx
+            val isSystemEdgeDrag = (isSystemTopEdge || isSystemBottomEdge) && abs(totalDy) > abs(totalDx)
+            val isSwipeResult = isSwipeHandled || hasMovedPastMin || isSystemEdgeDrag || isSystemBottomEdge || isSystemTopEdge
             return TapPressResult(
                 fingers = maxFingers,
                 startPosition = startPosition,
                 durationMs = duration,
                 totalDx = totalDx,
                 totalDy = totalDy,
-                isSwipe = isSwipeHandled,
+                isSwipe = isSwipeResult,
                 isLongPress = isLongPressHandled
             )
         }
@@ -347,8 +350,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
 
             if (!isSwipeHandled && !isLongPressHandled) {
                 val hasMovedPastMin = abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx
-                val isSystemEdgeDrag = (isSystemTopEdge && totalDy > 0 && abs(totalDy) > abs(totalDx)) ||
-                                       (isSystemBottomEdge && totalDy < 0 && abs(totalDy) > abs(totalDx))
+                val isSystemEdgeDrag = (isSystemTopEdge || isSystemBottomEdge) && abs(totalDy) > abs(totalDx)
                 val canCommitSwipe = hasMovedPastMin && !isSystemEdgeDrag
 
                 if (canCommitSwipe) {
@@ -385,7 +387,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
             }
         }
 
-        if (!isSwipeHandled && !isLongPressHandled && duration >= longPressThresholdMs) {
+        if (!isSwipeHandled && !isLongPressHandled && !isSystemTopEdge && !isSystemBottomEdge && duration >= longPressThresholdMs) {
             val totalDist = hypot(totalDx, totalDy)
             if (totalDist < longPressSlopPx) {
                 val trigger = if (maxFingers == 1) {

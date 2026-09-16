@@ -51,7 +51,7 @@ object MondrianThemeHelper {
         COLOR_RED, COLOR_YELLOW, COLOR_BLUE
     )
 
-    val SECONDARY_HALF_COLORS = listOf(COLOR_WHITE, COLOR_BLACK)
+    val SECONDARY_HALF_COLORS = listOf(COLOR_WHITE, COLOR_RED, COLOR_YELLOW, COLOR_BLUE, COLOR_BLACK)
 
     fun canBeAdjacent(c1: Color, c2: Color): Boolean {
         if (c1 == COLOR_WHITE && c2 == COLOR_WHITE) return true
@@ -59,85 +59,82 @@ object MondrianThemeHelper {
     }
 
     fun generateLayoutForSong(song: Song?): MondrianAlbumLayout {
-        // Seed 1: Base 4 region colors per album
-        val albumKey = if (song != null) {
-            val albumStr = song.album.lowercase().trim()
-            if (albumStr.isNotEmpty()) "album_${song.albumId}_$albumStr"
-            else "song_${song.id}"
-        } else {
-            "default_mondrian_album"
-        }
-        val albumRandom = Random(albumKey.hashCode().toLong())
-
-        val colorTL = WEIGHTED_PRIMARY_COLORS[albumRandom.nextInt(WEIGHTED_PRIMARY_COLORS.size)]
-
-        val validTR = WEIGHTED_PRIMARY_COLORS.filter { canBeAdjacent(colorTL, it) }
-        val colorTR = validTR[albumRandom.nextInt(validTR.size)]
-
-        val validBL = WEIGHTED_PRIMARY_COLORS.filter { canBeAdjacent(colorTL, it) }
-        val colorBL = validBL[albumRandom.nextInt(validBL.size)]
-
-        val validBR = WEIGHTED_PRIMARY_COLORS.filter { canBeAdjacent(colorTR, it) && canBeAdjacent(colorBL, it) }
-        val colorBR = validBR[albumRandom.nextInt(validBR.size)]
-
-        // Seed 2: Subdivision selection per track (no more than 1 corner subdivided per track)
-        val trackKey = if (song != null) {
-            val titleStr = song.title.lowercase().trim()
-            "track_${song.id}_$titleStr"
+        // Deterministic seed per track
+        val seedKey = if (song != null) {
+            "mondrian_track_${song.id}_${song.artist.lowercase().trim()}_${song.album.lowercase().trim()}_${song.title.lowercase().trim()}"
         } else {
             "default_mondrian_track"
         }
-        val trackRandom = Random(trackKey.hashCode().toLong())
+        val random = Random(seedKey.hashCode().toLong())
 
-        val shouldSubdivide = trackRandom.nextBoolean()
-        val cornerToSubdivide = if (shouldSubdivide) trackRandom.nextInt(4) else -1
+        // 1. Determine number of non-white colored spaces (at least 2, up to 3)
+        val nonWhitePalette = listOf(COLOR_RED, COLOR_YELLOW, COLOR_BLUE)
+        val numColoredSpaces = if (random.nextBoolean()) 2 else 3
 
-        val isVert = trackRandom.nextBoolean()
+        // Pick distinct non-white colors so NO non-white color ever repeats
+        val chosenColored = nonWhitePalette.shuffled(random).take(numColoredSpaces)
 
-        fun pickColor2(color1: Color, neighborColor: Color?): Color {
-            val valid = SECONDARY_HALF_COLORS.filter {
-                canBeAdjacent(color1, it) && (neighborColor == null || canBeAdjacent(neighborColor, it))
-            }
-            return if (valid.isNotEmpty()) {
-                valid[trackRandom.nextInt(valid.size)]
-            } else {
-                SECONDARY_HALF_COLORS.first { canBeAdjacent(color1, it) }
+        // 2. Decide if 1 corner should be subdivided
+        val shouldSubdivide = random.nextBoolean()
+        val cornerToSubdivide = if (shouldSubdivide) random.nextInt(4) else -1
+        val isVert = random.nextBoolean()
+
+        // Total spaces: 4 corners, or 3 full corners + 2 half-spaces if 1 corner is subdivided
+        val spacesCount = if (shouldSubdivide) 5 else 4
+
+        // Randomly pick which spaces receive the chosen non-white colors
+        val spaceIndices = (0 until spacesCount).shuffled(random)
+        val coloredSpaceIndices = spaceIndices.take(numColoredSpaces).toSet()
+
+        val spaceColors = mutableMapOf<Int, Color>()
+        for ((idx, spaceIdx) in coloredSpaceIndices.withIndex()) {
+            spaceColors[spaceIdx] = chosenColored[idx]
+        }
+
+        // Fill remaining spaces with COLOR_WHITE
+        for (i in 0 until spacesCount) {
+            if (!spaceColors.containsKey(i)) {
+                spaceColors[i] = COLOR_WHITE
             }
         }
 
-        // Region 0: TL
-        val isSubTL = (cornerToSubdivide == 0)
-        val color2TL = if (isSubTL) {
-            val neighbor = if (isVert) colorTR else colorBL
-            pickColor2(colorTL, neighbor)
-        } else null
+        var spaceIdx = 0
 
-        // Region 1: TR
-        val isSubTR = (cornerToSubdivide == 1)
-        val color2TR = if (isSubTR) {
-            val neighbor = if (isVert) colorTL else colorBR
-            pickColor2(colorTR, neighbor)
-        } else null
+        fun createRegionSpec(cornerIndex: Int): MondrianRegionSpec {
+            val isSub = (cornerToSubdivide == cornerIndex)
+            if (!isSub) {
+                val c1 = spaceColors[spaceIdx++] ?: COLOR_WHITE
+                return MondrianRegionSpec(
+                    color1 = c1,
+                    isSubdivided = false,
+                    isVerticalSplit = false,
+                    color2 = null
+                )
+            } else {
+                val c1 = spaceColors[spaceIdx++] ?: COLOR_WHITE
+                var c2 = spaceColors[spaceIdx++] ?: COLOR_WHITE
+                if (c1 != COLOR_WHITE && c2 == c1) {
+                    c2 = COLOR_WHITE
+                }
+                return MondrianRegionSpec(
+                    color1 = c1,
+                    isSubdivided = true,
+                    isVerticalSplit = isVert,
+                    color2 = c2
+                )
+            }
+        }
 
-        // Region 2: BL
-        val isSubBL = (cornerToSubdivide == 2)
-        val color2BL = if (isSubBL) {
-            val neighbor = if (isVert) colorBR else colorTL
-            pickColor2(colorBL, neighbor)
-        } else null
-
-        // Region 3: BR
-        val isSubBR = (cornerToSubdivide == 3)
-        val color2BR = if (isSubBR) {
-            val neighbor = if (isVert) colorBL else colorTR
-            pickColor2(colorBR, neighbor)
-        } else null
+        val topLeftSpec = createRegionSpec(0)
+        val topRightSpec = createRegionSpec(1)
+        val bottomLeftSpec = createRegionSpec(2)
+        val bottomRightSpec = createRegionSpec(3)
 
         return MondrianAlbumLayout(
-            topLeft = MondrianRegionSpec(colorTL, isSubTL, if (isSubTL) isVert else false, color2TL),
-            topRight = MondrianRegionSpec(colorTR, isSubTR, if (isSubTR) isVert else false, color2TR),
-            bottomLeft = MondrianRegionSpec(colorBL, isSubBL, if (isSubBL) isVert else false, color2BL),
-            bottomRight = MondrianRegionSpec(colorBR, isSubBR, if (isSubBR) isVert else false, color2BR)
+            topLeft = topLeftSpec,
+            topRight = topRightSpec,
+            bottomLeft = bottomLeftSpec,
+            bottomRight = bottomRightSpec
         )
     }
 }

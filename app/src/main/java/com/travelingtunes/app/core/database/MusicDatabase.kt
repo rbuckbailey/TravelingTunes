@@ -632,7 +632,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
 
     private fun cursorToSong(c: android.database.Cursor): Song {
         val id = c.getLong(c.getColumnIndexOrThrow(COL_ID))
-        val title = c.getString(c.getColumnIndexOrThrow(COL_TITLE))
+        val rawTitle = c.getString(c.getColumnIndexOrThrow(COL_TITLE))
         val artist = c.getString(c.getColumnIndexOrThrow(COL_ARTIST))
         val album = c.getString(c.getColumnIndexOrThrow(COL_ALBUM))
         val albumId = c.getLong(c.getColumnIndexOrThrow(COL_ALBUM_ID))
@@ -642,7 +642,15 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         val artworkUriStr = c.getString(c.getColumnIndexOrThrow(COL_ARTWORK_URI))
         val folderPath = c.getString(c.getColumnIndexOrThrow(COL_FOLDER_PATH))
         val fileName = c.getString(c.getColumnIndexOrThrow(COL_FILE_NAME))
-        val trackNumber = c.getInt(c.getColumnIndexOrThrow(COL_TRACK_NUMBER))
+        val rawTrackNumber = c.getInt(c.getColumnIndexOrThrow(COL_TRACK_NUMBER))
+
+        val trackAndTitle = com.travelingtunes.app.core.media.TrackNumberExtractor.resolveTrackAndTitle(
+            currentTrackNumber = rawTrackNumber,
+            title = rawTitle,
+            fileName = fileName
+        )
+        val trackNumber = trackAndTitle.trackNumber
+        val title = trackAndTitle.cleanTitle
         val discIdx = c.getColumnIndex(COL_DISC_NUMBER)
         val discNumber = if (discIdx != -1) c.getInt(discIdx) else 0
         val year = c.getInt(c.getColumnIndexOrThrow(COL_YEAR))

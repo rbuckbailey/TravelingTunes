@@ -36,8 +36,13 @@ object AlbumArtColorExtractor {
             return@withContext ColorTheme.MATCH_ALBUM_ART
         }
 
-        // Prioritize edge swatches for background candidates to match the image's edge background
-        val bgCandidates = edgeSwatches.ifEmpty { allSwatches }.distinctBy { it.rgb }
+        // Maximized Edge Match Priority: Primary edge swatch is the background color
+        val primaryBgSwatch = edgeSwatches.firstOrNull() ?: palette.dominantSwatch ?: allSwatches.firstOrNull()
+        val bgInt = (primaryBgSwatch?.rgb ?: android.graphics.Color.BLACK) or 0xFF000000.toInt()
+
+        val bgHsl = FloatArray(3)
+        ColorUtils.colorToHSL(bgInt, bgHsl)
+        val isBgSaturated = bgHsl[1] >= 0.12f
 
         // Ordered text candidates from palette swatches
         val preferredTextSwatches = listOfNotNull(
@@ -48,88 +53,108 @@ object AlbumArtColorExtractor {
             palette.lightMutedSwatch,
             palette.darkMutedSwatch
         )
-
-        val targetMinContrastStrict = 4.5
-        val targetMinDistanceStrict = 35.0 // Perceptual distance in CIELAB space
+        val textCandidates = (preferredTextSwatches + allSwatches)
+            .distinctBy { it.rgb }
+            .filter { (it.rgb or 0xFF000000.toInt()) != bgInt }
 
         val matchedSwatchesInts = (preferredTextSwatches + allSwatches).map { it.rgb }.distinct()
 
-        // Pass 1: Try text candidates down the line matching strict contrast and distinctness
-        for (bgSwatch in bgCandidates) {
-            val bgInt = bgSwatch.rgb or 0xFF000000.toInt()
+        // Score text candidates favoring complementary hue (180° opposite on color wheel) and high contrast/distance
+        val scoredCandidates = textCandidates.map { swatch ->
+            val candInt = swatch.rgb or 0xFF000000.toInt()
+            val candHsl = FloatArray(3)
+            ColorUtils.colorToHSL(candInt, candHsl)
 
-            val textCandidates = (preferredTextSwatches + allSwatches)
-                .distinctBy { it.rgb }
-                .filter { (it.rgb or 0xFF000000.toInt()) != bgInt }
+            val contrast = calculateContrastSafe(candInt, bgInt)
+            val distance = colorDistance(candInt, bgInt)
+            val isCandSaturated = candHsl[1] >= 0.12f
 
-            for (primaryTextSwatch in textCandidates) {
-                val primaryInt = primaryTextSwatch.rgb or 0xFF000000.toInt()
-                val contrast = calculateContrastSafe(primaryInt, bgInt)
-                val distance = colorDistance(primaryInt, bgInt)
-
-                if (contrast >= targetMinContrastStrict && distance >= targetMinDistanceStrict) {
-                    val secondaryInt = findSecondaryTextColor(bgInt, primaryInt, textCandidates)
-                    return@withContext ColorTheme(
-                        name = "Album Art Dynamic",
-                        backgroundColor = Color(bgInt),
-                        textColor = Color(primaryInt),
-                        secondaryTextColor = Color(secondaryInt),
-                        matchedSwatches = matchedSwatchesInts
-                    )
-                }
+            val hueDiff = calculateHueDifference(bgHsl[0], candHsl[0])
+            val complementaryFactor = if (isBgSaturated && isCandSaturated) {
+                1.0 + (hueDiff / 180.0)
+            } else {
+                1.0
             }
-        }
 
-        // Pass 2: Moderately strict fallback pass (contrast >= 3.5 and distance >= 22.0)
-        for (bgSwatch in bgCandidates) {
-            val bgInt = bgSwatch.rgb or 0xFF000000.toInt()
-            val textCandidates = (preferredTextSwatches + allSwatches)
-                .distinctBy { it.rgb }
-                .filter { (it.rgb or 0xFF000000.toInt()) != bgInt }
+            val score = contrast * (distance + 10.0) * complementaryFactor
+            Triple(swatch, contrast, score)
+        }.sortedByDescending { it.third }
 
-            for (primaryTextSwatch in textCandidates) {
-                val primaryInt = primaryTextSwatch.rgb or 0xFF000000.toInt()
-                val contrast = calculateContrastSafe(primaryInt, bgInt)
-                val distance = colorDistance(primaryInt, bgInt)
-
-                if (contrast >= 3.5 && distance >= 22.0) {
-                    val secondaryInt = findSecondaryTextColor(bgInt, primaryInt, textCandidates)
-                    return@withContext ColorTheme(
-                        name = "Album Art Dynamic",
-                        backgroundColor = Color(bgInt),
-                        textColor = Color(primaryInt),
-                        secondaryTextColor = Color(secondaryInt),
-                        matchedSwatches = matchedSwatchesInts
-                    )
-                }
-            }
-        }
-
-        // Pass 3: Select the artwork swatch down the line that offers the highest distinctness
-        val primaryBgInt = ((edgeSwatches.firstOrNull() ?: palette.dominantSwatch ?: allSwatches.firstOrNull())?.rgb ?: android.graphics.Color.BLACK) or 0xFF000000.toInt()
-        val allTextCandidates = (preferredTextSwatches + allSwatches).distinctBy { it.rgb }.filter { (it.rgb or 0xFF000000.toInt()) != primaryBgInt }
-
-        val bestArtworkCandidate = allTextCandidates.maxByOrNull {
-            calculateContrastSafe(it.rgb, primaryBgInt) * colorDistance(it.rgb, primaryBgInt)
-        }
-
-        val primaryTextInt = if (bestArtworkCandidate != null && calculateContrastSafe(bestArtworkCandidate.rgb, primaryBgInt) >= 2.8) {
-            bestArtworkCandidate.rgb or 0xFF000000.toInt()
+        // Find primary text color: pick top strict contrast or adjust brightness/saturation for best candidate
+        val bestStrict = scoredCandidates.firstOrNull { it.second >= 4.5 }
+        val primaryTextInt = if (bestStrict != null) {
+            bestStrict.first.rgb or 0xFF000000.toInt()
         } else {
-            val whiteContrast = calculateContrastSafe(android.graphics.Color.WHITE, primaryBgInt)
-            val blackContrast = calculateContrastSafe(android.graphics.Color.BLACK, primaryBgInt)
-            if (whiteContrast >= blackContrast) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+            val bestFallback = scoredCandidates.firstOrNull()
+            if (bestFallback != null) {
+                improveContrastHsl(bestFallback.first.rgb or 0xFF000000.toInt(), bgInt, targetContrast = 4.5)
+            } else {
+                // Synthesize complementary foreground color (180° rotated hue)
+                val compHue = (bgHsl[0] + 180f) % 360f
+                val bgLum = ColorUtils.calculateLuminance(bgInt)
+                val isBgDark = bgLum < 0.5
+                val compHsl = floatArrayOf(compHue, 0.75f, if (isBgDark) 0.85f else 0.15f)
+                improveContrastHsl(ColorUtils.HSLToColor(compHsl) or 0xFF000000.toInt(), bgInt, targetContrast = 4.5)
+            }
         }
 
-        val secondaryTextInt = findSecondaryTextColor(primaryBgInt, primaryTextInt, allTextCandidates)
+        val secondaryTextInt = findSecondaryTextColor(bgInt, primaryTextInt, textCandidates)
 
         ColorTheme(
             name = "Album Art Dynamic",
-            backgroundColor = Color(primaryBgInt),
+            backgroundColor = Color(bgInt),
             textColor = Color(primaryTextInt),
             secondaryTextColor = Color(secondaryTextInt),
             matchedSwatches = matchedSwatchesInts
         )
+    }
+
+    fun improveContrastHsl(
+        foregroundInt: Int,
+        backgroundInt: Int,
+        targetContrast: Double = 4.5
+    ): Int {
+        val fgInt = foregroundInt or 0xFF000000.toInt()
+        val bgInt = backgroundInt or 0xFF000000.toInt()
+
+        val currentContrast = calculateContrastSafe(fgInt, bgInt)
+        if (currentContrast >= targetContrast) return fgInt
+
+        val fgHsl = FloatArray(3)
+        ColorUtils.colorToHSL(fgInt, fgHsl)
+        val bgLum = ColorUtils.calculateLuminance(bgInt)
+        val isBgDark = bgLum < 0.5
+
+        var bestInt = fgInt
+        var bestContrast = currentContrast
+
+        for (step in 1..15) {
+            if (isBgDark) {
+                fgHsl[2] = (fgHsl[2] + 0.05f * step).coerceIn(0.50f, 1.0f)
+                if (fgHsl[1] > 0.05f) fgHsl[1] = (fgHsl[1] * 1.05f).coerceIn(0.15f, 1.0f)
+            } else {
+                fgHsl[2] = (fgHsl[2] - 0.05f * step).coerceIn(0.0f, 0.40f)
+            }
+
+            val adjInt = (ColorUtils.HSLToColor(fgHsl) and 0x00FFFFFF) or 0xFF000000.toInt()
+            val c = calculateContrastSafe(adjInt, bgInt)
+            if (c > bestContrast) {
+                bestContrast = c
+                bestInt = adjInt
+            }
+
+            if (c >= targetContrast) {
+                return adjInt
+            }
+        }
+
+        if (bestContrast < targetContrast) {
+            val whiteContrast = calculateContrastSafe(android.graphics.Color.WHITE, bgInt)
+            val blackContrast = calculateContrastSafe(android.graphics.Color.BLACK, bgInt)
+            return if (whiteContrast >= blackContrast) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+        }
+
+        return bestInt
     }
 
     private fun extractEdgeSwatches(

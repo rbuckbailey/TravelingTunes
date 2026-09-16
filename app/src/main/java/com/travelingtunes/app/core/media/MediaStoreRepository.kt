@@ -54,7 +54,7 @@ class MediaStoreRepository(private val context: Context) {
                 val albumId = cursor.getLong(albumIdColumn)
                 val duration = cursor.getLong(durationColumn)
                 val trackVal = if (trackColumn != -1) cursor.getInt(trackColumn) else 0
-                val trackNumber = if (trackVal > 0) (trackVal % 1000) else 0
+                val initialTrackNumber = if (trackVal > 0) (trackVal % 1000) else 0
                 val discNumberFromTrack = if (trackVal >= 1000) (trackVal / 1000) else 0
                 val discVal = if (discColumn != -1) cursor.getInt(discColumn) else 0
                 val discNumber = if (discVal > 0) discVal else discNumberFromTrack
@@ -72,11 +72,19 @@ class MediaStoreRepository(private val context: Context) {
                     "Music"
                 }
 
-                val title = if (!rawTitle.isNullOrBlank() && !rawTitle.equals("<unknown>", ignoreCase = true) && !rawTitle.equals("Unknown Title", ignoreCase = true) && !rawTitle.equals("Unknown", ignoreCase = true)) {
+                val initialTitle = if (!rawTitle.isNullOrBlank() && !rawTitle.equals("<unknown>", ignoreCase = true) && !rawTitle.equals("Unknown Title", ignoreCase = true) && !rawTitle.equals("Unknown", ignoreCase = true)) {
                     rawTitle
                 } else {
                     cleanFileName
                 }
+
+                val trackAndTitle = TrackNumberExtractor.resolveTrackAndTitle(
+                    currentTrackNumber = initialTrackNumber,
+                    title = initialTitle,
+                    fileName = fileName
+                )
+                val trackNumber = trackAndTitle.trackNumber
+                val title = trackAndTitle.cleanTitle
 
                 val album = if (!rawAlbum.isNullOrBlank() && !rawAlbum.equals("<unknown>", ignoreCase = true) && !rawAlbum.equals("Unknown Album", ignoreCase = true) && !rawAlbum.equals("Unknown", ignoreCase = true)) {
                     rawAlbum

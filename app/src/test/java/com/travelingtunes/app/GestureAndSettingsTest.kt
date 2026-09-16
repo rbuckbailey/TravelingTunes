@@ -574,6 +574,41 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testMondrianAtLeastTwoColoredSpacesAndOnlyWhiteRepeats() {
+        val mockUri = org.mockito.Mockito.mock(android.net.Uri::class.java)
+        val red = com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_RED
+        val yellow = com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_YELLOW
+        val blue = com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_BLUE
+        val white = com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_WHITE
+
+        for (i in 1..100) {
+            val song = com.travelingtunes.app.core.model.Song(
+                id = i.toLong(), title = "Track $i", artist = "Artist $i", album = "Album $i", albumId = i.toLong() * 10L,
+                durationMs = 180000L, contentUri = mockUri, artworkUri = null
+            )
+            val layout = com.travelingtunes.app.core.theme.MondrianThemeHelper.generateLayoutForSong(song)
+            val corners = listOf(layout.topLeft, layout.topRight, layout.bottomLeft, layout.bottomRight)
+
+            val colors = mutableListOf<androidx.compose.ui.graphics.Color>()
+            corners.forEach { corner ->
+                colors.add(corner.color1)
+                corner.color2?.let { colors.add(it) }
+            }
+
+            val nonWhiteColors = colors.filter { it != white && it != com.travelingtunes.app.core.theme.MondrianThemeHelper.COLOR_BLACK }
+            org.junit.Assert.assertTrue("Track $i should have at least 2 colored spaces, found ${nonWhiteColors.size}", nonWhiteColors.size >= 2)
+
+            val redCount = colors.count { it == red }
+            val yellowCount = colors.count { it == yellow }
+            val blueCount = colors.count { it == blue }
+
+            org.junit.Assert.assertTrue("Red count $redCount should be <= 1", redCount <= 1)
+            org.junit.Assert.assertTrue("Yellow count $yellowCount should be <= 1", yellowCount <= 1)
+            org.junit.Assert.assertTrue("Blue count $blueCount should be <= 1", blueCount <= 1)
+        }
+    }
+
+    @Test
     fun testReverseTriggerMapping() {
         assertEquals(GestureTrigger.SWIPE_1_DOWN, GestureTrigger.SWIPE_1_UP.getReverseTrigger())
         assertEquals(GestureTrigger.SWIPE_1_UP, GestureTrigger.SWIPE_1_DOWN.getReverseTrigger())
@@ -1106,5 +1141,47 @@ class GestureAndSettingsTest {
         assertNotNull(retrieved)
         assertEquals(androidx.compose.ui.graphics.Color.Red, retrieved!!.backgroundColor)
         assertEquals(sampleTheme, cache.get(123L, com.travelingtunes.app.core.theme.InnerEdge.LEFT, com.travelingtunes.app.core.model.ArtColorPriority.CENTER))
+    }
+
+    @Test
+    fun testAllConfigOptionsAreRegistered() {
+        val allOptions = com.travelingtunes.app.core.model.ConfigOption.ALL_OPTIONS
+        assertTrue("Every ConfigOption must have a non-empty key and title", allOptions.all { it.key.isNotEmpty() && it.title.isNotEmpty() })
+
+        val mondrian = com.travelingtunes.app.core.model.ConfigOption.findByKey("THEME_MONDRIAN")
+        assertNotNull(mondrian)
+        assertEquals("Mondrian", mondrian?.targetValue)
+        assertFalse(mondrian!!.isBooleanToggle)
+    }
+
+    @Test
+    fun testThemeToggleLogicAndMatchColorsMode() {
+        val initialTheme = ThemeSettings(currentThemeName = "Match Album Art")
+        val displaySettings = com.travelingtunes.app.core.model.DisplaySettings(albumArtColors = true)
+
+        // 1. Initial state: Match Colors mode is active
+        val resolvedInitial = com.travelingtunes.app.core.theme.resolveActiveTheme(
+            themeSettings = initialTheme,
+            dynamicAlbumArtTheme = com.travelingtunes.app.core.model.ColorTheme("Dynamic", androidx.compose.ui.graphics.Color.Red, androidx.compose.ui.graphics.Color.White),
+            useAlbumArtColors = displaySettings.albumArtColors
+        )
+        assertEquals("Dynamic", resolvedInitial.name)
+
+        // 2. Toggle to Mondrian theme
+        val mondrianTheme = ThemeSettings(currentThemeName = "Mondrian")
+        val resolvedMondrian = com.travelingtunes.app.core.theme.resolveActiveTheme(
+            themeSettings = mondrianTheme,
+            dynamicAlbumArtTheme = null,
+            useAlbumArtColors = false
+        )
+        assertEquals("Mondrian", resolvedMondrian.name)
+
+        // 3. Toggle back to Match Colors mode
+        val resolvedRestored = com.travelingtunes.app.core.theme.resolveActiveTheme(
+            themeSettings = initialTheme,
+            dynamicAlbumArtTheme = com.travelingtunes.app.core.model.ColorTheme("Dynamic", androidx.compose.ui.graphics.Color.Red, androidx.compose.ui.graphics.Color.White),
+            useAlbumArtColors = displaySettings.albumArtColors
+        )
+        assertEquals("Dynamic", resolvedRestored.name)
     }
 }

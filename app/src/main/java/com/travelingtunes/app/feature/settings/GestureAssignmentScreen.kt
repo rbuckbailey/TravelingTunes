@@ -79,6 +79,7 @@ import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureCategory
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.feature.player.ActionIcon
+import com.travelingtunes.app.feature.player.ConfigOptionIcon
 import kotlinx.coroutines.launch
 
 enum class GestureSubmenu(
@@ -567,6 +568,7 @@ private fun RadialMenuConfigurator(
                     ) {
                         ActionIcon(
                             action = action,
+                            optionKey = if (action == GestureAction.OTHER_OPTION) assignedOption.key else null,
                             iconSize = 24.dp,
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -598,6 +600,7 @@ private fun RadialMenuConfigurator(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         ActionIcon(
                                             action = choice,
+                                            optionKey = if (choice == GestureAction.OTHER_OPTION) assignedOption.key else null,
                                             iconSize = 20.dp,
                                             tint = MaterialTheme.colorScheme.primary
                                         )
@@ -748,6 +751,7 @@ private fun GestureAssignmentItem(
                 ) {
                     ActionIcon(
                         action = action,
+                        optionKey = if (action == GestureAction.OTHER_OPTION) otherKey else null,
                         iconSize = 18.dp,
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -763,8 +767,10 @@ private fun GestureAssignmentItem(
 
         Box {
             val primaryAction = displayLines.firstOrNull()?.second ?: binding.action
+            val primaryOtherKey = displayLines.firstOrNull()?.third ?: binding.otherOptionKey
             ActionIcon(
                 action = primaryAction,
+                optionKey = if (primaryAction == GestureAction.OTHER_OPTION) primaryOtherKey else null,
                 iconSize = 28.dp,
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -788,6 +794,7 @@ private fun GestureAssignmentItem(
                                 ) {
                                     ActionIcon(
                                         action = choice,
+                                        optionKey = if (choice == GestureAction.OTHER_OPTION) (displayLines.firstOrNull()?.third ?: binding.otherOptionKey) else null,
                                         iconSize = 20.dp,
                                         tint = MaterialTheme.colorScheme.primary
                                     )
@@ -1111,6 +1118,12 @@ fun ConfigOptionPickerDialog(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
                                         ) {
+                                            ConfigOptionIcon(
+                                                optionKey = option.key,
+                                                iconSize = 24.dp,
+                                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Spacer(modifier = Modifier.width(10.dp))
                                             Text(
                                                 text = option.title,
                                                 style = MaterialTheme.typography.bodyMedium,

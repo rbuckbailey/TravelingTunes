@@ -59,6 +59,7 @@ fun shortestAngleDiff(angle1: Float, angle2: Float): Float {
 fun RadialMenuOverlay(
     centerOffset: Offset,
     actions: List<GestureAction>,
+    otherOptionKeys: List<String?> = emptyList(),
     dragOffset: Offset? = null,
     repeatMode: RepeatMode = RepeatMode.OFF,
     shuffleMode: ShuffleMode = ShuffleMode.OFF,
@@ -259,6 +260,7 @@ fun RadialMenuOverlay(
                 ) {
                     ActionIcon(
                         action = action,
+                        optionKey = otherOptionKeys.getOrNull(i),
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,

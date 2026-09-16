@@ -104,7 +104,7 @@ class MainActivity : ComponentActivity() {
         speedVolumeManager = SpeedVolumeManager(applicationContext)
         musicDatabase = MusicDatabase(applicationContext)
         musicScanner = MusicScanner(applicationContext, musicDatabase)
-        playbackManager = PlaybackManager(applicationContext, settingsDataStore, musicDatabase)
+        playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
 
         requestRequiredPermissions()
 
@@ -398,8 +398,6 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         musicScanner.stopAutoRescanWatcher()
         speedVolumeManager.stopTracking()
-        playbackManager.release()
-        musicDatabase.close()
         super.onDestroy()
     }
 }

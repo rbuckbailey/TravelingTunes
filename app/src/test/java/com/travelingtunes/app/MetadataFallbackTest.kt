@@ -43,9 +43,47 @@ class MetadataFallbackTest {
     @Test
     fun testFilenameFallbackForSongTitle() {
         val fileName = "01 - Drive.mp3"
-        assertEquals("01 - Drive", resolveTitle(null, fileName))
-        assertEquals("01 - Drive", resolveTitle("Unknown Title", fileName))
-        assertEquals("01 - Drive", resolveTitle("<unknown>", fileName))
+        val resolved = com.travelingtunes.app.core.media.TrackNumberExtractor.resolveTrackAndTitle(0, "01 - Drive", fileName)
+        assertEquals("Drive", resolved.cleanTitle)
+        assertEquals(1, resolved.trackNumber)
+    }
+
+    @Test
+    fun testTrackNumberExtractionFromFilenameWhenMissing() {
+        val res1 = com.travelingtunes.app.core.media.TrackNumberExtractor.resolveTrackAndTitle(
+            currentTrackNumber = 0,
+            title = "01 - Stairway to Heaven",
+            fileName = "01 - Stairway to Heaven.mp3"
+        )
+        assertEquals(1, res1.trackNumber)
+        assertEquals("Stairway to Heaven", res1.cleanTitle)
+
+        val res2 = com.travelingtunes.app.core.media.TrackNumberExtractor.resolveTrackAndTitle(
+            currentTrackNumber = 0,
+            title = "03 Drive",
+            fileName = "03 Drive.flac"
+        )
+        assertEquals(3, res2.trackNumber)
+        assertEquals("Drive", res2.cleanTitle)
+
+        val res3 = com.travelingtunes.app.core.media.TrackNumberExtractor.resolveTrackAndTitle(
+            currentTrackNumber = 0,
+            title = "Hotel California",
+            fileName = "12. Hotel California.m4a"
+        )
+        assertEquals(12, res3.trackNumber)
+        assertEquals("Hotel California", res3.cleanTitle)
+    }
+
+    @Test
+    fun testTrackNumberPreservedWhenAlreadyPresent() {
+        val res = com.travelingtunes.app.core.media.TrackNumberExtractor.resolveTrackAndTitle(
+            currentTrackNumber = 5,
+            title = "05 - Drive",
+            fileName = "05 - Drive.mp3"
+        )
+        assertEquals(5, res.trackNumber)
+        assertEquals("Drive", res.cleanTitle)
     }
 
     @Test

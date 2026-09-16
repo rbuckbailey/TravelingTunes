@@ -456,7 +456,7 @@ class MusicScanner(
             val rawAlbum = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)?.trim()
             val rawGenre = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)?.trim()
 
-            val title = if (!rawTitle.isNullOrBlank() && !rawTitle.equals("Unknown", ignoreCase = true) && !rawTitle.equals("Unknown Title", ignoreCase = true) && !rawTitle.equals("<unknown>", ignoreCase = true)) {
+            val initialTitle = if (!rawTitle.isNullOrBlank() && !rawTitle.equals("Unknown", ignoreCase = true) && !rawTitle.equals("Unknown Title", ignoreCase = true) && !rawTitle.equals("<unknown>", ignoreCase = true)) {
                 rawTitle
             } else {
                 cleanFileName
@@ -478,7 +478,16 @@ class MusicScanner(
             val durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                 ?.toLongOrNull() ?: 0L
             val trackStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
-            val trackNumber = trackStr?.substringBefore('/')?.trim()?.toIntOrNull() ?: 0
+            val initialTrackNumber = trackStr?.substringBefore('/')?.trim()?.toIntOrNull() ?: 0
+
+            val trackAndTitle = TrackNumberExtractor.resolveTrackAndTitle(
+                currentTrackNumber = initialTrackNumber,
+                title = initialTitle,
+                fileName = fileName
+            )
+            val trackNumber = trackAndTitle.trackNumber
+            val title = trackAndTitle.cleanTitle
+
             val discStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DISC_NUMBER)
             val discNumber = discStr?.substringBefore('/')?.trim()?.toIntOrNull() ?: 0
             val yearStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)

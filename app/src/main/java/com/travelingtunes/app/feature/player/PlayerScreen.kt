@@ -23,8 +23,16 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.abs
+import kotlin.math.hypot
+import kotlinx.coroutines.withTimeout
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -63,6 +71,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -253,6 +262,20 @@ fun PlayerScreen(
     val activeRadialActions by (activeRadialActionsFlow?.collectAsState(initial = SettingsDataStore.DEFAULT_RADIAL_ACTIONS)
         ?: remember { mutableStateOf(SettingsDataStore.DEFAULT_RADIAL_ACTIONS) })
 
+    val activeRadialOtherOptionKeys by produceState<List<String?>>(initialValue = emptyList(), key1 = activeRadialTrigger, key2 = activeRadialActions) {
+        val trigKey = activeRadialTrigger?.key
+        if (trigKey != null && settingsDataStore != null) {
+            val list = mutableListOf<String?>()
+            for (i in activeRadialActions.indices) {
+                val key = settingsDataStore.getRadialOtherOptionFlow(trigKey, i).first()
+                list.add(key)
+            }
+            value = list
+        } else {
+            value = emptyList()
+        }
+    }
+
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
 
@@ -383,8 +406,9 @@ fun PlayerScreen(
     }
 
     // Pre-cache surrounding album art
-    LaunchedEffect(songIndex, currentPlaylist) {
-        AlbumArtCache.instance.preCacheSurroundingSongs(context, currentPlaylist, songIndex, radius = 4)
+    LaunchedEffect(songIndex, pagerState.currentPage, currentPlaylist) {
+        val activeIndex = if (pagerState.currentPage in currentPlaylist.indices) pagerState.currentPage else songIndex
+        AlbumArtCache.instance.preCacheSurroundingSongs(context, currentPlaylist, activeIndex, radius = 4)
     }
 
     // Auto-clear action HUD text after 2 seconds
@@ -922,7 +946,7 @@ fun PlayerScreen(
         // 1. Sliding Page Transition (Album Art + Song Titles & Labels)
         HorizontalPager(
             state = pagerState,
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 2,
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
@@ -966,7 +990,8 @@ fun PlayerScreen(
                 onOpenSettings = { dir -> openMenu(dir) },
                 onOpenQuickStart = onOpenQuickStart,
                 onShowRepeatOptions = { showRepeatOptionsDialog = true },
-                onShowShuffleOptions = { showShuffleOptionsDialog = true }
+                onShowShuffleOptions = { showShuffleOptionsDialog = true },
+                settingsDataStore = effectiveSettingsDataStore
             )
         }
 
@@ -1115,7 +1140,7 @@ fun PlayerScreen(
                 durationMs = durationMs,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomStart)
             )
         }
 
@@ -1143,7 +1168,9 @@ fun PlayerScreen(
                     onOpenQuickStart = onOpenQuickStart,
                     onShowRepeatOptions = { showRepeatOptionsDialog = true },
                     onShowShuffleOptions = { showShuffleOptionsDialog = true },
-                    numEdgeRegions = displaySettings.numEdgeRegions
+                    numEdgeRegions = displaySettings.numEdgeRegions,
+                    displaySettings = displaySettings,
+                    settingsDataStore = settingsDataStore
                 )
             }
         }
@@ -1302,6 +1329,7 @@ fun PlayerScreen(
             RadialMenuOverlay(
                 centerOffset = activeRadialTouchOffset,
                 actions = activeRadialActions,
+                otherOptionKeys = activeRadialOtherOptionKeys,
                 dragOffset = activeRadialDragOffset,
                 repeatMode = repeatMode,
                 shuffleMode = shuffleMode,
@@ -1436,8 +1464,11 @@ private fun TitleAndButtonsContainer(
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
     dockAdjacentEdge: DockAdjacentEdge? = null,
+    settingsDataStore: SettingsDataStore? = null,
     modifier: Modifier = Modifier
 ) {
+    val contextTitle = LocalContext.current
+    val effectiveSettingsDataStore = settingsDataStore ?: remember(contextTitle) { SettingsDataStore(contextTitle) }
     MondrianMaskedLayout(
         song = pageSong,
         themeSettings = themeSettings,
@@ -1469,7 +1500,9 @@ private fun TitleAndButtonsContainer(
                 onShowRepeatOptions = onShowRepeatOptions,
                 onShowShuffleOptions = onShowShuffleOptions,
                 numEdgeRegions = displaySettings.numEdgeRegions,
-                dockAdjacentEdge = dockAdjacentEdge
+                dockAdjacentEdge = dockAdjacentEdge,
+                displaySettings = displaySettings,
+                settingsDataStore = effectiveSettingsDataStore
             )
         }
     }
@@ -1566,8 +1599,11 @@ fun PlayerPageContent(
     onOpenSettings: (SlideDirection) -> Unit,
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
-    onShowShuffleOptions: () -> Unit
+    onShowShuffleOptions: () -> Unit,
+    settingsDataStore: SettingsDataStore? = null
 ) {
+    val contextPage = LocalContext.current
+    val effectiveSettingsDataStore = settingsDataStore ?: remember(contextPage) { SettingsDataStore(contextPage) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
@@ -1674,7 +1710,9 @@ fun PlayerPageContent(
                         onShowShuffleOptions = onShowShuffleOptions,
                         numEdgeRegions = displaySettings.numArtEdgeRegions,
                         useArtBindings = true,
-                        dockAdjacentEdge = dockEdge
+                        dockAdjacentEdge = dockEdge,
+                        displaySettings = displaySettings,
+                        settingsDataStore = effectiveSettingsDataStore
                     )
                 }
             }
@@ -2509,6 +2547,91 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
     null
 }
 
+private suspend fun PointerInputScope.detectRegionButtonGestures(
+    onTap: () -> Unit,
+    onLongPress: (() -> Unit)? = null
+) {
+    val slopPx = 12f * density
+    val minUpwardExitPx = 3f * density
+    val longPressTimeoutMs = 380L
+
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        val startPos = down.position
+        val startTime = System.currentTimeMillis()
+        val isNearBottomEdge = startPos.y > (size.height.toFloat() - 28f * density)
+        val isNearTopEdge = startPos.y < (28f * density)
+
+        var isCancelled = false
+        var isLongPressFired = false
+        var totalDx = 0f
+        var totalDy = 0f
+        var lastPos = startPos
+
+        while (true) {
+            val duration = System.currentTimeMillis() - startTime
+            val timeoutRemaining = (longPressTimeoutMs - duration).coerceAtLeast(1L)
+
+            val event = if (!isLongPressFired && onLongPress != null && duration < longPressTimeoutMs) {
+                try {
+                    withTimeout(timeoutRemaining) {
+                        awaitPointerEvent(PointerEventPass.Initial)
+                    }
+                } catch (_: PointerEventTimeoutCancellationException) {
+                    null
+                }
+            } else {
+                awaitPointerEvent(PointerEventPass.Initial)
+            }
+
+            if (event == null) {
+                if (!isLongPressFired && onLongPress != null && !isCancelled) {
+                    val dist = hypot(totalDx, totalDy)
+                    if (dist < slopPx) {
+                        isLongPressFired = true
+                        onLongPress()
+                    }
+                }
+                continue
+            }
+
+            if (event.changes.any { it.isConsumed }) {
+                isCancelled = true
+            }
+
+            val currentPointer = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull { it.pressed }
+            if (currentPointer != null && currentPointer.pressed) {
+                val dx = currentPointer.position.x - lastPos.x
+                val dy = currentPointer.position.y - lastPos.y
+                totalDx += dx
+                totalDy += dy
+                lastPos = currentPointer.position
+
+                if (abs(totalDx) > slopPx || abs(totalDy) > slopPx) {
+                    isCancelled = true
+                }
+                if (isNearBottomEdge && totalDy < -minUpwardExitPx) {
+                    isCancelled = true
+                }
+                if (isNearTopEdge && totalDy > minUpwardExitPx) {
+                    isCancelled = true
+                }
+            }
+
+            val active = event.changes.filter { it.pressed }
+            if (active.isEmpty()) {
+                if (!isCancelled && !isLongPressFired) {
+                    val dist = hypot(totalDx, totalDy)
+                    if (dist < slopPx) {
+                        onTap()
+                    }
+                }
+                break
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScreenRegionIconsOverlay(
@@ -2528,8 +2651,12 @@ fun ScreenRegionIconsOverlay(
     numEdgeRegions: Int = 3,
     useArtBindings: Boolean = false,
     dockAdjacentEdge: DockAdjacentEdge? = null,
+    displaySettings: DisplaySettings? = null,
+    settingsDataStore: SettingsDataStore? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val effectiveSettingsDataStore = settingsDataStore ?: remember(context) { SettingsDataStore(context) }
     val currentSong by playbackManager.currentSong.collectAsState()
     val isDownloadedArt = remember(currentSong?.id, currentSong?.artworkUri) {
         musicScanner?.albumArtDownloader?.isDownloadedArtwork(currentSong) == true
@@ -2545,6 +2672,9 @@ fun ScreenRegionIconsOverlay(
         else -> 72.dp
     }
 
+    val isVolumeEdgeBar = displaySettings?.hudType == HudTypeOption.EDGE_HUD
+    val volumeEdgeDisplacement = if (isVolumeEdgeBar && displaySettings != null) (displaySettings.hudLineThickness + 6f).dp else 0.dp
+
     Box(modifier = modifier.fillMaxSize()) {
         // Top Edge Regions
         for ((index, slotIdx) in activeSlotIndices.withIndex()) {
@@ -2554,6 +2684,12 @@ fun ScreenRegionIconsOverlay(
                 binding.artAction
             } else {
                 if (binding.titleAction != GestureAction.UNASSIGNED) binding.titleAction else binding.action
+            }
+
+            val optionKey = if (useArtBindings) {
+                binding.artOtherOptionKey
+            } else {
+                if (binding.titleAction != GestureAction.UNASSIGNED) binding.titleOtherOptionKey else binding.otherOptionKey
             }
 
             if (useArtBindings && action == GestureAction.UNASSIGNED) {
@@ -2568,9 +2704,9 @@ fun ScreenRegionIconsOverlay(
             val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = -1.0f)
 
             val baseStartPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
-            val baseEndPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+            val baseEndPadding = if (horizontalBias == 1.0f) 8.dp + volumeEdgeDisplacement else 0.dp
             val startPadding = if (horizontalBias == -1.0f && dockAdjacentEdge == DockAdjacentEdge.LEFT) 4.dp else baseStartPadding
-            val endPadding = if (horizontalBias == 1.0f && dockAdjacentEdge == DockAdjacentEdge.RIGHT) 4.dp else baseEndPadding
+            val endPadding = if (horizontalBias == 1.0f && dockAdjacentEdge == DockAdjacentEdge.RIGHT) 4.dp + volumeEdgeDisplacement else baseEndPadding
             val topPadding = if (dockAdjacentEdge == DockAdjacentEdge.TOP) 8.dp else 16.dp
 
             Box(
@@ -2581,7 +2717,7 @@ fun ScreenRegionIconsOverlay(
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.15f))
                     .pointerInput(trigger, binding, action) {
-                        detectTapGestures(
+                        detectRegionButtonGestures(
                             onTap = {
                                 if (action == GestureAction.TOGGLE_REPEAT) {
                                     playbackManager.toggleRepeat()
@@ -2598,7 +2734,10 @@ fun ScreenRegionIconsOverlay(
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
-                                        onOpenQuickStart = onOpenQuickStart
+                                        onOpenQuickStart = onOpenQuickStart,
+                                        settingsDataStore = effectiveSettingsDataStore,
+                                        gestureBindings = gestureBindings,
+                                        overrideOtherOptionKey = optionKey
                                     )
                                 } else {
                                     onOpenSettings(SlideDirection.BOTTOM)
@@ -2620,7 +2759,10 @@ fun ScreenRegionIconsOverlay(
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
-                                        onOpenQuickStart = onOpenQuickStart
+                                        onOpenQuickStart = onOpenQuickStart,
+                                        settingsDataStore = effectiveSettingsDataStore,
+                                        gestureBindings = gestureBindings,
+                                        overrideOtherOptionKey = optionKey
                                     )
                                 } else {
                                     onOpenSettings(SlideDirection.BOTTOM)
@@ -2633,6 +2775,7 @@ fun ScreenRegionIconsOverlay(
                 if (action != GestureAction.UNASSIGNED) {
                     ActionIcon(
                         action = action,
+                        optionKey = optionKey,
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
@@ -2651,6 +2794,11 @@ fun ScreenRegionIconsOverlay(
             } else {
                 if (binding.titleAction != GestureAction.UNASSIGNED) binding.titleAction else binding.action
             }
+            val optionKey = if (useArtBindings) {
+                binding.artOtherOptionKey
+            } else {
+                if (binding.titleAction != GestureAction.UNASSIGNED) binding.titleOtherOptionKey else binding.otherOptionKey
+            }
 
             if (useArtBindings && action == GestureAction.UNASSIGNED) {
                 continue
@@ -2664,9 +2812,9 @@ fun ScreenRegionIconsOverlay(
             val alignment = BiasAlignment(horizontalBias = horizontalBias, verticalBias = 1.0f)
 
             val baseStartPadding = if (horizontalBias == -1.0f) 8.dp else 0.dp
-            val baseEndPadding = if (horizontalBias == 1.0f) 8.dp else 0.dp
+            val baseEndPadding = if (horizontalBias == 1.0f) 8.dp + volumeEdgeDisplacement else 0.dp
             val startPadding = if (horizontalBias == -1.0f && dockAdjacentEdge == DockAdjacentEdge.LEFT) 4.dp else baseStartPadding
-            val endPadding = if (horizontalBias == 1.0f && dockAdjacentEdge == DockAdjacentEdge.RIGHT) 4.dp else baseEndPadding
+            val endPadding = if (horizontalBias == 1.0f && dockAdjacentEdge == DockAdjacentEdge.RIGHT) 4.dp + volumeEdgeDisplacement else baseEndPadding
             val bottomPadding = if (dockAdjacentEdge == DockAdjacentEdge.BOTTOM) 8.dp else 16.dp
 
             Box(
@@ -2677,7 +2825,7 @@ fun ScreenRegionIconsOverlay(
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.15f))
                     .pointerInput(trigger, binding, action) {
-                        detectTapGestures(
+                        detectRegionButtonGestures(
                             onTap = {
                                 if (action == GestureAction.TOGGLE_REPEAT) {
                                     playbackManager.toggleRepeat()
@@ -2694,7 +2842,10 @@ fun ScreenRegionIconsOverlay(
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
-                                        onOpenQuickStart = onOpenQuickStart
+                                        onOpenQuickStart = onOpenQuickStart,
+                                        settingsDataStore = effectiveSettingsDataStore,
+                                        gestureBindings = gestureBindings,
+                                        overrideOtherOptionKey = optionKey
                                     )
                                 } else {
                                     onOpenSettings(SlideDirection.TOP)
@@ -2716,7 +2867,10 @@ fun ScreenRegionIconsOverlay(
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
-                                        onOpenQuickStart = onOpenQuickStart
+                                        onOpenQuickStart = onOpenQuickStart,
+                                        settingsDataStore = effectiveSettingsDataStore,
+                                        gestureBindings = gestureBindings,
+                                        overrideOtherOptionKey = optionKey
                                     )
                                 } else {
                                     onOpenSettings(SlideDirection.TOP)
@@ -2729,6 +2883,7 @@ fun ScreenRegionIconsOverlay(
                 if (action != GestureAction.UNASSIGNED) {
                     ActionIcon(
                         action = action,
+                        optionKey = optionKey,
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
@@ -2849,12 +3004,28 @@ private fun StretchedEdgeBackground(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current.density
-    var bitmap by remember(song?.id, song?.artworkUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var bitmap by remember(song?.id, song?.artworkUri) {
+        mutableStateOf<android.graphics.Bitmap?>(
+            song?.id?.let { AlbumArtCache.instance.get(it)?.asAndroidBitmap() }
+        )
+    }
 
     LaunchedEffect(song?.id, song?.artworkUri) {
         if (song != null) {
-            bitmap = kotlinx.coroutines.withContext(Dispatchers.IO) {
-                loadSongArtwork(context, song)
+            val cached = AlbumArtCache.instance.get(song.id)
+            if (cached != null) {
+                bitmap = cached.asAndroidBitmap()
+            } else {
+                val loadedBitmap = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                    loadSongArtwork(context, song)
+                }
+                if (loadedBitmap != null) {
+                    val imgBmp = loadedBitmap.asImageBitmap()
+                    AlbumArtCache.instance.put(song.id, imgBmp)
+                    bitmap = loadedBitmap
+                } else {
+                    bitmap = null
+                }
             }
         } else {
             bitmap = null

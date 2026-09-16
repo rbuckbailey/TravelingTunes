@@ -137,6 +137,7 @@ class SettingsDataStore(private val context: Context) {
 
         // Theme
         val KEY_CURRENT_THEME = stringPreferencesKey("currentTheme")
+        val KEY_PRIOR_THEME = stringPreferencesKey("priorTheme")
         val KEY_CUSTOM_TEXT_RED = floatPreferencesKey("customTextRed")
         val KEY_CUSTOM_TEXT_GREEN = floatPreferencesKey("customTextGreen")
         val KEY_CUSTOM_TEXT_BLUE = floatPreferencesKey("customTextBlue")
@@ -647,20 +648,43 @@ class SettingsDataStore(private val context: Context) {
                 val priorArtColorsKey = booleanPreferencesKey("${triggerKey}_prior_art_colors")
                 val targetVal = option.targetValue ?: return@edit
 
+                fun isSameThemeName(a: String?, b: String?): Boolean {
+                    if (a == null || b == null) return false
+                    if (a.equals(b, ignoreCase = true)) return true
+                    val isAMatch = a.equals("Match Album Art", true) || a.equals("Auto By Art", true)
+                    val isBMatch = b.equals("Match Album Art", true) || b.equals("Auto By Art", true)
+                    return isAMatch && isBMatch
+                }
+
                 when {
                     option.key.startsWith("THEME_") -> {
                         val currentVal = prefs[KEY_CURRENT_THEME] ?: ColorTheme.MATCH_ALBUM_ART.name
                         val currentArtColors = prefs[KEY_ALBUM_ART_COLORS] ?: true
-                        if (currentVal.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: ColorTheme.MATCH_ALBUM_ART.name
-                            val priorArtColors = prefs[priorArtColorsKey] ?: true
+                        val isCurrentTargetMatch = isSameThemeName(currentVal, targetVal)
+                        if (isCurrentTargetMatch) {
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || isSameThemeName(priorVal, targetVal)) {
+                                val globalPrior = prefs[KEY_PRIOR_THEME]
+                                priorVal = if (globalPrior != null && !isSameThemeName(globalPrior, targetVal)) {
+                                    globalPrior
+                                } else {
+                                    if (targetVal.equals("Match Album Art", ignoreCase = true) || targetVal.equals("Auto By Art", ignoreCase = true)) {
+                                        ColorTheme.WHITE_ON_GREY.name
+                                    } else {
+                                        ColorTheme.MATCH_ALBUM_ART.name
+                                    }
+                                }
+                            }
+                            val priorArtColors = prefs[priorArtColorsKey] ?: (priorVal.equals("Match Album Art", true) || priorVal.equals("Auto By Art", true))
                             prefs[KEY_CURRENT_THEME] = priorVal
                             prefs[KEY_ALBUM_ART_COLORS] = priorArtColors
                             prefs[priorKey] = currentVal
                             prefs[priorArtColorsKey] = currentArtColors
+                            prefs[KEY_PRIOR_THEME] = currentVal
                         } else {
                             prefs[priorKey] = currentVal
                             prefs[priorArtColorsKey] = currentArtColors
+                            prefs[KEY_PRIOR_THEME] = currentVal
                             prefs[KEY_CURRENT_THEME] = targetVal
                             prefs[KEY_ALBUM_ART_COLORS] = (targetVal.equals("Match Album Art", true) || targetVal.equals("Auto By Art", true))
                         }
@@ -668,7 +692,10 @@ class SettingsDataStore(private val context: Context) {
                     option.key.startsWith("ALIGN_ARTIST_") -> {
                         val currentVal = prefs[KEY_ARTIST_ALIGNMENT] ?: TextAlignmentOption.LEFT.name
                         if (currentVal.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: TextAlignmentOption.LEFT.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("LEFT", true)) "CENTER" else "LEFT"
+                            }
                             prefs[KEY_ARTIST_ALIGNMENT] = priorVal
                             prefs[priorKey] = currentVal
                         } else {
@@ -679,7 +706,10 @@ class SettingsDataStore(private val context: Context) {
                     option.key.startsWith("ALIGN_SONG_") -> {
                         val currentVal = prefs[KEY_SONG_ALIGNMENT] ?: TextAlignmentOption.CENTER.name
                         if (currentVal.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: TextAlignmentOption.CENTER.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("CENTER", true)) "LEFT" else "CENTER"
+                            }
                             prefs[KEY_SONG_ALIGNMENT] = priorVal
                             prefs[priorKey] = currentVal
                         } else {
@@ -690,7 +720,10 @@ class SettingsDataStore(private val context: Context) {
                     option.key.startsWith("ALIGN_ALBUM_") -> {
                         val currentVal = prefs[KEY_ALBUM_ALIGNMENT] ?: TextAlignmentOption.RIGHT.name
                         if (currentVal.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: TextAlignmentOption.RIGHT.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("RIGHT", true)) "LEFT" else "RIGHT"
+                            }
                             prefs[KEY_ALBUM_ALIGNMENT] = priorVal
                             prefs[priorKey] = currentVal
                         } else {
@@ -702,7 +735,10 @@ class SettingsDataStore(private val context: Context) {
                         val currentOrdinal = prefs[KEY_ALBUM_ART_SCALE] ?: 0
                         val currentName = ArtScaleOption.entries.getOrNull(currentOrdinal)?.name ?: ArtScaleOption.FILL_SCREEN.name
                         if (currentName.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: ArtScaleOption.FILL_SCREEN.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("FILL_SCREEN", true)) ArtScaleOption.ASPECT_FIT.name else ArtScaleOption.FILL_SCREEN.name
+                            }
                             val newOrdinal = ArtScaleOption.entries.find { it.name.equals(priorVal, true) }?.ordinal ?: 0
                             prefs[KEY_ALBUM_ART_SCALE] = newOrdinal
                             prefs[priorKey] = currentName
@@ -716,7 +752,10 @@ class SettingsDataStore(private val context: Context) {
                         val currentOrdinal = prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0
                         val currentName = ArtLayoutOption.entries.getOrNull(currentOrdinal)?.name ?: ArtLayoutOption.OVERLAY.name
                         if (currentName.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: ArtLayoutOption.OVERLAY.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("OVERLAY", true)) ArtLayoutOption.DOCKED.name else ArtLayoutOption.OVERLAY.name
+                            }
                             val newOrdinal = ArtLayoutOption.entries.find { it.name.equals(priorVal, true) }?.ordinal ?: 0
                             prefs[KEY_ART_DISPLAY_LAYOUT] = newOrdinal
                             prefs[priorKey] = currentName
@@ -729,7 +768,10 @@ class SettingsDataStore(private val context: Context) {
                     option.key.startsWith("ART_ALIGN_PORT_") -> {
                         val currentVal = prefs[KEY_ART_ALIGNMENT_PORTRAIT] ?: ArtAlignmentPortrait.MIDDLE.name
                         if (currentVal.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: ArtAlignmentPortrait.MIDDLE.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("MIDDLE", true)) ArtAlignmentPortrait.TOP.name else ArtAlignmentPortrait.MIDDLE.name
+                            }
                             prefs[KEY_ART_ALIGNMENT_PORTRAIT] = priorVal
                             prefs[priorKey] = currentVal
                         } else {
@@ -740,7 +782,10 @@ class SettingsDataStore(private val context: Context) {
                     option.key.startsWith("ART_ALIGN_LAND_") -> {
                         val currentVal = prefs[KEY_ART_ALIGNMENT_LANDSCAPE] ?: ArtAlignmentLandscape.CENTER.name
                         if (currentVal.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: ArtAlignmentLandscape.CENTER.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("CENTER", true)) ArtAlignmentLandscape.LEFT.name else ArtAlignmentLandscape.CENTER.name
+                            }
                             prefs[KEY_ART_ALIGNMENT_LANDSCAPE] = priorVal
                             prefs[priorKey] = currentVal
                         } else {
@@ -752,7 +797,10 @@ class SettingsDataStore(private val context: Context) {
                         val currentValInt = prefs[KEY_HUD_TYPE] ?: 1
                         val currentOption = HudTypeOption.entries.find { it.value == currentValInt } ?: HudTypeOption.BAR_VOLUME
                         if (currentOption.name.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: HudTypeOption.BAR_VOLUME.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("BAR_VOLUME", true)) HudTypeOption.NONE.name else HudTypeOption.BAR_VOLUME.name
+                            }
                             val targetHud = HudTypeOption.entries.find { it.name.equals(priorVal, true) } ?: HudTypeOption.BAR_VOLUME
                             prefs[KEY_HUD_TYPE] = targetHud.value
                             prefs[priorKey] = currentOption.name
@@ -766,7 +814,10 @@ class SettingsDataStore(private val context: Context) {
                         val currentValInt = prefs[KEY_SCRUB_HUD_TYPE] ?: 2
                         val currentOption = ScrubHudTypeOption.entries.find { it.value == currentValInt } ?: ScrubHudTypeOption.EDGE_HUD
                         if (currentOption.name.equals(targetVal, ignoreCase = true)) {
-                            val priorVal = prefs[priorKey] ?: ScrubHudTypeOption.EDGE_HUD.name
+                            var priorVal = prefs[priorKey]
+                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                                priorVal = if (targetVal.equals("EDGE_HUD", true)) ScrubHudTypeOption.NONE.name else ScrubHudTypeOption.EDGE_HUD.name
+                            }
                             val targetHud = ScrubHudTypeOption.entries.find { it.name.equals(priorVal, true) } ?: ScrubHudTypeOption.EDGE_HUD
                             prefs[KEY_SCRUB_HUD_TYPE] = targetHud.value
                             prefs[priorKey] = currentOption.name
@@ -846,6 +897,10 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun updateThemeSettings(update: ThemeSettings) {
         context.dataStore.edit { prefs ->
+            val oldTheme = prefs[KEY_CURRENT_THEME] ?: ColorTheme.MATCH_ALBUM_ART.name
+            if (!oldTheme.equals(update.currentThemeName, ignoreCase = true)) {
+                prefs[KEY_PRIOR_THEME] = oldTheme
+            }
             prefs[KEY_CURRENT_THEME] = update.currentThemeName
             prefs[KEY_CUSTOM_TEXT_RED] = update.customTextRed
             prefs[KEY_CUSTOM_TEXT_GREEN] = update.customTextGreen

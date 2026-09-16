@@ -49,7 +49,18 @@ class MusicPlaybackService : MediaLibraryService() {
         private var sharedSession: MediaLibrarySession? = null
 
         fun getOrCreatePlayer(context: Context): ExoPlayer {
-            return sharedPlayer ?: synchronized(this) {
+            val existing = sharedPlayer
+            if (existing != null) {
+                try {
+                    if (existing.playbackState >= Player.STATE_IDLE) {
+                        return existing
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("MusicPlaybackService", "Existing sharedPlayer is invalid or released, creating new instance", e)
+                    sharedPlayer = null
+                }
+            }
+            return synchronized(this) {
                 sharedPlayer ?: ExoPlayer.Builder(context.applicationContext)
                     .setAudioAttributes(
                         AudioAttributes.Builder()
@@ -61,8 +72,14 @@ class MusicPlaybackService : MediaLibraryService() {
                     .setHandleAudioBecomingNoisy(true)
                     .build().also {
                         sharedPlayer = it
+                        android.util.Log.i("MusicPlaybackService", "Created new ExoPlayer instance $it")
                     }
             }
+        }
+
+        fun resetSharedPlayer() {
+            sharedPlayer = null
+            sharedSession = null
         }
 
         fun startService(context: Context) {
@@ -135,14 +152,18 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        android.util.Log.i("MusicPlaybackService", "onDestroy called")
         sharedSession?.let { session ->
-            removeSession(session)
-            session.player.release()
-            session.release()
+            try {
+                removeSession(session)
+                session.player.release()
+                session.release()
+            } catch (e: Exception) {
+                android.util.Log.e("MusicPlaybackService", "Error releasing session/player in onDestroy", e)
+            }
             sharedSession = null
         }
         sharedPlayer = null
-        musicDatabase.close()
         super.onDestroy()
     }
 

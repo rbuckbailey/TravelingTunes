@@ -113,10 +113,24 @@ class PlaybackManager(
                 }
             }
 
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                val stateString = when (playbackState) {
+                    Player.STATE_IDLE -> "STATE_IDLE"
+                    Player.STATE_BUFFERING -> "STATE_BUFFERING"
+                    Player.STATE_READY -> "STATE_READY"
+                    Player.STATE_ENDED -> "STATE_ENDED"
+                    else -> "UNKNOWN($playbackState)"
+                }
+                android.util.Log.d("PlaybackManager", "onPlaybackStateChanged: $stateString, isPlaying=${player.isPlaying}")
+                if (playbackState == Player.STATE_READY) {
+                    consecutiveErrorCount = 0
+                }
+            }
+
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 _lastMediaItemTransitionReason.value = reason
                 val playlist = _currentPlaylist.value
-                val currentIndex = player.currentMediaItemIndex
+                val currentIndex = try { player.currentMediaItemIndex } catch (_: Exception) { -1 }
                 val song = if (currentIndex in playlist.indices) {
                     playlist[currentIndex]
                 } else {
@@ -124,12 +138,18 @@ class PlaybackManager(
                     playlist.find { it.id == mediaId }
                 }
                 _currentSong.value = song
-                _durationMs.value = player.duration.coerceAtLeast(0L)
+                _durationMs.value = try { player.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
                 applyNormalizationModifier(song)
+                android.util.Log.d("PlaybackManager", "onMediaItemTransition: title='${song?.title}', reason=$reason, index=$currentIndex")
             }
 
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                android.util.Log.e("PlaybackManager", "Player error encountered: ${error.message}", error)
+                val currentItem = try { player.currentMediaItem } catch (_: Exception) { null }
+                android.util.Log.e(
+                    "PlaybackManager",
+                    "Player error encountered: errorCode=${error.errorCode} (${error.errorCodeName}), message=${error.message}, currentMediaId=${currentItem?.mediaId}, uri=${currentItem?.localConfiguration?.uri}",
+                    error
+                )
                 val now = System.currentTimeMillis()
                 if (now - lastErrorTimestampMs < 3000L) {
                     consecutiveErrorCount++
@@ -139,7 +159,7 @@ class PlaybackManager(
                 lastErrorTimestampMs = now
 
                 if (consecutiveErrorCount >= 3) {
-                    android.util.Log.w("PlaybackManager", "Circuit breaker triggered: Stopping player to prevent audio server lockup.")
+                    android.util.Log.w("PlaybackManager", "Circuit breaker triggered (3 errors in <3s): Stopping player to prevent audio server lockup.")
                     _isPlaying.value = false
                     _actionHudText.value = "Audio engine busy"
                     player.stop()
@@ -148,10 +168,12 @@ class PlaybackManager(
                 }
 
                 if (player.hasNextMediaItem()) {
+                    android.util.Log.i("PlaybackManager", "Player error occurred, skipping to next media item")
                     player.seekToNextMediaItem()
                     player.prepare()
                     player.play()
                 } else {
+                    android.util.Log.w("PlaybackManager", "Player error occurred, no next media item available")
                     _isPlaying.value = false
                 }
             }
@@ -401,11 +423,41 @@ class PlaybackManager(
         }
     }
 
+    fun ensurePlayerReadyForPlayback(targetIndex: Int? = null, positionMs: Long? = null) {
+        val playlist = _currentPlaylist.value
+        if (playlist.isEmpty()) {
+            android.util.Log.w("PlaybackManager", "ensurePlayerReadyForPlayback: currentPlaylist is empty")
+            return
+        }
+
+        val currentIndex = targetIndex ?: run {
+            val songId = _currentSong.value?.id ?: -1L
+            val idx = playlist.indexOfFirst { it.id == songId }
+            if (idx != -1) idx else try { player.currentMediaItemIndex.coerceIn(0, playlist.size - 1) } catch (_: Exception) { 0 }
+        }
+        val pos = positionMs ?: try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
+
+        val mediaCount = try { player.mediaItemCount } catch (_: Exception) { 0 }
+        if (mediaCount == 0 || mediaCount != playlist.size) {
+            android.util.Log.i("PlaybackManager", "ensurePlayerReadyForPlayback: Reloading queue (playlist size ${playlist.size}, player media count $mediaCount, index $currentIndex, pos ${pos}ms)")
+            player.setMediaItems(playlist.map { songToMediaItem(it) }, currentIndex, pos)
+            player.prepare()
+        } else if (player.playbackState == Player.STATE_IDLE) {
+            android.util.Log.i("PlaybackManager", "ensurePlayerReadyForPlayback: Player in STATE_IDLE, calling prepare()")
+            player.prepare()
+        }
+    }
+
     fun playSongAtIndex(index: Int) {
         val playlist = _currentPlaylist.value
+        android.util.Log.d("PlaybackManager", "playSongAtIndex: index=$index, playlistSize=${playlist.size}")
         if (index in playlist.indices) {
             MusicPlaybackService.startService(context)
+            ensurePlayerReadyForPlayback(index, 0L)
             player.seekTo(index, 0L)
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
             player.play()
             _currentSong.value = playlist[index]
             AlbumArtCache.instance.preCacheSurroundingSongs(context, playlist, index)
@@ -414,12 +466,17 @@ class PlaybackManager(
     }
 
     fun togglePlayPause() {
+        android.util.Log.d("PlaybackManager", "togglePlayPause called, currently isPlaying=${player.isPlaying}, state=${player.playbackState}")
         if (player.isPlaying) {
             player.pause()
         } else {
             MusicPlaybackService.startService(context)
+            ensurePlayerReadyForPlayback()
             if (player.playbackState == Player.STATE_ENDED) {
                 player.seekTo(0, 0)
+            }
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
             }
             player.play()
         }
@@ -427,32 +484,71 @@ class PlaybackManager(
     }
 
     fun play() {
+        android.util.Log.d("PlaybackManager", "play called, current state=${player.playbackState}")
         MusicPlaybackService.startService(context)
+        ensurePlayerReadyForPlayback()
+        if (player.playbackState == Player.STATE_IDLE) {
+            player.prepare()
+        }
         player.play()
         persistCurrentPlaybackState()
     }
 
     fun pause() {
+        android.util.Log.d("PlaybackManager", "pause called")
         player.pause()
         persistCurrentPlaybackState()
     }
 
     fun next() {
+        android.util.Log.d("PlaybackManager", "next called, hasNextMediaItem=${player.hasNextMediaItem()}")
+        MusicPlaybackService.startService(context)
+        ensurePlayerReadyForPlayback()
         if (player.hasNextMediaItem()) {
             player.seekToNextMediaItem()
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
+            player.play()
+            persistCurrentPlaybackState()
+        } else if (_currentPlaylist.value.isNotEmpty()) {
+            player.seekTo(0, 0L)
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
+            player.play()
             persistCurrentPlaybackState()
         }
     }
 
     fun previous() {
+        android.util.Log.d("PlaybackManager", "previous called, hasPreviousMediaItem=${player.hasPreviousMediaItem()}")
+        MusicPlaybackService.startService(context)
+        ensurePlayerReadyForPlayback()
         if (player.hasPreviousMediaItem()) {
             player.seekToPreviousMediaItem()
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
+            player.play()
+            persistCurrentPlaybackState()
+        } else if (_currentPlaylist.value.isNotEmpty()) {
+            player.seekTo(0, 0L)
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
+            player.play()
             persistCurrentPlaybackState()
         }
     }
 
     fun restart() {
+        ensurePlayerReadyForPlayback()
         player.seekTo(0L)
+        if (player.playbackState == Player.STATE_IDLE) {
+            player.prepare()
+        }
+        player.play()
     }
 
     fun restartOrPrevious() {
@@ -1082,6 +1178,13 @@ class PlaybackManager(
     }
 
     fun release() {
-        player.release()
+        try {
+            android.util.Log.i("PlaybackManager", "Releasing PlaybackManager player")
+            player.release()
+        } catch (e: Exception) {
+            android.util.Log.w("PlaybackManager", "Error releasing player", e)
+        } finally {
+            MusicPlaybackService.resetSharedPlayer()
+        }
     }
 }
