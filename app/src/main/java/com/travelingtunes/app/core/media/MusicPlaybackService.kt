@@ -544,10 +544,10 @@ class MusicPlaybackService : MediaLibraryService() {
                     "category_albums" -> {
                         val dbAlbums = musicDatabase.getAlbums()
                         val albums = dbAlbums.ifEmpty {
-                            getAllSongsHelper().groupBy { it.album }.map { (albumName, albumSongs) ->
+                            getAllSongsHelper().groupBy { it.albumKey }.map { (_, albumSongs) ->
                                 com.travelingtunes.app.core.database.AlbumInfo(
-                                    name = albumName,
-                                    artist = albumSongs.firstOrNull()?.artist ?: "Unknown Artist",
+                                    name = albumSongs.firstOrNull()?.album ?: "Unknown Album",
+                                    artist = albumSongs.firstOrNull()?.effectiveArtist ?: "Unknown Artist",
                                     songCount = albumSongs.size,
                                     artworkUri = albumSongs.firstOrNull()?.artworkUri
                                 )

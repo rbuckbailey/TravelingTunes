@@ -13,6 +13,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -217,7 +218,8 @@ fun SettingsScreen(
     onOpenDownloadedArtBrowser: () -> Unit = {},
     onOpenDuplicateTrackIdentifier: () -> Unit = {},
     onBackupMetadata: () -> Unit = {},
-    onRestoreMetadata: () -> Unit = {}
+    onRestoreMetadata: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -374,6 +376,14 @@ fun SettingsScreen(
     val groupedSubmenus = remember { SettingsSubmenu.entries.filter { it.categoryGroup != null }.groupBy { it.categoryGroup!! } }
 
     Scaffold(
+        modifier = modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                // Consume taps on the menu layout so they do not pass through or exit the menu
+            },
         topBar = {
             TopAppBar(
                 title = {
@@ -384,6 +394,11 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = handleBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.Close, contentDescription = "Exit to Play Screen")
                     }
                 }
             )

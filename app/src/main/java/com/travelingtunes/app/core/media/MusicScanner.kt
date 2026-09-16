@@ -454,6 +454,7 @@ class MusicScanner(
             val rawTitle = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)?.trim()
             val rawArtist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)?.trim()
             val rawAlbum = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)?.trim()
+            val rawAlbumArtist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST)?.trim()
             val rawGenre = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)?.trim()
 
             val initialTitle = if (!rawTitle.isNullOrBlank() && !rawTitle.equals("Unknown", ignoreCase = true) && !rawTitle.equals("Unknown Title", ignoreCase = true) && !rawTitle.equals("<unknown>", ignoreCase = true)) {
@@ -473,6 +474,10 @@ class MusicScanner(
             } else {
                 folderName
             }
+
+            val albumArtist = if (!rawAlbumArtist.isNullOrBlank() && !rawAlbumArtist.equals("Unknown", ignoreCase = true) && !rawAlbumArtist.equals("<unknown>", ignoreCase = true)) {
+                rawAlbumArtist
+            } else ""
 
             val genre = if (!rawGenre.isNullOrBlank() && !rawGenre.equals("Unknown", ignoreCase = true) && !rawGenre.equals("Unknown Genre", ignoreCase = true)) rawGenre else "Unknown Genre"
             val durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
@@ -513,7 +518,8 @@ class MusicScanner(
                 fileName = fileName,
                 trackNumber = trackNumber,
                 discNumber = discNumber,
-                year = year
+                year = year,
+                albumArtist = albumArtist
             )
         } catch (e: Exception) {
             e.printStackTrace()

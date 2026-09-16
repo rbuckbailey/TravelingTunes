@@ -43,7 +43,7 @@ object Id3ArtworkEmbedder {
                     embedFlacPicture(fileBytes, artworkBytes, tempOutFile)
                 }
                 else -> {
-                    embedMp3Id3v2Apic(fileBytes, artworkBytes, tempOutFile)
+                    false
                 }
             }
 
@@ -127,30 +127,24 @@ object Id3ArtworkEmbedder {
         return try {
             val apicFrame = buildApicFrame(imageBytes)
 
-            val audioStartOffset: Int
+            val (existingFrames, audioPayload) = Id3TagParser.parseAndExtractAudioPayload(audioBytes)
 
-            if (audioBytes.size >= 10 && audioBytes[0] == 'I'.code.toByte() && audioBytes[1] == 'D'.code.toByte() && audioBytes[2] == '3'.code.toByte()) {
-                val synchsafeSize = readSynchsafeInt(audioBytes, 6)
-                val existingTagSize = 10 + synchsafeSize
-                audioStartOffset = existingTagSize.coerceAtMost(audioBytes.size)
-            } else {
-                audioStartOffset = 0
+            val tagBodyStream = ByteArrayOutputStream()
+            // Retain all existing frames EXCEPT old artwork frames ("APIC", "PIC")
+            for (frame in existingFrames) {
+                if (frame.id != "APIC" && frame.id != "PIC") {
+                    tagBodyStream.write(frame.frameBytes)
+                }
             }
 
-            val audioPayload = if (audioStartOffset > 0 && audioStartOffset < audioBytes.size) {
-                audioBytes.copyOfRange(audioStartOffset, audioBytes.size)
-            } else {
-                audioBytes
-            }
+            // Append new APIC frame
+            tagBodyStream.write(apicFrame)
 
-            val tagBody = ByteArrayOutputStream()
-            tagBody.write(apicFrame)
-
-            val tagBodyBytes = tagBody.toByteArray()
+            val tagBodyBytes = tagBodyStream.toByteArray()
             val synchsafeSize = encodeSynchsafeInt(tagBodyBytes.size)
 
             val id3Header = byteArrayOf(
-                'I'.toByte(), 'D'.toByte(), '3'.toByte(),
+                'I'.code.toByte(), 'D'.code.toByte(), '3'.code.toByte(),
                 0x03, 0x00,
                 0x00,
                 synchsafeSize[0], synchsafeSize[1], synchsafeSize[2], synchsafeSize[3]
@@ -173,29 +167,30 @@ object Id3ArtworkEmbedder {
         val mimeBytes = mimeType.toByteArray(Charsets.ISO_8859_1)
 
         val frameContent = ByteArrayOutputStream()
-        frameContent.write(0x00)
+        frameContent.write(0x00) // text encoding ISO-8859-1
         frameContent.write(mimeBytes)
-        frameContent.write(0x00)
-        frameContent.write(0x03)
-        frameContent.write(0x00)
+        frameContent.write(0x00) // null terminator for MIME
+        frameContent.write(0x03) // picture type: 0x03 Cover (front)
+        frameContent.write(0x00) // description string null terminator
 
         frameContent.write(imageBytes)
 
         val frameBytes = frameContent.toByteArray()
         val frameHeader = ByteArrayOutputStream()
-        frameHeader.write("APIC".toByteArray(Charsets.ISO_8859_1))
-
-        val size = frameBytes.size
-        frameHeader.write((size shr 24 and 0xFF))
-        frameHeader.write((size shr 16 and 0xFF))
-        frameHeader.write((size shr 8 and 0xFF))
-        frameHeader.write((size and 0xFF))
-
-        frameHeader.write(0x00)
-        frameHeader.write(0x00)
+        headerWriteApic(frameHeader, frameBytes.size)
 
         frameHeader.write(frameBytes)
         return frameHeader.toByteArray()
+    }
+
+    private fun headerWriteApic(header: ByteArrayOutputStream, size: Int) {
+        header.write("APIC".toByteArray(Charsets.ISO_8859_1))
+        header.write((size shr 24 and 0xFF))
+        header.write((size shr 16 and 0xFF))
+        header.write((size shr 8 and 0xFF))
+        header.write((size and 0xFF))
+        header.write(0x00)
+        header.write(0x00)
     }
 
     private fun embedFlacPicture(
@@ -204,6 +199,8 @@ object Id3ArtworkEmbedder {
         outputFile: File
     ): Boolean {
         return try {
+            if (audioBytes.size < 4 || !isFlacHeader(audioBytes)) return false
+
             val mimeType = if (isPng(imageBytes)) "image/png" else "image/jpeg"
             val mimeBytes = mimeType.toByteArray(Charsets.UTF_8)
 
@@ -212,32 +209,75 @@ object Id3ArtworkEmbedder {
             val w = if (opts.outWidth > 0) opts.outWidth else 500
             val h = if (opts.outHeight > 0) opts.outHeight else 500
 
-            val picBlock = ByteArrayOutputStream()
-            picBlock.write(intToFourBytes(3))
-            picBlock.write(intToFourBytes(mimeBytes.size))
-            picBlock.write(mimeBytes)
-            picBlock.write(intToFourBytes(0))
-            picBlock.write(intToFourBytes(w))
-            picBlock.write(intToFourBytes(h))
-            picBlock.write(intToFourBytes(24))
-            picBlock.write(intToFourBytes(0))
-            picBlock.write(intToFourBytes(imageBytes.size))
-            picBlock.write(imageBytes)
+            val picBlockDataStream = ByteArrayOutputStream()
+            picBlockDataStream.write(intToFourBytes(3)) // 3 = Front Cover
+            picBlockDataStream.write(intToFourBytes(mimeBytes.size))
+            picBlockDataStream.write(mimeBytes)
+            picBlockDataStream.write(intToFourBytes(0)) // Description length 0
+            picBlockDataStream.write(intToFourBytes(w))
+            picBlockDataStream.write(intToFourBytes(h))
+            picBlockDataStream.write(intToFourBytes(24)) // Color depth
+            picBlockDataStream.write(intToFourBytes(0)) // Indexed color count
+            picBlockDataStream.write(intToFourBytes(imageBytes.size))
+            picBlockDataStream.write(imageBytes)
 
-            val picBlockData = picBlock.toByteArray()
+            val picBlockData = picBlockDataStream.toByteArray()
 
-            val blockHeader = ByteArrayOutputStream()
-            blockHeader.write(0x06)
-            val len = picBlockData.size
-            blockHeader.write((len shr 16 and 0xFF))
-            blockHeader.write((len shr 8 and 0xFF))
-            blockHeader.write((len and 0xFF))
+            class FlacBlock(
+                val blockType: Int,
+                val blockData: ByteArray
+            )
+
+            var offset = 4
+            val existingBlocks = mutableListOf<FlacBlock>()
+
+            while (offset + 4 <= audioBytes.size) {
+                val headerByte0 = audioBytes[offset].toInt() and 0xFF
+                val isLast = (headerByte0 and 0x80) != 0
+                val blockType = headerByte0 and 0x7F
+                val len = ((audioBytes[offset + 1].toInt() and 0xFF) shl 16) or
+                          ((audioBytes[offset + 2].toInt() and 0xFF) shl 8) or
+                          (audioBytes[offset + 3].toInt() and 0xFF)
+
+                offset += 4
+                if (offset + len > audioBytes.size) break
+
+                val blockData = audioBytes.copyOfRange(offset, offset + len)
+                existingBlocks.add(FlacBlock(blockType, blockData))
+                offset += len
+
+                if (isLast) break
+            }
+
+            val audioPayload = if (offset <= audioBytes.size) {
+                audioBytes.copyOfRange(offset, audioBytes.size)
+            } else {
+                ByteArray(0)
+            }
+
+            // Remove existing PICTURE blocks (type 6)
+            val retainedBlocks = existingBlocks.filter { it.blockType != 6 }.toMutableList()
+            retainedBlocks.add(FlacBlock(6, picBlockData))
 
             FileOutputStream(outputFile).use { fos ->
-                fos.write(audioBytes, 0, 4)
-                fos.write(blockHeader.toByteArray())
-                fos.write(picBlockData)
-                fos.write(audioBytes, 4, audioBytes.size - 4)
+                fos.write("fLaC".toByteArray(Charsets.ISO_8859_1))
+
+                for (i in retainedBlocks.indices) {
+                    val block = retainedBlocks[i]
+                    val isLastBlock = (i == retainedBlocks.size - 1) && (audioPayload.isNotEmpty())
+                    val headerByte0 = (if (isLastBlock) 0x80 else 0x00) or (block.blockType and 0x7F)
+                    val len = block.blockData.size
+
+                    fos.write(headerByte0)
+                    fos.write((len shr 16 and 0xFF))
+                    fos.write((len shr 8 and 0xFF))
+                    fos.write((len and 0xFF))
+                    fos.write(block.blockData)
+                }
+
+                if (audioPayload.isNotEmpty()) {
+                    fos.write(audioPayload)
+                }
             }
             true
         } catch (e: Exception) {
@@ -252,14 +292,6 @@ object Id3ArtworkEmbedder {
                 bytes[1] == 0x50.toByte() &&
                 bytes[2] == 0x4E.toByte() &&
                 bytes[3] == 0x47.toByte()
-    }
-
-    private fun readSynchsafeInt(bytes: ByteArray, offset: Int): Int {
-        val b1 = bytes[offset].toInt() and 0x7F
-        val b2 = bytes[offset + 1].toInt() and 0x7F
-        val b3 = bytes[offset + 2].toInt() and 0x7F
-        val b4 = bytes[offset + 3].toInt() and 0x7F
-        return (b1 shl 21) or (b2 shl 14) or (b3 shl 7) or b4
     }
 
     private fun encodeSynchsafeInt(value: Int): ByteArray {

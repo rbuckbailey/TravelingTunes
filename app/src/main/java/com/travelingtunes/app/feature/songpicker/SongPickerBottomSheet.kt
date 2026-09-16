@@ -171,7 +171,7 @@ fun SongPickerBottomSheet(
             if (selectedAlbum != null) {
                 val albumSongs = musicDatabase.getSongsByAlbum(selectedAlbum!!)
                 val filtered = albumSongs.filter { song ->
-                    (selectedArtist == null || song.artist.equals(selectedArtist, true)) &&
+                    (selectedArtist == null || song.artist.equals(selectedArtist, true) || song.effectiveArtist.equals(selectedArtist, true)) &&
                     (selectedGenre == null || song.genre.equals(selectedGenre, true))
                 }
                 val base = if (filtered.isNotEmpty()) filtered else albumSongs
@@ -180,10 +180,10 @@ fun SongPickerBottomSheet(
                 val artistSongs = musicDatabase.getSongsByArtist(selectedArtist!!).filter { song ->
                     selectedGenre == null || song.genre.equals(selectedGenre, true)
                 }
-                val albumMap = artistSongs.groupBy { it.album }
-                val albums = albumMap.map { (albumName, songs) ->
+                val albumMap = artistSongs.groupBy { it.albumKey }
+                val albums = albumMap.map { (_, songs) ->
                     AlbumInfo(
-                        name = albumName,
+                        name = songs.firstOrNull()?.album ?: "Unknown Album",
                         artist = selectedArtist!!,
                         songCount = songs.size,
                         artworkUri = songs.firstOrNull()?.artworkUri
@@ -192,7 +192,7 @@ fun SongPickerBottomSheet(
                 albumsList = if (searchQuery.isBlank()) albums else albums.filter { it.name.contains(searchQuery, true) }
             } else if (selectedGenre != null) {
                 val genreSongs = musicDatabase.getSongsByGenre(selectedGenre!!)
-                val artists = genreSongs.map { it.artist }.distinct().sorted()
+                val artists = genreSongs.map { it.effectiveArtist }.distinct().sorted()
                 artistsList = if (searchQuery.isBlank()) artists else artists.filter { it.contains(searchQuery, true) }
             } else if (selectedFolder != null) {
                 val targetFolder = selectedFolder!!
@@ -213,6 +213,7 @@ fun SongPickerBottomSheet(
                             baseList.filter {
                                 it.title.contains(searchQuery, ignoreCase = true) ||
                                         it.artist.contains(searchQuery, ignoreCase = true) ||
+                                        it.effectiveArtist.contains(searchQuery, ignoreCase = true) ||
                                         it.album.contains(searchQuery, ignoreCase = true) ||
                                         it.genre.contains(searchQuery, ignoreCase = true)
                             }
@@ -227,10 +228,10 @@ fun SongPickerBottomSheet(
                                         it.artist.contains(searchQuery, ignoreCase = true)
                             }
                         } else {
-                            currentPlaylist.groupBy { it.album }.map { (albumName, songs) ->
+                            currentPlaylist.groupBy { it.albumKey }.map { (_, songs) ->
                                 AlbumInfo(
-                                    name = albumName,
-                                    artist = songs.firstOrNull()?.artist ?: "Unknown Artist",
+                                    name = songs.firstOrNull()?.album ?: "Unknown Album",
+                                    artist = songs.firstOrNull()?.effectiveArtist ?: "Unknown Artist",
                                     songCount = songs.size,
                                     artworkUri = songs.firstOrNull()?.artworkUri
                                 )
@@ -243,7 +244,7 @@ fun SongPickerBottomSheet(
                             if (searchQuery.isBlank()) allArtists
                             else allArtists.filter { it.contains(searchQuery, ignoreCase = true) }
                         } else {
-                            currentPlaylist.map { it.artist }.distinct().sorted()
+                            currentPlaylist.map { it.effectiveArtist }.distinct().sorted()
                         }
                     }
                     PickerCategory.GENRES -> {

@@ -23,11 +23,7 @@ class AlbumOrderingAndShuffleTest {
     }
 
     private fun getAlbumKey(song: Song): String {
-        return if (song.albumId > 0) {
-            "id_${song.albumId}"
-        } else {
-            "${song.artist.trim().lowercase()}_${song.album.trim().lowercase()}"
-        }
+        return song.albumKey
     }
 
     @Test
@@ -86,6 +82,15 @@ class AlbumOrderingAndShuffleTest {
         val s2 = Song(2L, "Song 1", "Artist B", "Greatest Hits", 0L, 1000L, mockUri, trackNumber = 1)
 
         org.junit.Assert.assertNotEquals(getAlbumKey(s1), getAlbumKey(s2))
+    }
+
+    @Test
+    fun testAlbumArtistPreferredOverArtistForAlbumKey() {
+        val s1 = Song(1L, "Song 1", "Feature Artist A", "Compilation Album", 0L, 1000L, mockUri, albumArtist = "Various Artists")
+        val s2 = Song(2L, "Song 2", "Feature Artist B", "Compilation Album", 0L, 1000L, mockUri, albumArtist = "Various Artists")
+
+        assertEquals(s1.albumKey, s2.albumKey)
+        assertEquals("various artists - compilation album", s1.albumKey)
     }
 
     @Test

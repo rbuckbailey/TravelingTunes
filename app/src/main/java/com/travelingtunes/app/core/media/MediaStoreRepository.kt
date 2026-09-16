@@ -46,11 +46,18 @@ class MediaStoreRepository(private val context: Context) {
             val trackColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TRACK)
             val discColumn = cursor.getColumnIndex("disc_number")
 
+            val albumArtistColumn = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ARTIST)
+            } else {
+                cursor.getColumnIndex("album_artist")
+            }
+
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
                 val rawTitle = cursor.getString(titleColumn)?.trim()
                 val rawArtist = cursor.getString(artistColumn)?.trim()
                 val rawAlbum = cursor.getString(albumColumn)?.trim()
+                val rawAlbumArtist = if (albumArtistColumn != -1) cursor.getString(albumArtistColumn)?.trim() else null
                 val albumId = cursor.getLong(albumIdColumn)
                 val duration = cursor.getLong(durationColumn)
                 val trackVal = if (trackColumn != -1) cursor.getInt(trackColumn) else 0
@@ -98,6 +105,10 @@ class MediaStoreRepository(private val context: Context) {
                     folderName
                 }
 
+                val albumArtist = if (!rawAlbumArtist.isNullOrBlank() && !rawAlbumArtist.equals("<unknown>", ignoreCase = true) && !rawAlbumArtist.equals("Unknown", ignoreCase = true)) {
+                    rawAlbumArtist
+                } else ""
+
                 val contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
                 val artworkUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)
 
@@ -114,7 +125,8 @@ class MediaStoreRepository(private val context: Context) {
                         folderPath = folderName,
                         fileName = fileName,
                         trackNumber = trackNumber,
-                        discNumber = discNumber
+                        discNumber = discNumber,
+                        albumArtist = albumArtist
                     )
                 )
             }
@@ -122,7 +134,7 @@ class MediaStoreRepository(private val context: Context) {
         songs.sortedWith(
             compareBy(
                 String.CASE_INSENSITIVE_ORDER
-            ) { song: Song -> song.artist }
+            ) { song: Song -> song.effectiveArtist }
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { song -> song.album }
                 .thenBy { song -> if (song.discNumber > 0) song.discNumber else Int.MAX_VALUE }
                 .thenBy { song -> if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE }

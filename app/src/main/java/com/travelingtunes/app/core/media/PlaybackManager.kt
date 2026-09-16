@@ -291,11 +291,7 @@ class PlaybackManager(
     }
 
     fun getAlbumKey(song: Song): String {
-        return if (song.albumId > 0) {
-            "id_${song.albumId}"
-        } else {
-            "${song.artist.trim().lowercase()}_${song.album.trim().lowercase()}"
-        }
+        return song.albumKey
     }
 
     fun setPlaylistAndPlay(songs: List<Song>, startIndex: Int = 0, shuffle: Boolean = false) {

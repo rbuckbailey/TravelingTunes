@@ -4,11 +4,14 @@ import android.net.Uri
 import com.travelingtunes.app.core.database.DownloadedAlbumArtInfo
 import com.travelingtunes.app.core.media.ArtworkCandidate
 import com.travelingtunes.app.core.media.Id3ArtworkEmbedder
+import com.travelingtunes.app.core.media.Id3TagEmbedder
+import com.travelingtunes.app.core.media.Id3TagParser
 import com.travelingtunes.app.core.model.GestureAction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.Mockito
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 
@@ -110,8 +113,114 @@ class DownloadedArtAndEmbeddingTest {
         assertEquals('L'.code.toByte(), outputBytes[1])
         assertEquals('a'.code.toByte(), outputBytes[2])
         assertEquals('C'.code.toByte(), outputBytes[3])
-        // Picture block type header is 0x06
-        assertEquals(0x06.toByte(), outputBytes[4])
+        // Picture block type header masked is 0x06
+        assertEquals(0x06.toByte(), (outputBytes[4].toInt() and 0x7F).toByte())
+    }
+
+    @Test
+    fun testArtworkEmbeddingPreservesExistingGenreAndTextFrames() {
+        val tempOutputFile = File.createTempFile("test_art_preserve", ".mp3").apply { deleteOnExit() }
+
+        // Construct initial ID3 tag with TCON (Genre = "Classic Rock"), TIT2, TPE1
+        val genreFrame = Id3TagEmbedder.buildTextFrame("TCON", "Classic Rock")
+        val titleFrame = Id3TagEmbedder.buildTextFrame("TIT2", "Bohemian Rhapsody")
+        val artistFrame = Id3TagEmbedder.buildTextFrame("TPE1", "Queen")
+
+        val initialTagBody = ByteArrayOutputStream()
+        initialTagBody.write(genreFrame)
+        initialTagBody.write(titleFrame)
+        initialTagBody.write(artistFrame)
+        val tagBytes = initialTagBody.toByteArray()
+
+        val synchsize = byteArrayOf(
+            ((tagBytes.size shr 21) and 0x7F).toByte(),
+            ((tagBytes.size shr 14) and 0x7F).toByte(),
+            ((tagBytes.size shr 7) and 0x7F).toByte(),
+            (tagBytes.size and 0x7F).toByte()
+        )
+
+        val id3Header = byteArrayOf('I'.code.toByte(), 'D'.code.toByte(), '3'.code.toByte(), 0x03, 0x00, 0x00, synchsize[0], synchsize[1], synchsize[2], synchsize[3])
+        val dummyAudio = byteArrayOf(0xFF.toByte(), 0xFB.toByte(), 0x90.toByte(), 0x64.toByte())
+
+        val initialAudioWithTag = id3Header + tagBytes + dummyAudio
+        val dummyJpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+
+        val method = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "embedMp3Id3v2Apic",
+            ByteArray::class.java,
+            ByteArray::class.java,
+            File::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(Id3ArtworkEmbedder, initialAudioWithTag, dummyJpeg, tempOutputFile) as Boolean
+
+        assertTrue("Embedding artwork should succeed", result)
+
+        val (frames, _) = Id3TagParser.parseAndExtractAudioPayload(tempOutputFile.readBytes())
+        val frameIds = frames.map { it.id }
+
+        assertTrue("TCON (Genre) frame must be preserved when embedding artwork", frameIds.contains("TCON"))
+        assertTrue("TIT2 (Title) frame must be preserved when embedding artwork", frameIds.contains("TIT2"))
+        assertTrue("TPE1 (Artist) frame must be preserved when embedding artwork", frameIds.contains("TPE1"))
+        assertTrue("APIC (Artwork) frame must be added", frameIds.contains("APIC"))
+    }
+
+    @Test
+    fun testMetadataEmbeddingPreservesExistingArtworkFrame() {
+        val tempOutputFile = File.createTempFile("test_meta_preserve", ".mp3").apply { deleteOnExit() }
+
+        // Create dummy MP3 audio with APIC frame
+        val dummyJpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+        val initialFile = File.createTempFile("test_init", ".mp3").apply { deleteOnExit() }
+
+        val embedApicMethod = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "embedMp3Id3v2Apic",
+            ByteArray::class.java,
+            ByteArray::class.java,
+            File::class.java
+        )
+        embedApicMethod.isAccessible = true
+        val dummyAudioPayload = byteArrayOf(0xFF.toByte(), 0xFB.toByte(), 0x90.toByte(), 0x64.toByte())
+        embedApicMethod.invoke(Id3ArtworkEmbedder, dummyAudioPayload, dummyJpeg, initialFile)
+
+        val fileWithApic = initialFile.readBytes()
+
+        // Now embed metadata text tags (Genre = "Hard Rock", Title = "We Will Rock You")
+        val embedMetaMethod = Id3TagEmbedder::class.java.getDeclaredMethod(
+            "embedMp3Id3v2FullTextFrames",
+            ByteArray::class.java,
+            String::class.java,
+            String::class.java,
+            String::class.java,
+            String::class.java,
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            File::class.java
+        )
+        embedMetaMethod.isAccessible = true
+        val metaResult = embedMetaMethod.invoke(
+            Id3TagEmbedder,
+            fileWithApic,
+            "Hard Rock",
+            "We Will Rock You",
+            "Queen",
+            "News of the World",
+            1977,
+            1,
+            1,
+            tempOutputFile
+        ) as Boolean
+
+        assertTrue("Embedding metadata text frames should succeed", metaResult)
+
+        val (frames, _) = Id3TagParser.parseAndExtractAudioPayload(tempOutputFile.readBytes())
+        val frameIds = frames.map { it.id }
+
+        assertTrue("APIC (Artwork) frame must be preserved when embedding metadata tags", frameIds.contains("APIC"))
+        assertTrue("TCON (Genre) frame must be written", frameIds.contains("TCON"))
+        assertTrue("TIT2 (Title) frame must be written", frameIds.contains("TIT2"))
+        assertTrue("TPE1 (Artist) frame must be written", frameIds.contains("TPE1"))
     }
 
     @Test

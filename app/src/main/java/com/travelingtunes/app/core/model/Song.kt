@@ -21,5 +21,16 @@ data class Song(
     val avgVolume: Float = 0f,
     val peakVolume: Float = 0f,
     val trackGain: Float = 1f,
-    val albumGain: Float = 1f
-)
+    val albumGain: Float = 1f,
+    val albumArtist: String = ""
+) {
+    val effectiveArtist: String
+        get() = albumArtist.ifBlank { artist }
+
+    val albumKey: String
+        get() {
+            val artistPart = effectiveArtist.ifBlank { folderPath }.lowercase().trim()
+            val albumPart = album.ifBlank { "unknown" }.lowercase().trim()
+            return "$artistPart - $albumPart"
+        }
+}

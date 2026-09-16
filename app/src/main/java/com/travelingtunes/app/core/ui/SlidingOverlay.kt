@@ -121,6 +121,12 @@ fun SlidingOverlay(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        // Consume clicks on overlay surface so taps on the menu itself do not exit the menu
+                    }
                     .overlayGestureDismiss(
                         openingTrigger = openingTrigger,
                         slideDirection = slideDirection,

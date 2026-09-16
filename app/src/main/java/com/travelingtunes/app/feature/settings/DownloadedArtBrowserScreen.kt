@@ -246,6 +246,9 @@ fun DownloadedArtBrowserScreen(
                             )
                         }
                     }
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.Close, contentDescription = "Exit to Play Screen")
+                    }
                 }
             )
         },

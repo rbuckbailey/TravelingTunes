@@ -144,7 +144,7 @@ class AlbumArtDownloader(
         }
 
         // Group songs by (artist, album)
-        val albumGroups = allSongs.groupBy { Pair(it.artist, it.album) }
+        val albumGroups = allSongs.groupBy { Pair(it.effectiveArtist, it.album) }
         val missingGroups = mutableListOf<Pair<Pair<String, String>, List<Song>>>()
 
         for ((key, songs) in albumGroups) {

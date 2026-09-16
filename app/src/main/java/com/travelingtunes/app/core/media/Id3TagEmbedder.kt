@@ -45,13 +45,7 @@ object Id3TagEmbedder {
                     )
                 }
                 else -> {
-                    embedMp3Id3v2TextFrames(
-                        audioBytes = fileBytes,
-                        trackNumber = override.trackNumber,
-                        discNumber = override.discNumber,
-                        title = override.title.ifBlank { song.title },
-                        outputFile = tempOutFile
-                    )
+                    false
                 }
             }
 
@@ -110,18 +104,26 @@ object Id3TagEmbedder {
             }
 
             val fileBytes = tempInFile.readBytes()
+            val fileName = song.fileName.lowercase()
 
-            val success = embedMp3Id3v2FullTextFrames(
-                audioBytes = fileBytes,
-                genre = genre ?: song.genre,
-                title = title ?: song.title,
-                artist = artist ?: song.artist,
-                album = album ?: song.album,
-                year = year ?: song.year,
-                trackNumber = trackNumber ?: song.trackNumber,
-                discNumber = discNumber ?: song.discNumber,
-                outputFile = tempOutFile
-            )
+            val success = when {
+                fileName.endsWith(".mp3") || isMp3Header(fileBytes) -> {
+                    embedMp3Id3v2FullTextFrames(
+                        audioBytes = fileBytes,
+                        genre = genre ?: song.genre,
+                        title = title ?: song.title,
+                        artist = artist ?: song.artist,
+                        album = album ?: song.album,
+                        year = year ?: song.year,
+                        trackNumber = trackNumber ?: song.trackNumber,
+                        discNumber = discNumber ?: song.discNumber,
+                        outputFile = tempOutFile
+                    )
+                }
+                else -> {
+                    false
+                }
+            }
 
             if (success && tempOutFile.exists() && tempOutFile.length() > 0) {
                 try {
@@ -163,46 +165,57 @@ object Id3TagEmbedder {
         outputFile: File
     ): Boolean {
         return try {
-            val framesStream = ByteArrayOutputStream()
+            val updatedFrames = mutableMapOf<String, ByteArray>()
+            val updatedFrameIds = mutableSetOf<String>()
 
             if (title.isNotBlank()) {
-                framesStream.write(buildTextFrame("TIT2", title))
+                updatedFrames["TIT2"] = buildTextFrame("TIT2", title)
+                updatedFrameIds.add("TIT2")
             }
             if (artist.isNotBlank()) {
-                framesStream.write(buildTextFrame("TPE1", artist))
+                updatedFrames["TPE1"] = buildTextFrame("TPE1", artist)
+                updatedFrameIds.add("TPE1")
             }
             if (album.isNotBlank()) {
-                framesStream.write(buildTextFrame("TALB", album))
+                updatedFrames["TALB"] = buildTextFrame("TALB", album)
+                updatedFrameIds.add("TALB")
             }
             if (genre.isNotBlank() && genre != "Unknown Genre") {
-                framesStream.write(buildTextFrame("TCON", genre))
+                updatedFrames["TCON"] = buildTextFrame("TCON", genre)
+                updatedFrameIds.add("TCON")
             }
             if (year > 0) {
-                framesStream.write(buildTextFrame("TYER", year.toString()))
+                updatedFrames["TYER"] = buildTextFrame("TYER", year.toString())
+                updatedFrameIds.add("TYER")
             }
             if (trackNumber > 0) {
-                framesStream.write(buildTextFrame("TRCK", trackNumber.toString()))
+                updatedFrames["TRCK"] = buildTextFrame("TRCK", trackNumber.toString())
+                updatedFrameIds.add("TRCK")
             }
             if (discNumber > 0) {
-                framesStream.write(buildTextFrame("TPOS", discNumber.toString()))
+                updatedFrames["TPOS"] = buildTextFrame("TPOS", discNumber.toString())
+                updatedFrameIds.add("TPOS")
             }
 
-            val newFramesBytes = framesStream.toByteArray()
+            if (updatedFrames.isEmpty()) return false
+
+            val (existingFrames, audioPayload) = Id3TagParser.parseAndExtractAudioPayload(audioBytes)
+
+            val tagBodyStream = ByteArrayOutputStream()
+            // Retain existing frames except the text frame IDs being updated
+            for (frame in existingFrames) {
+                if (frame.id !in updatedFrameIds) {
+                    tagBodyStream.write(frame.frameBytes)
+                }
+            }
+
+            // Append updated text frames
+            for ((_, frameBytes) in updatedFrames) {
+                tagBodyStream.write(frameBytes)
+            }
+
+            val newFramesBytes = tagBodyStream.toByteArray()
             if (newFramesBytes.isEmpty()) return false
-
-            val audioStartOffset: Int
-            if (audioBytes.size >= 10 && audioBytes[0] == 'I'.code.toByte() && audioBytes[1] == 'D'.code.toByte() && audioBytes[2] == '3'.code.toByte()) {
-                val synchsafeSize = readSynchsafeInt(audioBytes, 6)
-                audioStartOffset = (10 + synchsafeSize).coerceAtMost(audioBytes.size)
-            } else {
-                audioStartOffset = 0
-            }
-
-            val audioPayload = if (audioStartOffset > 0 && audioStartOffset < audioBytes.size) {
-                audioBytes.copyOfRange(audioStartOffset, audioBytes.size)
-            } else {
-                audioBytes
-            }
 
             val synchsafeSize = encodeSynchsafeInt(newFramesBytes.size)
             val id3Header = byteArrayOf(
@@ -222,13 +235,6 @@ object Id3TagEmbedder {
             e.printStackTrace()
             false
         }
-    }
-
-    private fun isMp3Header(bytes: ByteArray): Boolean {
-        if (bytes.size >= 3 && bytes[0] == 'I'.code.toByte() && bytes[1] == 'D'.code.toByte() && bytes[2] == '3'.code.toByte()) {
-            return true
-        }
-        return bytes.size >= 2 && (bytes[0].toInt() and 0xFF) == 0xFF && (bytes[1].toInt() and 0xE0) == 0xE0
     }
 
     private fun embedMp3Id3v2TextFrames(
@@ -239,34 +245,39 @@ object Id3TagEmbedder {
         outputFile: File
     ): Boolean {
         return try {
-            val framesStream = ByteArrayOutputStream()
+            val updatedFrames = mutableMapOf<String, ByteArray>()
+            val updatedFrameIds = mutableSetOf<String>()
 
             if (trackNumber > 0) {
-                framesStream.write(buildTextFrame("TRCK", trackNumber.toString()))
+                updatedFrames["TRCK"] = buildTextFrame("TRCK", trackNumber.toString())
+                updatedFrameIds.add("TRCK")
             }
             if (discNumber > 0) {
-                framesStream.write(buildTextFrame("TPOS", discNumber.toString()))
+                updatedFrames["TPOS"] = buildTextFrame("TPOS", discNumber.toString())
+                updatedFrameIds.add("TPOS")
             }
             if (title.isNotBlank()) {
-                framesStream.write(buildTextFrame("TIT2", title))
+                updatedFrames["TIT2"] = buildTextFrame("TIT2", title)
+                updatedFrameIds.add("TIT2")
             }
 
-            val newFramesBytes = framesStream.toByteArray()
+            if (updatedFrames.isEmpty()) return false
+
+            val (existingFrames, audioPayload) = Id3TagParser.parseAndExtractAudioPayload(audioBytes)
+
+            val tagBodyStream = ByteArrayOutputStream()
+            for (frame in existingFrames) {
+                if (frame.id !in updatedFrameIds) {
+                    tagBodyStream.write(frame.frameBytes)
+                }
+            }
+
+            for ((_, frameBytes) in updatedFrames) {
+                tagBodyStream.write(frameBytes)
+            }
+
+            val newFramesBytes = tagBodyStream.toByteArray()
             if (newFramesBytes.isEmpty()) return false
-
-            val audioStartOffset: Int
-            if (audioBytes.size >= 10 && audioBytes[0] == 'I'.code.toByte() && audioBytes[1] == 'D'.code.toByte() && audioBytes[2] == '3'.code.toByte()) {
-                val synchsafeSize = readSynchsafeInt(audioBytes, 6)
-                audioStartOffset = (10 + synchsafeSize).coerceAtMost(audioBytes.size)
-            } else {
-                audioStartOffset = 0
-            }
-
-            val audioPayload = if (audioStartOffset > 0 && audioStartOffset < audioBytes.size) {
-                audioBytes.copyOfRange(audioStartOffset, audioBytes.size)
-            } else {
-                audioBytes
-            }
 
             val synchsafeSize = encodeSynchsafeInt(newFramesBytes.size)
             val id3Header = byteArrayOf(
@@ -288,12 +299,19 @@ object Id3TagEmbedder {
         }
     }
 
-    private fun buildTextFrame(frameId: String, text: String): ByteArray {
-        val textBytes = text.toByteArray(Charsets.UTF_8)
+    fun buildTextFrame(frameId: String, text: String): ByteArray {
+        val isAscii = text.all { it.code in 1..127 }
         val body = ByteArrayOutputStream()
-        body.write(0x03) // UTF-8 encoding
-        body.write(textBytes)
-        body.write(0x00) // null terminator
+        if (isAscii) {
+            body.write(0x00) // ISO-8859-1
+            body.write(text.toByteArray(Charsets.ISO_8859_1))
+            body.write(0x00) // null terminator
+        } else {
+            body.write(0x01) // UTF-16 with BOM
+            body.write(text.toByteArray(Charsets.UTF_16))
+            body.write(0x00)
+            body.write(0x00) // double null terminator
+        }
 
         val bodyBytes = body.toByteArray()
         val header = ByteArrayOutputStream()
@@ -309,12 +327,11 @@ object Id3TagEmbedder {
         return header.toByteArray()
     }
 
-    private fun readSynchsafeInt(bytes: ByteArray, offset: Int): Int {
-        val b1 = bytes[offset].toInt() and 0x7F
-        val b2 = bytes[offset + 1].toInt() and 0x7F
-        val b3 = bytes[offset + 2].toInt() and 0x7F
-        val b4 = bytes[offset + 3].toInt() and 0x7F
-        return (b1 shl 21) or (b2 shl 14) or (b3 shl 7) or b4
+    private fun isMp3Header(bytes: ByteArray): Boolean {
+        if (bytes.size >= 3 && bytes[0] == 'I'.code.toByte() && bytes[1] == 'D'.code.toByte() && bytes[2] == '3'.code.toByte()) {
+            return true
+        }
+        return bytes.size >= 2 && (bytes[0].toInt() and 0xFF) == 0xFF && (bytes[1].toInt() and 0xE0) == 0xE0
     }
 
     private fun encodeSynchsafeInt(value: Int): ByteArray {

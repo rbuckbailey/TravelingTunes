@@ -54,7 +54,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
 
     companion object {
         private const val DATABASE_NAME = "traveling_tunes_music.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 4
 
         private const val TABLE_SONGS = "songs"
         private const val TABLE_CDDB_OVERRIDES = "cddb_overrides"
@@ -78,6 +78,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         private const val COL_PEAK_VOLUME = "peak_volume"
         private const val COL_TRACK_GAIN = "track_gain"
         private const val COL_ALBUM_GAIN = "album_gain"
+        private const val COL_ALBUM_ARTIST = "album_artist"
 
         private const val COL_SONG_ID = "song_id"
         private const val COL_CDDB_ID = "cddb_id"
@@ -104,7 +105,8 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                 $COL_AVG_VOLUME REAL NOT NULL DEFAULT 0.0,
                 $COL_PEAK_VOLUME REAL NOT NULL DEFAULT 0.0,
                 $COL_TRACK_GAIN REAL NOT NULL DEFAULT 1.0,
-                $COL_ALBUM_GAIN REAL NOT NULL DEFAULT 1.0
+                $COL_ALBUM_GAIN REAL NOT NULL DEFAULT 1.0,
+                $COL_ALBUM_ARTIST TEXT NOT NULL DEFAULT ''
             )
         """.trimIndent()
         db.execSQL(createSongsTable)
@@ -125,6 +127,32 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         db.execSQL(createCddbTable)
     }
 
+    override fun onOpen(db: SQLiteDatabase) {
+        super.onOpen(db)
+        ensureColumnExists(db, TABLE_SONGS, COL_ALBUM_ARTIST, "TEXT NOT NULL DEFAULT ''")
+        ensureColumnExists(db, TABLE_SONGS, COL_AVG_VOLUME, "REAL NOT NULL DEFAULT 0.0")
+        ensureColumnExists(db, TABLE_SONGS, COL_PEAK_VOLUME, "REAL NOT NULL DEFAULT 0.0")
+        ensureColumnExists(db, TABLE_SONGS, COL_TRACK_GAIN, "REAL NOT NULL DEFAULT 1.0")
+        ensureColumnExists(db, TABLE_SONGS, COL_ALBUM_GAIN, "REAL NOT NULL DEFAULT 1.0")
+    }
+
+    private fun ensureColumnExists(db: SQLiteDatabase, table: String, column: String, columnDef: String) {
+        try {
+            val cursor = db.rawQuery("PRAGMA table_info($table)", null)
+            cursor.use { c ->
+                val nameIndex = c.getColumnIndex("name")
+                if (nameIndex != -1) {
+                    while (c.moveToNext()) {
+                        if (c.getString(nameIndex) == column) {
+                            return
+                        }
+                    }
+                }
+            }
+            db.execSQL("ALTER TABLE $table ADD COLUMN $column $columnDef")
+        } catch (_: Exception) {}
+    }
+
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 3) {
             try {
@@ -132,15 +160,16 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                 db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_PEAK_VOLUME REAL NOT NULL DEFAULT 0.0")
                 db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_TRACK_GAIN REAL NOT NULL DEFAULT 1.0")
                 db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_ALBUM_GAIN REAL NOT NULL DEFAULT 1.0")
+                db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_ALBUM_ARTIST TEXT NOT NULL DEFAULT ''")
             } catch (_: Exception) {
                 db.execSQL("DROP TABLE IF EXISTS $TABLE_SONGS")
                 db.execSQL("DROP TABLE IF EXISTS $TABLE_CDDB_OVERRIDES")
                 onCreate(db)
             }
-        } else {
-            db.execSQL("DROP TABLE IF EXISTS $TABLE_SONGS")
-            db.execSQL("DROP TABLE IF EXISTS $TABLE_CDDB_OVERRIDES")
-            onCreate(db)
+        } else if (oldVersion < 4) {
+            try {
+                db.execSQL("ALTER TABLE $TABLE_SONGS ADD COLUMN $COL_ALBUM_ARTIST TEXT NOT NULL DEFAULT ''")
+            } catch (_: Exception) {}
         }
     }
 
@@ -169,6 +198,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                     put(COL_PEAK_VOLUME, song.peakVolume)
                     put(COL_TRACK_GAIN, song.trackGain)
                     put(COL_ALBUM_GAIN, song.albumGain)
+                    put(COL_ALBUM_ARTIST, song.albumArtist)
                 }
                 db.insertWithOnConflict(TABLE_SONGS, null, cv, SQLiteDatabase.CONFLICT_REPLACE)
             }
@@ -534,18 +564,20 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         val albums = mutableListOf<AlbumInfo>()
         val db = readableDatabase
         val sql = """
-            SELECT $COL_ALBUM, $COL_ARTIST, COUNT(*) as song_count, MAX($COL_ARTWORK_URI) as art_uri
+            SELECT $COL_ALBUM, $COL_ARTIST, COUNT(*) as song_count, MAX($COL_ARTWORK_URI) as art_uri, MAX($COL_ALBUM_ARTIST) as album_artist
             FROM $TABLE_SONGS 
-            GROUP BY $COL_ALBUM
+            GROUP BY $COL_ALBUM, $COL_ARTIST
             ORDER BY $COL_ALBUM ASC
         """.trimIndent()
         val cursor = db.rawQuery(sql, null)
         cursor.use { c ->
             while (c.moveToNext()) {
                 val album = c.getString(0)
-                val artist = c.getString(1)
+                val trackArtist = c.getString(1)
                 val count = c.getInt(2)
                 val artStr = c.getString(3)
+                val albumArtistStr = if (c.columnCount > 4) c.getString(4) else null
+                val artist = if (!albumArtistStr.isNullOrBlank()) albumArtistStr else trackArtist
                 val artUri = artStr?.let { Uri.parse(it) }
                 albums.add(AlbumInfo(album, artist, count, artUri))
             }
@@ -664,6 +696,8 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         val trackGain = if (trackGainIdx != -1) c.getFloat(trackGainIdx) else 1f
         val albumGainIdx = c.getColumnIndex(COL_ALBUM_GAIN)
         val albumGain = if (albumGainIdx != -1) c.getFloat(albumGainIdx) else 1f
+        val albumArtistIdx = c.getColumnIndex(COL_ALBUM_ARTIST)
+        val albumArtist = if (albumArtistIdx != -1) c.getString(albumArtistIdx) ?: "" else ""
 
         return Song(
             id = id,
@@ -684,7 +718,8 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             avgVolume = avgVolume,
             peakVolume = peakVolume,
             trackGain = trackGain,
-            albumGain = albumGain
+            albumGain = albumGain,
+            albumArtist = albumArtist
         )
     }
 }

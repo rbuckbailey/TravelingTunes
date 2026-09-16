@@ -210,7 +210,7 @@ object AudioVolumeAnalyzer {
 
         // Calculate album gain per album
         val updatedSongs = database.getAllSongs()
-        val albumGroups = updatedSongs.groupBy { Pair(it.album, it.artist) }
+        val albumGroups = updatedSongs.groupBy { Pair(it.album, it.effectiveArtist) }
         for ((albumPair, albumSongs) in albumGroups) {
             BackgroundTaskGate.checkYieldAndPause()
             val (albumName, artistName) = albumPair

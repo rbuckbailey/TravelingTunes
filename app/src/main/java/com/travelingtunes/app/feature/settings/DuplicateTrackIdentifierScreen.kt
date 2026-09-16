@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.InsertDriveFile
@@ -127,6 +128,9 @@ fun DuplicateTrackIdentifierScreen(
                 actions = {
                     IconButton(onClick = { scanDuplicates(true) }, enabled = !isLoading) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh scan")
+                    }
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.Close, contentDescription = "Exit to Play Screen")
                     }
                 }
             )
