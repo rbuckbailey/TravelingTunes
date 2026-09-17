@@ -9,8 +9,8 @@ import com.travelingtunes.app.core.model.NormalizationSettings
 import com.travelingtunes.app.core.model.NormalizationSummary
 import com.travelingtunes.app.core.model.Song
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.nio.ByteOrder
 import kotlin.math.abs
 import kotlin.math.min
@@ -98,6 +98,21 @@ object AudioVolumeAnalyzer {
         song: Song,
         settings: NormalizationSettings = NormalizationSettings()
     ): VolumeAnalysisResult = withContext(Dispatchers.IO) {
+        val result = withTimeoutOrNull(3000L) {
+            analyzeSongInternal(context, song, settings)
+        }
+        result ?: VolumeAnalysisResult(
+            avgVolume = if (song.avgVolume > 0.0001f) song.avgVolume else 0.15f,
+            peakVolume = if (song.peakVolume > 0.0001f) song.peakVolume else 0.85f,
+            trackGain = if (song.trackGain > 0.001f) song.trackGain else 1.0f
+        )
+    }
+
+    private fun analyzeSongInternal(
+        context: Context,
+        song: Song,
+        settings: NormalizationSettings
+    ): VolumeAnalysisResult {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         var pfd: android.os.ParcelFileDescriptor? = null
@@ -139,65 +154,86 @@ object AudioVolumeAnalyzer {
                 codec.configure(format, null, null, 0)
                 codec.start()
 
+                val durationUs = if (format.containsKey(MediaFormat.KEY_DURATION)) {
+                    format.getLong(MediaFormat.KEY_DURATION)
+                } else {
+                    song.durationMs * 1000L
+                }
+
+                val seekPoints = if (settings.fullScanEnabled && durationUs > 5000000L) {
+                    listOf((durationUs * 0.15).toLong(), (durationUs * 0.50).toLong(), (durationUs * 0.80).toLong())
+                } else if (durationUs > 2000000L) {
+                    listOf((durationUs * 0.30).toLong())
+                } else {
+                    listOf(0L)
+                }
+
+                val framesPerWindow = if (settings.fullScanEnabled) 800 else 1200
                 val bufferInfo = MediaCodec.BufferInfo()
-                var isEOS = false
-                val timeoutUs = 5000L
-                var decodedFrames = 0
-                val maxFramesToDecode = if (settings.fullScanEnabled) 25000 else 3000
-                var emptyAttempts = 0
-                val maxEmptyAttempts = 100
 
-                while (!isEOS && decodedFrames < maxFramesToDecode && emptyAttempts < maxEmptyAttempts) {
-                    kotlin.coroutines.coroutineContext.ensureActive()
-                    BackgroundTaskGate.checkYieldAndPause()
-
-                    var processedSomething = false
-                    val inputIdx = codec.dequeueInputBuffer(timeoutUs)
-                    if (inputIdx >= 0) {
-                        val inputBuf = codec.getInputBuffer(inputIdx)
-                        if (inputBuf != null) {
-                            val sampleSize = extractor.readSampleData(inputBuf, 0)
-                            if (sampleSize < 0) {
-                                codec.queueInputBuffer(inputIdx, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                                isEOS = true
-                            } else {
-                                val sampleTime = extractor.sampleTime
-                                codec.queueInputBuffer(inputIdx, 0, sampleSize, sampleTime, 0)
-                                extractor.advance()
-                            }
-                            processedSomething = true
-                        }
+                for (targetUs in seekPoints) {
+                    if (targetUs > 0L) {
+                        try {
+                            extractor.seekTo(targetUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+                            codec.flush()
+                        } catch (_: Exception) {}
                     }
 
-                    val outputIdx = codec.dequeueOutputBuffer(bufferInfo, timeoutUs)
-                    if (outputIdx >= 0) {
-                        val outputBuf = codec.getOutputBuffer(outputIdx)
-                        if (outputBuf != null && bufferInfo.size > 0) {
-                            outputBuf.position(bufferInfo.offset)
-                            outputBuf.limit(bufferInfo.offset + bufferInfo.size)
-                            outputBuf.order(ByteOrder.LITTLE_ENDIAN)
+                    var isEOS = false
+                    var decodedFrames = 0
+                    var emptyAttempts = 0
+                    val maxEmptyAttempts = 50
 
-                            val shortBuf = outputBuf.asShortBuffer()
-                            while (shortBuf.hasRemaining()) {
-                                val sample = shortBuf.get()
-                                val norm = sample.toFloat() / 32768.0f
-                                val absNorm = abs(norm)
-                                sumSquares += (norm * norm)
-                                totalSamples++
-                                if (absNorm > maxPeakVal) {
-                                    maxPeakVal = absNorm
+                    while (!isEOS && decodedFrames < framesPerWindow && emptyAttempts < maxEmptyAttempts) {
+                        var processedSomething = false
+
+                        val inputIdx = codec.dequeueInputBuffer(0L)
+                        if (inputIdx >= 0) {
+                            val inputBuf = codec.getInputBuffer(inputIdx)
+                            if (inputBuf != null) {
+                                val sampleSize = extractor.readSampleData(inputBuf, 0)
+                                if (sampleSize < 0) {
+                                    codec.queueInputBuffer(inputIdx, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                                    isEOS = true
+                                } else {
+                                    val sampleTime = extractor.sampleTime
+                                    codec.queueInputBuffer(inputIdx, 0, sampleSize, sampleTime, 0)
+                                    extractor.advance()
                                 }
+                                processedSomething = true
                             }
-                            decodedFrames++
-                            processedSomething = true
                         }
-                        codec.releaseOutputBuffer(outputIdx, false)
-                    }
 
-                    if (!processedSomething) {
-                        emptyAttempts++
-                    } else {
-                        emptyAttempts = 0
+                        val outputIdx = codec.dequeueOutputBuffer(bufferInfo, 0L)
+                        if (outputIdx >= 0) {
+                            val outputBuf = codec.getOutputBuffer(outputIdx)
+                            if (outputBuf != null && bufferInfo.size > 0) {
+                                outputBuf.position(bufferInfo.offset)
+                                outputBuf.limit(bufferInfo.offset + bufferInfo.size)
+                                outputBuf.order(ByteOrder.LITTLE_ENDIAN)
+
+                                val shortBuf = outputBuf.asShortBuffer()
+                                while (shortBuf.hasRemaining()) {
+                                    val sample = shortBuf.get()
+                                    val norm = sample.toFloat() / 32768.0f
+                                    val absNorm = abs(norm)
+                                    sumSquares += (norm * norm)
+                                    totalSamples++
+                                    if (absNorm > maxPeakVal) {
+                                        maxPeakVal = absNorm
+                                    }
+                                }
+                                decodedFrames++
+                                processedSomething = true
+                            }
+                            codec.releaseOutputBuffer(outputIdx, false)
+                        }
+
+                        if (!processedSomething) {
+                            emptyAttempts++
+                        } else {
+                            emptyAttempts = 0
+                        }
                     }
                 }
             }
@@ -228,7 +264,7 @@ object AudioVolumeAnalyzer {
             maxGainBoost = settings.maxGainBoost
         )
 
-        VolumeAnalysisResult(
+        return VolumeAnalysisResult(
             avgVolume = avgVolume,
             peakVolume = peakVolume,
             trackGain = trackGain

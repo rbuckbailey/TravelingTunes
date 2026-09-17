@@ -1,5 +1,6 @@
 package com.travelingtunes.app.core.media
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.media.AudioManager
 import androidx.media3.common.MediaItem
@@ -23,13 +24,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class PlaybackManager(
-    private val context: Context,
+    context: Context,
     private val settingsDataStore: SettingsDataStore? = null,
     private val musicDatabase: MusicDatabase? = null
 ) {
+    private val context: Context = context.applicationContext
 
     companion object {
         @Volatile
+        @SuppressLint("StaticFieldLeak")
         private var instance: PlaybackManager? = null
 
         fun getInstance(

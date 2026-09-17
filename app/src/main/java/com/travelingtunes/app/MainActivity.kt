@@ -3,7 +3,6 @@ package com.travelingtunes.app
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -62,8 +61,11 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val audioGranted = permissions[Manifest.permission.READ_MEDIA_AUDIO] == true ||
-                permissions[Manifest.permission.READ_EXTERNAL_STORAGE] == true
+        val audioGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions[Manifest.permission.READ_MEDIA_AUDIO] == true
+        } else {
+            permissions[Manifest.permission.READ_EXTERNAL_STORAGE] == true
+        }
         if (audioGranted) {
             loadInitialMusic()
         }
@@ -136,7 +138,7 @@ class MainActivity : ComponentActivity() {
             val artDownloadTotalCount by musicScanner.artDownloadTotalCount.collectAsState()
             val lastAuditReport by musicScanner.lastAuditReport.collectAsState()
 
-            val cddbOverridesCount by androidx.compose.runtime.produceState(initialValue = 0, key1 = lastScanTime) {
+            val cddbOverridesCount by produceState(initialValue = 0, key1 = lastScanTime) {
                 value = musicScanner.getCddbOverridesCount()
             }
             val isEmbeddingCddb by musicScanner.isEmbeddingCddb.collectAsState()
@@ -451,7 +453,7 @@ fun TravelingTunesNavHost(
     val volumeAnalysisProgressCurrent by musicScanner.volumeAnalysisProgressCurrent.collectAsState()
     val volumeAnalysisProgressTotal by musicScanner.volumeAnalysisProgressTotal.collectAsState()
 
-    LaunchedEffect(libraryStats, normalizationSettings, isAnalyzingVolume) {
+    LaunchedEffect(libraryStats, normalizationSettings, volumeAnalysisProgressCurrent, isAnalyzingVolume) {
         normalizationSummary = musicDatabase.getNormalizationSummary(normalizationSettings)
     }
 
@@ -494,6 +496,7 @@ fun TravelingTunesNavHost(
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
                 musicDatabase = musicDatabase,
+                musicScanner = musicScanner,
                 musicFolderName = musicFolderName,
                 lastScanTime = lastScanTime,
                 libraryStats = libraryStats,

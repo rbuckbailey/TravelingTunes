@@ -99,6 +99,8 @@ import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.database.LibraryStats
 import com.travelingtunes.app.core.datastore.SettingsDataStore
 import com.travelingtunes.app.core.media.AlbumArtAuditReport
+import com.travelingtunes.app.core.media.MusicScanner
+import kotlinx.coroutines.flow.flowOf
 import com.travelingtunes.app.core.model.ArtAlignmentLandscape
 import com.travelingtunes.app.core.model.ArtAlignmentPortrait
 import com.travelingtunes.app.core.model.ArtColorPriority
@@ -190,6 +192,7 @@ fun SettingsScreen(
     displaySettings: DisplaySettings,
     themeSettings: ThemeSettings,
     musicDatabase: MusicDatabase? = null,
+    musicScanner: MusicScanner? = null,
     musicFolderName: String? = null,
     lastScanTime: Long = 0L,
     libraryStats: LibraryStats = LibraryStats(),
@@ -243,9 +246,14 @@ fun SettingsScreen(
     var statusToastMessage by remember { mutableStateOf<String?>(null) }
 
     val effectiveNormalizationSettings by settingsDataStore.normalizationSettingsFlow.collectAsState(initial = normalizationSettings)
+    val currentVolumeProgress by (musicScanner?.volumeAnalysisProgressCurrent ?: flowOf(volumeAnalysisProgressCurrent)).collectAsState(initial = volumeAnalysisProgressCurrent)
+    val totalVolumeProgress by (musicScanner?.volumeAnalysisProgressTotal ?: flowOf(volumeAnalysisProgressTotal)).collectAsState(initial = volumeAnalysisProgressTotal)
+    val currentVolumeStatusMessage by (musicScanner?.volumeAnalysisStatusMessage ?: flowOf(volumeAnalysisStatusMessage)).collectAsState(initial = volumeAnalysisStatusMessage)
+    val currentIsAnalyzingVolume by (musicScanner?.isAnalyzingVolume ?: flowOf(isAnalyzingVolume)).collectAsState(initial = isAnalyzingVolume)
+
     var effectiveNormalizationSummary by remember { mutableStateOf(normalizationSummary) }
 
-    LaunchedEffect(musicDatabase, effectiveNormalizationSettings, isAnalyzingVolume) {
+    LaunchedEffect(musicDatabase, effectiveNormalizationSettings, currentVolumeProgress, currentIsAnalyzingVolume) {
         musicDatabase?.let { db ->
             effectiveNormalizationSummary = db.getNormalizationSummary(effectiveNormalizationSettings)
         }
@@ -574,13 +582,14 @@ fun SettingsScreen(
                                 cddbOverridesCount = cddbOverridesCount,
                                 isEmbeddingCddb = isEmbeddingCddb,
                                 cddbEmbeddingStatus = cddbEmbeddingStatus,
+                                musicScanner = musicScanner,
                                 normalizationMode = normalizationMode,
                                 normalizationSettings = effectiveNormalizationSettings,
                                 normalizationSummary = effectiveNormalizationSummary,
-                                isAnalyzingVolume = isAnalyzingVolume,
-                                volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
-                                volumeAnalysisProgressCurrent = volumeAnalysisProgressCurrent,
-                                volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
+                                isAnalyzingVolume = currentIsAnalyzingVolume,
+                                volumeAnalysisStatusMessage = currentVolumeStatusMessage,
+                                volumeAnalysisProgressCurrent = currentVolumeProgress,
+                                volumeAnalysisProgressTotal = totalVolumeProgress,
                                 onSelectNormalizationMode = onSelectNormalizationMode,
                                 onUpdateNormalizationSettings = { newSettings ->
                                     coroutineScope.launch {
@@ -816,13 +825,14 @@ fun SettingsScreen(
                         cddbOverridesCount = cddbOverridesCount,
                         isEmbeddingCddb = isEmbeddingCddb,
                         cddbEmbeddingStatus = cddbEmbeddingStatus,
+                        musicScanner = musicScanner,
                         normalizationMode = normalizationMode,
                         normalizationSettings = effectiveNormalizationSettings,
                         normalizationSummary = effectiveNormalizationSummary,
-                        isAnalyzingVolume = isAnalyzingVolume,
-                        volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
-                        volumeAnalysisProgressCurrent = volumeAnalysisProgressCurrent,
-                        volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
+                        isAnalyzingVolume = currentIsAnalyzingVolume,
+                        volumeAnalysisStatusMessage = currentVolumeStatusMessage,
+                        volumeAnalysisProgressCurrent = currentVolumeProgress,
+                        volumeAnalysisProgressTotal = totalVolumeProgress,
                         onSelectNormalizationMode = onSelectNormalizationMode,
                         onUpdateNormalizationSettings = { newSettings ->
                             coroutineScope.launch {
@@ -1000,6 +1010,7 @@ private fun SubmenuContent(
     cddbOverridesCount: Int = 0,
     isEmbeddingCddb: Boolean = false,
     cddbEmbeddingStatus: String? = null,
+    musicScanner: MusicScanner? = null,
     normalizationMode: NormalizationMode = NormalizationMode.ALBUM,
     normalizationSettings: NormalizationSettings = NormalizationSettings(),
     normalizationSummary: NormalizationSummary = NormalizationSummary(),
@@ -1074,6 +1085,7 @@ private fun SubmenuContent(
                     cddbOverridesCount = cddbOverridesCount,
                     isEmbeddingCddb = isEmbeddingCddb,
                     cddbEmbeddingStatus = cddbEmbeddingStatus,
+                    musicScanner = musicScanner,
                     normalizationMode = normalizationMode,
                     normalizationSettings = normalizationSettings,
                     normalizationSummary = normalizationSummary,
@@ -1170,6 +1182,7 @@ private fun LibrarySettingsContent(
     cddbOverridesCount: Int = 0,
     isEmbeddingCddb: Boolean = false,
     cddbEmbeddingStatus: String? = null,
+    musicScanner: MusicScanner? = null,
     normalizationMode: NormalizationMode = NormalizationMode.ALBUM,
     normalizationSettings: NormalizationSettings = NormalizationSettings(),
     normalizationSummary: NormalizationSummary = NormalizationSummary(),
