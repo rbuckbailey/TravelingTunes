@@ -1,7 +1,6 @@
 package com.travelingtunes.app.feature.queue
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -70,7 +69,7 @@ fun QueueBottomSheet(
     openingTrigger: GestureTrigger? = null,
     playbackManager: PlaybackManager,
     onOpenSongPicker: (SlideDirection) -> Unit = {},
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
     val currentSong by playbackManager.currentSong.collectAsState()
@@ -85,7 +84,7 @@ fun QueueBottomSheet(
         visible = visible,
         slideDirection = slideDirection,
         openingTrigger = openingTrigger,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
     ) {
         Column(
             modifier = Modifier
@@ -115,7 +114,7 @@ fun QueueBottomSheet(
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
-                            text = "${currentPlaylist.size}",
+                            text = currentPlaylist.size.toString(),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -166,7 +165,7 @@ fun QueueBottomSheet(
                 }
             } else {
                 var draggedItemIndex by remember { mutableStateOf<Int?>(null) }
-                var accumulatedDragY by remember { mutableStateOf(0f) }
+                var accumulatedDragY by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
 
                 val listState = rememberLazyListState()
 
@@ -211,7 +210,7 @@ fun QueueBottomSheet(
                             onMoveUp = if (index > 0) {
                                 { playbackManager.moveQueueItem(index, index - 1) }
                             } else null,
-                            onMoveDown = if (index < currentPlaylist.size - 1) {
+                            onMoveDown = if (index < (currentPlaylist.size - 1)) {
                                 { playbackManager.moveQueueItem(index, index + 1) }
                             } else null,
                             onDrag = { dragAmountY ->

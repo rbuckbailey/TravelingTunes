@@ -28,6 +28,10 @@ class AlbumArtCache private constructor() {
         cache.put(songId, bitmap)
     }
 
+    fun remove(songId: Long) {
+        cache.remove(songId)
+    }
+
     fun preCacheSurroundingSongs(context: Context, playlist: List<Song>, currentIndex: Int, radius: Int = 4) {
         if (playlist.isEmpty()) return
         scope.launch {

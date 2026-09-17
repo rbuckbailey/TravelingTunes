@@ -29,7 +29,6 @@ import com.travelingtunes.app.core.model.NormalizationSettings
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
 import com.travelingtunes.app.core.model.ShuffleMode
-import com.travelingtunes.app.core.model.StreamingAccount
 import com.travelingtunes.app.core.model.TextAlignmentOption
 import com.travelingtunes.app.core.model.ThemeSettings
 import com.travelingtunes.app.core.model.TitleRowType
@@ -47,14 +46,13 @@ data class SavedPlaybackState(
     val isShuffle: Boolean = false,
     val isRepeat: Boolean = false,
     val repeatMode: RepeatMode = RepeatMode.OFF,
-    val shuffleMode: ShuffleMode = ShuffleMode.OFF
+    val shuffleMode: ShuffleMode = ShuffleMode.OFF,
 )
 
 class SettingsDataStore(private val context: Context) {
 
     // Keys
     companion object {
-        val KEY_FIRST_RUN = booleanPreferencesKey("firstRun")
         val KEY_MUSIC_FOLDER_URI = stringPreferencesKey("musicFolderUri")
         val KEY_MUSIC_FOLDER_NAME = stringPreferencesKey("musicFolderName")
         val KEY_LAST_SCAN_TIME = longPreferencesKey("lastScanTime")
@@ -66,14 +64,9 @@ class SettingsDataStore(private val context: Context) {
         val KEY_MAX_GAIN_BOOST = floatPreferencesKey("maxGainBoost")
         val KEY_FULL_SCAN_ENABLED = booleanPreferencesKey("fullScanEnabled")
 
-        val KEY_VOLUME_SENSITIVITY = floatPreferencesKey("volumeSensitivity")
-        val KEY_SEEK_SENSITIVITY = floatPreferencesKey("seekSensitivity")
         val KEY_GPS_SENSITIVITY = floatPreferencesKey("gpsSensitivity")
         val KEY_GPS_VOLUME = booleanPreferencesKey("gpsVolume")
         val KEY_DISABLE_AUTOLOCK = booleanPreferencesKey("disableAutolock")
-        val KEY_REPEAT = booleanPreferencesKey("repeat")
-        val KEY_SHUFFLE = booleanPreferencesKey("shuffle")
-        val KEY_PLAYLIST = stringPreferencesKey("playlist")
 
         // Display
         val KEY_ARTIST_FONT_SIZE = floatPreferencesKey("artistFontSize")
@@ -175,9 +168,6 @@ class SettingsDataStore(private val context: Context) {
         val KEY_SAVED_REPEAT_MODE = stringPreferencesKey("savedRepeatMode")
         val KEY_SAVED_SHUFFLE_MODE = stringPreferencesKey("savedShuffleMode")
 
-        // Streaming Accounts
-        val KEY_STREAMING_ACCOUNTS = stringPreferencesKey("streamingAccounts")
-
         val DEFAULT_RADIAL_ACTIONS = listOf(
             GestureAction.PLAY_PAUSE,
             GestureAction.NEXT,
@@ -186,7 +176,7 @@ class SettingsDataStore(private val context: Context) {
             GestureAction.VOLUME_DOWN,
             GestureAction.FAST_FORWARD,
             GestureAction.REWIND,
-            GestureAction.SONG_PICKER
+            GestureAction.SONG_PICKER,
         )
     }
 
@@ -196,13 +186,13 @@ class SettingsDataStore(private val context: Context) {
             songFontSize = prefs[KEY_SONG_FONT_SIZE] ?: 70f,
             albumFontSize = prefs[KEY_ALBUM_FONT_SIZE] ?: 55f,
             artistAlignment = TextAlignmentOption.entries.find {
-                it.name.equals(prefs[KEY_ARTIST_ALIGNMENT], true) || it.displayName.equals(prefs[KEY_ARTIST_ALIGNMENT], true)
+                it.name.equals(prefs[KEY_ARTIST_ALIGNMENT], ignoreCase = true) || it.displayName.equals(prefs[KEY_ARTIST_ALIGNMENT], ignoreCase = true)
             } ?: TextAlignmentOption.LEFT,
             songAlignment = TextAlignmentOption.entries.find {
-                it.name.equals(prefs[KEY_SONG_ALIGNMENT], true) || it.displayName.equals(prefs[KEY_SONG_ALIGNMENT], true)
+                it.name.equals(prefs[KEY_SONG_ALIGNMENT], ignoreCase = true) || it.displayName.equals(prefs[KEY_SONG_ALIGNMENT], ignoreCase = true)
             } ?: TextAlignmentOption.CENTER,
             albumAlignment = TextAlignmentOption.entries.find {
-                it.name.equals(prefs[KEY_ALBUM_ALIGNMENT], true) || it.displayName.equals(prefs[KEY_ALBUM_ALIGNMENT], true)
+                it.name.equals(prefs[KEY_ALBUM_ALIGNMENT], ignoreCase = true) || it.displayName.equals(prefs[KEY_ALBUM_ALIGNMENT], ignoreCase = true)
             } ?: TextAlignmentOption.RIGHT,
             minimumFontSize = prefs[KEY_MINIMUM_FONT_SIZE] ?: 35f,
             titleShrinkInPortrait = prefs[KEY_TITLE_SHRINK_PORTRAIT] ?: true,
@@ -212,10 +202,10 @@ class SettingsDataStore(private val context: Context) {
             albumArtColors = prefs[KEY_ALBUM_ART_COLORS] ?: true,
             albumArtScale = ArtScaleOption.entries.getOrElse(prefs[KEY_ALBUM_ART_SCALE] ?: 0) { ArtScaleOption.FILL_SCREEN },
             artAlignmentPortrait = ArtAlignmentPortrait.entries.find {
-                it.name.equals(prefs[KEY_ART_ALIGNMENT_PORTRAIT], true)
+                it.name.equals(prefs[KEY_ART_ALIGNMENT_PORTRAIT], ignoreCase = true)
             } ?: ArtAlignmentPortrait.MIDDLE,
             artAlignmentLandscape = ArtAlignmentLandscape.entries.find {
-                it.name.equals(prefs[KEY_ART_ALIGNMENT_LANDSCAPE], true)
+                it.name.equals(prefs[KEY_ART_ALIGNMENT_LANDSCAPE], ignoreCase = true)
             } ?: ArtAlignmentLandscape.CENTER,
             albumArtFade = (prefs[KEY_ALBUM_ART_FADE] ?: 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
             artDisplayLayout = ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY },
@@ -271,10 +261,12 @@ class SettingsDataStore(private val context: Context) {
             autoEnableDrivingMode = prefs[KEY_AUTO_ENABLE_DRIVING_MODE] ?: false,
             autoActionButtonOrder = (prefs[KEY_AUTO_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
                 .split(",")
+                .asSequence()
                 .mapNotNull { name ->
                     runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim())
                 }
-                .filter { it != GestureAction.UNASSIGNED && it != GestureAction.OTHER_OPTION }
+                .filter { (it != GestureAction.UNASSIGNED) && (it != GestureAction.OTHER_OPTION) }
+                .toList()
                 .ifEmpty {
                     listOf(
                         GestureAction.PLAY_CURRENT_ALBUM,
@@ -284,7 +276,7 @@ class SettingsDataStore(private val context: Context) {
                         GestureAction.PREVIOUS,
                         GestureAction.TOGGLE_SHUFFLE,
                         GestureAction.TOGGLE_REPEAT,
-                        GestureAction.SHUFFLE_ALL_SONGS
+                        GestureAction.SHUFFLE_ALL_SONGS,
                     )
                 }
         )
@@ -357,17 +349,6 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    val allRadialMenuActionsFlow: Flow<Map<String, List<GestureAction>>> = context.dataStore.data.map { prefs ->
-        val result = mutableMapOf<String, List<GestureAction>>()
-        GestureTrigger.entries.forEach { trigger ->
-            val rawStr = prefs[stringPreferencesKey("radial_actions_${trigger.key}")]
-            if (!rawStr.isNullOrEmpty()) {
-                result[trigger.key] = rawStr.split(",").map { GestureAction.fromKey(it) }
-            }
-        }
-        result
-    }
-
     val gpsVolumeEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_GPS_VOLUME] ?: false
     }
@@ -429,30 +410,6 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    suspend fun setTargetRms(targetRms: Float) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_TARGET_RMS] = targetRms.coerceIn(0.05f, 0.30f)
-        }
-    }
-
-    suspend fun setMaxPeak(maxPeak: Float) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_MAX_PEAK] = maxPeak.coerceIn(0.80f, 0.999f)
-        }
-    }
-
-    suspend fun setMaxGainBoost(maxGainBoost: Float) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_MAX_GAIN_BOOST] = maxGainBoost.coerceIn(1.0f, 10.0f)
-        }
-    }
-
-    suspend fun setFullScanEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_FULL_SCAN_ENABLED] = enabled
-        }
-    }
-
     val lastSettingsSubmenuFlow: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[KEY_LAST_SETTINGS_SUBMENU]
     }
@@ -475,14 +432,14 @@ class SettingsDataStore(private val context: Context) {
 
         val repeatModeName = prefs[KEY_SAVED_REPEAT_MODE]
         val repeatMode = if (repeatModeName != null) {
-            RepeatMode.entries.find { it.name.equals(repeatModeName, true) } ?: RepeatMode.OFF
+            RepeatMode.entries.find { it.name.equals(repeatModeName, ignoreCase = true) } ?: RepeatMode.OFF
         } else {
             if (isRepeat) RepeatMode.SONG else RepeatMode.OFF
         }
 
         val shuffleModeName = prefs[KEY_SAVED_SHUFFLE_MODE]
         val shuffleMode = if (shuffleModeName != null) {
-            ShuffleMode.entries.find { it.name.equals(shuffleModeName, true) } ?: ShuffleMode.OFF
+            ShuffleMode.entries.find { it.name.equals(shuffleModeName, ignoreCase = true) } ?: ShuffleMode.OFF
         } else {
             if (isShuffle) ShuffleMode.SONGS else ShuffleMode.OFF
         }
@@ -497,46 +454,6 @@ class SettingsDataStore(private val context: Context) {
             repeatMode = repeatMode,
             shuffleMode = shuffleMode
         )
-    }
-
-    val streamingAccountsFlow: Flow<Map<String, StreamingAccount>> = context.dataStore.data.map { prefs ->
-        parseStreamingAccounts(prefs[KEY_STREAMING_ACCOUNTS] ?: "")
-    }
-
-    suspend fun signInStreamingService(serviceId: String, username: String, accountType: String = "Premium") {
-        context.dataStore.edit { prefs ->
-            val currentMap = parseStreamingAccounts(prefs[KEY_STREAMING_ACCOUNTS] ?: "").toMutableMap()
-            currentMap[serviceId] = StreamingAccount(serviceId, username, accountType, System.currentTimeMillis())
-            prefs[KEY_STREAMING_ACCOUNTS] = serializeStreamingAccounts(currentMap)
-        }
-    }
-
-    suspend fun signOutStreamingService(serviceId: String) {
-        context.dataStore.edit { prefs ->
-            val currentMap = parseStreamingAccounts(prefs[KEY_STREAMING_ACCOUNTS] ?: "").toMutableMap()
-            currentMap.remove(serviceId)
-            prefs[KEY_STREAMING_ACCOUNTS] = serializeStreamingAccounts(currentMap)
-        }
-    }
-
-    private fun parseStreamingAccounts(raw: String): Map<String, StreamingAccount> {
-        if (raw.isBlank()) return emptyMap()
-        return raw.split(";").mapNotNull { entry ->
-            val parts = entry.split("::")
-            if (parts.size >= 3) {
-                val serviceId = parts[0]
-                val username = parts[1]
-                val accountType = parts[2]
-                val signedInAt = parts.getOrNull(3)?.toLongOrNull() ?: System.currentTimeMillis()
-                serviceId to StreamingAccount(serviceId, username, accountType, signedInAt)
-            } else null
-        }.toMap()
-    }
-
-    private fun serializeStreamingAccounts(map: Map<String, StreamingAccount>): String {
-        return map.values.joinToString(";") { account ->
-            "${account.serviceId}::${account.username}::${account.accountType}::${account.signedInAt}"
-        }
     }
 
     suspend fun savePlaybackState(
@@ -696,10 +613,10 @@ class SettingsDataStore(private val context: Context) {
                 val targetVal = option.targetValue ?: return@edit
 
                 fun isSameThemeName(a: String?, b: String?): Boolean {
-                    if (a == null || b == null) return false
+                    if ((a == null) || (b == null)) return false
                     if (a.equals(b, ignoreCase = true)) return true
-                    val isAMatch = a.equals("Match Album Art", true) || a.equals("Auto By Art", true)
-                    val isBMatch = b.equals("Match Album Art", true) || b.equals("Auto By Art", true)
+                    val isAMatch = a.equals("Match Album Art", ignoreCase = true) || a.equals("Auto By Art", ignoreCase = true)
+                    val isBMatch = b.equals("Match Album Art", ignoreCase = true) || b.equals("Auto By Art", ignoreCase = true)
                     return isAMatch && isBMatch
                 }
 
@@ -710,9 +627,9 @@ class SettingsDataStore(private val context: Context) {
                         val isCurrentTargetMatch = isSameThemeName(currentVal, targetVal)
                         if (isCurrentTargetMatch) {
                             var priorVal = prefs[priorKey]
-                            if (priorVal == null || isSameThemeName(priorVal, targetVal)) {
+                            if ((priorVal == null) || isSameThemeName(priorVal, targetVal)) {
                                 val globalPrior = prefs[KEY_PRIOR_THEME]
-                                priorVal = if (globalPrior != null && !isSameThemeName(globalPrior, targetVal)) {
+                                priorVal = if ((globalPrior != null) && !isSameThemeName(globalPrior, targetVal)) {
                                     globalPrior
                                 } else {
                                     if (targetVal.equals("Match Album Art", ignoreCase = true) || targetVal.equals("Auto By Art", ignoreCase = true)) {
@@ -740,7 +657,7 @@ class SettingsDataStore(private val context: Context) {
                         val currentVal = prefs[KEY_ARTIST_ALIGNMENT] ?: TextAlignmentOption.LEFT.name
                         if (currentVal.equals(targetVal, ignoreCase = true)) {
                             var priorVal = prefs[priorKey]
-                            if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
+                            if ((priorVal == null) || priorVal.equals(targetVal, ignoreCase = true)) {
                                 priorVal = if (targetVal.equals("LEFT", true)) "CENTER" else "LEFT"
                             }
                             prefs[KEY_ARTIST_ALIGNMENT] = priorVal
@@ -1093,8 +1010,10 @@ class SettingsDataStore(private val context: Context) {
                     autoEnableDrivingMode = dJson.optBoolean("autoEnableDrivingMode", currentDisplay.autoEnableDrivingMode),
                     autoActionButtonOrder = dJson.optString("autoActionButtonOrder", "")
                         .split(",")
+                        .asSequence()
                         .mapNotNull { name -> runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim()) }
-                        .filter { it != GestureAction.UNASSIGNED && it != GestureAction.OTHER_OPTION }
+                        .filter { (it != GestureAction.UNASSIGNED) && (it != GestureAction.OTHER_OPTION) }
+                        .toList()
                         .ifEmpty { currentDisplay.autoActionButtonOrder }
                 )
                 updateDisplaySettings(newDisplay)

@@ -18,8 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.VolumeDown
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.AlignHorizontalCenter
-import androidx.compose.material.icons.filled.AlignHorizontalLeft
-import androidx.compose.material.icons.filled.AlignHorizontalRight
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BlurOn
@@ -32,6 +30,9 @@ import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.automirrored.filled.AlignHorizontalLeft
+import androidx.compose.material.icons.automirrored.filled.AlignHorizontalRight
+import androidx.compose.material.icons.automirrored.filled.ShortText
 import androidx.compose.material.icons.filled.DonutLarge
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
@@ -39,7 +40,6 @@ import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.FlipToBack
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FormatAlignCenter
 import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
@@ -66,7 +66,6 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShortText
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SignalCellular4Bar
 import androidx.compose.material.icons.filled.SkipNext
@@ -111,14 +110,14 @@ import com.travelingtunes.app.core.model.ShuffleMode
 @Composable
 fun ActionIcon(
     action: GestureAction,
+    modifier: Modifier = Modifier,
     optionKey: String? = null,
     repeatMode: RepeatMode = RepeatMode.OFF,
     shuffleMode: ShuffleMode = ShuffleMode.OFF,
     isPlaying: Boolean = false,
     drivingModeEnabled: Boolean = false,
-    modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
-    iconSize: Dp = 28.dp
+    iconSize: Dp = 28.dp,
 ) {
     if (action == GestureAction.UNASSIGNED) return
 
@@ -127,13 +126,13 @@ fun ActionIcon(
 
     Box(
         modifier = modifier.size(iconSize),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         when (action) {
             GestureAction.TOGGLE_REPEAT -> RepeatModeIcon(
                 repeatMode = repeatMode,
                 tint = effectiveTint,
-                iconSize = iconSize
+                iconSize = iconSize,
             )
 
             GestureAction.TOGGLE_SHUFFLE -> ShuffleModeIcon(
@@ -354,8 +353,7 @@ fun ActionIcon(
                     )
                 }
             }
-
-            GestureAction.UNASSIGNED -> {}
+            else -> {}
         }
     }
 }
@@ -363,9 +361,9 @@ fun ActionIcon(
 @Composable
 fun ConfigOptionIcon(
     optionKey: String,
+    modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
     iconSize: Dp = 24.dp,
-    modifier: Modifier = Modifier
 ) {
     if (optionKey.equals("THEME_MONDRIAN", ignoreCase = true)) {
         MondrianIcon(modifier = modifier, iconSize = iconSize)
@@ -385,9 +383,9 @@ fun ConfigOptionIcon(
             modifier = Modifier.size(iconSize)
         )
 
-        if (overlayBadge != null) {
+        overlayBadge?.let {
             Icon(
-                imageVector = overlayBadge,
+                imageVector = it,
                 contentDescription = null,
                 tint = tint,
                 modifier = Modifier
@@ -507,9 +505,9 @@ private fun getConfigOptionIconVector(optionKey: String): Pair<ImageVector, Imag
         "ART_ALIGN_PORT_TOP" -> Icons.Default.VerticalAlignTop to null
         "ART_ALIGN_PORT_MIDDLE" -> Icons.Default.VerticalAlignCenter to null
         "ART_ALIGN_PORT_BOTTOM" -> Icons.Default.VerticalAlignBottom to null
-        "ART_ALIGN_LAND_LEFT" -> Icons.Default.AlignHorizontalLeft to null
+        "ART_ALIGN_LAND_LEFT" -> Icons.AutoMirrored.Filled.AlignHorizontalLeft to null
         "ART_ALIGN_LAND_CENTER" -> Icons.Default.AlignHorizontalCenter to null
-        "ART_ALIGN_LAND_RIGHT" -> Icons.Default.AlignHorizontalRight to null
+        "ART_ALIGN_LAND_RIGHT" -> Icons.AutoMirrored.Filled.AlignHorizontalRight to null
 
         "HUD_TYPE_NONE" -> Icons.Default.VisibilityOff to null
         "HUD_TYPE_EDGE_HUD" -> Icons.Default.BorderOuter to null
@@ -517,7 +515,7 @@ private fun getConfigOptionIconVector(optionKey: String): Pair<ImageVector, Imag
         "HUD_TYPE_BAR_VOLUME" -> Icons.Default.BarChart to null
         "SCRUB_HUD_TYPE_NONE" -> Icons.Default.TimerOff to null
         "SCRUB_HUD_TYPE_EDGE_HUD" -> Icons.Default.BorderBottom to null
-        "SCRUB_HUD_TYPE_POPUP" -> Icons.Default.ShortText to null
+        "SCRUB_HUD_TYPE_POPUP" -> Icons.AutoMirrored.Filled.ShortText to null
         "SCRUB_HUD_TYPE_BAR_PROGRESS" -> Icons.Default.HorizontalRule to null
 
         "DISPLAY_volumeAlwaysOn" -> Icons.Default.LockClock to null
@@ -572,7 +570,7 @@ fun RepeatModeIcon(
             )
         }
 
-        if (badgeLabel != null && repeatMode != RepeatMode.SONG) {
+        if ((badgeLabel != null) && (repeatMode != RepeatMode.SONG)) {
             Surface(
                 color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,

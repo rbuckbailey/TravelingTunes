@@ -15,8 +15,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -32,12 +32,12 @@ data class ArtworkCandidate(
     val url: String,
     val width: Int,
     val height: Int,
-    val source: String = "Online"
+    val source: String = "Online",
 ) {
     val squareness: Double
         get() {
-            if (width <= 0 || height <= 0) return 0.0
-            return Math.min(width, height).toDouble() / Math.max(width, height).toDouble()
+            if ((width <= 0) || (height <= 0)) return 0.0
+            return minOf(width, height).toDouble() / maxOf(width, height).toDouble()
         }
 
     val resolution: Int
@@ -50,7 +50,7 @@ data class AlbumArtAuditItem(
     val songCount: Int,
     val isSuccess: Boolean,
     val sourceEngine: String? = null,
-    val failureReason: String? = null
+    val failureReason: String? = null,
 )
 
 data class AlbumArtAuditReport(
@@ -58,7 +58,7 @@ data class AlbumArtAuditReport(
     val totalProcessed: Int = 0,
     val successCount: Int = 0,
     val failedCount: Int = 0,
-    val items: List<AlbumArtAuditItem> = emptyList()
+    val items: List<AlbumArtAuditItem> = emptyList(),
 ) {
     fun toFormattedSummaryText(): String {
         val sb = StringBuilder()
@@ -97,7 +97,7 @@ class AlbumArtDownloader(
     private val musicDatabase: MusicDatabase
 ) {
 
-    private val _isDownloading = MutableStateFlow(false)
+    private val _isDownloading = MutableStateFlow(value = false)
     val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
 
     private val _downloadedCount = MutableStateFlow(0)
@@ -240,7 +240,7 @@ class AlbumArtDownloader(
             }
 
             // Small delay between searches to prevent network rate limits
-            delay(150)
+            delay(150.milliseconds)
         }
 
         val report = AlbumArtAuditReport(
@@ -264,7 +264,7 @@ class AlbumArtDownloader(
 
     private fun isGenericName(name: String): Boolean {
         val lower = name.trim().lowercase()
-        return lower == "unknown" || lower == "unknown artist" || lower == "unknown album" || lower == "<unknown>" || lower == "music"
+        return (lower == "unknown") || (lower == "unknown artist") || (lower == "unknown album") || (lower == "<unknown>") || (lower == "music")
     }
 
     private fun isArtworkMissing(context: Context, song: Song): Boolean {
@@ -274,7 +274,7 @@ class AlbumArtDownloader(
 
         if (uri.scheme == "file") {
             val file = File(uri.path ?: "")
-            return !file.exists() || file.length() == 0L
+            return !file.exists() || (file.length() == 0L)
         }
 
         return try {
@@ -298,9 +298,8 @@ class AlbumArtDownloader(
         artworkCacheDir: File
     ): Pair<Uri, String>? = coroutineScope {
         // 0. Check local folder artwork first
-        val localUri = checkLocalFolderArtwork(songs)
-        if (localUri != null) {
-            return@coroutineScope Pair(localUri, "Local Folder")
+        checkLocalFolderArtwork(songs)?.let {
+            return@coroutineScope Pair(it, "Local Folder")
         }
 
         val cleanArtist = sanitizeMetadata(artist)
@@ -311,8 +310,9 @@ class AlbumArtDownloader(
         if (tier1Candidates.isNotEmpty()) {
             val best = selectBestCandidate(tier1Candidates)
             if (best != null) {
-                val file = downloadImageToFile(best.url, artist, album, artworkCacheDir)
-                if (file != null) return@coroutineScope Pair(Uri.fromFile(file), best.source)
+                downloadImageToFile(best.url, artist, album, artworkCacheDir)?.let {
+                    return@coroutineScope Pair(Uri.fromFile(it), best.source)
+                }
             }
         }
 
@@ -393,7 +393,7 @@ class AlbumArtDownloader(
                 val parent = file.parentFile ?: continue
                 for (name in commonNames) {
                     val imgFile = File(parent, name)
-                    if (imgFile.exists() && imgFile.length() > 0) {
+                    if (imgFile.exists() && (imgFile.length() > 0)) {
                         return Uri.fromFile(imgFile)
                     }
                 }
@@ -421,8 +421,9 @@ class AlbumArtDownloader(
         val tasks = mutableListOf<kotlinx.coroutines.Deferred<List<ArtworkCandidate>>>()
 
         if (enabledEngines.contains(SearchEngine.DEEZER)) {
-            tasks.add(async(Dispatchers.IO) {
-                try {
+            tasks.add(
+                async(Dispatchers.IO) {
+                    try {
                     when (searchMode) {
                         SearchMode.ALBUM_ONLY -> queryDeezerAlbumArt("", cleanAlbum, useQuotes)
                         SearchMode.ARTIST_ONLY -> queryDeezerAlbumArt(cleanArtist, "", useQuotes)
@@ -474,7 +475,7 @@ class AlbumArtDownloader(
         if (input.isBlank()) return ""
         var cleaned = input
         // Remove brackets/parentheticals like (Deluxe Version), [2021 Remaster], (feat. ...), - Single
-        cleaned = cleaned.replace(Regex("""(?i)[\(\[\{](?:deluxe|remaster|re-master|bonus|expanded|anniversary|special|edition|version|feat\.|live|explicit|mono|stereo|single|ep).*?[\)\]\}]"""), "")
+        cleaned = cleaned.replace(Regex("""(?i)[(\[{](?:deluxe|remaster|re-master|bonus|expanded|anniversary|special|edition|version|feat\.|live|explicit|mono|stereo|single|ep).*?[)\]}]"""), "")
         cleaned = cleaned.replace(Regex("""(?i)\s*-\s*Single$"""), "")
         cleaned = cleaned.replace(Regex("""(?i)\s*-\s*EP$"""), "")
         cleaned = cleaned.replace(Regex("""(?i)\s*feat\..*?$"""), "")
@@ -710,11 +711,11 @@ class AlbumArtDownloader(
         }
     }
 
-    private fun downloadImageToFile(imgUrl: String, artist: String, album: String, artworkCacheDir: File): File? {
+    private fun downloadImageToFile(imgUrl: String, artist: String, album: String, artworkCacheDir: File = File(context.filesDir, "downloaded_art")): File? {
         return try {
-            val downloadedDir = File(context.filesDir, "downloaded_art").apply { mkdirs() }
+            artworkCacheDir.mkdirs()
             val hashKey = hashString("$artist-$album")
-            val artFile = File(downloadedDir, "art_downloaded_$hashKey.jpg")
+            val artFile = File(artworkCacheDir, "art_downloaded_$hashKey.jpg")
 
             val conn = (URL(imgUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
@@ -791,8 +792,7 @@ class AlbumArtDownloader(
         album: String,
         songs: List<Song>
     ): Uri? = withContext(Dispatchers.IO) {
-        val downloadedDir = File(context.filesDir, "downloaded_art").apply { mkdirs() }
-        val downloadedFile = downloadImageToFile(candidate.url, artist, album, downloadedDir) ?: return@withContext null
+        val downloadedFile = downloadImageToFile(candidate.url, artist, album) ?: return@withContext null
         val artworkUri = Uri.fromFile(downloadedFile)
 
         musicDatabase.updateAlbumArtwork(album, artist, artworkUri)
@@ -894,8 +894,7 @@ class AlbumArtDownloader(
                         AlbumArtCache.instance.put(song.id, bitmap.asImageBitmap())
                     }
                 } else {
-                    // Force refresh or remove from cache
-                    val dummy = loadSongArtworkFromUri(context, Uri.EMPTY)
+                    AlbumArtCache.instance.remove(song.id)
                 }
             }
             true

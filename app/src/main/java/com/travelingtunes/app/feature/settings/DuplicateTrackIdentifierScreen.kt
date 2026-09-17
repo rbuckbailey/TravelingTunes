@@ -16,10 +16,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -76,24 +76,24 @@ fun DuplicateTrackIdentifierScreen(
     musicDatabase: MusicDatabase,
     musicFolderName: String?,
     musicScanner: MusicScanner? = null,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val cachedPairs by (musicScanner?.cachedDuplicatePairs ?: remember { MutableStateFlow<List<DuplicateMatchPair>?>(null) }).collectAsState()
-    val isAnalyzing by (musicScanner?.isAnalyzingDuplicates ?: remember { MutableStateFlow(false) }).collectAsState()
+    val isAnalyzing by (musicScanner?.isAnalyzingDuplicates ?: remember { MutableStateFlow(value = false) }).collectAsState()
     val scanProgressCurrent by (musicScanner?.duplicateScanProgressCurrent ?: remember { MutableStateFlow(0) }).collectAsState()
     val scanProgressTotal by (musicScanner?.duplicateScanProgressTotal ?: remember { MutableStateFlow(0) }).collectAsState()
 
     var fallbackPairs by remember { mutableStateOf<List<DuplicateMatchPair>?>(null) }
     var minLikelihoodThreshold by remember { mutableIntStateOf(50) }
     var trackToDelete by remember { mutableStateOf<Song?>(null) }
-    var isDeleting by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(value = false) }
 
     val duplicatePairs = cachedPairs ?: fallbackPairs ?: emptyList()
-    val isLoading = isAnalyzing || (cachedPairs == null && fallbackPairs == null)
+    val isLoading = isAnalyzing || ((cachedPairs == null) && (fallbackPairs == null))
 
     val scanDuplicates = { forceRescan: Boolean ->
         coroutineScope.launch {
@@ -107,7 +107,7 @@ fun DuplicateTrackIdentifierScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (cachedPairs == null && fallbackPairs == null) {
+        if ((cachedPairs == null) && (fallbackPairs == null)) {
             scanDuplicates(false)
         }
     }
@@ -223,7 +223,7 @@ fun DuplicateTrackIdentifierScreen(
                         modifier = Modifier.padding(32.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.InsertDriveFile,
+                            imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(64.dp)
@@ -448,7 +448,7 @@ private fun TrackItemCard(
 
         if (song.artist.isNotBlank() || song.album.isNotBlank()) {
             Text(
-                text = listOf(song.artist, song.album).filter { it.isNotBlank() }.joinToString(" — "),
+                text = listOf(song.artist, song.album).asSequence().filter { it.isNotBlank() }.joinToString(" — "),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -459,7 +459,7 @@ private fun TrackItemCard(
         Spacer(modifier = Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.InsertDriveFile,
+                imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant

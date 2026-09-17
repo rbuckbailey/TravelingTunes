@@ -98,13 +98,13 @@ fun DownloadedArtBrowserScreen(
     albumArtDownloader: AlbumArtDownloader,
     playbackManager: PlaybackManager,
     musicScanner: MusicScanner? = null,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     var allAlbums by remember { mutableStateOf<List<AlbumArtBrowserInfo>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    var isLoading by remember { mutableStateOf(value = true) }
     var selectedFilter by remember { mutableStateOf("ALL") } // "ALL", "DOWNLOADED", "EMBEDDED", "MISSING"
     var albumSearchQuery by remember { mutableStateOf("") }
 
@@ -112,7 +112,7 @@ fun DownloadedArtBrowserScreen(
 
     // Dialog states
     var replaceTargetAlbum by remember { mutableStateOf<AlbumArtBrowserInfo?>(null) }
-    var showReplaceDialog by remember { mutableStateOf(false) }
+    var showReplaceDialog by remember { mutableStateOf(value = false) }
 
     var copySourceAlbum by remember { mutableStateOf<AlbumArtBrowserInfo?>(null) }
     var showCopyDialog by remember { mutableStateOf(false) }
@@ -125,15 +125,15 @@ fun DownloadedArtBrowserScreen(
     // Background Embedding States
     val isEmbeddingArt by (musicScanner?.isEmbeddingArt?.collectAsState() ?: remember { mutableStateOf(false) })
     val embeddingStatusMessage by (musicScanner?.embeddingStatusMessage?.collectAsState() ?: remember { mutableStateOf(null) })
-    val embeddingProgressCurrent by (musicScanner?.embeddingProgressCurrent?.collectAsState() ?: remember { mutableStateOf(0) })
-    val embeddingProgressTotal by (musicScanner?.embeddingProgressTotal?.collectAsState() ?: remember { mutableStateOf(0) })
+    val embeddingProgressCurrent by (musicScanner?.embeddingProgressCurrent?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) })
+    val embeddingProgressTotal by (musicScanner?.embeddingProgressTotal?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) })
     val embeddingResultSummary by (musicScanner?.embeddingResultSummary?.collectAsState() ?: remember { mutableStateOf(null) })
 
     fun refreshList() {
         coroutineScope.launch {
             isLoading = true
-            allAlbums = musicDatabase.getAllAlbumsWithArtInfo(context)
-            selectedAlbums.removeAll { selected -> allAlbums.none { it.album == selected.album && it.artist == selected.artist } }
+            allAlbums = musicDatabase.getAllAlbumsWithArtInfo()
+            selectedAlbums.removeAll { selected -> allAlbums.none { (it.album == selected.album) && (it.artist == selected.artist) } }
             isLoading = false
         }
     }
@@ -165,10 +165,10 @@ fun DownloadedArtBrowserScreen(
 
     // Photo & File Pickers for Replace Art
     val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
+        contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         val target = replaceTargetAlbum
-        if (uri != null && target != null) {
+        if ((uri != null) && (target != null)) {
             coroutineScope.launch {
                 try {
                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
@@ -188,7 +188,7 @@ fun DownloadedArtBrowserScreen(
     }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
         val target = replaceTargetAlbum
         if (uri != null && target != null) {
@@ -293,7 +293,7 @@ fun DownloadedArtBrowserScreen(
                                 // Bulk Embed ID3 as background process!
                                 coroutineScope.launch {
                                     val pairs = targets.map { Pair(it.album, it.artist) }
-                                    val uriMap = targets.associate { Pair(it.album, it.artist) to it.artworkUri }
+                                    val uriMap = targets.associateBy({ Pair(it.album, it.artist) }) { it.artworkUri }
                                     musicScanner?.embedArtworkInBackground(pairs, uriMap, playbackManager)
                                     refreshList()
                                 }

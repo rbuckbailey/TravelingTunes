@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
 import com.travelingtunes.app.core.model.Song
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -13,14 +14,14 @@ data class LibraryStats(
     val totalSongs: Int = 0,
     val totalAlbums: Int = 0,
     val totalArtists: Int = 0,
-    val totalGenres: Int = 0
+    val totalGenres: Int = 0,
 )
 
 data class AlbumInfo(
     val name: String,
     val artist: String,
     val songCount: Int,
-    val artworkUri: Uri?
+    val artworkUri: Uri?,
 )
 
 enum class ArtworkType { DOWNLOADED, EMBEDDED, MISSING }
@@ -30,14 +31,14 @@ data class AlbumArtBrowserInfo(
     val artist: String,
     val songCount: Int,
     val artworkUri: Uri?,
-    val artType: ArtworkType
+    val artType: ArtworkType,
 )
 
 data class DownloadedAlbumArtInfo(
     val album: String,
     val artist: String,
     val songCount: Int,
-    val artworkUri: Uri
+    val artworkUri: Uri,
 )
 
 data class CddbOverrideRecord(
@@ -47,7 +48,7 @@ data class CddbOverrideRecord(
     val discNumber: Int,
     val trackNumber: Int,
     val title: String,
-    val cddbId: String
+    val cddbId: String,
 )
 
 class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -449,7 +450,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         songs
     }
 
-    suspend fun getAllAlbumsWithArtInfo(context: Context? = null): List<AlbumArtBrowserInfo> = withContext(Dispatchers.IO) {
+    suspend fun getAllAlbumsWithArtInfo(): List<AlbumArtBrowserInfo> = withContext(Dispatchers.IO) {
         val albums = mutableListOf<AlbumArtBrowserInfo>()
         val db = readableDatabase
         val sql = """
@@ -465,16 +466,19 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                 val artist = c.getString(1)
                 val count = c.getInt(2)
                 val artStr = c.getString(3)
-                val artUri = artStr?.let { Uri.parse(it) }
+                val artUri = artStr?.toUri()
 
-                val type = classifyArtworkType(context, artUri)
+                val type = classifyArtworkType(artUri)
                 albums.add(AlbumArtBrowserInfo(album, artist, count, artUri, type))
             }
         }
         albums
     }
 
-    private fun classifyArtworkType(context: Context?, artUri: Uri?): ArtworkType {
+    @Suppress("unused", "UNUSED_PARAMETER")
+    private fun classifyArtworkType(context: Context?, artUri: Uri?): ArtworkType = classifyArtworkType(artUri)
+
+    private fun classifyArtworkType(artUri: Uri?): ArtworkType {
         if (artUri == null) return ArtworkType.MISSING
         val uriStr = artUri.toString()
         if (uriStr.isBlank()) return ArtworkType.MISSING
@@ -488,64 +492,13 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
 
         if (artUri.scheme == "file") {
             val file = java.io.File(artUri.path ?: "")
-            if (!file.exists() || file.length() == 0L) {
+            if (!file.exists() || (file.length() == 0L)) {
                 return ArtworkType.MISSING
             }
             return ArtworkType.EMBEDDED
         }
 
         return ArtworkType.EMBEDDED
-    }
-
-    suspend fun getAlbumsWithDownloadedArt(context: Context? = null): List<DownloadedAlbumArtInfo> = withContext(Dispatchers.IO) {
-        val albums = mutableListOf<DownloadedAlbumArtInfo>()
-        val db = readableDatabase
-        val sql = """
-            SELECT $COL_ALBUM, $COL_ARTIST, COUNT(*) as song_count, MAX($COL_ARTWORK_URI) as art_uri, MIN($COL_CONTENT_URI) as content_uri
-            FROM $TABLE_SONGS
-            WHERE $COL_ARTWORK_URI IS NOT NULL AND $COL_ARTWORK_URI != ''
-            GROUP BY $COL_ALBUM, $COL_ARTIST
-            ORDER BY $COL_ALBUM ASC
-        """.trimIndent()
-        val cursor = db.rawQuery(sql, null)
-        cursor.use { c ->
-            while (c.moveToNext()) {
-                val album = c.getString(0)
-                val artist = c.getString(1)
-                val count = c.getInt(2)
-                val artStr = c.getString(3) ?: continue
-                val contentUriStr = c.getString(4) ?: ""
-                val artUri = Uri.parse(artStr)
-                if (isDownloadedArtworkUri(context, artUri, contentUriStr)) {
-                    albums.add(DownloadedAlbumArtInfo(album, artist, count, artUri))
-                }
-            }
-        }
-        albums
-    }
-
-    private fun isDownloadedArtworkUri(context: Context?, artUri: Uri, contentUriStr: String): Boolean {
-        val uriStr = artUri.toString()
-        if (uriStr.contains("downloaded_art") || uriStr.contains("art_downloaded") || uriStr.contains("art_custom")) {
-            return true
-        }
-        if (uriStr.contains("art_embedded")) {
-            return false
-        }
-        if (context != null && contentUriStr.isNotBlank()) {
-            val contentUri = Uri.parse(contentUriStr)
-            val mmr = android.media.MediaMetadataRetriever()
-            return try {
-                mmr.setDataSource(context, contentUri)
-                val bytes = mmr.embeddedPicture
-                bytes == null
-            } catch (_: Exception) {
-                false
-            } finally {
-                try { mmr.release() } catch (_: Exception) {}
-            }
-        }
-        return false
     }
 
     suspend fun getArtists(): List<String> = withContext(Dispatchers.IO) {
@@ -578,7 +531,7 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                 val artStr = c.getString(3)
                 val albumArtistStr = if (c.columnCount > 4) c.getString(4) else null
                 val artist = if (!albumArtistStr.isNullOrBlank()) albumArtistStr else trackArtist
-                val artUri = artStr?.let { Uri.parse(it) }
+                val artUri = artStr?.toUri()
                 albums.add(AlbumInfo(album, artist, count, artUri))
             }
         }
@@ -713,8 +666,8 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             album = album,
             albumId = albumId,
             durationMs = durationMs,
-            contentUri = Uri.parse(contentUriStr),
-            artworkUri = artworkUriStr?.let { Uri.parse(it) },
+            contentUri = contentUriStr.toUri(),
+            artworkUri = artworkUriStr?.toUri(),
             userRating = userRating,
             genre = genre,
             folderPath = folderPath,

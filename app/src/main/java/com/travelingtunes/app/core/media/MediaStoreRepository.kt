@@ -2,9 +2,8 @@ package com.travelingtunes.app.core.media
 
 import android.content.ContentUris
 import android.content.Context
-import android.net.Uri
 import android.provider.MediaStore
-import com.travelingtunes.app.core.model.Playlist
+import androidx.core.net.toUri
 import com.travelingtunes.app.core.model.Song
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,7 +21,7 @@ class MediaStoreRepository(private val context: Context) {
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DISPLAY_NAME,
             MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.TRACK
+            MediaStore.Audio.Media.TRACK,
         )
 
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
@@ -33,7 +32,7 @@ class MediaStoreRepository(private val context: Context) {
             projection,
             selection,
             null,
-            sortOrder
+            sortOrder,
         )?.use { cursor ->
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
@@ -110,7 +109,7 @@ class MediaStoreRepository(private val context: Context) {
                 } else ""
 
                 val contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
-                val artworkUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)
+                val artworkUri = ContentUris.withAppendedId("content://media/external/audio/albumart".toUri(), albumId)
 
                 songs.add(
                     Song(
@@ -140,20 +139,5 @@ class MediaStoreRepository(private val context: Context) {
                 .thenBy { song -> if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE }
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { song -> song.title }
         )
-    }
-
-    suspend fun getSongsByArtist(artistName: String): List<Song> {
-        return getAllSongs().filter { it.artist.equals(artistName, ignoreCase = true) }
-    }
-
-    suspend fun getSongsByAlbum(albumName: String): List<Song> {
-        return getAllSongs().filter { it.album.equals(albumName, ignoreCase = true) }
-    }
-
-    suspend fun getPlaylists(): List<Playlist> = withContext(Dispatchers.IO) {
-        val playlists = mutableListOf<Playlist>()
-        playlists.add(Playlist(1L, "All Songs, Shuffled"))
-        playlists.add(Playlist(2L, "Default Traveling Tunes Playlist"))
-        playlists
     }
 }

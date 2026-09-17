@@ -20,23 +20,23 @@ import java.security.MessageDigest
 data class CddbTrack(
     val discNumber: Int = 1,
     val trackNumber: Int,
-    val title: String
+    val title: String,
 )
 
 data class CddbAlbum(
     val artist: String,
     val album: String,
     val cddbId: String = "",
-    val tracks: List<CddbTrack>
+    val tracks: List<CddbTrack>,
 )
 
 class CddbManager(
     private val context: Context,
-    private val musicDatabase: MusicDatabase
+    private val musicDatabase: MusicDatabase,
 ) {
     private val cddbDir = File(context.filesDir, "cddb_data").apply { mkdirs() }
 
-    private val _isEmbeddingCddb = MutableStateFlow(false)
+    private val _isEmbeddingCddb = MutableStateFlow(value = false)
     val isEmbeddingCddb: StateFlow<Boolean> = _isEmbeddingCddb.asStateFlow()
 
     private val _embeddingCddbStatusMessage = MutableStateFlow<String?>(null)
@@ -54,7 +54,7 @@ class CddbManager(
         if (songs.isEmpty()) return@withContext songs
 
         // If metadata already contains Disc or Track data, no CDDB lookup needed
-        val hasDiscOrTrackData = songs.any { it.discNumber > 0 || it.trackNumber > 0 }
+        val hasDiscOrTrackData = songs.any { (it.discNumber > 0) || (it.trackNumber > 0) }
         if (hasDiscOrTrackData) {
             return@withContext songs.sortedWith(::compareAlbumSongs)
         }
@@ -70,12 +70,10 @@ class CddbManager(
 
         if (cddbAlbum == null) {
             cddbAlbum = fetchCddbTrackListOnline(artistName, albumName)
-            if (cddbAlbum != null) {
-                saveCddbFile(cddbFile, cddbAlbum)
-            }
+            cddbAlbum?.let { saveCddbFile(cddbFile, it) }
         }
 
-        if (cddbAlbum != null && cddbAlbum.tracks.isNotEmpty()) {
+        if ((cddbAlbum != null) && cddbAlbum.tracks.isNotEmpty()) {
             val updatedSongs = mutableListOf<Song>()
             val tracks = cddbAlbum.tracks.sortedWith(compareBy({ it.discNumber }, { it.trackNumber }))
 
@@ -115,7 +113,7 @@ class CddbManager(
 
         for (tr in tracks) {
             val trNorm = normalizeTitle(tr.title)
-            if (trNorm.isNotBlank() && (trNorm == songTitleNorm || trNorm == songFileNorm || songTitleNorm.contains(trNorm) || trNorm.contains(songTitleNorm))) {
+            if (trNorm.isNotBlank() && ((trNorm == songTitleNorm) || (trNorm == songFileNorm) || songTitleNorm.contains(trNorm) || trNorm.contains(songTitleNorm))) {
                 return tr
             }
         }
@@ -159,7 +157,6 @@ class CddbManager(
                 for (i in 0 until results.length()) {
                     val item = results.optJSONObject(i) ?: continue
                     val collectionName = item.optString("collectionName", "")
-                    val artistName = item.optString("artistName", "")
                     val trackName = item.optString("trackName", "")
                     val discNum = item.optInt("discNumber", 1)
                     val trackNum = item.optInt("trackNumber", 0)
@@ -172,8 +169,10 @@ class CddbManager(
                 }
 
                 if (tracks.isNotEmpty()) {
-                    val sortedTracks = tracks.distinctBy { Pair(it.discNumber, it.trackNumber) }
+                    val sortedTracks = tracks.asSequence()
+                        .distinctBy { Pair(it.discNumber, it.trackNumber) }
                         .sortedWith(compareBy({ it.discNumber }, { it.trackNumber }))
+                        .toList()
                     return CddbAlbum(artist = artist, album = album, cddbId = "itunes", tracks = sortedTracks)
                 }
             } else {

@@ -1,7 +1,5 @@
 package com.travelingtunes.app.core.media
 
-import com.travelingtunes.app.core.model.Song
-import com.travelingtunes.app.core.model.StreamingServiceId
 import com.travelingtunes.app.core.model.StreamingTrack
 
 object StreamingCatalogRepository {
@@ -11,7 +9,7 @@ object StreamingCatalogRepository {
         StreamingTrack("sp_2", "spotify", "As It Was", "Harry Styles", "Harry's House", 167000L, null, "https://stream.spotify.com/track/sp_2", genre = "Pop"),
         StreamingTrack("sp_3", "spotify", "Starboy", "The Weeknd ft. Daft Punk", "Starboy", 230000L, null, "https://stream.spotify.com/track/sp_3", genre = "R&B"),
         StreamingTrack("sp_4", "spotify", "Shape of You", "Ed Sheeran", "÷ (Divide)", 233000L, null, "https://stream.spotify.com/track/sp_4", genre = "Pop"),
-        StreamingTrack("sp_5", "spotify", "Levitating", "Dua Lipa", "Future Nostalgia", 203000L, null, "https://stream.spotify.com/track/sp_5", genre = "Disco Pop")
+        StreamingTrack("sp_5", "spotify", "Levitating", "Dua Lipa", "Future Nostalgia", 203000L, null, "https://stream.spotify.com/track/sp_5", genre = "Disco Pop"),
     )
 
     private val ytMusicTracks = listOf(
@@ -19,7 +17,7 @@ object StreamingCatalogRepository {
         StreamingTrack("yt_2", "ytmusic", "Bad Guy", "Billie Eilish", "WHEN WE ALL FALL ASLEEP", 194000L, null, "https://music.youtube.com/watch?v=yt_2", genre = "Alt Pop"),
         StreamingTrack("yt_3", "ytmusic", "Peaches", "Justin Bieber ft. Daniel Caesar", "Justice", 198000L, null, "https://music.youtube.com/watch?v=yt_3", genre = "Pop/R&B"),
         StreamingTrack("yt_4", "ytmusic", "Flowers", "Miley Cyrus", "Endless Summer Vacation", 200000L, null, "https://music.youtube.com/watch?v=yt_4", genre = "Pop"),
-        StreamingTrack("yt_5", "ytmusic", "Stay", "The Kid LAROI & Justin Bieber", "F*CK LOVE 3", 141000L, null, "https://music.youtube.com/watch?v=yt_5", genre = "Pop")
+        StreamingTrack("yt_5", "ytmusic", "Stay", "The Kid LAROI & Justin Bieber", "F*CK LOVE 3", 141000L, null, "https://music.youtube.com/watch?v=yt_5", genre = "Pop"),
     )
 
     private val amazonMusicTracks = listOf(
@@ -82,10 +80,6 @@ object StreamingCatalogRepository {
             it.album.contains(query, ignoreCase = true) ||
             it.genre.contains(query, ignoreCase = true)
         }
-    }
-
-    fun getSongsForService(serviceId: String, query: String = ""): List<Song> {
-        return getTracksForService(serviceId, query).map { it.toSong() }
     }
 
     fun getPlaylistsForService(serviceId: String): List<String> {

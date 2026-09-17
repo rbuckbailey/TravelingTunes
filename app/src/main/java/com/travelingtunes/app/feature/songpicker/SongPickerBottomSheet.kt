@@ -19,11 +19,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Stop
@@ -38,7 +36,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -57,7 +54,6 @@ import androidx.compose.material3.ListItem
 import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.ui.SlidingOverlay
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
@@ -125,31 +121,30 @@ fun SongPickerBottomSheet(
     playbackManager: PlaybackManager,
     musicScanner: MusicScanner? = null,
     settingsDataStore: SettingsDataStore? = null,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val isScanning by musicScanner?.isScanning?.collectAsState() ?: remember { mutableStateOf(false) }
+    val isScanning by musicScanner?.isScanning?.collectAsState() ?: remember { mutableStateOf(value = false) }
     val scanStatusMessage by musicScanner?.statusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
-    val scannedCount by musicScanner?.scannedCount?.collectAsState() ?: remember { mutableStateOf(0) }
+    val scannedCount by musicScanner?.scannedCount?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) }
 
-    val isDownloadingArt by musicScanner?.isDownloadingArt?.collectAsState() ?: remember { mutableStateOf(false) }
+    val isDownloadingArt by musicScanner?.isDownloadingArt?.collectAsState() ?: remember { mutableStateOf(value = false) }
     val artDownloadStatusMessage by musicScanner?.artDownloadStatusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
-    val artDownloadDownloadedCount by musicScanner?.artDownloadDownloadedCount?.collectAsState() ?: remember { mutableStateOf(0) }
-    val artDownloadFailedCount by musicScanner?.artDownloadFailedCount?.collectAsState() ?: remember { mutableStateOf(0) }
-    val artDownloadTotalCount by musicScanner?.artDownloadTotalCount?.collectAsState() ?: remember { mutableStateOf(0) }
+    val artDownloadDownloadedCount by musicScanner?.artDownloadDownloadedCount?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val artDownloadFailedCount by musicScanner?.artDownloadFailedCount?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val artDownloadTotalCount by musicScanner?.artDownloadTotalCount?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val lastAuditReport by musicScanner?.lastAuditReport?.collectAsState() ?: remember { mutableStateOf(null) }
-    var showAuditDialog by remember { mutableStateOf(false) }
+    var showAuditDialog by remember { mutableStateOf(value = false) }
 
     val normalizationSettings by (settingsDataStore?.normalizationSettingsFlow ?: flowOf(NormalizationSettings())).collectAsState(initial = NormalizationSettings())
     var normalizationSummary by remember { mutableStateOf(NormalizationSummary()) }
-    var showNormalizationReportDialog by remember { mutableStateOf(false) }
+    var showNormalizationReportDialog by remember { mutableStateOf(value = false) }
     var reportSongs by remember { mutableStateOf<List<Song>>(emptyList()) }
 
-    val isAnalyzingVolume by musicScanner?.isAnalyzingVolume?.collectAsState() ?: remember { mutableStateOf(false) }
-    val volumeAnalysisProgressCurrent by musicScanner?.volumeAnalysisProgressCurrent?.collectAsState() ?: remember { mutableStateOf(0) }
-    val volumeAnalysisProgressTotal by musicScanner?.volumeAnalysisProgressTotal?.collectAsState() ?: remember { mutableStateOf(0) }
+    val isAnalyzingVolume by musicScanner?.isAnalyzingVolume?.collectAsState() ?: remember { mutableStateOf(value = false) }
+    val volumeAnalysisProgressCurrent by musicScanner?.volumeAnalysisProgressCurrent?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val volumeAnalysisProgressTotal by musicScanner?.volumeAnalysisProgressTotal?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val volumeAnalysisStatusMessage by musicScanner?.volumeAnalysisStatusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
 
     LaunchedEffect(visible, normalizationSettings, isAnalyzingVolume) {
@@ -197,14 +192,14 @@ fun SongPickerBottomSheet(
             if (selectedAlbum != null) {
                 val albumSongs = musicDatabase.getSongsByAlbum(selectedAlbum!!)
                 val filtered = albumSongs.filter { song ->
-                    (selectedArtist == null || song.artist.equals(selectedArtist, true) || song.effectiveArtist.equals(selectedArtist, true)) &&
-                    (selectedGenre == null || song.genre.equals(selectedGenre, true))
+                    ((selectedArtist == null) || song.artist.equals(selectedArtist, ignoreCase = true) || song.effectiveArtist.equals(selectedArtist, ignoreCase = true)) &&
+                    ((selectedGenre == null) || song.genre.equals(selectedGenre, ignoreCase = true))
                 }
-                val base = if (filtered.isNotEmpty()) filtered else albumSongs
-                songsList = if (searchQuery.isBlank()) base else base.filter { it.title.contains(searchQuery, true) }
+                val base = filtered.ifEmpty { albumSongs }
+                songsList = if (searchQuery.isBlank()) base else base.filter { it.title.contains(searchQuery, ignoreCase = true) }
             } else if (selectedArtist != null) {
                 val artistSongs = musicDatabase.getSongsByArtist(selectedArtist!!).filter { song ->
-                    selectedGenre == null || song.genre.equals(selectedGenre, true)
+                    (selectedGenre == null) || song.genre.equals(selectedGenre, ignoreCase = true)
                 }
                 val albumMap = artistSongs.groupBy { it.albumKey }
                 val albums = albumMap.map { (_, songs) ->
@@ -212,14 +207,14 @@ fun SongPickerBottomSheet(
                         name = songs.firstOrNull()?.album ?: "Unknown Album",
                         artist = selectedArtist!!,
                         songCount = songs.size,
-                        artworkUri = songs.firstOrNull()?.artworkUri
+                        artworkUri = songs.firstOrNull()?.artworkUri,
                     )
                 }
-                albumsList = if (searchQuery.isBlank()) albums else albums.filter { it.name.contains(searchQuery, true) }
+                albumsList = if (searchQuery.isBlank()) albums else albums.filter { it.name.contains(searchQuery, ignoreCase = true) }
             } else if (selectedGenre != null) {
                 val genreSongs = musicDatabase.getSongsByGenre(selectedGenre!!)
-                val artists = genreSongs.map { it.effectiveArtist }.distinct().sorted()
-                artistsList = if (searchQuery.isBlank()) artists else artists.filter { it.contains(searchQuery, true) }
+                val artists = genreSongs.asSequence().map { it.effectiveArtist }.distinct().sorted().toList()
+                artistsList = if (searchQuery.isBlank()) artists else artists.filter { it.contains(searchQuery, ignoreCase = true) }
             } else if (selectedFolder != null) {
                 val targetFolder = selectedFolder!!
                 val dbSongs = musicDatabase.getAllSongs()
@@ -227,12 +222,12 @@ fun SongPickerBottomSheet(
                     it.folderPath.equals(targetFolder, ignoreCase = true) ||
                     it.folderPath.startsWith(targetFolder, ignoreCase = true)
                 }
-                songsList = if (searchQuery.isBlank()) folderSongs else folderSongs.filter { it.title.contains(searchQuery, true) }
+                songsList = if (searchQuery.isBlank()) folderSongs else folderSongs.filter { it.title.contains(searchQuery, ignoreCase = true) }
             } else {
                 when (selectedCategory) {
                     PickerCategory.SONGS -> {
                         val dbSongs = musicDatabase.searchSongs(searchQuery)
-                        val baseList = if (dbSongs.isNotEmpty()) dbSongs else currentPlaylist
+                        val baseList = dbSongs.ifEmpty { currentPlaylist }
                         songsList = if (searchQuery.isBlank()) {
                             baseList
                         } else {
@@ -718,7 +713,7 @@ fun SongPickerBottomSheet(
                                                 songsList
                                             } else {
                                                 val dbSongs = musicDatabase.getAllSongs()
-                                                if (dbSongs.isNotEmpty()) dbSongs else songsList
+                                                dbSongs.ifEmpty { songsList }
                                             }
                                             val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
                                             playbackManager.setPlaylistAndPlay(fullList, indexInFull)

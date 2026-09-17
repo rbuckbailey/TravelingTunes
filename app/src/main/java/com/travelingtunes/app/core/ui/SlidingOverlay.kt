@@ -41,9 +41,9 @@ fun SlidingOverlay(
     visible: Boolean,
     slideDirection: SlideDirection,
     onDismiss: () -> Unit,
-    openingTrigger: GestureTrigger? = null,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    openingTrigger: GestureTrigger? = null,
+    content: @Composable () -> Unit,
 ) {
     if (visible) {
         BackHandler {
@@ -60,14 +60,14 @@ fun SlidingOverlay(
 
         when (slideDirection) {
             SlideDirection.TOP -> {
-                slideInVertically(
+                (slideInVertically(
                     initialOffsetY = { -it },
                     animationSpec = enterSpec
-                ) + fadeIn(animationSpec = tween(200)) to
-                slideOutVertically(
+                ) + fadeIn(animationSpec = tween(200))) to
+                (slideOutVertically(
                     targetOffsetY = { -it },
                     animationSpec = exitSpec
-                ) + fadeOut(animationSpec = tween(180))
+                ) + fadeOut(animationSpec = tween(180)))
             }
             SlideDirection.BOTTOM -> {
                 slideInVertically(
@@ -150,7 +150,6 @@ fun Modifier.overlayGestureDismiss(
 
     awaitEachGesture {
         val firstDown = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-        val startTime = System.currentTimeMillis()
         val startPosition = firstDown.position
 
         val seenPointerIds = mutableSetOf(firstDown.id)
