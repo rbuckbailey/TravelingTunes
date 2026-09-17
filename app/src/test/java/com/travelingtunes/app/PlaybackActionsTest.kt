@@ -116,4 +116,41 @@ class PlaybackActionsTest {
         assertEquals("Song 1", artistXSongs[0].title)
         assertEquals("Song 2", artistXSongs[1].title)
     }
+
+    @Test
+    fun testPlayNextInsertionInQueue() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val song1 = Song(1L, "Song 1", "Artist", "Album", 1L, 1000L, mockUri)
+        val song2 = Song(2L, "Song 2", "Artist", "Album", 1L, 1000L, mockUri)
+        val song3 = Song(3L, "Song 3", "Artist", "Album", 1L, 1000L, mockUri)
+        val nextSong = Song(4L, "Next Song", "Artist", "Album", 1L, 1000L, mockUri)
+
+        val queue = mutableListOf(song1, song2, song3)
+        val currentPlayingIndex = 0 // Currently playing Song 1
+
+        val insertIndex = currentPlayingIndex + 1
+        queue.add(insertIndex, nextSong)
+
+        assertEquals(4, queue.size)
+        assertEquals("Song 1", queue[0].title)
+        assertEquals("Next Song", queue[1].title)
+        assertEquals("Song 2", queue[2].title)
+        assertEquals("Song 3", queue[3].title)
+    }
+
+    @Test
+    fun testAddToQueueAppendsToEnd() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val song1 = Song(1L, "Song 1", "Artist", "Album", 1L, 1000L, mockUri)
+        val song2 = Song(2L, "Song 2", "Artist", "Album", 1L, 1000L, mockUri)
+        val queuedSong = Song(3L, "Queued Song", "Artist", "Album", 1L, 1000L, mockUri)
+
+        val queue = mutableListOf(song1, song2)
+        queue.add(queuedSong)
+
+        assertEquals(3, queue.size)
+        assertEquals("Song 1", queue[0].title)
+        assertEquals("Song 2", queue[1].title)
+        assertEquals("Queued Song", queue[2].title)
+    }
 }

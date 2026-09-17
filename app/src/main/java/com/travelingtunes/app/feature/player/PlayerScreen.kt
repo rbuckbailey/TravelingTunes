@@ -2494,19 +2494,27 @@ private fun TextAlignmentOption.toComposeAlignment(): TextAlign {
     }
 }
 
+fun android.graphics.Bitmap.cropToSquare(): android.graphics.Bitmap {
+    if (width == height) return this
+    val size = minOf(width, height)
+    val x = (width - size) / 2
+    val y = (height - size) / 2
+    return android.graphics.Bitmap.createBitmap(this, x, y, size, size)
+}
+
 suspend fun loadSongArtwork(context: android.content.Context, song: Song): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
     // 1. Try explicit song.artworkUri if present (downloaded or scanned artwork)
     if (song.artworkUri != null) {
         if (song.artworkUri.scheme == "file") {
             try {
                 val bmp = BitmapFactory.decodeFile(song.artworkUri.path)
-                if (bmp != null) return@withContext bmp
+                if (bmp != null) return@withContext bmp.cropToSquare()
             } catch (ignored: Exception) {}
         }
         try {
             context.contentResolver.openInputStream(song.artworkUri)?.use { stream ->
                 val bmp = BitmapFactory.decodeStream(stream)
-                if (bmp != null) return@withContext bmp
+                if (bmp != null) return@withContext bmp.cropToSquare()
             }
         } catch (ignored: Exception) {}
     }
@@ -2517,7 +2525,7 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
             val albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
             context.contentResolver.openInputStream(albumArtUri)?.use { stream ->
                 val bmp = BitmapFactory.decodeStream(stream)
-                if (bmp != null) return@withContext bmp
+                if (bmp != null) return@withContext bmp.cropToSquare()
             }
         } catch (ignored: Exception) {}
     }
@@ -2529,7 +2537,7 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
         val bytes = mmr.embeddedPicture
         if (bytes != null) {
             val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            if (bmp != null) return@withContext bmp
+            if (bmp != null) return@withContext bmp.cropToSquare()
         }
     } catch (ignored: Exception) {
     } finally {
@@ -2540,7 +2548,7 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
             val bmp = context.contentResolver.loadThumbnail(song.contentUri, Size(1024, 1024), null)
-            if (bmp != null) return@withContext bmp
+            if (bmp != null) return@withContext bmp.cropToSquare()
         } catch (ignored: Exception) {}
     }
 
@@ -2549,7 +2557,9 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
 
 private suspend fun PointerInputScope.detectRegionButtonGestures(
     onTap: () -> Unit,
-    onLongPress: (() -> Unit)? = null
+    onLongPress: (() -> Unit)? = null,
+    isBottomRegion: Boolean = false,
+    isTopRegion: Boolean = false
 ) {
     val slopPx = 12f * density
     val minUpwardExitPx = 3f * density
@@ -2559,8 +2569,8 @@ private suspend fun PointerInputScope.detectRegionButtonGestures(
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
         val startPos = down.position
         val startTime = System.currentTimeMillis()
-        val isNearBottomEdge = startPos.y > (size.height.toFloat() - 28f * density)
-        val isNearTopEdge = startPos.y < (28f * density)
+        val isNearBottomEdge = isBottomRegion || startPos.y > (size.height.toFloat() - 28f * density)
+        val isNearTopEdge = isTopRegion || startPos.y < (28f * density)
 
         var isCancelled = false
         var isLongPressFired = false
@@ -2674,6 +2684,7 @@ fun ScreenRegionIconsOverlay(
 
     val isVolumeEdgeBar = displaySettings?.hudType == HudTypeOption.EDGE_HUD
     val volumeEdgeDisplacement = if (isVolumeEdgeBar && displaySettings != null) (displaySettings.hudLineThickness + 6f).dp else 0.dp
+    val isDrivingModeEnabled = displaySettings?.drivingModeEnabled == true
 
     Box(modifier = modifier.fillMaxSize()) {
         // Top Edge Regions
@@ -2711,7 +2722,8 @@ fun ScreenRegionIconsOverlay(
 
             val isRepeatActive = action == GestureAction.TOGGLE_REPEAT && repeatMode != RepeatMode.OFF
             val isShuffleActive = action == GestureAction.TOGGLE_SHUFFLE && shuffleMode != ShuffleMode.OFF
-            val isActiveControl = isRepeatActive || isShuffleActive
+            val isDrivingActive = action == GestureAction.TOGGLE_DRIVING_MODE && isDrivingModeEnabled
+            val isActiveControl = isRepeatActive || isShuffleActive || isDrivingActive
 
             val buttonBgColor = if (isActiveControl) {
                 MaterialTheme.colorScheme.primaryContainer
@@ -2782,7 +2794,8 @@ fun ScreenRegionIconsOverlay(
                                 } else {
                                     onOpenSettings(SlideDirection.BOTTOM)
                                 }
-                            }
+                            },
+                            isTopRegion = true
                         )
                     },
                 contentAlignment = Alignment.Center
@@ -2794,6 +2807,7 @@ fun ScreenRegionIconsOverlay(
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
+                        drivingModeEnabled = isDrivingModeEnabled,
                         tint = buttonTint,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
                     )
@@ -2835,7 +2849,8 @@ fun ScreenRegionIconsOverlay(
 
             val isRepeatActive = action == GestureAction.TOGGLE_REPEAT && repeatMode != RepeatMode.OFF
             val isShuffleActive = action == GestureAction.TOGGLE_SHUFFLE && shuffleMode != ShuffleMode.OFF
-            val isActiveControl = isRepeatActive || isShuffleActive
+            val isDrivingActive = action == GestureAction.TOGGLE_DRIVING_MODE && isDrivingModeEnabled
+            val isActiveControl = isRepeatActive || isShuffleActive || isDrivingActive
 
             val buttonBgColor = if (isActiveControl) {
                 MaterialTheme.colorScheme.primaryContainer
@@ -2906,7 +2921,8 @@ fun ScreenRegionIconsOverlay(
                                 } else {
                                     onOpenSettings(SlideDirection.TOP)
                                 }
-                            }
+                            },
+                            isBottomRegion = true
                         )
                     },
                 contentAlignment = Alignment.Center
@@ -2918,6 +2934,7 @@ fun ScreenRegionIconsOverlay(
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
+                        drivingModeEnabled = isDrivingModeEnabled,
                         tint = buttonTint,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
                     )
@@ -3064,7 +3081,7 @@ private fun StretchedEdgeBackground(
         }
     }
 
-    val imgBitmap = bitmap ?: return
+    val imgBitmap = bitmap?.cropToSquare() ?: return
 
     val edgeBitmap = remember(imgBitmap, dockEdge) {
         val w = imgBitmap.width

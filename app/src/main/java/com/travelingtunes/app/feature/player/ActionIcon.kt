@@ -115,13 +115,14 @@ fun ActionIcon(
     repeatMode: RepeatMode = RepeatMode.OFF,
     shuffleMode: ShuffleMode = ShuffleMode.OFF,
     isPlaying: Boolean = false,
+    drivingModeEnabled: Boolean = false,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
     iconSize: Dp = 28.dp
 ) {
     if (action == GestureAction.UNASSIGNED) return
 
-    val alpha = getActionAlpha(action, repeatMode, shuffleMode, isPlaying)
+    val alpha = getActionAlpha(action, repeatMode, shuffleMode, isPlaying, drivingModeEnabled)
     val effectiveTint = tint.copy(alpha = alpha)
 
     Box(
@@ -638,11 +639,13 @@ private fun getActionAlpha(
     action: GestureAction,
     repeatMode: RepeatMode,
     shuffleMode: ShuffleMode,
-    isPlaying: Boolean
+    isPlaying: Boolean,
+    drivingModeEnabled: Boolean = false
 ): Float {
     return when (action) {
         GestureAction.TOGGLE_REPEAT -> if (repeatMode != RepeatMode.OFF) 1.0f else 0.45f
         GestureAction.TOGGLE_SHUFFLE -> if (shuffleMode != ShuffleMode.OFF) 1.0f else 0.45f
+        GestureAction.TOGGLE_DRIVING_MODE -> if (drivingModeEnabled) 1.0f else 0.45f
         GestureAction.PLAY -> if (isPlaying) 1.0f else 0.55f
         GestureAction.PAUSE -> if (!isPlaying) 1.0f else 0.55f
         GestureAction.PLAY_PAUSE -> if (isPlaying) 1.0f else 0.55f

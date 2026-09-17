@@ -1177,6 +1177,26 @@ class PlaybackManager(
         persistCurrentPlaybackState()
     }
 
+    fun playNext(song: Song) {
+        playNext(listOf(song))
+    }
+
+    fun playNext(songs: List<Song>) {
+        if (songs.isEmpty()) return
+        if (_currentPlaylist.value.isEmpty()) {
+            addSongsToQueue(songs)
+            return
+        }
+        val currentIndex = try { player.currentMediaItemIndex } catch (_: Exception) { 0 }
+        val currentPlaylistSize = _currentPlaylist.value.size
+        val insertIndex = (if (currentIndex in 0 until currentPlaylistSize) currentIndex + 1 else currentPlaylistSize).coerceIn(0, currentPlaylistSize)
+        val updated = _currentPlaylist.value.toMutableList()
+        updated.addAll(insertIndex, songs)
+        _currentPlaylist.value = updated
+        player.addMediaItems(insertIndex, songs.map { songToMediaItem(it) })
+        persistCurrentPlaybackState()
+    }
+
     fun moveQueueItem(fromIndex: Int, toIndex: Int) {
         val list = _currentPlaylist.value.toMutableList()
         if (fromIndex !in list.indices || toIndex !in list.indices || fromIndex == toIndex) return

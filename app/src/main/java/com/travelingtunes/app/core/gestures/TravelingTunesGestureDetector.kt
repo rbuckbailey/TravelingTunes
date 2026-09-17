@@ -192,9 +192,10 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
     val longPressThresholdMs = 380L
     val longPressSlopPx = 32f * density
 
-    val systemInsetPx = 20f * density
-    val isSystemTopEdge = startPosition.y < systemInsetPx
-    val isSystemBottomEdge = startPosition.y > (size.height.toFloat() - systemInsetPx)
+    val systemTopInsetPx = maxOf(36f * density, size.height.toFloat() * 0.05f)
+    val systemBottomInsetPx = maxOf(48f * density, size.height.toFloat() * 0.08f)
+    val isSystemTopEdge = startPosition.y < systemTopInsetPx
+    val isSystemBottomEdge = startPosition.y > (size.height.toFloat() - systemBottomInsetPx)
 
     val seenPointerIds = mutableSetOf<PointerId>()
     seenPointerIds.add(firstDown.id)
@@ -313,8 +314,8 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
                 listener.onGestureEnd(totalDx, totalDy, maxFingers)
             }
             val hasMovedPastMin = abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx
-            val isSystemEdgeDrag = (isSystemTopEdge || isSystemBottomEdge) && abs(totalDy) > abs(totalDx)
-            val isSwipeResult = isSwipeHandled || hasMovedPastMin || isSystemEdgeDrag || isSystemBottomEdge || isSystemTopEdge
+            val isSystemEdgeDrag = isSystemTopEdge || isSystemBottomEdge || (startPosition.y > (size.height.toFloat() - systemBottomInsetPx * 1.25f) && totalDy < 0f)
+            val isSwipeResult = isSwipeHandled || hasMovedPastMin || isSystemEdgeDrag
             return TapPressResult(
                 fingers = maxFingers,
                 startPosition = startPosition,
@@ -350,7 +351,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
 
             if (!isSwipeHandled && !isLongPressHandled) {
                 val hasMovedPastMin = abs(totalDx) > minTranslationPx || abs(totalDy) > minTranslationPx
-                val isSystemEdgeDrag = (isSystemTopEdge || isSystemBottomEdge) && abs(totalDy) > abs(totalDx)
+                val isSystemEdgeDrag = isSystemTopEdge || isSystemBottomEdge || (startPosition.y > (size.height.toFloat() - systemBottomInsetPx * 1.25f) && totalDy < 0f)
                 val canCommitSwipe = hasMovedPastMin && !isSystemEdgeDrag
 
                 if (canCommitSwipe) {
