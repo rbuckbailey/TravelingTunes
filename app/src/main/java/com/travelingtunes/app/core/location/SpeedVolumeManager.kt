@@ -143,8 +143,8 @@ class SpeedVolumeManager(private val context: Context) {
             )
         } catch (ignored: Exception) {}
 
-        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 3000L)
-            .setMinUpdateIntervalMillis(1500L)
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_BALANCED_POWER_ACCURACY, 4000L)
+            .setMinUpdateIntervalMillis(2000L)
             .build()
 
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())

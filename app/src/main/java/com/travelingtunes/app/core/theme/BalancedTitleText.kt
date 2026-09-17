@@ -87,11 +87,14 @@ fun BalancedTitleText(
 
         val actualMaxLines = if (enableMarquee) 1 else maxLines
 
+        val availableWidthInt = (availableWidthPx).toInt()
+        val availableHeightInt = (availableHeightPx).toInt()
+
         // Calculate auto-scaled font size and line count using low-latency binary search fitting
         val sizeAndLines = remember(
             text,
-            availableWidthPx,
-            availableHeightPx,
+            availableWidthInt,
+            availableHeightInt,
             baseFontSize,
             minFontSp,
             actualMaxLines,

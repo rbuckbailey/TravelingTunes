@@ -169,6 +169,8 @@ object AlbumArtColorExtractor {
 
             val borderX = (width * 0.03f).toInt().coerceIn(2, 16)
             val borderY = (height * 0.03f).toInt().coerceIn(2, 16)
+            val stepX = (width / 100).coerceAtLeast(1)
+            val stepY = (height / 100).coerceAtLeast(1)
 
             // Collect edge pixels classified into primary (prioritized) vs secondary regions based on normalized position t
             val primaryPixels = mutableListOf<Int>()
@@ -195,14 +197,14 @@ object AlbumArtColorExtractor {
             if (innerEdge != null) {
                 when (innerEdge) {
                     InnerEdge.RIGHT -> {
-                        for (y in 0 until height) {
+                        for (y in 0 until height step stepY) {
                             for (x in (width - borderX) until width) {
                                 addPixel(x, y, isVerticalEdge = true)
                             }
                         }
                     }
                     InnerEdge.LEFT -> {
-                        for (y in 0 until height) {
+                        for (y in 0 until height step stepY) {
                             for (x in 0 until borderX) {
                                 addPixel(x, y, isVerticalEdge = true)
                             }
@@ -210,14 +212,14 @@ object AlbumArtColorExtractor {
                     }
                     InnerEdge.BOTTOM -> {
                         for (y in (height - borderY) until height) {
-                            for (x in 0 until width) {
+                            for (x in 0 until width step stepX) {
                                 addPixel(x, y, isVerticalEdge = false)
                             }
                         }
                     }
                     InnerEdge.TOP -> {
                         for (y in 0 until borderY) {
-                            for (x in 0 until width) {
+                            for (x in 0 until width step stepX) {
                                 addPixel(x, y, isVerticalEdge = false)
                             }
                         }
@@ -226,16 +228,16 @@ object AlbumArtColorExtractor {
             } else {
                 // All 4 borders
                 for (y in 0 until borderY) {
-                    for (x in 0 until width) {
+                    for (x in 0 until width step stepX) {
                         addPixel(x, y, isVerticalEdge = false)
                     }
                 }
                 for (y in (height - borderY) until height) {
-                    for (x in 0 until width) {
+                    for (x in 0 until width step stepX) {
                         addPixel(x, y, isVerticalEdge = false)
                     }
                 }
-                for (y in borderY until (height - borderY)) {
+                for (y in borderY until (height - borderY) step stepY) {
                     for (x in 0 until borderX) {
                         addPixel(x, y, isVerticalEdge = true)
                     }

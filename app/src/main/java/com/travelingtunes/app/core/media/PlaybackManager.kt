@@ -50,7 +50,51 @@ class PlaybackManager(
         }
     }
 
-    val player: ExoPlayer = MusicPlaybackService.getOrCreatePlayer(context)
+    private var _player: ExoPlayer = MusicPlaybackService.getOrCreatePlayer(context)
+    val player: ExoPlayer
+        get() = getValidPlayer()
+
+    @Volatile
+    private var isPlayerInErrorState = false
+
+    private fun getValidPlayer(): ExoPlayer {
+        if (!MusicPlaybackService.isPlayerValid(_player) || isPlayerInErrorState) {
+            android.util.Log.i("PlaybackManager", "getValidPlayer: current player is invalid or in error state. Rebinding...")
+            rebindPlayer()
+        }
+        return _player
+    }
+
+    @Synchronized
+    private fun rebindPlayer() {
+        try {
+            _player.removeListener(playerListener)
+        } catch (_: Exception) {}
+
+        _player = MusicPlaybackService.recreatePlayer(context)
+        _player.addListener(playerListener)
+        isPlayerInErrorState = false
+
+        val playlist = _currentPlaylist.value
+        if (playlist.isNotEmpty()) {
+            val song = _currentSong.value
+            val songId = song?.id ?: -1L
+            val songIndex = playlist.indexOfFirst { it.id == songId }.coerceAtLeast(0)
+            val posMs = _currentPositionMs.value.coerceAtLeast(0L)
+
+            val mediaItems = playlist.map { songToMediaItem(it) }
+            _player.shuffleModeEnabled = false
+            _player.repeatMode = when (_repeatMode.value) {
+                RepeatMode.SONG -> Player.REPEAT_MODE_ONE
+                RepeatMode.ALBUM, RepeatMode.ARTIST, RepeatMode.GENRE, RepeatMode.FOLDER -> Player.REPEAT_MODE_ALL
+                else -> Player.REPEAT_MODE_OFF
+            }
+            _player.setMediaItems(mediaItems, songIndex, posMs)
+            _player.prepare()
+            android.util.Log.i("PlaybackManager", "Restored ${playlist.size} items to new ExoPlayer at index $songIndex, pos $posMs ms")
+        }
+    }
+
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     private val _currentSong = MutableStateFlow<Song?>(null)
@@ -97,6 +141,86 @@ class PlaybackManager(
     private var consecutiveErrorCount = 0
     private var lastErrorTimestampMs = 0L
 
+    private val playerListener = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            _isPlaying.value = isPlaying
+            if (isPlaying) {
+                consecutiveErrorCount = 0
+            }
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            val stateString = when (playbackState) {
+                Player.STATE_IDLE -> "STATE_IDLE"
+                Player.STATE_BUFFERING -> "STATE_BUFFERING"
+                Player.STATE_READY -> "STATE_READY"
+                Player.STATE_ENDED -> "STATE_ENDED"
+                else -> "UNKNOWN($playbackState)"
+            }
+            android.util.Log.d("PlaybackManager", "onPlaybackStateChanged: $stateString, isPlaying=${try { _player.isPlaying } catch(_: Exception) { false }}")
+            if (playbackState == Player.STATE_READY) {
+                consecutiveErrorCount = 0
+            }
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            _lastMediaItemTransitionReason.value = reason
+            val playlist = _currentPlaylist.value
+            val currentIndex = try { _player.currentMediaItemIndex } catch (_: Exception) { -1 }
+            val song = if (currentIndex in playlist.indices) {
+                playlist[currentIndex]
+            } else {
+                val mediaId = mediaItem?.mediaId?.toLongOrNull()
+                playlist.find { it.id == mediaId }
+            }
+            _currentSong.value = song
+            _durationMs.value = try { _player.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
+            applyNormalizationModifier(song)
+            android.util.Log.d("PlaybackManager", "onMediaItemTransition: title='${song?.title}', reason=$reason, index=$currentIndex")
+        }
+
+        override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+            val currentItem = try { _player.currentMediaItem } catch (_: Exception) { null }
+            android.util.Log.e(
+                "PlaybackManager",
+                "Player error encountered: errorCode=${error.errorCode} (${error.errorCodeName}), message=${error.message}, currentMediaId=${currentItem?.mediaId}, uri=${currentItem?.localConfiguration?.uri}",
+                error
+            )
+            val now = System.currentTimeMillis()
+            if (now - lastErrorTimestampMs < 3000L) {
+                consecutiveErrorCount++
+            } else {
+                consecutiveErrorCount = 1
+            }
+            lastErrorTimestampMs = now
+
+            if (consecutiveErrorCount >= 3) {
+                android.util.Log.w("PlaybackManager", "Circuit breaker triggered (3 errors in <3s): Resetting player state to allow clean recovery.")
+                _isPlaying.value = false
+                _actionHudText.value = "Audio engine busy"
+                isPlayerInErrorState = true
+                try { _player.stop() } catch (_: Exception) {}
+                consecutiveErrorCount = 0
+                return
+            }
+
+            if (try { _player.hasNextMediaItem() } catch (_: Exception) { false }) {
+                android.util.Log.i("PlaybackManager", "Player error occurred, skipping to next media item")
+                try {
+                    _player.seekToNextMediaItem()
+                    _player.prepare()
+                    _player.play()
+                } catch (e: Exception) {
+                    isPlayerInErrorState = true
+                }
+            } else {
+                android.util.Log.w("PlaybackManager", "Player error occurred, no next media item available")
+                _isPlaying.value = false
+                isPlayerInErrorState = true
+            }
+        }
+    }
+
     init {
         instance = this
         updateVolumeRatio()
@@ -108,86 +232,14 @@ class PlaybackManager(
                 }
             }
         }
-        player.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                _isPlaying.value = isPlaying
-                if (isPlaying) {
-                    consecutiveErrorCount = 0
-                }
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                val stateString = when (playbackState) {
-                    Player.STATE_IDLE -> "STATE_IDLE"
-                    Player.STATE_BUFFERING -> "STATE_BUFFERING"
-                    Player.STATE_READY -> "STATE_READY"
-                    Player.STATE_ENDED -> "STATE_ENDED"
-                    else -> "UNKNOWN($playbackState)"
-                }
-                android.util.Log.d("PlaybackManager", "onPlaybackStateChanged: $stateString, isPlaying=${player.isPlaying}")
-                if (playbackState == Player.STATE_READY) {
-                    consecutiveErrorCount = 0
-                }
-            }
-
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                _lastMediaItemTransitionReason.value = reason
-                val playlist = _currentPlaylist.value
-                val currentIndex = try { player.currentMediaItemIndex } catch (_: Exception) { -1 }
-                val song = if (currentIndex in playlist.indices) {
-                    playlist[currentIndex]
-                } else {
-                    val mediaId = mediaItem?.mediaId?.toLongOrNull()
-                    playlist.find { it.id == mediaId }
-                }
-                _currentSong.value = song
-                _durationMs.value = try { player.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
-                applyNormalizationModifier(song)
-                android.util.Log.d("PlaybackManager", "onMediaItemTransition: title='${song?.title}', reason=$reason, index=$currentIndex")
-            }
-
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                val currentItem = try { player.currentMediaItem } catch (_: Exception) { null }
-                android.util.Log.e(
-                    "PlaybackManager",
-                    "Player error encountered: errorCode=${error.errorCode} (${error.errorCodeName}), message=${error.message}, currentMediaId=${currentItem?.mediaId}, uri=${currentItem?.localConfiguration?.uri}",
-                    error
-                )
-                val now = System.currentTimeMillis()
-                if (now - lastErrorTimestampMs < 3000L) {
-                    consecutiveErrorCount++
-                } else {
-                    consecutiveErrorCount = 1
-                }
-                lastErrorTimestampMs = now
-
-                if (consecutiveErrorCount >= 3) {
-                    android.util.Log.w("PlaybackManager", "Circuit breaker triggered (3 errors in <3s): Stopping player to prevent audio server lockup.")
-                    _isPlaying.value = false
-                    _actionHudText.value = "Audio engine busy"
-                    player.stop()
-                    consecutiveErrorCount = 0
-                    return
-                }
-
-                if (player.hasNextMediaItem()) {
-                    android.util.Log.i("PlaybackManager", "Player error occurred, skipping to next media item")
-                    player.seekToNextMediaItem()
-                    player.prepare()
-                    player.play()
-                } else {
-                    android.util.Log.w("PlaybackManager", "Player error occurred, no next media item available")
-                    _isPlaying.value = false
-                }
-            }
-        })
-
+        _player.addListener(playerListener)
         launchTicker()
     }
 
     fun applyNormalizationModifier(song: Song? = _currentSong.value, mode: NormalizationMode = _normalizationMode.value) {
+        val p = player
         if (song == null) {
-            player.volume = 1.0f
+            try { p.volume = 1.0f } catch (_: Exception) {}
             return
         }
         val modifier = when (mode) {
@@ -195,27 +247,41 @@ class PlaybackManager(
             NormalizationMode.TRACK -> if (song.trackGain > 0.001f) song.trackGain else 1.0f
             NormalizationMode.OFF -> 1.0f
         }
-        player.volume = modifier.coerceIn(0.0f, 2.0f)
+        try {
+            p.volume = modifier.coerceIn(0.0f, 2.0f)
+        } catch (_: Exception) {}
     }
 
     private fun launchTicker() {
         scope.launch {
             var tickCount = 0
             while (isActive) {
-                val pos = player.currentPosition.coerceAtLeast(0L)
-                val dur = player.duration.coerceAtLeast(0L)
-                if (player.isPlaying || kotlin.math.abs(pos - _currentPositionMs.value) > 1000L) {
-                    _currentPositionMs.value = pos
-                }
-                _durationMs.value = dur
-                updateVolumeRatio()
+                val p = try { player } catch (_: Exception) { null }
+                if (p != null && MusicPlaybackService.isPlayerValid(p)) {
+                    val playing = try { p.isPlaying } catch (_: Exception) { false }
+                    val pos = try { p.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
+                    val dur = try { p.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
 
-                tickCount++
-                if (tickCount % 10 == 0) { // Every 1 second
-                    persistCurrentPlaybackState()
-                }
+                    if (playing || kotlin.math.abs(pos - _currentPositionMs.value) > 1000L) {
+                        _currentPositionMs.value = pos
+                    }
+                    _durationMs.value = dur
+                    updateVolumeRatio()
 
-                delay(100L)
+                    if (playing) {
+                        tickCount++
+                        if (tickCount >= 150) { // Every 15 seconds while playing
+                            persistCurrentPlaybackState()
+                            tickCount = 0
+                        }
+                        delay(100L)
+                    } else {
+                        tickCount = 0
+                        delay(1000L)
+                    }
+                } else {
+                    delay(1000L)
+                }
             }
         }
     }

@@ -14,6 +14,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.ui.graphics.TransformOrigin
 import com.travelingtunes.app.core.model.ColorTheme
 import com.travelingtunes.app.core.theme.TravelingTunesTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -223,10 +224,18 @@ fun PlayerScreen(
 
     val currentSong by playbackManager.currentSong.collectAsState()
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
-    val currentPositionMs by playbackManager.currentPositionMs.collectAsState()
-    val durationMs by playbackManager.durationMs.collectAsState()
-    val currentVolumeRatio by playbackManager.currentVolumeRatio.collectAsState()
+    val currentPositionMsState = playbackManager.currentPositionMs.collectAsState()
+    val durationMsState = playbackManager.durationMs.collectAsState()
+    val currentVolumeRatioState = playbackManager.currentVolumeRatio.collectAsState()
     val actionHudText by playbackManager.actionHudText.collectAsState()
+
+    val currentPositionMs = currentPositionMsState.value
+    val durationMs = durationMsState.value
+    val currentVolumeRatio = currentVolumeRatioState.value
+
+    val currentPositionMsProvider = remember { { playbackManager.currentPositionMs.value } }
+    val durationMsProvider = remember { { playbackManager.durationMs.value } }
+    val currentVolumeRatioProvider = remember { { playbackManager.currentVolumeRatio.value } }
 
     val isPlaying by playbackManager.isPlaying.collectAsState()
     val repeatMode by playbackManager.repeatMode.collectAsState()
@@ -941,9 +950,9 @@ fun PlayerScreen(
         if (isMondrian) {
             MondrianBackground(
                 song = currentSong,
-                currentPositionMs = currentPositionMs,
-                durationMs = durationMs,
-                volumeRatio = currentVolumeRatio,
+                currentPositionMsProvider = currentPositionMsProvider,
+                durationMsProvider = durationMsProvider,
+                volumeRatioProvider = currentVolumeRatioProvider,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -1002,19 +1011,9 @@ fun PlayerScreen(
 
         // 1b. Pre-rendered Adjacent Page locked to current page edge during drag
         val adjacentSong = frozenAdjacentSong
+        val isDraggingByGesture = activePageAction != null || pageDragOffsetX != 0f || pageDragOffsetY != 0f
 
-        val isDraggingHorizontally = kotlin.math.abs(pageDragOffsetX) > 0f
-        val isDraggingVertically = kotlin.math.abs(pageDragOffsetY) > 0f
-
-        val adjacentOffsetX = if (isDraggingHorizontally) {
-            pageDragOffsetX + if (pageDragOffsetX < 0) screenWidthPx else -screenWidthPx
-        } else 0f
-
-        val adjacentOffsetY = if (isDraggingVertically) {
-            pageDragOffsetY + if (pageDragOffsetY < 0) screenHeightPx else -screenHeightPx
-        } else 0f
-
-        if (adjacentSong != null && (isDraggingHorizontally || isDraggingVertically)) {
+        if (adjacentSong != null && isDraggingByGesture) {
             val activeTopTriggersAdj = GestureTrigger.getActiveTopTriggers(displaySettings.numEdgeRegions)
             val activeBottomTriggersAdj = GestureTrigger.getActiveBottomTriggers(displaySettings.numEdgeRegions)
             val isAdjDownloadedArt = musicScanner?.albumArtDownloader?.isDownloadedArtwork(adjacentSong) == true
@@ -1031,8 +1030,11 @@ fun PlayerScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        translationX = adjacentOffsetX
-                        translationY = adjacentOffsetY
+                        val dx = pageDragOffsetX
+                        val dy = pageDragOffsetY
+                        val isHoriz = kotlin.math.abs(dx) > kotlin.math.abs(dy)
+                        translationX = if (isHoriz) (dx + if (dx < 0) screenWidthPx else -screenWidthPx) else 0f
+                        translationY = if (!isHoriz) (dy + if (dy < 0) screenHeightPx else -screenHeightPx) else 0f
                     }
             ) {
                 PlayerPageContent(
@@ -1133,7 +1135,7 @@ fun PlayerScreen(
         Box(modifier = hudBoundsModifier) {
             // 3. Geometric Volume HUD Overlay (Bar / Line / Edge)
             VolumeHudOverlay(
-                volumeRatio = currentVolumeRatio,
+                volumeRatioProvider = currentVolumeRatioProvider,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
                 modifier = Modifier.align(Alignment.BottomStart)
@@ -1141,8 +1143,8 @@ fun PlayerScreen(
 
             // 4. Geometric Progress / Playback Bar Overlay (Edge Bar / Line)
             ProgressHudOverlay(
-                currentPositionMs = currentPositionMs,
-                durationMs = durationMs,
+                currentPositionMsProvider = currentPositionMsProvider,
+                durationMsProvider = durationMsProvider,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
                 modifier = Modifier.align(Alignment.BottomStart)
@@ -1154,9 +1156,9 @@ fun PlayerScreen(
             MondrianMaskedLayout(
                 song = currentSong,
                 themeSettings = themeSettings,
-                currentPositionMs = currentPositionMs,
-                durationMs = durationMs,
-                volumeRatio = currentVolumeRatio,
+                currentPositionMsProvider = currentPositionMsProvider,
+                durationMsProvider = durationMsProvider,
+                volumeRatioProvider = currentVolumeRatioProvider,
                 modifier = Modifier.fillMaxSize()
             ) {
                 ScreenRegionIconsOverlay(
@@ -2193,16 +2195,18 @@ fun PlayerAlbumArtBackground(
 
 @Composable
 fun VolumeHudOverlay(
-    volumeRatio: Float,
+    volumeRatio: Float = 0.5f,
     displaySettings: DisplaySettings,
     themeSettings: ThemeSettings = ThemeSettings(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    volumeRatioProvider: (() -> Float)? = null
 ) {
     if (displaySettings.hudType == HudTypeOption.NONE || themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)) return
 
     var isVisible by remember { mutableStateOf(displaySettings.volumeAlwaysOn) }
+    val volVal = volumeRatioProvider?.invoke() ?: volumeRatio
 
-    LaunchedEffect(volumeRatio, displaySettings.volumeAlwaysOn) {
+    LaunchedEffect(volVal, displaySettings.volumeAlwaysOn) {
         if (displaySettings.volumeAlwaysOn) {
             isVisible = true
         } else {
@@ -2217,12 +2221,6 @@ fun VolumeHudOverlay(
         enter = fadeIn(animationSpec = tween(150)),
         exit = fadeOut(animationSpec = tween(300))
     ) {
-        val animatedVolumeRatio by animateFloatAsState(
-            targetValue = volumeRatio.coerceIn(0.01f, 1f),
-            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
-            label = "volumeRatio"
-        )
-
         val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
         val primaryColor = if (isMondrian) Color.Black else MaterialTheme.colorScheme.primary
         val lineThicknessDp = displaySettings.hudLineThickness.dp
@@ -2234,14 +2232,17 @@ fun VolumeHudOverlay(
 
         when (displaySettings.hudType) {
             HudTypeOption.EDGE_HUD -> {
-                // Geometric Vertical Strip along right edge
-                BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-                    val filledHeight = this.maxHeight * animatedVolumeRatio
+                Box(modifier = modifier.fillMaxSize()) {
                     Box(
                         modifier = Modifier
                             .width(lineThicknessDp)
-                            .height(filledHeight)
+                            .fillMaxHeight()
                             .align(Alignment.BottomEnd)
+                            .graphicsLayer {
+                                val ratio = (volumeRatioProvider?.invoke() ?: volumeRatio).coerceIn(0.01f, 1f)
+                                scaleY = ratio
+                                transformOrigin = TransformOrigin(0.5f, 1.0f)
+                            }
                             .clip(shape)
                             .background(
                                 if (isMondrian) Color.Black
@@ -2253,15 +2254,17 @@ fun VolumeHudOverlay(
                 }
             }
             HudTypeOption.NUMBER -> {
-                // Horizontal geometric line indicator at height corresponding to volume level
-                BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-                    val topOffsetDp = (this.maxHeight - lineThicknessDp) * (1f - animatedVolumeRatio)
+                Box(modifier = modifier.fillMaxSize()) {
+                    val lineThicknessPx = with(LocalDensity.current) { lineThicknessDp.toPx() }
                     Box(
                         modifier = Modifier
-                            .offset(y = topOffsetDp)
                             .then(if (themeSettings.isRounded) Modifier.padding(horizontal = 12.dp) else Modifier)
                             .fillMaxWidth()
                             .height(lineThicknessDp)
+                            .graphicsLayer {
+                                val ratio = (volumeRatioProvider?.invoke() ?: volumeRatio).coerceIn(0.01f, 1f)
+                                translationY = (size.height - lineThicknessPx) * (1f - ratio)
+                            }
                             .clip(shape)
                             .background(
                                 if (isMondrian) Color.Black
@@ -2273,7 +2276,6 @@ fun VolumeHudOverlay(
                 }
             }
             HudTypeOption.BAR_VOLUME -> {
-                // Full width rectangular block filling from bottom to current volume level
                 val barShape = if (themeSettings.isRounded) RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) else RectangleShape
                 val barGlassModifier = if (themeSettings.isGlass) {
                     Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), barShape)
@@ -2283,8 +2285,13 @@ fun VolumeHudOverlay(
                 Box(
                     modifier = modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(animatedVolumeRatio)
+                        .fillMaxHeight()
                         .then(barPadding)
+                        .graphicsLayer {
+                            val ratio = (volumeRatioProvider?.invoke() ?: volumeRatio).coerceIn(0.01f, 1f)
+                            scaleY = ratio
+                            transformOrigin = TransformOrigin(0.5f, 1.0f)
+                        }
                         .clip(barShape)
                         .background(
                             if (isMondrian) Color.Black
@@ -2301,20 +2308,16 @@ fun VolumeHudOverlay(
 
 @Composable
 fun ProgressHudOverlay(
-    currentPositionMs: Long,
-    durationMs: Long,
+    currentPositionMs: Long = 0L,
+    durationMs: Long = 0L,
     displaySettings: DisplaySettings,
     themeSettings: ThemeSettings = ThemeSettings(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentPositionMsProvider: (() -> Long)? = null,
+    durationMsProvider: (() -> Long)? = null
 ) {
-    if (displaySettings.scrubHudType == ScrubHudTypeOption.NONE || durationMs <= 0L || themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)) return
-
-    val rawProgressRatio = (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
-    val animatedProgressRatio by animateFloatAsState(
-        targetValue = rawProgressRatio,
-        animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
-        label = "progressRatio"
-    )
+    val durVal = durationMsProvider?.invoke() ?: durationMs
+    if (displaySettings.scrubHudType == ScrubHudTypeOption.NONE || durVal <= 0L || themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)) return
 
     val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
     val primaryColor = if (isMondrian) Color.Black else MaterialTheme.colorScheme.primary
@@ -2328,7 +2331,6 @@ fun ProgressHudOverlay(
 
     when (displaySettings.scrubHudType) {
         ScrubHudTypeOption.EDGE_HUD -> {
-            // Geometric Edge/Bottom Progress Bar
             Box(
                 modifier = modifier
                     .then(roundedPadding)
@@ -2345,7 +2347,14 @@ fun ProgressHudOverlay(
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .fillMaxWidth(animatedProgressRatio)
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            val d = durationMsProvider?.invoke() ?: durationMs
+                            val p = currentPositionMsProvider?.invoke() ?: currentPositionMs
+                            val ratio = if (d > 0L) (p.toFloat() / d.toFloat()).coerceIn(0f, 1f) else 0f
+                            scaleX = ratio
+                            transformOrigin = TransformOrigin(0f, 0.5f)
+                        }
                         .clip(shape)
                         .background(
                             if (isMondrian) Color.Black
@@ -2356,15 +2365,19 @@ fun ProgressHudOverlay(
             }
         }
         ScrubHudTypeOption.POPUP -> {
-            // Moving Geometric Vertical Line Indicator
-            BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-                val leftOffsetDp = (this.maxWidth - lineThicknessDp) * animatedProgressRatio
+            Box(modifier = modifier.fillMaxSize()) {
+                val lineThicknessPx = with(LocalDensity.current) { lineThicknessDp.toPx() }
                 Box(
                     modifier = Modifier
-                        .offset(x = leftOffsetDp)
                         .then(if (themeSettings.isRounded) Modifier.padding(vertical = 12.dp) else Modifier)
                         .fillMaxHeight()
                         .width(lineThicknessDp)
+                        .graphicsLayer {
+                            val d = durationMsProvider?.invoke() ?: durationMs
+                            val p = currentPositionMsProvider?.invoke() ?: currentPositionMs
+                            val ratio = if (d > 0L) (p.toFloat() / d.toFloat()).coerceIn(0f, 1f) else 0f
+                            translationX = (size.width - lineThicknessPx) * ratio
+                        }
                         .clip(shape)
                         .background(
                             if (isMondrian) Color.Black
@@ -2376,11 +2389,17 @@ fun ProgressHudOverlay(
             }
         }
         ScrubHudTypeOption.BAR_PROGRESS -> {
-            // Translucent Rectangular Fill Block
             Box(
                 modifier = modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(animatedProgressRatio)
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        val d = durationMsProvider?.invoke() ?: durationMs
+                        val p = currentPositionMsProvider?.invoke() ?: currentPositionMs
+                        val ratio = if (d > 0L) (p.toFloat() / d.toFloat()).coerceIn(0f, 1f) else 0f
+                        scaleX = ratio
+                        transformOrigin = TransformOrigin(0f, 0.5f)
+                    }
                     .background(
                         if (isMondrian) Color.Black
                         else primaryColor.copy(alpha = 0.15f)

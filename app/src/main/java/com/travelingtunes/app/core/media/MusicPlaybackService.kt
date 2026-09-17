@@ -10,7 +10,6 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
@@ -51,42 +50,74 @@ class MusicPlaybackService : MediaLibraryService() {
         @Volatile
         private var sharedSession: MediaLibrarySession? = null
 
-        fun getOrCreatePlayer(context: Context): ExoPlayer {
-            val existing = sharedPlayer
-            if (existing != null) {
-                try {
-                    if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
-                        if (existing.playbackState >= Player.STATE_IDLE) {
-                            return existing
-                        }
-                    } else {
-                        return existing
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("MusicPlaybackService", "Existing sharedPlayer is invalid or released, creating new instance", e)
-                    sharedPlayer = null
-                }
-            }
-            return synchronized(this) {
-                sharedPlayer ?: ExoPlayer.Builder(context.applicationContext)
-                    .setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                            .setUsage(C.USAGE_MEDIA)
-                            .build(),
-                        true
-                    )
-                    .setHandleAudioBecomingNoisy(true)
-                    .build().also {
-                        sharedPlayer = it
-                        android.util.Log.i("MusicPlaybackService", "Created new ExoPlayer instance $it")
-                    }
+        fun isPlayerValid(player: ExoPlayer?): Boolean {
+            if (player == null) return false
+            return try {
+                player.playbackState
+                player.applicationLooper
+                true
+            } catch (e: Exception) {
+                false
             }
         }
 
+        fun getOrCreatePlayer(context: Context): ExoPlayer {
+            val existing = sharedPlayer
+            if (existing != null && isPlayerValid(existing)) {
+                return existing
+            }
+            return recreatePlayer(context)
+        }
+
+        @OptIn(UnstableApi::class)
+        @Synchronized
+        fun recreatePlayer(context: Context): ExoPlayer {
+            val oldPlayer = sharedPlayer
+            if (oldPlayer != null) {
+                try {
+                    oldPlayer.release()
+                } catch (e: Exception) {
+                    android.util.Log.w("MusicPlaybackService", "Error releasing old sharedPlayer", e)
+                }
+                sharedPlayer = null
+            }
+
+            val newPlayer = ExoPlayer.Builder(context.applicationContext)
+                .setLooper(android.os.Looper.getMainLooper())
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                        .setUsage(C.USAGE_MEDIA)
+                        .build(),
+                    true
+                )
+                .setHandleAudioBecomingNoisy(true)
+                .build()
+
+            sharedPlayer = newPlayer
+
+            val session = sharedSession
+            if (session != null) {
+                try {
+                    session.player = newPlayer
+                } catch (e: Exception) {
+                    android.util.Log.w("MusicPlaybackService", "Could not update session.player directly", e)
+                }
+            }
+
+            android.util.Log.i("MusicPlaybackService", "Recreated shared ExoPlayer instance $newPlayer")
+            return newPlayer
+        }
+
         fun resetSharedPlayer() {
+            val oldPlayer = sharedPlayer
             sharedPlayer = null
             sharedSession = null
+            if (oldPlayer != null) {
+                try {
+                    oldPlayer.release()
+                } catch (_: Exception) {}
+            }
         }
 
         fun startService(context: Context) {

@@ -145,20 +145,27 @@ fun MondrianBackground(
     modifier: Modifier = Modifier,
     currentPositionMs: Long = 0L,
     durationMs: Long = 0L,
-    volumeRatio: Float = 0.5f
+    volumeRatio: Float = 0.5f,
+    currentPositionMsProvider: (() -> Long)? = null,
+    durationMsProvider: (() -> Long)? = null,
+    volumeRatioProvider: (() -> Float)? = null
 ) {
     val layout = remember(song?.id, song?.albumId, song?.album, song?.title) {
         MondrianThemeHelper.generateLayoutForSong(song)
     }
 
-    val progressRatio = if (durationMs > 0L) {
-        (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0.02f, 0.98f)
-    } else {
-        0.5f
-    }
-    val clampedVolumeRatio = volumeRatio.coerceIn(0.02f, 0.98f)
-
     Canvas(modifier = modifier.fillMaxSize()) {
+        val curPos = currentPositionMsProvider?.invoke() ?: currentPositionMs
+        val dur = durationMsProvider?.invoke() ?: durationMs
+        val vol = volumeRatioProvider?.invoke() ?: volumeRatio
+
+        val progressRatio = if (dur > 0L) {
+            (curPos.toFloat() / dur.toFloat()).coerceIn(0.02f, 0.98f)
+        } else {
+            0.5f
+        }
+        val clampedVolumeRatio = vol.coerceIn(0.02f, 0.98f)
+
         val w = size.width
         val h = size.height
 
@@ -234,6 +241,9 @@ fun MondrianMaskedLayout(
     currentPositionMs: Long = 0L,
     durationMs: Long = 0L,
     volumeRatio: Float = 0.5f,
+    currentPositionMsProvider: (() -> Long)? = null,
+    durationMsProvider: (() -> Long)? = null,
+    volumeRatioProvider: (() -> Float)? = null,
     content: @Composable () -> Unit
 ) {
     val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
@@ -246,13 +256,6 @@ fun MondrianMaskedLayout(
         MondrianThemeHelper.generateLayoutForSong(song)
     }
 
-    val progressRatio = if (durationMs > 0L) {
-        (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0.02f, 0.98f)
-    } else {
-        0.5f
-    }
-    val clampedVolumeRatio = volumeRatio.coerceIn(0.02f, 0.98f)
-
     Box(modifier = modifier) {
         // Layer 1: Base Black content
         content()
@@ -263,8 +266,18 @@ fun MondrianMaskedLayout(
                 .matchParentSize()
                 .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                 .drawWithContent {
+                    val curPos = currentPositionMsProvider?.invoke() ?: currentPositionMs
+                    val dur = durationMsProvider?.invoke() ?: durationMs
+                    val vol = volumeRatioProvider?.invoke() ?: volumeRatio
+
                     val w = size.width
                     val h = size.height
+                    val progressRatio = if (dur > 0L) {
+                        (curPos.toFloat() / dur.toFloat()).coerceIn(0.02f, 0.98f)
+                    } else {
+                        0.5f
+                    }
+                    val clampedVolumeRatio = vol.coerceIn(0.02f, 0.98f)
                     val splitX = w * progressRatio
                     val splitY = h * (1f - clampedVolumeRatio)
 
