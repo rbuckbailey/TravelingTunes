@@ -13,6 +13,8 @@ import com.travelingtunes.app.core.theme.adjustContrastForBackground
 import androidx.compose.ui.graphics.toArgb
 import com.travelingtunes.app.core.datastore.SettingsBackupHelper
 import com.travelingtunes.app.core.model.GestureBinding
+import com.travelingtunes.app.core.model.Profile
+import com.travelingtunes.app.core.model.ProfileSelectionMode
 import com.travelingtunes.app.feature.settings.GestureSubmenu
 import com.travelingtunes.app.feature.settings.getSubmenu
 import com.travelingtunes.app.feature.settings.getTriggersForSubmenu
@@ -165,19 +167,21 @@ class GestureAndSettingsTest {
     @Test
     fun testSettingsCategoriesNaming() {
         val submenus = com.travelingtunes.app.feature.settings.SettingsSubmenu.entries
-        assertEquals(8, submenus.size)
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY, submenus[0])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TITLES, submenus[1])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ART, submenus[2])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.HUD, submenus[3])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.THEMES, submenus[4])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, submenus[5])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, submenus[6])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[7])
+        assertEquals(9, submenus.size)
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.PROFILES, submenus[0])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY, submenus[1])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TITLES, submenus[2])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ART, submenus[3])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.HUD, submenus[4])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.THEMES, submenus[5])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, submenus[6])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, submenus[7])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[8])
 
         val standalone = submenus.filter { it.categoryGroup == null }
-        assertEquals(1, standalone.size)
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY, standalone[0])
+        assertEquals(2, standalone.size)
+        assertTrue(standalone.contains(com.travelingtunes.app.feature.settings.SettingsSubmenu.PROFILES))
+        assertTrue(standalone.contains(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY))
 
         val appearanceGroup = submenus.filter { it.categoryGroup == "Appearance" }
         assertEquals(4, appearanceGroup.size)
@@ -1183,5 +1187,76 @@ class GestureAndSettingsTest {
             useAlbumArtColors = displaySettings.albumArtColors
         )
         assertEquals("Dynamic", resolvedRestored.name)
+    }
+
+    @Test
+    fun testProfileDataModelAndSerialization() {
+        // Built-in Profiles
+        val defaultProfile = Profile.DEFAULT
+        assertEquals("default", defaultProfile.id)
+        assertEquals("Default", defaultProfile.name)
+        assertTrue(defaultProfile.isBuiltIn)
+        assertFalse(defaultProfile.isDeletable)
+        assertTrue(defaultProfile.overrides.isEmpty())
+
+        val travelingProfile = Profile.TRAVELING
+        assertEquals("traveling", travelingProfile.id)
+        assertEquals("Traveling", travelingProfile.name)
+        assertTrue(travelingProfile.isBuiltIn)
+        assertFalse(travelingProfile.isDeletable)
+        assertTrue(travelingProfile.overrides.containsKey("autoEnableDrivingMode"))
+        assertTrue(travelingProfile.overrides.containsKey("gpsVolume"))
+
+        // Custom Profile
+        val customProfile = Profile(
+            id = "custom_1",
+            name = "Night Drive",
+            isBuiltIn = false,
+            isDeletable = true,
+            overrides = mapOf("artistFontSize" to "40.0")
+        )
+        val jsonStr = Profile.listToJson(listOf(defaultProfile, travelingProfile, customProfile))
+        val parsedList = Profile.listFromJson(jsonStr)
+
+        assertEquals(3, parsedList.size)
+        val parsedCustom = parsedList.find { it.id == "custom_1" }
+        assertNotNull(parsedCustom)
+        assertEquals("Night Drive", parsedCustom?.name)
+        assertFalse(parsedCustom!!.isBuiltIn)
+        assertTrue(parsedCustom.isDeletable)
+        assertEquals("40.0", parsedCustom.overrides["artistFontSize"])
+    }
+
+    @Test
+    fun testSelectProfileGestureActionAndSelectionMode() {
+        val selectProfileAction = GestureAction.fromKey("SelectProfile")
+        assertEquals(GestureAction.SELECT_PROFILE, selectProfileAction)
+        assertEquals("Select Profile", GestureAction.SELECT_PROFILE.displayName)
+
+        val menuMode = ProfileSelectionMode.fromKey("MENU")
+        assertEquals(ProfileSelectionMode.MENU, menuMode)
+
+        val seqMode = ProfileSelectionMode.fromKey("SEQUENTIAL")
+        assertEquals(ProfileSelectionMode.SEQUENTIAL, seqMode)
+    }
+
+    @Test
+    fun testBackupHelperWithProfiles() {
+        val display = com.travelingtunes.app.core.model.DisplaySettings()
+        val theme = ThemeSettings()
+        val json = SettingsBackupHelper.exportToJson(
+            display = display,
+            theme = theme,
+            bindings = emptyMap(),
+            gpsVolume = true,
+            gpsSens = 1.0f,
+            autoRescan = false,
+            profiles = listOf(Profile.DEFAULT, Profile.TRAVELING),
+            activeProfileId = Profile.TRAVELING_ID,
+            rawPreferences = mapOf("customKey" to "customValue")
+        )
+        assertTrue(json.contains("\"activeProfileId\": \"traveling\""))
+        assertTrue(json.contains("\"profiles\":"))
+        assertTrue(json.contains("\"rawPreferences\":"))
     }
 }

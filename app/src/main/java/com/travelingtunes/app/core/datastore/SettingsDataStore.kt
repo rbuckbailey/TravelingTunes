@@ -26,6 +26,8 @@ import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
 import com.travelingtunes.app.core.model.NormalizationMode
 import com.travelingtunes.app.core.model.NormalizationSettings
+import com.travelingtunes.app.core.model.Profile
+import com.travelingtunes.app.core.model.ProfileSelectionMode
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
 import com.travelingtunes.app.core.model.ShuffleMode
@@ -132,6 +134,12 @@ class SettingsDataStore(private val context: Context) {
 
         // Navigation / Menu State Persistence
         val KEY_LAST_SETTINGS_SUBMENU = stringPreferencesKey("lastSettingsSubmenu")
+
+        // Profiles Persistence
+        val KEY_ACTIVE_PROFILE_ID = stringPreferencesKey("activeProfileId")
+        val KEY_PROFILES_JSON = stringPreferencesKey("profilesJson")
+        val KEY_PROFILE_SELECTION_MODE = stringPreferencesKey("profileSelectionMode")
+        val KEY_PROFILE_SWITCH_TARGETS = stringPreferencesKey("profileSwitchTargets")
 
         // Theme
         val KEY_CURRENT_THEME = stringPreferencesKey("currentTheme")
@@ -941,6 +949,20 @@ class SettingsDataStore(private val context: Context) {
         return try {
             val json = org.json.JSONObject(jsonString)
 
+            if (json.has("profiles")) {
+                val profilesArray = json.getJSONArray("profiles")
+                val importedProfiles = Profile.listFromJson(profilesArray.toString())
+                context.dataStore.edit { prefs ->
+                    prefs[KEY_PROFILES_JSON] = Profile.listToJson(importedProfiles)
+                }
+            }
+            if (json.has("activeProfileId")) {
+                val activeId = json.getString("activeProfileId")
+                context.dataStore.edit { prefs ->
+                    prefs[KEY_ACTIVE_PROFILE_ID] = activeId
+                }
+            }
+
             if (json.has("displaySettings")) {
                 val dJson = json.getJSONObject("displaySettings")
                 val currentDisplay = displaySettingsFlow.first()
@@ -1089,6 +1111,153 @@ class SettingsDataStore(private val context: Context) {
             e.printStackTrace()
             false
         }
+    }
+
+    // Profiles Flow & Helpers
+    val profilesFlow: Flow<List<Profile>> = context.dataStore.data.map { prefs ->
+        Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+    }
+
+    val activeProfileIdFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+    }
+
+    val activeProfileFlow: Flow<Profile> = context.dataStore.data.map { prefs ->
+        val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+        val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+        profiles.find { it.id == activeId } ?: profiles.find { it.id == Profile.DEFAULT_ID } ?: Profile.DEFAULT
+    }
+
+    val profileSelectionModeFlow: Flow<ProfileSelectionMode> = context.dataStore.data.map { prefs ->
+        ProfileSelectionMode.fromKey(prefs[KEY_PROFILE_SELECTION_MODE])
+    }
+
+    val profileSwitchTargetsFlow: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID}"
+        raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    suspend fun setActiveProfile(profileId: String) {
+        context.dataStore.edit { prefs ->
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+            if (profiles.any { it.id == profileId }) {
+                prefs[KEY_ACTIVE_PROFILE_ID] = profileId
+            }
+        }
+    }
+
+    suspend fun createProfile(name: String): String {
+        val newId = "profile_" + System.currentTimeMillis()
+        context.dataStore.edit { prefs ->
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).toMutableList()
+            val newProfile = Profile(
+                id = newId,
+                name = name.ifBlank { "New Profile" },
+                isBuiltIn = false,
+                isDeletable = true,
+                overrides = emptyMap()
+            )
+            profiles.add(newProfile)
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            prefs[KEY_ACTIVE_PROFILE_ID] = newId
+        }
+        return newId
+    }
+
+    suspend fun renameProfile(profileId: String, newName: String) {
+        if (profileId == Profile.DEFAULT_ID || profileId == Profile.TRAVELING_ID) return
+        context.dataStore.edit { prefs ->
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map {
+                if (it.id == profileId) it.copy(name = newName.ifBlank { it.name }) else it
+            }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+        }
+    }
+
+    suspend fun deleteProfile(profileId: String) {
+        if (profileId == Profile.DEFAULT_ID || profileId == Profile.TRAVELING_ID) return
+        context.dataStore.edit { prefs ->
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).filterNot { it.id == profileId }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            val currentActive = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (currentActive == profileId) {
+                prefs[KEY_ACTIVE_PROFILE_ID] = Profile.DEFAULT_ID
+            }
+        }
+    }
+
+    suspend fun overrideSettingForActiveProfile(key: String, value: String) {
+        context.dataStore.edit { prefs ->
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId == Profile.DEFAULT_ID) return@edit
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                if (profile.id == activeId) {
+                    val updatedMap = profile.overrides.toMutableMap()
+                    updatedMap[key] = value
+                    profile.copy(overrides = updatedMap)
+                } else profile
+            }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+        }
+    }
+
+    suspend fun revertSettingForActiveProfile(key: String) {
+        context.dataStore.edit { prefs ->
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId == Profile.DEFAULT_ID) return@edit
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                if (profile.id == activeId) {
+                    val updatedMap = profile.overrides.toMutableMap()
+                    updatedMap.remove(key)
+                    profile.copy(overrides = updatedMap)
+                } else profile
+            }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+        }
+    }
+
+    suspend fun revertAllSettingsForActiveProfile() {
+        context.dataStore.edit { prefs ->
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId == Profile.DEFAULT_ID) return@edit
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                if (profile.id == activeId) {
+                    profile.copy(overrides = emptyMap())
+                } else profile
+            }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+        }
+    }
+
+    suspend fun setProfileSelectionMode(mode: ProfileSelectionMode) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_PROFILE_SELECTION_MODE] = mode.name
+        }
+    }
+
+    suspend fun setProfileSwitchTargets(targetIds: List<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_PROFILE_SWITCH_TARGETS] = targetIds.joinToString(",")
+        }
+    }
+
+    suspend fun cycleToNextProfile(): Profile {
+        var nextProfile = Profile.DEFAULT
+        context.dataStore.edit { prefs ->
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            val targetIdsRaw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID}"
+            val targetIds = targetIdsRaw.split(",").map { it.trim() }.filter { id -> profiles.any { it.id == id } }
+                .ifEmpty { profiles.map { it.id } }
+
+            val currentIndex = targetIds.indexOf(activeId)
+            val nextIndex = if (currentIndex >= 0) (currentIndex + 1) % targetIds.size else 0
+            val nextId = targetIds.getOrElse(nextIndex) { Profile.DEFAULT_ID }
+
+            prefs[KEY_ACTIVE_PROFILE_ID] = nextId
+            nextProfile = profiles.find { it.id == nextId } ?: Profile.DEFAULT
+        }
+        return nextProfile
     }
 }
 

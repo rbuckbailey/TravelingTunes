@@ -83,12 +83,29 @@ data class ConfigOption(
             // Android Auto & Driving Mode
             ConfigOption("AUTO_drivingMode", "Android Auto", "Driving Mode", isBooleanToggle = true),
             ConfigOption("AUTO_autoEnableDrivingMode", "Android Auto", "Auto-Enable Driving Mode", isBooleanToggle = true),
-            ConfigOption("AUTO_speedVolume", "Android Auto", "Speed-Based Volume Adjustment", isBooleanToggle = true)
+            ConfigOption("AUTO_speedVolume", "Android Auto", "Speed-Based Volume Adjustment", isBooleanToggle = true),
+
+            // Profiles
+            ConfigOption("PROFILE_DEFAULT", "Profiles", "Profile: Default", isBooleanToggle = false, targetValue = "default"),
+            ConfigOption("PROFILE_TRAVELING", "Profiles", "Profile: Traveling", isBooleanToggle = false, targetValue = "traveling")
         )
+
+        private val dynamicOptions = mutableListOf<ConfigOption>()
+
+        fun registerOption(option: ConfigOption) {
+            if (ALL_OPTIONS.none { it.key.equals(option.key, ignoreCase = true) } &&
+                dynamicOptions.none { it.key.equals(option.key, ignoreCase = true) }) {
+                dynamicOptions.add(option)
+            }
+        }
+
+        fun getAllOptions(): List<ConfigOption> {
+            return ALL_OPTIONS + dynamicOptions
+        }
 
         fun findByKey(key: String?): ConfigOption? {
             if (key.isNullOrEmpty()) return null
-            return ALL_OPTIONS.find { it.key.equals(key, ignoreCase = true) }
+            return getAllOptions().find { it.key.equals(key, ignoreCase = true) }
         }
     }
 }

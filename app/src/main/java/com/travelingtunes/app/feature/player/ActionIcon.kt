@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.automirrored.filled.VolumeDown
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.AlignHorizontalCenter
 import androidx.compose.material.icons.filled.AutoFixHigh
@@ -325,6 +326,13 @@ fun ActionIcon(
 
             GestureAction.TOGGLE_DOCKED_ART -> Icon(
                 imageVector = Icons.Default.Album,
+                contentDescription = action.displayName,
+                tint = effectiveTint,
+                modifier = Modifier.size(iconSize)
+            )
+
+            GestureAction.SELECT_PROFILE -> Icon(
+                imageVector = Icons.Default.AccountCircle,
                 contentDescription = action.displayName,
                 tint = effectiveTint,
                 modifier = Modifier.size(iconSize)

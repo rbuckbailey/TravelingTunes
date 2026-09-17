@@ -885,6 +885,7 @@ private fun GestureAssignmentItem(
 
 private fun ConfigOption.getSubmenu(): SettingsSubmenu {
     return when {
+        key.startsWith("PROFILE_") -> SettingsSubmenu.PROFILES
         key.startsWith("LIBRARY_") -> SettingsSubmenu.LIBRARY
         key.startsWith("ALIGN_") || key.startsWith("DISPLAY_artist") ||
         key.startsWith("DISPLAY_song") || key.startsWith("DISPLAY_album") ||
@@ -902,6 +903,7 @@ private fun ConfigOption.getSubmenu(): SettingsSubmenu {
 
 private fun ConfigOption.getSectionName(): String {
     return when {
+        key.startsWith("PROFILE_") -> "Active Profile"
         key.startsWith("ALIGN_ARTIST_") -> "Artist Alignment"
         key.startsWith("ALIGN_SONG_") -> "Song Alignment"
         key.startsWith("ALIGN_ALBUM_") -> "Album Alignment"
@@ -939,6 +941,7 @@ fun ConfigOptionPickerDialog(
 
     val optionSubmenus = remember {
         listOf(
+            SettingsSubmenu.PROFILES,
             SettingsSubmenu.LIBRARY,
             SettingsSubmenu.TITLES,
             SettingsSubmenu.ART,

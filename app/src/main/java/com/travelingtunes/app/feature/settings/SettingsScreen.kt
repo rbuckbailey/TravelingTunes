@@ -33,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
@@ -117,6 +118,9 @@ import com.travelingtunes.app.core.model.ScrubHudTypeOption
 import com.travelingtunes.app.core.model.ThemeSettings
 import com.travelingtunes.app.core.theme.FontHelper
 import com.travelingtunes.app.core.theme.FontOption
+import com.travelingtunes.app.core.model.Profile
+import com.travelingtunes.app.core.model.ProfileSelectionMode
+import kotlinx.coroutines.launch
 import com.travelingtunes.app.core.theme.luminance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -135,6 +139,12 @@ enum class SettingsSubmenu(
     val icon: ImageVector,
     val categoryGroup: String?
 ) {
+    PROFILES(
+        title = "Profiles",
+        description = "Manage setting profiles, inheritance & action switcher",
+        icon = Icons.Default.AccountCircle,
+        categoryGroup = null
+    ),
     LIBRARY(
         title = "Music Library",
         description = "Folder selection, rescan & album art downloads",
@@ -563,6 +573,7 @@ fun SettingsScreen(
                         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                             SubmenuContent(
                                 submenu = targetSubmenu,
+                                settingsDataStore = settingsDataStore,
                                 displaySettings = displaySettings,
                                 themeSettings = themeSettings,
                                 musicFolderName = musicFolderName,
@@ -806,7 +817,8 @@ fun SettingsScreen(
                         // Selected Submenu Content Page
                         SubmenuContent(
                             submenu = targetSubmenu,
-                        displaySettings = displaySettings,
+                            settingsDataStore = settingsDataStore,
+                            displaySettings = displaySettings,
                         themeSettings = themeSettings,
                         musicFolderName = musicFolderName,
                         lastScanTime = lastScanTime,
@@ -991,6 +1003,7 @@ fun SettingsScreen(
 @Composable
 private fun SubmenuContent(
     submenu: SettingsSubmenu,
+    settingsDataStore: SettingsDataStore,
     displaySettings: DisplaySettings,
     themeSettings: ThemeSettings,
     musicFolderName: String?,
@@ -1153,6 +1166,10 @@ private fun SubmenuContent(
                     onUpdateDisplaySettings = onUpdateDisplaySettings,
                     onOpenGestureAssignments = onOpenGestureAssignments,
                     onResetGestureAssignments = onResetGestureAssignments
+                )
+
+                SettingsSubmenu.PROFILES -> ProfilesSettingsContent(
+                    settingsDataStore = settingsDataStore
                 )
 
                 SettingsSubmenu.ABOUT -> AboutSettingsContent(
@@ -3230,6 +3247,318 @@ private fun AndroidAutoSettingsContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ProfilesSettingsContent(
+    settingsDataStore: SettingsDataStore
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val profiles by settingsDataStore.profilesFlow.collectAsState(initial = listOf(Profile.DEFAULT, Profile.TRAVELING))
+    val activeProfile by settingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT)
+    val selectionMode by settingsDataStore.profileSelectionModeFlow.collectAsState(initial = ProfileSelectionMode.MENU)
+    val switchTargets by settingsDataStore.profileSwitchTargetsFlow.collectAsState(initial = listOf(Profile.DEFAULT_ID, Profile.TRAVELING_ID))
+
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newProfileName by remember { mutableStateOf("") }
+    var renamingProfileId by remember { mutableStateOf<String?>(null) }
+    var renamingName by remember { mutableStateOf("") }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Active Profile Selector Card
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Active Profile",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (activeProfile.id == Profile.DEFAULT_ID) "Current profile: ${activeProfile.name} (Default baseline settings)" else "Current profile: ${activeProfile.name} (${activeProfile.overrides.size} overrides relative to Default)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    profiles.forEach { profile ->
+                        FilterChip(
+                            selected = profile.id == activeProfile.id,
+                            onClick = {
+                                coroutineScope.launch {
+                                    settingsDataStore.setActiveProfile(profile.id)
+                                }
+                            },
+                            label = { Text(profile.name) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // All Profiles List Card
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "All Profiles",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    OutlinedButton(onClick = {
+                        newProfileName = ""
+                        showCreateDialog = true
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("New Profile")
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                profiles.forEach { profile ->
+                    ListItem(
+                        headlineContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(profile.name, fontWeight = FontWeight.SemiBold)
+                                if (profile.id == activeProfile.id) {
+                                    Text("(Active)", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                if (profile.isBuiltIn) {
+                                    Text("(Built-in)", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                }
+                            }
+                        },
+                        supportingContent = {
+                            Text(
+                                if (profile.id == Profile.DEFAULT_ID) "Default baseline settings for TravelingTunes"
+                                else "${profile.overrides.size} setting overrides relative to Default"
+                            )
+                        },
+                        trailingContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (!profile.isBuiltIn) {
+                                    IconButton(onClick = {
+                                        renamingProfileId = profile.id
+                                        renamingName = profile.name
+                                    }) {
+                                        Icon(Icons.Default.FormatPaint, contentDescription = "Rename Profile")
+                                    }
+                                    IconButton(onClick = {
+                                        coroutineScope.launch {
+                                            settingsDataStore.deleteProfile(profile.id)
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Delete Profile")
+                                    }
+                                }
+                            }
+                        }
+                    )
+                    HorizontalDivider()
+                }
+
+                if (activeProfile.id != Profile.DEFAULT_ID && activeProfile.overrides.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                settingsDataStore.revertAllSettingsForActiveProfile()
+                            }
+                        }
+                    ) {
+                        Text("Revert All Overrides for ${activeProfile.name}")
+                    }
+                }
+            }
+        }
+
+        // Action Configuration Card
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "'Select Profile' Action Mode",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Configure what happens when triggering the 'Select Profile' action",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ProfileSelectionMode.entries.forEach { mode ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                coroutineScope.launch {
+                                    settingsDataStore.setProfileSelectionMode(mode)
+                                }
+                            }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = selectionMode == mode,
+                            onClick = {
+                                coroutineScope.launch {
+                                    settingsDataStore.setProfileSelectionMode(mode)
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(mode.displayName)
+                    }
+                }
+
+                if (selectionMode == ProfileSelectionMode.SEQUENTIAL) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Profiles included in switcher:",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    profiles.forEach { profile ->
+                        val isChecked = switchTargets.contains(profile.id)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val newTargets = if (isChecked) {
+                                        switchTargets.filterNot { it == profile.id }
+                                    } else {
+                                        switchTargets + profile.id
+                                    }
+                                    coroutineScope.launch {
+                                        settingsDataStore.setProfileSwitchTargets(newTargets)
+                                    }
+                                }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Switch(
+                                checked = isChecked,
+                                onCheckedChange = { checked ->
+                                    val newTargets = if (checked) {
+                                        switchTargets + profile.id
+                                    } else {
+                                        switchTargets.filterNot { it == profile.id }
+                                    }
+                                    coroutineScope.launch {
+                                        settingsDataStore.setProfileSwitchTargets(newTargets)
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(profile.name)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Dialog: Create Profile
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("Create New Profile") },
+            text = {
+                Column {
+                    Text("Enter a name for the new settings profile:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = newProfileName,
+                        onValueChange = { newProfileName = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newProfileName.isNotBlank()) {
+                            coroutineScope.launch {
+                                settingsDataStore.createProfile(newProfileName.trim())
+                            }
+                        }
+                        showCreateDialog = false
+                    }
+                ) {
+                    Text("Create")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Dialog: Rename Profile
+    renamingProfileId?.let { profId ->
+        AlertDialog(
+            onDismissRequest = { renamingProfileId = null },
+            title = { Text("Rename Profile") },
+            text = {
+                Column {
+                    Text("Enter a new name for the profile:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = renamingName,
+                        onValueChange = { renamingName = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (renamingName.isNotBlank()) {
+                            coroutineScope.launch {
+                                settingsDataStore.renameProfile(profId, renamingName.trim())
+                            }
+                        }
+                        renamingProfileId = null
+                    }
+                ) {
+                    Text("Rename")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { renamingProfileId = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

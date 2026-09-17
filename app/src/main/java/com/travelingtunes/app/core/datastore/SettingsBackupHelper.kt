@@ -3,6 +3,7 @@ package com.travelingtunes.app.core.datastore
 import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureTrigger
+import com.travelingtunes.app.core.model.Profile
 import com.travelingtunes.app.core.model.ThemeSettings
 
 object SettingsBackupHelper {
@@ -12,14 +13,22 @@ object SettingsBackupHelper {
         bindings: Map<GestureTrigger, GestureBinding>,
         gpsVolume: Boolean,
         gpsSens: Float,
-        autoRescan: Boolean
+        autoRescan: Boolean,
+        profiles: List<Profile> = listOf(Profile.DEFAULT, Profile.TRAVELING),
+        activeProfileId: String = Profile.DEFAULT_ID,
+        rawPreferences: Map<String, Any> = emptyMap(),
+        version: Int = 1
     ): String {
         val sb = StringBuilder()
         sb.append("{\n")
-        sb.append("  \"version\": 1,\n")
+        sb.append("  \"version\": $version,\n")
         sb.append("  \"timestamp\": ${System.currentTimeMillis()},\n")
 
-        // Display
+        // Profiles
+        sb.append("  \"activeProfileId\": \"$activeProfileId\",\n")
+        sb.append("  \"profiles\": ${Profile.listToJson(profiles)},\n")
+
+        // Display Settings
         sb.append("  \"displaySettings\": {\n")
         sb.append("    \"artistFontSize\": ${display.artistFontSize},\n")
         sb.append("    \"songFontSize\": ${display.songFontSize},\n")
@@ -81,7 +90,7 @@ object SettingsBackupHelper {
         sb.append("    \"autoActionButtonOrder\": \"${display.autoActionButtonOrder.joinToString(",") { it.name }}\"\n")
         sb.append("  },\n")
 
-        // Theme
+        // Theme Settings
         sb.append("  \"themeSettings\": {\n")
         sb.append("    \"currentThemeName\": \"${theme.currentThemeName}\",\n")
         sb.append("    \"customTextRed\": ${theme.customTextRed},\n")
@@ -116,10 +125,25 @@ object SettingsBackupHelper {
         }
         sb.append("  },\n")
 
-        // Other
+        // Other Flags
         sb.append("  \"gpsVolumeEnabled\": $gpsVolume,\n")
         sb.append("  \"gpsSensitivity\": $gpsSens,\n")
-        sb.append("  \"autoRescan\": $autoRescan\n")
+        sb.append("  \"autoRescan\": $autoRescan")
+
+        // Dynamic rawPreferences
+        if (rawPreferences.isNotEmpty()) {
+            sb.append(",\n  \"rawPreferences\": {\n")
+            val rawEntries = rawPreferences.entries.toList()
+            rawEntries.forEachIndexed { index, (k, v) ->
+                val comma = if (index < rawEntries.size - 1) "," else ""
+                val formattedVal = if (v is String) "\"$v\"" else v.toString()
+                sb.append("    \"$k\": $formattedVal$comma\n")
+            }
+            sb.append("  }\n")
+        } else {
+            sb.append("\n")
+        }
+
         sb.append("}")
         return sb.toString()
     }

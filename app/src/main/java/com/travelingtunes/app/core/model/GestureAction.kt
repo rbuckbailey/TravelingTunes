@@ -31,6 +31,7 @@ enum class GestureAction(val displayName: String) {
     DELETE_DOWNLOADED_ART("Delete Downloaded Art"),
     TOGGLE_DRIVING_MODE("Toggle Driving Mode"),
     TOGGLE_DOCKED_ART("Toggle Docked Art"),
+    SELECT_PROFILE("Select Profile"),
     RADIAL_MENU("Radial Menu"),
     OTHER_OPTION("Other Option");
     // Navigation actions disabled/commented out:

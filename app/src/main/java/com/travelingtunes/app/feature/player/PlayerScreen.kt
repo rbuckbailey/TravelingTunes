@@ -58,6 +58,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -120,6 +124,8 @@ import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureCategory
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
+import com.travelingtunes.app.core.model.Profile
+import com.travelingtunes.app.core.model.ProfileSelectionMode
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
 import com.travelingtunes.app.core.model.ShuffleMode
@@ -245,6 +251,7 @@ fun PlayerScreen(
     var showDownloadedArtBrowser by remember { mutableStateOf(false) }
     var showGestureAssignments by remember { mutableStateOf(false) }
     var showDuplicateTrackIdentifier by remember { mutableStateOf(false) }
+    var showProfilePicker by remember { mutableStateOf(false) }
 
     var showRadialMenu by remember { mutableStateOf(false) }
     var activeRadialTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
@@ -1307,6 +1314,51 @@ fun PlayerScreen(
             )
         }
 
+        // Select Profile Dialog
+        if (showProfilePicker && settingsDataStore != null) {
+            val profiles by settingsDataStore.profilesFlow.collectAsState(initial = listOf(Profile.DEFAULT, Profile.TRAVELING))
+            val activeProfile by settingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT)
+            AlertDialog(
+                onDismissRequest = { showProfilePicker = false },
+                title = { Text("Select Settings Profile") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        profiles.forEach { profile ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        coroutineScope.launch {
+                                            settingsDataStore.setActiveProfile(profile.id)
+                                        }
+                                        showProfilePicker = false
+                                    }
+                                    .padding(vertical = 8.dp, horizontal = 4.dp)
+                            ) {
+                                RadioButton(
+                                    selected = profile.id == activeProfile.id,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            settingsDataStore.setActiveProfile(profile.id)
+                                        }
+                                        showProfilePicker = false
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(profile.name, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showProfilePicker = false }) {
+                        Text("Close")
+                    }
+                }
+            )
+        }
+
         // 12. Duplicate Track Identifier Overlay
         SlidingOverlay(
             visible = showDuplicateTrackIdentifier,
@@ -2351,6 +2403,7 @@ private fun handleGestureAction(
     onOpenQueue: (SlideDirection) -> Unit = {},
     onOpenSettings: (SlideDirection) -> Unit,
     onOpenQuickStart: () -> Unit,
+    onOpenProfilePicker: () -> Unit = {},
     settingsDataStore: SettingsDataStore? = null,
     gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
     radialSlotIndex: Int? = null,
@@ -2454,6 +2507,18 @@ private fun handleGestureAction(
                     val currentDisplay = settingsDataStore.displaySettingsFlow.first()
                     val newLayout = if (currentDisplay.artDisplayLayout == ArtLayoutOption.DOCKED) ArtLayoutOption.OVERLAY else ArtLayoutOption.DOCKED
                     settingsDataStore.updateDisplaySettings(currentDisplay.copy(artDisplayLayout = newLayout))
+                }
+            }
+        }
+        GestureAction.SELECT_PROFILE -> {
+            if (settingsDataStore != null && coroutineScope != null) {
+                coroutineScope.launch {
+                    val mode = settingsDataStore.profileSelectionModeFlow.first()
+                    if (mode == ProfileSelectionMode.MENU) {
+                        onOpenProfilePicker()
+                    } else {
+                        settingsDataStore.cycleToNextProfile()
+                    }
                 }
             }
         }
