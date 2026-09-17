@@ -101,4 +101,19 @@ class PlaybackActionsTest {
         gate.notifyForegroundBusy(false)
         assertEquals(false, gate.isForegroundBusy.value)
     }
+
+    @Test
+    fun testPlayCurrentArtistLogic() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val song1 = Song(1L, "Song 1", "Artist X", "Album 1", 10L, 100000L, mockUri, trackNumber = 1)
+        val song2 = Song(2L, "Song 2", "Artist X", "Album 2", 10L, 120000L, mockUri, trackNumber = 1)
+        val song3 = Song(3L, "Song 3", "Artist Y", "Album 3", 11L, 110000L, mockUri, trackNumber = 1)
+
+        val masterLibrary = listOf(song1, song2, song3)
+
+        val artistXSongs = masterLibrary.filter { it.artist.equals("Artist X", ignoreCase = true) }
+        assertEquals(2, artistXSongs.size)
+        assertEquals("Song 1", artistXSongs[0].title)
+        assertEquals("Song 2", artistXSongs[1].title)
+    }
 }

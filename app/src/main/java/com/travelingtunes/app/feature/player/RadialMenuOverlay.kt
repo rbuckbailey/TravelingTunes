@@ -236,6 +236,21 @@ fun RadialMenuOverlay(
 
                 val itemSize = 44.dp
 
+                val isRepeatActive = action == GestureAction.TOGGLE_REPEAT && repeatMode != RepeatMode.OFF
+                val isShuffleActive = action == GestureAction.TOGGLE_SHUFFLE && shuffleMode != ShuffleMode.OFF
+                val isActiveControl = isRepeatActive || isShuffleActive
+
+                val itemBg = when {
+                    isHighlighted -> MaterialTheme.colorScheme.primaryContainer
+                    isActiveControl -> MaterialTheme.colorScheme.secondaryContainer
+                    else -> MaterialTheme.colorScheme.surface
+                }
+                val itemTint = when {
+                    isHighlighted -> MaterialTheme.colorScheme.primary
+                    isActiveControl -> MaterialTheme.colorScheme.onSecondaryContainer
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+
                 Box(
                     modifier = Modifier
                         .offset {
@@ -248,12 +263,10 @@ fun RadialMenuOverlay(
                         .alpha(alpha)
                         .size(itemSize)
                         .clip(CircleShape)
-                        .background(
-                            if (isHighlighted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                        )
+                        .background(itemBg)
                         .border(
-                            width = if (isHighlighted) 2.5.dp else 1.dp,
-                            color = if (isHighlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                            width = if (isHighlighted || isActiveControl) 2.5.dp else 1.dp,
+                            color = if (isHighlighted) MaterialTheme.colorScheme.primary else if (isActiveControl) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -264,7 +277,7 @@ fun RadialMenuOverlay(
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
-                        tint = if (isHighlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        tint = itemTint,
                         iconSize = 24.dp
                     )
                 }

@@ -37,7 +37,10 @@ import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MusicPlaybackService : MediaLibraryService() {
 
@@ -52,7 +55,11 @@ class MusicPlaybackService : MediaLibraryService() {
             val existing = sharedPlayer
             if (existing != null) {
                 try {
-                    if (existing.playbackState >= Player.STATE_IDLE) {
+                    if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+                        if (existing.playbackState >= Player.STATE_IDLE) {
+                            return existing
+                        }
+                    } else {
                         return existing
                     }
                 } catch (e: Exception) {
@@ -126,19 +133,18 @@ class MusicPlaybackService : MediaLibraryService() {
         sharedSession = session
 
         serviceScope.launch {
-            settingsDataStore.gestureBindingsFlow.collect { bindings ->
-                sharedSession?.let { session ->
-                    updateCustomLayout(session, bindings, autoDisplaySettings)
-                }
-            }
-        }
-        serviceScope.launch {
-            settingsDataStore.displaySettingsFlow.collect { settings ->
+            val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+            combine(
+                playbackManager.repeatMode,
+                playbackManager.shuffleMode,
+                settingsDataStore.gestureBindingsFlow,
+                settingsDataStore.displaySettingsFlow
+            ) { _, _, bindings, settings ->
                 autoDisplaySettings = settings
                 sharedSession?.let { session ->
-                    updateCustomLayout(session, emptyMap(), settings)
+                    updateCustomLayout(session, bindings, settings)
                 }
-            }
+            }.collect {}
         }
     }
 
@@ -264,7 +270,13 @@ class MusicPlaybackService : MediaLibraryService() {
         }
 
         val customLayout = ImmutableList.copyOf(buttons)
-        session.setCustomLayout(customLayout)
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            session.setCustomLayout(customLayout)
+        } else {
+            serviceScope.launch(Dispatchers.Main) {
+                session.setCustomLayout(customLayout)
+            }
+        }
     }
 
     private fun playCurrentAlbum() {
@@ -413,6 +425,51 @@ class MusicPlaybackService : MediaLibraryService() {
                 actionToSessionCommand(act)?.let { availableCommands.add(it) }
             }
 
+            serviceScope.launch {
+                val savedState = settingsDataStore.savedPlaybackStateFlow.first()
+                val displaySettings = settingsDataStore.displaySettingsFlow.first()
+                val dbSongs = musicDatabase.getAllSongs()
+                val allSongs = dbSongs.ifEmpty { mediaStoreRepository.getAllSongs() }
+
+                withContext(Dispatchers.Main) {
+                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+
+                    if (playbackManager.currentPlaylist.value.isEmpty() || playbackManager.player.mediaItemCount == 0) {
+                        if (allSongs.isNotEmpty()) {
+                            if (savedState.queueIds.isNotEmpty()) {
+                                val songMap = allSongs.associateBy { it.id }
+                                val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
+                                val finalQueue = restoredQueue.ifEmpty { allSongs }
+
+                                playbackManager.restorePlaybackState(
+                                    songs = finalQueue,
+                                    startIndex = savedState.activeSongIndex,
+                                    positionMs = savedState.positionMs,
+                                    shuffle = savedState.isShuffle,
+                                    repeat = savedState.isRepeat,
+                                    repeatMode = savedState.repeatMode,
+                                    shuffleMode = savedState.shuffleMode
+                                )
+                            } else {
+                                playbackManager.restorePlaybackState(
+                                    songs = allSongs,
+                                    startIndex = 0,
+                                    positionMs = 0L,
+                                    shuffle = false,
+                                    repeat = false
+                                )
+                            }
+                        }
+                    } else {
+                        playbackManager.ensurePlayerReadyForPlayback()
+                    }
+
+                    if (displaySettings.autoAutoplayOnConnect) {
+                        playbackManager.play()
+                    }
+                }
+            }
+
             return MediaSession.ConnectionResult.accept(
                 availableCommands.build(),
                 connectionResult.availablePlayerCommands
@@ -444,12 +501,8 @@ class MusicPlaybackService : MediaLibraryService() {
                     shuffleAllSongs()
                 }
                 "com.travelingtunes.app.ACTION_TOGGLE_REPEAT" -> {
-                    val player = session.player
-                    player.repeatMode = when (player.repeatMode) {
-                        Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ONE
-                        Player.REPEAT_MODE_ONE -> Player.REPEAT_MODE_ALL
-                        else -> Player.REPEAT_MODE_OFF
-                    }
+                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                    playbackManager.toggleRepeat()
                 }
                 "com.travelingtunes.app.ACTION_TOGGLE_SHUFFLE" -> {
                     val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)

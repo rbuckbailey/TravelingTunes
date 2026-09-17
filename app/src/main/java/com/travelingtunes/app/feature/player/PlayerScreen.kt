@@ -2709,13 +2709,28 @@ fun ScreenRegionIconsOverlay(
             val endPadding = if (horizontalBias == 1.0f && dockAdjacentEdge == DockAdjacentEdge.RIGHT) 4.dp + volumeEdgeDisplacement else baseEndPadding
             val topPadding = if (dockAdjacentEdge == DockAdjacentEdge.TOP) 8.dp else 16.dp
 
+            val isRepeatActive = action == GestureAction.TOGGLE_REPEAT && repeatMode != RepeatMode.OFF
+            val isShuffleActive = action == GestureAction.TOGGLE_SHUFFLE && shuffleMode != ShuffleMode.OFF
+            val isActiveControl = isRepeatActive || isShuffleActive
+
+            val buttonBgColor = if (isActiveControl) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.15f)
+            }
+            val buttonTint = if (isActiveControl) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
+
             Box(
                 modifier = Modifier
                     .align(alignment)
                     .padding(top = topPadding, start = startPadding, end = endPadding)
                     .size(iconBoxSize)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.15f))
+                    .background(buttonBgColor)
                     .pointerInput(trigger, binding, action) {
                         detectRegionButtonGestures(
                             onTap = {
@@ -2779,6 +2794,7 @@ fun ScreenRegionIconsOverlay(
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
+                        tint = buttonTint,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
                     )
                 }
@@ -2817,13 +2833,28 @@ fun ScreenRegionIconsOverlay(
             val endPadding = if (horizontalBias == 1.0f && dockAdjacentEdge == DockAdjacentEdge.RIGHT) 4.dp + volumeEdgeDisplacement else baseEndPadding
             val bottomPadding = if (dockAdjacentEdge == DockAdjacentEdge.BOTTOM) 8.dp else 16.dp
 
+            val isRepeatActive = action == GestureAction.TOGGLE_REPEAT && repeatMode != RepeatMode.OFF
+            val isShuffleActive = action == GestureAction.TOGGLE_SHUFFLE && shuffleMode != ShuffleMode.OFF
+            val isActiveControl = isRepeatActive || isShuffleActive
+
+            val buttonBgColor = if (isActiveControl) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.15f)
+            }
+            val buttonTint = if (isActiveControl) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
+
             Box(
                 modifier = Modifier
                     .align(alignment)
                     .padding(bottom = bottomPadding, start = startPadding, end = endPadding)
                     .size(iconBoxSize)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.15f))
+                    .background(buttonBgColor)
                     .pointerInput(trigger, binding, action) {
                         detectRegionButtonGestures(
                             onTap = {
@@ -2887,6 +2918,7 @@ fun ScreenRegionIconsOverlay(
                         repeatMode = repeatMode,
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
+                        tint = buttonTint,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
                     )
                 }

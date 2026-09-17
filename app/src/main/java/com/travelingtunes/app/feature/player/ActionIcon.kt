@@ -3,7 +3,10 @@ package com.travelingtunes.app.feature.player
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
 import androidx.compose.material.icons.automirrored.filled.FormatAlignRight
@@ -59,6 +62,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Settings
@@ -538,69 +542,51 @@ fun RepeatModeIcon(
     tint: Color,
     iconSize: Dp
 ) {
-    val overlaySize = iconSize * 0.5f
+    val badgeLabel = when (repeatMode) {
+        RepeatMode.SONG -> "1"
+        RepeatMode.ALBUM -> "ALB"
+        RepeatMode.ARTIST -> "ART"
+        RepeatMode.GENRE -> "GNR"
+        RepeatMode.FOLDER -> "FLD"
+        RepeatMode.OFF -> null
+    }
 
     Box(
         modifier = Modifier.size(iconSize),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Repeat,
-            contentDescription = repeatMode.displayName,
-            tint = tint,
-            modifier = Modifier.size(iconSize)
-        )
+        if (repeatMode == RepeatMode.SONG) {
+            Icon(
+                imageVector = Icons.Default.RepeatOne,
+                contentDescription = repeatMode.displayName,
+                tint = tint,
+                modifier = Modifier.size(iconSize)
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Repeat,
+                contentDescription = repeatMode.displayName,
+                tint = tint,
+                modifier = Modifier.size(iconSize)
+            )
+        }
 
-        when (repeatMode) {
-            RepeatMode.SONG -> {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = "Repeat Song",
-                    tint = tint,
-                    modifier = Modifier.size(overlaySize)
-                )
-            }
-
-            RepeatMode.ALBUM -> {
-                Icon(
-                    imageVector = Icons.Default.Album,
-                    contentDescription = "Repeat Album",
-                    tint = tint,
-                    modifier = Modifier.size(overlaySize)
-                )
-            }
-
-            RepeatMode.ARTIST -> {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Repeat Artist",
-                    tint = tint,
-                    modifier = Modifier.size(overlaySize)
-                )
-            }
-
-            RepeatMode.GENRE -> {
+        if (badgeLabel != null && repeatMode != RepeatMode.SONG) {
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(3.dp),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+            ) {
                 Text(
-                    text = "*",
-                    color = tint,
-                    fontSize = (iconSize.value * 0.6f).sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (2).dp, y = (-4).dp)
+                    text = badgeLabel,
+                    fontSize = (iconSize.value * 0.28f).sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 2.dp, vertical = 0.dp)
                 )
             }
-
-            RepeatMode.FOLDER -> {
-                Icon(
-                    imageVector = Icons.Default.Folder,
-                    contentDescription = "Repeat Folder",
-                    tint = tint,
-                    modifier = Modifier.size(overlaySize)
-                )
-            }
-
-            RepeatMode.OFF -> {}
         }
     }
 }
@@ -611,7 +597,11 @@ fun ShuffleModeIcon(
     tint: Color,
     iconSize: Dp
 ) {
-    val overlaySize = iconSize * 0.5f
+    val badgeLabel = when (shuffleMode) {
+        ShuffleMode.SONGS -> "ALL"
+        ShuffleMode.ALBUMS -> "ALB"
+        ShuffleMode.OFF -> null
+    }
 
     Box(
         modifier = Modifier.size(iconSize),
@@ -624,26 +614,22 @@ fun ShuffleModeIcon(
             modifier = Modifier.size(iconSize)
         )
 
-        when (shuffleMode) {
-            ShuffleMode.SONGS -> {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = "Shuffle Songs",
-                    tint = tint,
-                    modifier = Modifier.size(overlaySize)
+        if (badgeLabel != null) {
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(3.dp),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+            ) {
+                Text(
+                    text = badgeLabel,
+                    fontSize = (iconSize.value * 0.28f).sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 2.dp, vertical = 0.dp)
                 )
             }
-
-            ShuffleMode.ALBUMS -> {
-                Icon(
-                    imageVector = Icons.Default.Album,
-                    contentDescription = "Shuffle Albums",
-                    tint = tint,
-                    modifier = Modifier.size(overlaySize)
-                )
-            }
-
-            ShuffleMode.OFF -> {}
         }
     }
 }
@@ -655,8 +641,8 @@ private fun getActionAlpha(
     isPlaying: Boolean
 ): Float {
     return when (action) {
-        GestureAction.TOGGLE_REPEAT -> if (repeatMode != RepeatMode.OFF) 1.0f else 0.55f
-        GestureAction.TOGGLE_SHUFFLE -> if (shuffleMode != ShuffleMode.OFF) 1.0f else 0.55f
+        GestureAction.TOGGLE_REPEAT -> if (repeatMode != RepeatMode.OFF) 1.0f else 0.45f
+        GestureAction.TOGGLE_SHUFFLE -> if (shuffleMode != ShuffleMode.OFF) 1.0f else 0.45f
         GestureAction.PLAY -> if (isPlaying) 1.0f else 0.55f
         GestureAction.PAUSE -> if (!isPlaying) 1.0f else 0.55f
         GestureAction.PLAY_PAUSE -> if (isPlaying) 1.0f else 0.55f
