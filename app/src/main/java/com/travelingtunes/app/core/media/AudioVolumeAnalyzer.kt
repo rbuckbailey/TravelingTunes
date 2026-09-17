@@ -5,6 +5,8 @@ import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import com.travelingtunes.app.core.database.MusicDatabase
+import com.travelingtunes.app.core.model.NormalizationSettings
+import com.travelingtunes.app.core.model.NormalizationSummary
 import com.travelingtunes.app.core.model.Song
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -25,14 +27,25 @@ object AudioVolumeAnalyzer {
     const val TARGET_RMS = 0.15f
     const val MAX_PEAK = 0.98f
 
-    fun calculateTrackGain(rms: Float, peak: Float): Float {
+    fun calculateTrackGain(
+        rms: Float,
+        peak: Float,
+        targetRms: Float = TARGET_RMS,
+        maxPeak: Float = MAX_PEAK,
+        maxGainBoost: Float = 4.0f
+    ): Float {
         if (rms <= 0.0001f) return 1.0f
-        val rawGain = TARGET_RMS / rms
-        val maxGain = if (peak > 0.0001f) (MAX_PEAK / peak) else 2.0f
-        return min(rawGain, maxGain).coerceIn(0.1f, 4.0f)
+        val rawGain = targetRms / rms
+        val maxGain = if (peak > 0.0001f) (maxPeak / peak) else maxGainBoost
+        return min(rawGain, maxGain).coerceIn(0.1f, maxGainBoost)
     }
 
-    fun calculateAlbumGain(songs: List<Song>): Float {
+    fun calculateAlbumGain(
+        songs: List<Song>,
+        targetRms: Float = TARGET_RMS,
+        maxPeak: Float = MAX_PEAK,
+        maxGainBoost: Float = 4.0f
+    ): Float {
         val validSongs = songs.filter { it.avgVolume > 0.0001f }
         if (validSongs.isEmpty()) return 1.0f
 
@@ -41,12 +54,50 @@ object AudioVolumeAnalyzer {
         val albumMaxPeak = validSongs.maxOfOrNull { it.peakVolume } ?: 0.9f
 
         if (albumAvgRms <= 0.0001f) return 1.0f
-        val rawGain = TARGET_RMS / albumAvgRms
-        val maxGain = if (albumMaxPeak > 0.0001f) (MAX_PEAK / albumMaxPeak) else 2.0f
-        return min(rawGain, maxGain).coerceIn(0.1f, 4.0f)
+        val rawGain = targetRms / albumAvgRms
+        val maxGain = if (albumMaxPeak > 0.0001f) (maxPeak / albumMaxPeak) else maxGainBoost
+        return min(rawGain, maxGain).coerceIn(0.1f, maxGainBoost)
     }
 
-    suspend fun analyzeSong(context: Context, song: Song): VolumeAnalysisResult = withContext(Dispatchers.IO) {
+    fun calculateNormalizationSummary(
+        songs: List<Song>,
+        settings: NormalizationSettings = NormalizationSettings()
+    ): NormalizationSummary {
+        val totalSongs = songs.size
+        val validSongs = songs.filter { it.avgVolume > 0.0001f }
+        val analyzedCount = validSongs.size
+
+        if (validSongs.isEmpty()) {
+            return NormalizationSummary(totalSongs = totalSongs, analyzedSongs = 0)
+        }
+
+        val sumRmsSq = validSongs.fold(0.0) { acc, song -> acc + (song.avgVolume * song.avgVolume) }
+        val avgRms = sqrt(sumRmsSq / validSongs.size).toFloat()
+
+        val peakLimitedCount = validSongs.count { song ->
+            val rawGain = settings.targetRms / song.avgVolume
+            val maxPeakGain = if (song.peakVolume > 0.0001f) settings.maxPeak / song.peakVolume else settings.maxGainBoost
+            maxPeakGain < rawGain - 0.01f
+        }
+
+        val minGain = validSongs.minOfOrNull { it.trackGain } ?: 1.0f
+        val maxGain = validSongs.maxOfOrNull { it.trackGain } ?: 1.0f
+
+        return NormalizationSummary(
+            totalSongs = totalSongs,
+            analyzedSongs = analyzedCount,
+            avgRms = avgRms,
+            peakLimitedCount = peakLimitedCount,
+            minGain = minGain,
+            maxGain = maxGain
+        )
+    }
+
+    suspend fun analyzeSong(
+        context: Context,
+        song: Song,
+        settings: NormalizationSettings = NormalizationSettings()
+    ): VolumeAnalysisResult = withContext(Dispatchers.IO) {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         var pfd: android.os.ParcelFileDescriptor? = null
@@ -92,7 +143,7 @@ object AudioVolumeAnalyzer {
                 var isEOS = false
                 val timeoutUs = 5000L
                 var decodedFrames = 0
-                val maxFramesToDecode = 3000
+                val maxFramesToDecode = if (settings.fullScanEnabled) 25000 else 3000
                 var emptyAttempts = 0
                 val maxEmptyAttempts = 100
 
@@ -169,7 +220,13 @@ object AudioVolumeAnalyzer {
 
         val avgVolume = if (totalSamples > 0) sqrt(sumSquares / totalSamples).toFloat() else 0.15f
         val peakVolume = if (maxPeakVal > 0.001f) maxPeakVal else 0.85f
-        val trackGain = calculateTrackGain(avgVolume, peakVolume)
+        val trackGain = calculateTrackGain(
+            rms = avgVolume,
+            peak = peakVolume,
+            targetRms = settings.targetRms,
+            maxPeak = settings.maxPeak,
+            maxGainBoost = settings.maxGainBoost
+        )
 
         VolumeAnalysisResult(
             avgVolume = avgVolume,
@@ -181,6 +238,7 @@ object AudioVolumeAnalyzer {
     suspend fun analyzeAllSongsInDatabase(
         context: Context,
         database: MusicDatabase,
+        settings: NormalizationSettings = NormalizationSettings(),
         onProgress: (current: Int, total: Int, status: String) -> Unit = { _, _, _ -> }
     ): Pair<Int, Int> = BackgroundTaskGate.runAsBackgroundTask {
         val allSongs = database.getAllSongs()
@@ -194,7 +252,7 @@ object AudioVolumeAnalyzer {
             BackgroundTaskGate.checkYieldAndPause()
             onProgress(index + 1, total, "Analyzing volume: ${song.title}")
             try {
-                val result = analyzeSong(context, song)
+                val result = analyzeSong(context, song, settings)
                 database.updateSongVolumeAnalysis(
                     songId = song.id,
                     avgVolume = result.avgVolume,
@@ -214,7 +272,12 @@ object AudioVolumeAnalyzer {
         for ((albumPair, albumSongs) in albumGroups) {
             BackgroundTaskGate.checkYieldAndPause()
             val (albumName, artistName) = albumPair
-            val albumGain = calculateAlbumGain(albumSongs)
+            val albumGain = calculateAlbumGain(
+                songs = albumSongs,
+                targetRms = settings.targetRms,
+                maxPeak = settings.maxPeak,
+                maxGainBoost = settings.maxGainBoost
+            )
             database.updateAlbumGain(albumName, artistName, albumGain)
         }
 

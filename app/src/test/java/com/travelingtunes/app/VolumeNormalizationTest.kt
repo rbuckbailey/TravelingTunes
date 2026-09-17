@@ -13,8 +13,8 @@ class VolumeNormalizationTest {
 
     @Test
     fun testNormalizationModeEnumDefaults() {
-        assertEquals("Album-Scale (Default)", NormalizationMode.ALBUM.displayName)
-        assertEquals("Track-Scale", NormalizationMode.TRACK.displayName)
+        assertEquals("Match Album (Default)", NormalizationMode.ALBUM.displayName)
+        assertEquals("Match Every Song", NormalizationMode.TRACK.displayName)
         assertEquals("Off", NormalizationMode.OFF.displayName)
     }
 
@@ -109,6 +109,78 @@ class VolumeNormalizationTest {
         assertEquals(1.2f, albumModeGain, 0.001f)
         assertEquals(1.5f, trackModeGain, 0.001f)
         assertEquals(1.0f, offModeGain, 0.001f)
+    }
+
+    @Test
+    fun testConfigurableTrackGainCalculation() {
+        // Capped by maxGainBoost = 3.0f when peak is low (0.20f)
+        val maxGainBoostGain = AudioVolumeAnalyzer.calculateTrackGain(
+            rms = 0.05f,
+            peak = 0.20f,
+            targetRms = 0.20f,
+            maxPeak = 0.95f,
+            maxGainBoost = 3.0f
+        )
+        // Raw target gain = 0.20 / 0.05 = 4.0, maxPeakGain = 0.95 / 0.20 = 4.75, capped by maxGainBoost = 3.0
+        assertEquals(3.0f, maxGainBoostGain, 0.01f)
+
+        // Capped by maxPeak = 0.95f when peak is higher (0.40f)
+        val peakCappedGain = AudioVolumeAnalyzer.calculateTrackGain(
+            rms = 0.05f,
+            peak = 0.40f,
+            targetRms = 0.20f,
+            maxPeak = 0.95f,
+            maxGainBoost = 5.0f
+        )
+        // Raw target gain = 4.0, maxPeakGain = 0.95 / 0.40 = 2.375
+        assertEquals(2.375f, peakCappedGain, 0.01f)
+
+        // Peak limited case
+        val peakLimitedGain = AudioVolumeAnalyzer.calculateTrackGain(
+            rms = 0.05f,
+            peak = 0.95f,
+            targetRms = 0.20f,
+            maxPeak = 0.95f,
+            maxGainBoost = 5.0f
+        )
+        // Raw target gain = 4.0, but max allowed peak gain = 0.95 / 0.95 = 1.0
+        assertEquals(1.0f, peakLimitedGain, 0.01f)
+    }
+
+    @Test
+    fun testNormalizationSummaryCalculation() {
+        val mockUri = Mockito.mock(Uri::class.java)
+        val song1 = Song(
+            id = 1L, title = "Song 1", artist = "Artist", album = "Album", albumId = 1L, durationMs = 100000L, contentUri = mockUri,
+            avgVolume = 0.05f, peakVolume = 0.98f, trackGain = 1.0f
+        )
+        val song2 = Song(
+            id = 2L, title = "Song 2", artist = "Artist", album = "Album", albumId = 1L, durationMs = 100000L, contentUri = mockUri,
+            avgVolume = 0.15f, peakVolume = 0.50f, trackGain = 1.0f
+        )
+        val unanalyzedSong = Song(
+            id = 3L, title = "Song 3", artist = "Artist", album = "Album", albumId = 1L, durationMs = 100000L, contentUri = mockUri
+        )
+
+        val settings = com.travelingtunes.app.core.model.NormalizationSettings(targetRms = 0.15f, maxPeak = 0.98f)
+        val summary = AudioVolumeAnalyzer.calculateNormalizationSummary(
+            songs = listOf(song1, song2, unanalyzedSong),
+            settings = settings
+        )
+
+        assertEquals(3, summary.totalSongs)
+        assertEquals(2, summary.analyzedSongs)
+        assertEquals(1, summary.peakLimitedCount) // song1 raw gain = 3.0x, but peak limited to 1.0x
+        assertTrue(summary.avgRms > 0.05f && summary.avgRms < 0.16f)
+    }
+
+    @Test
+    fun testFullScanEnabledSettingModel() {
+        val defaultSettings = com.travelingtunes.app.core.model.NormalizationSettings()
+        assertEquals(false, defaultSettings.fullScanEnabled)
+
+        val updatedSettings = defaultSettings.copy(fullScanEnabled = true)
+        assertEquals(true, updatedSettings.fullScanEnabled)
     }
 
     private fun selectModifier(song: Song, mode: NormalizationMode): Float {

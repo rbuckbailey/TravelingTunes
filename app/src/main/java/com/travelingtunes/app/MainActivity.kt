@@ -38,6 +38,8 @@ import com.travelingtunes.app.core.media.MediaStoreRepository
 import com.travelingtunes.app.core.media.MusicScanner
 import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.model.NormalizationMode
+import com.travelingtunes.app.core.model.NormalizationSettings
+import com.travelingtunes.app.core.model.NormalizationSummary
 import com.travelingtunes.app.core.theme.TravelingTunesTheme
 import com.travelingtunes.app.feature.player.PlayerScreen
 import com.travelingtunes.app.feature.quickstart.QuickStartScreen
@@ -442,8 +444,16 @@ fun TravelingTunesNavHost(
     val showFirstRunPrompt = musicFolderUri.isNullOrEmpty() && !firstRunPrompted
 
     val normalizationMode by settingsDataStore.normalizationModeFlow.collectAsState(initial = NormalizationMode.ALBUM)
+    val normalizationSettings by settingsDataStore.normalizationSettingsFlow.collectAsState(initial = NormalizationSettings())
+    var normalizationSummary by remember { mutableStateOf(NormalizationSummary()) }
     val isAnalyzingVolume by musicScanner.isAnalyzingVolume.collectAsState()
     val volumeAnalysisStatusMessage by musicScanner.volumeAnalysisStatusMessage.collectAsState()
+    val volumeAnalysisProgressCurrent by musicScanner.volumeAnalysisProgressCurrent.collectAsState()
+    val volumeAnalysisProgressTotal by musicScanner.volumeAnalysisProgressTotal.collectAsState()
+
+    LaunchedEffect(libraryStats, normalizationSettings, isAnalyzingVolume) {
+        normalizationSummary = musicDatabase.getNormalizationSummary(normalizationSettings)
+    }
 
     NavHost(navController = navController, startDestination = "player") {
         composable("player") {
@@ -502,9 +512,14 @@ fun TravelingTunesNavHost(
                 isEmbeddingCddb = isEmbeddingCddb,
                 cddbEmbeddingStatus = cddbEmbeddingStatus,
                 normalizationMode = normalizationMode,
+                normalizationSettings = normalizationSettings,
+                normalizationSummary = normalizationSummary,
                 isAnalyzingVolume = isAnalyzingVolume,
                 volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                volumeAnalysisProgressCurrent = volumeAnalysisProgressCurrent,
+                volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
                 onSelectNormalizationMode = { mode -> coroutineScope.launch { settingsDataStore.setNormalizationMode(mode) } },
+                onUpdateNormalizationSettings = { settings -> coroutineScope.launch { settingsDataStore.setNormalizationSettings(settings) } },
                 onAnalyzeVolumeLevels = { coroutineScope.launch { musicScanner.analyzeLibraryVolumeLevels() } },
                 onToggleAutoRescan = onToggleAutoRescan,
                 onPickMusicFolder = onPickMusicFolder,

@@ -27,8 +27,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import com.travelingtunes.app.feature.settings.AlbumArtAuditDialog
 import com.travelingtunes.app.feature.settings.ArtDownloadProgressBar
+import com.travelingtunes.app.feature.settings.NormalizationReportDialog
+import com.travelingtunes.app.core.model.NormalizationSettings
+import com.travelingtunes.app.core.model.NormalizationSummary
+import kotlinx.coroutines.flow.flowOf
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
@@ -136,6 +141,22 @@ fun SongPickerBottomSheet(
     val artDownloadTotalCount by musicScanner?.artDownloadTotalCount?.collectAsState() ?: remember { mutableStateOf(0) }
     val lastAuditReport by musicScanner?.lastAuditReport?.collectAsState() ?: remember { mutableStateOf(null) }
     var showAuditDialog by remember { mutableStateOf(false) }
+
+    val normalizationSettings by (settingsDataStore?.normalizationSettingsFlow ?: flowOf(NormalizationSettings())).collectAsState(initial = NormalizationSettings())
+    var normalizationSummary by remember { mutableStateOf(NormalizationSummary()) }
+    var showNormalizationReportDialog by remember { mutableStateOf(false) }
+    var reportSongs by remember { mutableStateOf<List<Song>>(emptyList()) }
+
+    val isAnalyzingVolume by musicScanner?.isAnalyzingVolume?.collectAsState() ?: remember { mutableStateOf(false) }
+    val volumeAnalysisProgressCurrent by musicScanner?.volumeAnalysisProgressCurrent?.collectAsState() ?: remember { mutableStateOf(0) }
+    val volumeAnalysisProgressTotal by musicScanner?.volumeAnalysisProgressTotal?.collectAsState() ?: remember { mutableStateOf(0) }
+    val volumeAnalysisStatusMessage by musicScanner?.volumeAnalysisStatusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
+
+    LaunchedEffect(visible, normalizationSettings, isAnalyzingVolume) {
+        if (visible) {
+            normalizationSummary = musicDatabase.getNormalizationSummary(normalizationSettings)
+        }
+    }
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(initialCategory ?: PickerCategory.ALBUMS) }
@@ -438,6 +459,69 @@ fun SongPickerBottomSheet(
                             }
                         }
                     }
+                }
+
+                if (isAnalyzingVolume) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            val progress = if (volumeAnalysisProgressTotal > 0) {
+                                (volumeAnalysisProgressCurrent.toFloat() / volumeAnalysisProgressTotal.toFloat()).coerceIn(0f, 1f)
+                            } else 0f
+                            val pct = (progress * 100).toInt()
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = "Analyzing Volume ($pct%)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                                Text(
+                                    text = "$volumeAnalysisProgressCurrent / $volumeAnalysisProgressTotal",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                            )
+                            if (!volumeAnalysisStatusMessage.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = volumeAnalysisStatusMessage ?: "",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
                 } else if (lastAuditReport != null) {
                     val report = lastAuditReport!!
                     Spacer(modifier = Modifier.height(8.dp))
@@ -535,6 +619,27 @@ fun SongPickerBottomSheet(
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Assessment,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                    if (normalizationSummary.totalSongs > 0) {
+                        item {
+                            FilterChip(
+                                selected = false,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        reportSongs = musicDatabase.getAllSongs()
+                                        showNormalizationReportDialog = true
+                                    }
+                                },
+                                label = { Text("Volume Norm (${normalizationSummary.analyzedSongs}/${normalizationSummary.totalSongs})") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                         contentDescription = null,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -889,6 +994,20 @@ fun SongPickerBottomSheet(
                 AlbumArtAuditDialog(
                     report = currentAuditReport,
                     onDismiss = { showAuditDialog = false }
+                )
+            }
+            if (showNormalizationReportDialog) {
+                NormalizationReportDialog(
+                    songs = reportSongs,
+                    settings = normalizationSettings,
+                    summary = normalizationSummary,
+                    onDismiss = { showNormalizationReportDialog = false },
+                    onReanalyze = {
+                        coroutineScope.launch {
+                            musicScanner?.analyzeLibraryVolumeLevels()
+                            normalizationSummary = musicDatabase.getNormalizationSummary(normalizationSettings)
+                        }
+                    }
                 )
             }
         }

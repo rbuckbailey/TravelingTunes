@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,11 +58,15 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import com.travelingtunes.app.core.model.NormalizationMode
+import com.travelingtunes.app.core.model.NormalizationSettings
+import com.travelingtunes.app.core.model.NormalizationSummary
+import com.travelingtunes.app.core.model.Song
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -70,6 +75,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -202,9 +208,14 @@ fun SettingsScreen(
     isEmbeddingCddb: Boolean = false,
     cddbEmbeddingStatus: String? = null,
     normalizationMode: NormalizationMode = NormalizationMode.ALBUM,
+    normalizationSettings: NormalizationSettings = NormalizationSettings(),
+    normalizationSummary: NormalizationSummary = NormalizationSummary(),
     isAnalyzingVolume: Boolean = false,
     volumeAnalysisStatusMessage: String? = null,
+    volumeAnalysisProgressCurrent: Int = 0,
+    volumeAnalysisProgressTotal: Int = 0,
     onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
+    onUpdateNormalizationSettings: (NormalizationSettings) -> Unit = {},
     onAnalyzeVolumeLevels: () -> Unit = {},
     onPickMusicFolder: () -> Unit = {},
     onRescanMusicFolder: () -> Unit = {},
@@ -227,7 +238,18 @@ fun SettingsScreen(
     var availableFonts by remember { mutableStateOf(FontHelper.getAvailableFonts(context)) }
     var activeColorPicker by remember { mutableStateOf<String?>(null) }
     var showAuditDialog by remember { mutableStateOf(false) }
+    var showNormalizationReportDialog by remember { mutableStateOf(false) }
+    var reportSongs by remember { mutableStateOf<List<Song>>(emptyList()) }
     var statusToastMessage by remember { mutableStateOf<String?>(null) }
+
+    val effectiveNormalizationSettings by settingsDataStore.normalizationSettingsFlow.collectAsState(initial = normalizationSettings)
+    var effectiveNormalizationSummary by remember { mutableStateOf(normalizationSummary) }
+
+    LaunchedEffect(musicDatabase, effectiveNormalizationSettings, isAnalyzingVolume) {
+        musicDatabase?.let { db ->
+            effectiveNormalizationSummary = db.getNormalizationSummary(effectiveNormalizationSettings)
+        }
+    }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -553,9 +575,24 @@ fun SettingsScreen(
                                 isEmbeddingCddb = isEmbeddingCddb,
                                 cddbEmbeddingStatus = cddbEmbeddingStatus,
                                 normalizationMode = normalizationMode,
+                                normalizationSettings = effectiveNormalizationSettings,
+                                normalizationSummary = effectiveNormalizationSummary,
                                 isAnalyzingVolume = isAnalyzingVolume,
                                 volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                                volumeAnalysisProgressCurrent = volumeAnalysisProgressCurrent,
+                                volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
                                 onSelectNormalizationMode = onSelectNormalizationMode,
+                                onUpdateNormalizationSettings = { newSettings ->
+                                    coroutineScope.launch {
+                                        settingsDataStore.setNormalizationSettings(newSettings)
+                                    }
+                                },
+                                onOpenNormalizationReport = {
+                                    coroutineScope.launch {
+                                        reportSongs = musicDatabase?.getAllSongs() ?: emptyList()
+                                        showNormalizationReportDialog = true
+                                    }
+                                },
                                 onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
                                 onToggleAutoRescan = onToggleAutoRescan,
                                 availableFonts = availableFonts,
@@ -780,9 +817,24 @@ fun SettingsScreen(
                         isEmbeddingCddb = isEmbeddingCddb,
                         cddbEmbeddingStatus = cddbEmbeddingStatus,
                         normalizationMode = normalizationMode,
+                        normalizationSettings = effectiveNormalizationSettings,
+                        normalizationSummary = effectiveNormalizationSummary,
                         isAnalyzingVolume = isAnalyzingVolume,
                         volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                        volumeAnalysisProgressCurrent = volumeAnalysisProgressCurrent,
+                        volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
                         onSelectNormalizationMode = onSelectNormalizationMode,
+                        onUpdateNormalizationSettings = { newSettings ->
+                            coroutineScope.launch {
+                                settingsDataStore.setNormalizationSettings(newSettings)
+                            }
+                        },
+                        onOpenNormalizationReport = {
+                            coroutineScope.launch {
+                                reportSongs = musicDatabase?.getAllSongs() ?: emptyList()
+                                showNormalizationReportDialog = true
+                            }
+                        },
                         onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
                         onToggleAutoRescan = onToggleAutoRescan,
                         availableFonts = availableFonts,
@@ -949,9 +1001,15 @@ private fun SubmenuContent(
     isEmbeddingCddb: Boolean = false,
     cddbEmbeddingStatus: String? = null,
     normalizationMode: NormalizationMode = NormalizationMode.ALBUM,
+    normalizationSettings: NormalizationSettings = NormalizationSettings(),
+    normalizationSummary: NormalizationSummary = NormalizationSummary(),
     isAnalyzingVolume: Boolean = false,
     volumeAnalysisStatusMessage: String? = null,
+    volumeAnalysisProgressCurrent: Int = 0,
+    volumeAnalysisProgressTotal: Int = 0,
     onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
+    onUpdateNormalizationSettings: (NormalizationSettings) -> Unit = {},
+    onOpenNormalizationReport: () -> Unit = {},
     onAnalyzeVolumeLevels: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
     availableFonts: List<FontOption>,
@@ -1017,9 +1075,15 @@ private fun SubmenuContent(
                     isEmbeddingCddb = isEmbeddingCddb,
                     cddbEmbeddingStatus = cddbEmbeddingStatus,
                     normalizationMode = normalizationMode,
+                    normalizationSettings = normalizationSettings,
+                    normalizationSummary = normalizationSummary,
                     isAnalyzingVolume = isAnalyzingVolume,
                     volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                    volumeAnalysisProgressCurrent = volumeAnalysisProgressCurrent,
+                    volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
                     onSelectNormalizationMode = onSelectNormalizationMode,
+                    onUpdateNormalizationSettings = onUpdateNormalizationSettings,
+                    onOpenNormalizationReport = onOpenNormalizationReport,
                     onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
                     onToggleAutoRescan = onToggleAutoRescan,
                     libraryStats = libraryStats,
@@ -1107,9 +1171,15 @@ private fun LibrarySettingsContent(
     isEmbeddingCddb: Boolean = false,
     cddbEmbeddingStatus: String? = null,
     normalizationMode: NormalizationMode = NormalizationMode.ALBUM,
+    normalizationSettings: NormalizationSettings = NormalizationSettings(),
+    normalizationSummary: NormalizationSummary = NormalizationSummary(),
     isAnalyzingVolume: Boolean = false,
     volumeAnalysisStatusMessage: String? = null,
+    volumeAnalysisProgressCurrent: Int = 0,
+    volumeAnalysisProgressTotal: Int = 0,
     onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
+    onUpdateNormalizationSettings: (NormalizationSettings) -> Unit = {},
+    onOpenNormalizationReport: () -> Unit = {},
     onAnalyzeVolumeLevels: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
     onPickMusicFolder: () -> Unit,
@@ -1279,7 +1349,7 @@ private fun LibrarySettingsContent(
             }
         }
 
-        Card(
+                Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ),
@@ -1295,7 +1365,7 @@ private fun LibrarySettingsContent(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Automatically adjust playback gain so quiet tracks are audible and loud tracks don't blow out speakers.",
+                    text = "Automatically adjusts song volume so quiet tracks are easy to hear and loud tracks don't blast your speakers.",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1320,46 +1390,224 @@ private fun LibrarySettingsContent(
                                 fontSize = 14.sp
                             )
                             val desc = when (mode) {
-                                NormalizationMode.ALBUM -> "Preserves album dynamic range (default)"
-                                NormalizationMode.TRACK -> "Equalizes every track to standard volume"
-                                NormalizationMode.OFF -> "Disables volume gain adjustment"
+                                NormalizationMode.ALBUM -> "Matches volume across albums. Quiet intros stay quiet and big climaxes stay loud."
+                                NormalizationMode.TRACK -> "Matches every song to the exact same average loudness."
+                                NormalizationMode.OFF -> "Plays original recorded file volume with no changes."
                             }
                             Text(text = desc, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                Text(
+                    text = "Fine-Tune Volume Targets",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Slider 1: Target Loudness
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Target Loudness", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(text = "${(normalizationSettings.targetRms * 100).toInt()}% Loudness", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    }
+                    Text(text = "How loud songs should play on average.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                var sliderTargetRms by remember(normalizationSettings.targetRms) { mutableFloatStateOf(normalizationSettings.targetRms) }
+                Slider(
+                    value = sliderTargetRms,
+                    onValueChange = { sliderTargetRms = it },
+                    onValueChangeFinished = { onUpdateNormalizationSettings(normalizationSettings.copy(targetRms = sliderTargetRms)) },
+                    valueRange = 0.08f..0.25f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Slider 2: Max Loud Peak Limit
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Max Loud Peak Limit", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(text = "${(normalizationSettings.maxPeak * 100).toInt()}% Max Peak", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    }
+                    Text(text = "Safety limit to prevent loud sound spikes from distorting.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                var sliderMaxPeak by remember(normalizationSettings.maxPeak) { mutableFloatStateOf(normalizationSettings.maxPeak) }
+                Slider(
+                    value = sliderMaxPeak,
+                    onValueChange = { sliderMaxPeak = it },
+                    onValueChangeFinished = { onUpdateNormalizationSettings(normalizationSettings.copy(maxPeak = sliderMaxPeak)) },
+                    valueRange = 0.90f..0.99f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Slider 3: Max Volume Boost
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Max Volume Boost", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(text = "${"%.1f".format(normalizationSettings.maxGainBoost)}x Boost", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    }
+                    Text(text = "The most an extra-quiet song can be boosted.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                var sliderMaxGainBoost by remember(normalizationSettings.maxGainBoost) { mutableFloatStateOf(normalizationSettings.maxGainBoost) }
+                Slider(
+                    value = sliderMaxGainBoost,
+                    onValueChange = { sliderMaxGainBoost = it },
+                    onValueChangeFinished = { onUpdateNormalizationSettings(normalizationSettings.copy(maxGainBoost = sliderMaxGainBoost)) },
+                    valueRange = 1.5f..6.0f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Switch: Scan Whole Song
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onUpdateNormalizationSettings(normalizationSettings.copy(fullScanEnabled = !normalizationSettings.fullScanEnabled))
+                        }
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "Scan Whole Song", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(text = "Scans the whole song instead of just the first 20 seconds. Takes longer, but gives exact volume for songs with quiet starts.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(
+                        checked = normalizationSettings.fullScanEnabled,
+                        onCheckedChange = { checked ->
+                            onUpdateNormalizationSettings(normalizationSettings.copy(fullScanEnabled = checked))
+                        }
+                    )
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                if (isAnalyzingVolume) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            val progress = if (volumeAnalysisProgressTotal > 0) {
+                                (volumeAnalysisProgressCurrent.toFloat() / volumeAnalysisProgressTotal.toFloat()).coerceIn(0f, 1f)
+                            } else 0f
+                            val pct = (progress * 100).toInt()
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = "Analyzing Volume ($pct%)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                                Text(
+                                    text = "$volumeAnalysisProgressCurrent / $volumeAnalysisProgressTotal",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                            )
+                            if (!volumeAnalysisStatusMessage.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = volumeAnalysisStatusMessage ?: "",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Summary Overview Pill Card
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Normalization Summary",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Analyzed: ${normalizationSummary.analyzedSongs} of ${normalizationSummary.totalSongs} songs (${if (normalizationSummary.totalSongs > 0) normalizationSummary.analyzedSongs * 100 / normalizationSummary.totalSongs else 0}%)",
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = "Avg RMS: ${"%.3f".format(normalizationSummary.avgRms)} • Peak Limited: ${normalizationSummary.peakLimitedCount} tracks",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Gain Range: ${"%.2f".format(normalizationSummary.minGain)}x – ${"%.2f".format(normalizationSummary.maxGain)}x",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Volume Analysis",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                        if (!volumeAnalysisStatusMessage.isNullOrBlank()) {
-                            Text(
-                                text = volumeAnalysisStatusMessage,
-                                fontSize = 12.sp,
-                                color = if (isAnalyzingVolume) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            Text(
-                                text = "Analyze track RMS and peak volume levels",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                    TextButton(onClick = onOpenNormalizationReport) {
+                        Text("View Report", fontWeight = FontWeight.Bold)
                     }
                     TextButton(
                         onClick = onAnalyzeVolumeLevels,
                         enabled = !isAnalyzingVolume
                     ) {
                         Text(
-                            text = if (isAnalyzingVolume) "Analyzing..." else "Analyze",
+                            text = if (isAnalyzingVolume) "Analyzing..." else "Analyze Volume",
                             fontWeight = FontWeight.Bold
                         )
                     }

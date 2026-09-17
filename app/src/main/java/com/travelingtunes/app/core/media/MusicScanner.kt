@@ -18,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -118,16 +119,21 @@ class MusicScanner(
     suspend fun downloadMissingArtwork(): Int = albumArtDownloader.downloadMissingArtwork()
     fun cancelDownloadArt() = albumArtDownloader.cancelDownload()
 
-    suspend fun analyzeLibraryVolumeLevels(): Pair<Int, Int> = withContext(Dispatchers.IO) {
+    suspend fun analyzeLibraryVolumeLevels(
+        customSettings: com.travelingtunes.app.core.model.NormalizationSettings? = null
+    ): Pair<Int, Int> = withContext(Dispatchers.IO) {
         if (_isAnalyzingVolume.value) return@withContext Pair(0, 0)
         _isAnalyzingVolume.value = true
         _volumeAnalysisStatusMessage.value = "Starting volume level analysis..."
         _volumeAnalysisProgressCurrent.value = 0
         _volumeAnalysisProgressTotal.value = 0
 
+        val normSettings = customSettings ?: com.travelingtunes.app.core.datastore.SettingsDataStore(context).normalizationSettingsFlow.first()
+
         val (succ, fail) = AudioVolumeAnalyzer.analyzeAllSongsInDatabase(
             context = context,
             database = musicDatabase,
+            settings = normSettings,
             onProgress = { current, total, status ->
                 _volumeAnalysisProgressCurrent.value = current
                 _volumeAnalysisProgressTotal.value = total

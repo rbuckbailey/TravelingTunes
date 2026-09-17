@@ -628,6 +628,13 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         LibraryStats(totalSongs, totalAlbums, totalArtists, totalGenres)
     }
 
+    suspend fun getNormalizationSummary(
+        settings: com.travelingtunes.app.core.model.NormalizationSettings = com.travelingtunes.app.core.model.NormalizationSettings()
+    ): com.travelingtunes.app.core.model.NormalizationSummary = withContext(Dispatchers.IO) {
+        val songs = getAllSongs()
+        com.travelingtunes.app.core.media.AudioVolumeAnalyzer.calculateNormalizationSummary(songs, settings)
+    }
+
     suspend fun updateSongVolumeAnalysis(
         songId: Long,
         avgVolume: Float,

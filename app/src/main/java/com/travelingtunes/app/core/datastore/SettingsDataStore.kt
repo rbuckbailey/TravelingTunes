@@ -25,6 +25,7 @@ import com.travelingtunes.app.core.model.GestureCategory
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
 import com.travelingtunes.app.core.model.NormalizationMode
+import com.travelingtunes.app.core.model.NormalizationSettings
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
 import com.travelingtunes.app.core.model.ShuffleMode
@@ -60,6 +61,10 @@ class SettingsDataStore(private val context: Context) {
         val KEY_FIRST_RUN_PROMPTED = booleanPreferencesKey("firstRunPrompted")
         val KEY_AUTO_RESCAN = booleanPreferencesKey("autoRescan")
         val KEY_NORMALIZATION_MODE = stringPreferencesKey("normalizationMode")
+        val KEY_TARGET_RMS = floatPreferencesKey("targetRms")
+        val KEY_MAX_PEAK = floatPreferencesKey("maxPeak")
+        val KEY_MAX_GAIN_BOOST = floatPreferencesKey("maxGainBoost")
+        val KEY_FULL_SCAN_ENABLED = booleanPreferencesKey("fullScanEnabled")
 
         val KEY_VOLUME_SENSITIVITY = floatPreferencesKey("volumeSensitivity")
         val KEY_SEEK_SENSITIVITY = floatPreferencesKey("seekSensitivity")
@@ -403,6 +408,48 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setNormalizationMode(mode: NormalizationMode) {
         context.dataStore.edit { prefs ->
             prefs[KEY_NORMALIZATION_MODE] = mode.name
+        }
+    }
+
+    val normalizationSettingsFlow: Flow<NormalizationSettings> = context.dataStore.data.map { prefs ->
+        NormalizationSettings(
+            targetRms = prefs[KEY_TARGET_RMS] ?: 0.15f,
+            maxPeak = prefs[KEY_MAX_PEAK] ?: 0.98f,
+            maxGainBoost = prefs[KEY_MAX_GAIN_BOOST] ?: 4.0f,
+            fullScanEnabled = prefs[KEY_FULL_SCAN_ENABLED] ?: false
+        )
+    }
+
+    suspend fun setNormalizationSettings(settings: NormalizationSettings) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_TARGET_RMS] = settings.targetRms.coerceIn(0.05f, 0.30f)
+            prefs[KEY_MAX_PEAK] = settings.maxPeak.coerceIn(0.80f, 0.999f)
+            prefs[KEY_MAX_GAIN_BOOST] = settings.maxGainBoost.coerceIn(1.0f, 10.0f)
+            prefs[KEY_FULL_SCAN_ENABLED] = settings.fullScanEnabled
+        }
+    }
+
+    suspend fun setTargetRms(targetRms: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_TARGET_RMS] = targetRms.coerceIn(0.05f, 0.30f)
+        }
+    }
+
+    suspend fun setMaxPeak(maxPeak: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_MAX_PEAK] = maxPeak.coerceIn(0.80f, 0.999f)
+        }
+    }
+
+    suspend fun setMaxGainBoost(maxGainBoost: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_MAX_GAIN_BOOST] = maxGainBoost.coerceIn(1.0f, 10.0f)
+        }
+    }
+
+    suspend fun setFullScanEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_FULL_SCAN_ENABLED] = enabled
         }
     }
 

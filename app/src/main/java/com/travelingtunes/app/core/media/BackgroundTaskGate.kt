@@ -20,9 +20,11 @@ object BackgroundTaskGate {
 
     suspend fun checkYieldAndPause() {
         yield()
-        while (_isForegroundBusy.value) {
+        var pauseCount = 0
+        while (_isForegroundBusy.value && pauseCount < 10) {
             delay(50L)
             yield()
+            pauseCount++
         }
     }
 

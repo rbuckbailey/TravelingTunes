@@ -468,9 +468,7 @@ fun PlayerScreen(
 
     val isForegroundBusy = pagerState.isScrollInProgress ||
             activePageAction != null ||
-            showSongPicker || showQueue || showMenu ||
-            showDownloadedArtBrowser || showGestureAssignments ||
-            showDuplicateTrackIdentifier || showRadialMenu
+            showRadialMenu
 
     LaunchedEffect(isForegroundBusy) {
         com.travelingtunes.app.core.media.BackgroundTaskGate.notifyForegroundBusy(isForegroundBusy)
