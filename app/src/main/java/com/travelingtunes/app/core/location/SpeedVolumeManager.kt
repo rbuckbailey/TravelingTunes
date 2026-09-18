@@ -50,7 +50,7 @@ class SpeedVolumeManager(private val context: Context) {
     private var lastLocationUpdateTimeMs: Long = 0L
 
     val isSpeedVolumeActive: Boolean
-        get() = speedVolumeEnabled
+        get() = speedVolumeEnabled && (drivingModeEnabled || autoEnableDrivingMode)
 
     private var isAdjustingProgrammatically = false
     private var lastStreamVolume: Int = -1

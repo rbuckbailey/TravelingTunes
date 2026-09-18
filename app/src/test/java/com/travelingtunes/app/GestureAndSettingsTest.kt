@@ -1232,6 +1232,20 @@ class GestureAndSettingsTest {
         assertTrue(travelingProfile.overrides.containsKey("autoEnableDrivingMode"))
         assertTrue(travelingProfile.overrides.containsKey("gpsVolume"))
 
+        val dockedProfile = Profile.DOCKED
+        assertEquals("docked", dockedProfile.id)
+        assertEquals("Docked Art", dockedProfile.name)
+        assertTrue(dockedProfile.isBuiltIn)
+        assertFalse(dockedProfile.isDeletable)
+        assertEquals("DOCKED", dockedProfile.overrides["artDisplayLayout"])
+
+        val undockedProfile = Profile.UNDOCKED
+        assertEquals("undocked", undockedProfile.id)
+        assertEquals("Undocked Art", undockedProfile.name)
+        assertTrue(undockedProfile.isBuiltIn)
+        assertFalse(undockedProfile.isDeletable)
+        assertEquals("OVERLAY", undockedProfile.overrides["artDisplayLayout"])
+
         // Custom Profile
         val customProfile = Profile(
             id = "custom_1",
@@ -1240,16 +1254,28 @@ class GestureAndSettingsTest {
             isDeletable = true,
             overrides = mapOf("artistFontSize" to "40.0")
         )
-        val jsonStr = Profile.listToJson(listOf(defaultProfile, travelingProfile, customProfile))
+        val jsonStr = Profile.listToJson(listOf(defaultProfile, travelingProfile, dockedProfile, undockedProfile, customProfile))
         val parsedList = Profile.listFromJson(jsonStr)
 
-        assertEquals(3, parsedList.size)
+        assertEquals(5, parsedList.size)
         val parsedCustom = parsedList.find { it.id == "custom_1" }
         assertNotNull(parsedCustom)
         assertEquals("Night Drive", parsedCustom?.name)
         assertFalse(parsedCustom!!.isBuiltIn)
         assertTrue(parsedCustom.isDeletable)
         assertEquals("40.0", parsedCustom.overrides["artistFontSize"])
+
+        val parsedDocked = parsedList.find { it.id == "docked" }
+        assertNotNull(parsedDocked)
+        assertTrue(parsedDocked!!.isBuiltIn)
+        assertFalse(parsedDocked.isDeletable)
+        assertEquals("DOCKED", parsedDocked.overrides["artDisplayLayout"])
+
+        val parsedUndocked = parsedList.find { it.id == "undocked" }
+        assertNotNull(parsedUndocked)
+        assertTrue(parsedUndocked!!.isBuiltIn)
+        assertFalse(parsedUndocked.isDeletable)
+        assertEquals("OVERLAY", parsedUndocked.overrides["artDisplayLayout"])
     }
 
     @Test
@@ -1309,5 +1335,23 @@ class GestureAndSettingsTest {
         assertEquals("child_1", ancestors[0].id)
         assertEquals("parent_1", ancestors[1].id)
         assertEquals("default", ancestors[2].id)
+    }
+
+    @Test
+    fun testAutomaticDockAndUndockedProfileToggle() {
+        val dockedProfile = Profile.DOCKED
+        val undockedProfile = Profile.UNDOCKED
+
+        assertEquals("docked", dockedProfile.id)
+        assertFalse(dockedProfile.isDeletable)
+        assertTrue(dockedProfile.isBuiltIn)
+
+        assertEquals("undocked", undockedProfile.id)
+        assertFalse(undockedProfile.isDeletable)
+        assertTrue(undockedProfile.isBuiltIn)
+
+        val profiles = listOf(Profile.DEFAULT, Profile.TRAVELING, Profile.DOCKED, Profile.UNDOCKED)
+        assertEquals("DOCKED", dockedProfile.getEffectiveOverride("artDisplayLayout", profiles))
+        assertEquals("OVERLAY", undockedProfile.getEffectiveOverride("artDisplayLayout", profiles))
     }
 }

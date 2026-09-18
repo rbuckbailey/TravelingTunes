@@ -3378,8 +3378,13 @@ private fun ProfilesSettingsContent(
                         supportingContent = {
                             Column {
                                 Text(
-                                    if (profile.id == Profile.DEFAULT_ID) "Default baseline settings for TravelingTunes"
-                                    else "Inherits from: ${currentParent.name} • ${profile.overrides.size} local overrides"
+                                    when (profile.id) {
+                                        Profile.DEFAULT_ID -> "Default baseline settings for TravelingTunes"
+                                        Profile.TRAVELING_ID -> "Built-in profile configured for Driving & Travel mode"
+                                        Profile.DOCKED_ID -> "Built-in profile configured for Docked Art mode"
+                                        Profile.UNDOCKED_ID -> "Built-in profile configured for Undocked Art mode"
+                                        else -> "Inherits from: ${currentParent.name} • ${profile.overrides.size} local overrides"
+                                    }
                                 )
                                 if (profile.id != Profile.DEFAULT_ID && validParents.size > 1) {
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -3410,7 +3415,7 @@ private fun ProfilesSettingsContent(
                                 }) {
                                     Icon(Icons.Default.ContentCopy, contentDescription = "Copy Profile")
                                 }
-                                if (!profile.isBuiltIn) {
+                                if (!profile.isBuiltIn && profile.isDeletable) {
                                     IconButton(onClick = {
                                         renamingProfileId = profile.id
                                         renamingName = profile.name

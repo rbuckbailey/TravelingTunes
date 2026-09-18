@@ -236,7 +236,19 @@ class SettingsDataStore(private val context: Context) {
                 it.name.equals(prefs[KEY_ART_ALIGNMENT_LANDSCAPE], ignoreCase = true)
             } ?: ArtAlignmentLandscape.CENTER,
             albumArtFade = (prefs[KEY_ALBUM_ART_FADE] ?: 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
-            artDisplayLayout = ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY },
+            artDisplayLayout = run {
+                val artLayoutOverride = activeProfile.getEffectiveOverride("DISPLAY_artDisplayLayout", profiles)
+                    ?: activeProfile.getEffectiveOverride("artDisplayLayout", profiles)
+                    ?: activeProfile.getEffectiveOverride("ART_LAYOUT_DOCKED", profiles)?.let { if (it.toBooleanStrictOrNull() == true) ArtLayoutOption.DOCKED.name else null }
+                    ?: activeProfile.getEffectiveOverride("ART_LAYOUT_OVERLAY", profiles)?.let { if (it.toBooleanStrictOrNull() == true) ArtLayoutOption.OVERLAY.name else null }
+                if (artLayoutOverride != null) {
+                    ArtLayoutOption.entries.find { it.name.equals(artLayoutOverride, ignoreCase = true) }
+                        ?: ArtLayoutOption.entries.getOrNull(artLayoutOverride.toIntOrNull() ?: -1)
+                        ?: ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY }
+                } else {
+                    ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY }
+                }
+            },
             stretchArt = getBool(KEY_STRETCH_ART, "DISPLAY_stretchArt", false),
             matchArtColorPriority = ArtColorPriority.entries.getOrElse(prefs[KEY_MATCH_ART_COLOR_PRIORITY] ?: 0) { ArtColorPriority.CENTER },
             adaptiveDockedArt = getBool(KEY_ADAPTIVE_DOCKED_ART, "DISPLAY_adaptiveDockedArt", false),
@@ -675,10 +687,15 @@ class SettingsDataStore(private val context: Context) {
                             prefs[KEY_PRIOR_THEME] = currentVal
                         } else {
                             prefs[priorKey] = currentVal
+                            prefs[priorKey] = currentVal
                             prefs[priorArtColorsKey] = currentArtColors
                             prefs[KEY_PRIOR_THEME] = currentVal
                             prefs[KEY_CURRENT_THEME] = targetVal
                             prefs[KEY_ALBUM_ART_COLORS] = (targetVal.equals("Match Album Art", true) || targetVal.equals("Auto By Art", true))
+                            if (targetVal.equals("Mondrian", ignoreCase = true)) {
+                                prefs[KEY_ART_DISPLAY_LAYOUT] = ArtLayoutOption.OVERLAY.ordinal
+                                prefs[KEY_ACTIVE_PROFILE_ID] = Profile.UNDOCKED_ID
+                            }
                         }
                     }
                     option.key.startsWith("ALIGN_ARTIST_") -> {
@@ -743,18 +760,22 @@ class SettingsDataStore(private val context: Context) {
                     option.key.startsWith("ART_LAYOUT_") -> {
                         val currentOrdinal = prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0
                         val currentName = ArtLayoutOption.entries.getOrNull(currentOrdinal)?.name ?: ArtLayoutOption.OVERLAY.name
-                        if (currentName.equals(targetVal, ignoreCase = true)) {
+                        val targetOrdinal = if (currentName.equals(targetVal, ignoreCase = true)) {
                             var priorVal = prefs[priorKey]
                             if (priorVal == null || priorVal.equals(targetVal, ignoreCase = true)) {
                                 priorVal = if (targetVal.equals("OVERLAY", true)) ArtLayoutOption.DOCKED.name else ArtLayoutOption.OVERLAY.name
                             }
-                            val newOrdinal = ArtLayoutOption.entries.find { it.name.equals(priorVal, true) }?.ordinal ?: 0
-                            prefs[KEY_ART_DISPLAY_LAYOUT] = newOrdinal
                             prefs[priorKey] = currentName
+                            ArtLayoutOption.entries.find { it.name.equals(priorVal, true) }?.ordinal ?: 0
                         } else {
                             prefs[priorKey] = currentName
-                            val newOrdinal = ArtLayoutOption.entries.find { it.name.equals(targetVal, true) }?.ordinal ?: 0
-                            prefs[KEY_ART_DISPLAY_LAYOUT] = newOrdinal
+                            ArtLayoutOption.entries.find { it.name.equals(targetVal, true) }?.ordinal ?: 0
+                        }
+                        prefs[KEY_ART_DISPLAY_LAYOUT] = targetOrdinal
+                        if (targetOrdinal == ArtLayoutOption.DOCKED.ordinal) {
+                            prefs[KEY_ACTIVE_PROFILE_ID] = Profile.DOCKED_ID
+                        } else {
+                            prefs[KEY_ACTIVE_PROFILE_ID] = Profile.UNDOCKED_ID
                         }
                     }
                     option.key.startsWith("ART_ALIGN_PORT_") -> {
@@ -826,6 +847,23 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun updateDisplaySettings(update: DisplaySettings) {
         context.dataStore.edit { prefs ->
+            if (update.artDisplayLayout == ArtLayoutOption.DOCKED) {
+                prefs[KEY_ACTIVE_PROFILE_ID] = Profile.DOCKED_ID
+            } else {
+                prefs[KEY_ACTIVE_PROFILE_ID] = Profile.UNDOCKED_ID
+            }
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId != Profile.DEFAULT_ID && activeId != Profile.TRAVELING_ID && activeId != Profile.DOCKED_ID && activeId != Profile.UNDOCKED_ID) {
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                    if (profile.id == activeId) {
+                        val updatedMap = profile.overrides.toMutableMap()
+                        updatedMap["DISPLAY_artDisplayLayout"] = update.artDisplayLayout.name
+                        updatedMap["artDisplayLayout"] = update.artDisplayLayout.name
+                        profile.copy(overrides = updatedMap)
+                    } else profile
+                }
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            }
             prefs[KEY_ARTIST_FONT_SIZE] = update.artistFontSize
             prefs[KEY_SONG_FONT_SIZE] = update.songFontSize
             prefs[KEY_ALBUM_FONT_SIZE] = update.albumFontSize
@@ -892,6 +930,10 @@ class SettingsDataStore(private val context: Context) {
             val oldTheme = prefs[KEY_CURRENT_THEME] ?: ColorTheme.MATCH_ALBUM_ART.name
             if (!oldTheme.equals(update.currentThemeName, ignoreCase = true)) {
                 prefs[KEY_PRIOR_THEME] = oldTheme
+            }
+            if (update.currentThemeName.equals("Mondrian", ignoreCase = true)) {
+                prefs[KEY_ART_DISPLAY_LAYOUT] = ArtLayoutOption.OVERLAY.ordinal
+                prefs[KEY_ACTIVE_PROFILE_ID] = Profile.UNDOCKED_ID
             }
             prefs[KEY_CURRENT_THEME] = update.currentThemeName
             prefs[KEY_CUSTOM_TEXT_RED] = update.customTextRed
@@ -1153,7 +1195,7 @@ class SettingsDataStore(private val context: Context) {
     }
 
     val profileSwitchTargetsFlow: Flow<List<String>> = context.dataStore.data.map { prefs ->
-        val raw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID}"
+        val raw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID},${Profile.DOCKED_ID},${Profile.UNDOCKED_ID}"
         raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
     }
 
@@ -1185,20 +1227,24 @@ class SettingsDataStore(private val context: Context) {
     }
 
     suspend fun renameProfile(profileId: String, newName: String) {
-        if (profileId == Profile.DEFAULT_ID || profileId == Profile.TRAVELING_ID) return
         context.dataStore.edit { prefs ->
-            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map {
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+            val profile = profiles.find { it.id == profileId }
+            if (profile == null || profile.isBuiltIn || !profile.isDeletable) return@edit
+            val updated = profiles.map {
                 if (it.id == profileId) it.copy(name = newName.ifBlank { it.name }) else it
             }
-            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(updated)
         }
     }
 
     suspend fun deleteProfile(profileId: String) {
-        if (profileId == Profile.DEFAULT_ID || profileId == Profile.TRAVELING_ID) return
         context.dataStore.edit { prefs ->
-            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).filterNot { it.id == profileId }
-            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+            val profile = profiles.find { it.id == profileId }
+            if (profile == null || profile.isBuiltIn || !profile.isDeletable) return@edit
+            val updated = profiles.filterNot { it.id == profileId }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(updated)
             val currentActive = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
             if (currentActive == profileId) {
                 prefs[KEY_ACTIVE_PROFILE_ID] = Profile.DEFAULT_ID
@@ -1266,7 +1312,7 @@ class SettingsDataStore(private val context: Context) {
         context.dataStore.edit { prefs ->
             val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
             val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
-            val targetIdsRaw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID}"
+            val targetIdsRaw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID},${Profile.DOCKED_ID},${Profile.UNDOCKED_ID}"
             val targetIds = targetIdsRaw.split(",").map { it.trim() }.filter { id -> profiles.any { it.id == id } }
                 .ifEmpty { profiles.map { it.id } }
 

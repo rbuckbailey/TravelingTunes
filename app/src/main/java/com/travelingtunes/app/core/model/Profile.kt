@@ -49,6 +49,10 @@ data class Profile(
     companion object {
         const val DEFAULT_ID = "default"
         const val TRAVELING_ID = "traveling"
+        const val DOCKED_ID = "docked"
+        const val UNDOCKED_ID = "undocked"
+
+        private val BUILT_IN_IDS = setOf(DEFAULT_ID, TRAVELING_ID, DOCKED_ID, UNDOCKED_ID, "dock")
 
         val DEFAULT = Profile(
             id = DEFAULT_ID,
@@ -74,6 +78,32 @@ data class Profile(
             parentId = DEFAULT_ID
         )
 
+        val DOCKED = Profile(
+            id = DOCKED_ID,
+            name = "Docked Art",
+            isBuiltIn = true,
+            isDeletable = false,
+            overrides = mapOf(
+                "DISPLAY_artDisplayLayout" to "DOCKED",
+                "artDisplayLayout" to "DOCKED",
+                "ART_LAYOUT_DOCKED" to "true"
+            ),
+            parentId = DEFAULT_ID
+        )
+
+        val UNDOCKED = Profile(
+            id = UNDOCKED_ID,
+            name = "Undocked Art",
+            isBuiltIn = true,
+            isDeletable = false,
+            overrides = mapOf(
+                "DISPLAY_artDisplayLayout" to "OVERLAY",
+                "artDisplayLayout" to "OVERLAY",
+                "ART_LAYOUT_OVERLAY" to "true"
+            ),
+            parentId = DEFAULT_ID
+        )
+
         private fun escapeJson(s: String): String {
             return s.replace("\\", "\\\\").replace("\"", "\\\"")
         }
@@ -91,11 +121,12 @@ data class Profile(
                     overridesMap[k] = overridesObj.optString(k)
                 }
             }
+            val isBuiltInProfile = isBuiltIn || id in BUILT_IN_IDS
             return Profile(
                 id = id,
                 name = name,
-                isBuiltIn = isBuiltIn || id == DEFAULT_ID || id == TRAVELING_ID,
-                isDeletable = if (id == DEFAULT_ID || id == TRAVELING_ID) false else isDeletable,
+                isBuiltIn = isBuiltInProfile,
+                isDeletable = if (isBuiltInProfile) false else isDeletable,
                 overrides = overridesMap,
                 parentId = if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID)
             )
@@ -107,7 +138,7 @@ data class Profile(
 
         fun listFromJson(jsonStr: String?): List<Profile> {
             if (jsonStr.isNullOrEmpty()) {
-                return listOf(DEFAULT, TRAVELING)
+                return listOf(DEFAULT, TRAVELING, DOCKED, UNDOCKED)
             }
             val fromOrgJson = runCatching {
                 val array = JSONArray(jsonStr)
@@ -147,7 +178,8 @@ data class Profile(
                             overridesMap[p.groupValues[1]] = p.groupValues[2]
                         }
                     }
-                    profilesList.add(Profile(id, name, isBuiltIn || id == DEFAULT_ID || id == TRAVELING_ID, if (id == DEFAULT_ID || id == TRAVELING_ID) false else isDeletable, overridesMap, if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID)))
+                    val isBuiltInProfile = isBuiltIn || id in BUILT_IN_IDS
+                    profilesList.add(Profile(id, name, isBuiltInProfile, if (isBuiltInProfile) false else isDeletable, overridesMap, if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID)))
                 }
                 profilesList
             }
@@ -160,6 +192,18 @@ data class Profile(
                 val defaultIdx = resultList.indexOfFirst { it.id == DEFAULT_ID }
                 resultList = resultList.toMutableList().apply {
                     add(if (defaultIdx >= 0) defaultIdx + 1 else 0, TRAVELING)
+                }
+            }
+            if (resultList.none { it.id == DOCKED_ID }) {
+                val travIdx = resultList.indexOfFirst { it.id == TRAVELING_ID }
+                resultList = resultList.toMutableList().apply {
+                    add(if (travIdx >= 0) travIdx + 1 else resultList.size, DOCKED)
+                }
+            }
+            if (resultList.none { it.id == UNDOCKED_ID }) {
+                val dockIdx = resultList.indexOfFirst { it.id == DOCKED_ID }
+                resultList = resultList.toMutableList().apply {
+                    add(if (dockIdx >= 0) dockIdx + 1 else resultList.size, UNDOCKED)
                 }
             }
             return resultList

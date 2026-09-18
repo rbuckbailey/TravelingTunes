@@ -14,7 +14,7 @@ object SettingsBackupHelper {
         gpsVolume: Boolean,
         gpsSens: Float,
         autoRescan: Boolean,
-        profiles: List<Profile> = listOf(Profile.DEFAULT, Profile.TRAVELING),
+        profiles: List<Profile> = listOf(Profile.DEFAULT, Profile.TRAVELING, Profile.DOCKED, Profile.UNDOCKED),
         activeProfileId: String = Profile.DEFAULT_ID,
         rawPreferences: Map<String, Any> = emptyMap(),
         version: Int = 1
