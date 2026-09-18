@@ -189,25 +189,45 @@ class SettingsDataStore(private val context: Context) {
     }
 
     val displaySettingsFlow: Flow<DisplaySettings> = context.dataStore.data.map { prefs ->
+        val activeProfileId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+        val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+        val activeProfile = profiles.find { it.id == activeProfileId } ?: Profile.DEFAULT
+
+        fun getBool(prefKey: Preferences.Key<Boolean>, overrideKey: String, defaultVal: Boolean): Boolean {
+            val ov = activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles)
+            if (ov != null) return ov.toBooleanStrictOrNull() ?: defaultVal
+            return prefs[prefKey] ?: defaultVal
+        }
+
+        fun getFloat(prefKey: Preferences.Key<Float>, overrideKey: String, defaultVal: Float): Float {
+            val ov = activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles)
+            if (ov != null) return ov.toFloatOrNull() ?: defaultVal
+            return prefs[prefKey] ?: defaultVal
+        }
+
+        fun getString(prefKey: Preferences.Key<String>, overrideKey: String, defaultVal: String): String {
+            return activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles) ?: prefs[prefKey] ?: defaultVal
+        }
+
         DisplaySettings(
-            artistFontSize = prefs[KEY_ARTIST_FONT_SIZE] ?: 50f,
-            songFontSize = prefs[KEY_SONG_FONT_SIZE] ?: 70f,
-            albumFontSize = prefs[KEY_ALBUM_FONT_SIZE] ?: 55f,
+            artistFontSize = getFloat(KEY_ARTIST_FONT_SIZE, "DISPLAY_artistFontSize", 50f),
+            songFontSize = getFloat(KEY_SONG_FONT_SIZE, "DISPLAY_songFontSize", 70f),
+            albumFontSize = getFloat(KEY_ALBUM_FONT_SIZE, "DISPLAY_albumFontSize", 55f),
             artistAlignment = TextAlignmentOption.entries.find {
-                it.name.equals(prefs[KEY_ARTIST_ALIGNMENT], ignoreCase = true) || it.displayName.equals(prefs[KEY_ARTIST_ALIGNMENT], ignoreCase = true)
+                it.name.equals(getString(KEY_ARTIST_ALIGNMENT, "ALIGN_ARTIST", "LEFT"), ignoreCase = true)
             } ?: TextAlignmentOption.LEFT,
             songAlignment = TextAlignmentOption.entries.find {
-                it.name.equals(prefs[KEY_SONG_ALIGNMENT], ignoreCase = true) || it.displayName.equals(prefs[KEY_SONG_ALIGNMENT], ignoreCase = true)
+                it.name.equals(getString(KEY_SONG_ALIGNMENT, "ALIGN_SONG", "CENTER"), ignoreCase = true)
             } ?: TextAlignmentOption.CENTER,
             albumAlignment = TextAlignmentOption.entries.find {
-                it.name.equals(prefs[KEY_ALBUM_ALIGNMENT], ignoreCase = true) || it.displayName.equals(prefs[KEY_ALBUM_ALIGNMENT], ignoreCase = true)
+                it.name.equals(getString(KEY_ALBUM_ALIGNMENT, "ALIGN_ALBUM", "RIGHT"), ignoreCase = true)
             } ?: TextAlignmentOption.RIGHT,
-            minimumFontSize = prefs[KEY_MINIMUM_FONT_SIZE] ?: 35f,
-            titleShrinkInPortrait = prefs[KEY_TITLE_SHRINK_PORTRAIT] ?: true,
-            titleShrinkLong = prefs[KEY_TITLE_SHRINK_LONG] ?: true,
-            titleScrollLong = prefs[KEY_TITLE_SCROLL_LONG] ?: false,
-            showAlbumArt = prefs[KEY_SHOW_ALBUM_ART] ?: true,
-            albumArtColors = prefs[KEY_ALBUM_ART_COLORS] ?: true,
+            minimumFontSize = getFloat(KEY_MINIMUM_FONT_SIZE, "DISPLAY_minimumFontSize", 35f),
+            titleShrinkInPortrait = getBool(KEY_TITLE_SHRINK_PORTRAIT, "DISPLAY_titleShrinkInPortrait", true),
+            titleShrinkLong = getBool(KEY_TITLE_SHRINK_LONG, "DISPLAY_titleShrinkLong", true),
+            titleScrollLong = getBool(KEY_TITLE_SCROLL_LONG, "DISPLAY_titleScrollLong", false),
+            showAlbumArt = getBool(KEY_SHOW_ALBUM_ART, "DISPLAY_showAlbumArt", true),
+            albumArtColors = getBool(KEY_ALBUM_ART_COLORS, "DISPLAY_albumArtColors", true),
             albumArtScale = ArtScaleOption.entries.getOrElse(prefs[KEY_ALBUM_ART_SCALE] ?: 0) { ArtScaleOption.FILL_SCREEN },
             artAlignmentPortrait = ArtAlignmentPortrait.entries.find {
                 it.name.equals(prefs[KEY_ART_ALIGNMENT_PORTRAIT], ignoreCase = true)
@@ -217,30 +237,30 @@ class SettingsDataStore(private val context: Context) {
             } ?: ArtAlignmentLandscape.CENTER,
             albumArtFade = (prefs[KEY_ALBUM_ART_FADE] ?: 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
             artDisplayLayout = ArtLayoutOption.entries.getOrElse(prefs[KEY_ART_DISPLAY_LAYOUT] ?: 0) { ArtLayoutOption.OVERLAY },
-            stretchArt = prefs[KEY_STRETCH_ART] ?: false,
+            stretchArt = getBool(KEY_STRETCH_ART, "DISPLAY_stretchArt", false),
             matchArtColorPriority = ArtColorPriority.entries.getOrElse(prefs[KEY_MATCH_ART_COLOR_PRIORITY] ?: 0) { ArtColorPriority.CENTER },
-            adaptiveDockedArt = prefs[KEY_ADAPTIVE_DOCKED_ART] ?: false,
-            separateTouchZones = prefs[KEY_SEPARATE_TOUCH_ZONES] ?: false,
+            adaptiveDockedArt = getBool(KEY_ADAPTIVE_DOCKED_ART, "DISPLAY_adaptiveDockedArt", false),
+            separateTouchZones = getBool(KEY_SEPARATE_TOUCH_ZONES, "DISPLAY_separateTouchZones", false),
             hudType = HudTypeOption.entries.find { it.value == (prefs[KEY_HUD_TYPE] ?: 1) } ?: HudTypeOption.BAR_VOLUME,
             scrubHudType = ScrubHudTypeOption.entries.find { it.value == (prefs[KEY_SCRUB_HUD_TYPE] ?: 2) } ?: ScrubHudTypeOption.EDGE_HUD,
-            volumeAlwaysOn = prefs[KEY_VOLUME_ALWAYS_ON] ?: true,
-            showStatusBar = prefs[KEY_SHOW_STATUS_BAR] ?: false,
-            showActions = prefs[KEY_SHOW_ACTIONS] ?: true,
-            hudLineThickness = prefs[KEY_HUD_LINE_THICKNESS] ?: 16f,
-            artistFontKey = prefs[KEY_ARTIST_FONT_KEY] ?: "DEFAULT",
-            songFontKey = prefs[KEY_SONG_FONT_KEY] ?: "DEFAULT",
-            albumFontKey = prefs[KEY_ALBUM_FONT_KEY] ?: "DEFAULT",
-            artistBold = prefs[KEY_ARTIST_BOLD] ?: true,
-            artistItalic = prefs[KEY_ARTIST_ITALIC] ?: false,
-            artistUnderline = prefs[KEY_ARTIST_UNDERLINE] ?: false,
-            songBold = prefs[KEY_SONG_BOLD] ?: true,
-            songItalic = prefs[KEY_SONG_ITALIC] ?: false,
-            songUnderline = prefs[KEY_SONG_UNDERLINE] ?: false,
-            albumBold = prefs[KEY_ALBUM_BOLD] ?: false,
-            albumItalic = prefs[KEY_ALBUM_ITALIC] ?: false,
-            albumUnderline = prefs[KEY_ALBUM_UNDERLINE] ?: false,
-            keepScreenOn = prefs[KEY_KEEP_SCREEN_ON] ?: prefs[KEY_DISABLE_AUTOLOCK] ?: true,
-            immersiveMode = prefs[KEY_IMMERSIVE_MODE] ?: true,
+            volumeAlwaysOn = getBool(KEY_VOLUME_ALWAYS_ON, "DISPLAY_volumeAlwaysOn", true),
+            showStatusBar = getBool(KEY_SHOW_STATUS_BAR, "DISPLAY_showStatusBar", false),
+            showActions = getBool(KEY_SHOW_ACTIONS, "DISPLAY_showActions", true),
+            hudLineThickness = getFloat(KEY_HUD_LINE_THICKNESS, "DISPLAY_hudLineThickness", 16f),
+            artistFontKey = getString(KEY_ARTIST_FONT_KEY, "DISPLAY_artistFontKey", "DEFAULT"),
+            songFontKey = getString(KEY_SONG_FONT_KEY, "DISPLAY_songFontKey", "DEFAULT"),
+            albumFontKey = getString(KEY_ALBUM_FONT_KEY, "DISPLAY_albumFontKey", "DEFAULT"),
+            artistBold = getBool(KEY_ARTIST_BOLD, "DISPLAY_artistBold", true),
+            artistItalic = getBool(KEY_ARTIST_ITALIC, "DISPLAY_artistItalic", false),
+            artistUnderline = getBool(KEY_ARTIST_UNDERLINE, "DISPLAY_artistUnderline", false),
+            songBold = getBool(KEY_SONG_BOLD, "DISPLAY_songBold", true),
+            songItalic = getBool(KEY_SONG_ITALIC, "DISPLAY_songItalic", false),
+            songUnderline = getBool(KEY_SONG_UNDERLINE, "DISPLAY_songUnderline", false),
+            albumBold = getBool(KEY_ALBUM_BOLD, "DISPLAY_albumBold", false),
+            albumItalic = getBool(KEY_ALBUM_ITALIC, "DISPLAY_albumItalic", false),
+            albumUnderline = getBool(KEY_ALBUM_UNDERLINE, "DISPLAY_albumUnderline", false),
+            keepScreenOn = getBool(KEY_KEEP_SCREEN_ON, "DISPLAY_keepScreenOn", true),
+            immersiveMode = getBool(KEY_IMMERSIVE_MODE, "DISPLAY_immersiveMode", true),
             numEdgeRegions = prefs[KEY_NUM_EDGE_REGIONS] ?: 3,
             numArtEdgeRegions = prefs[KEY_NUM_ART_EDGE_REGIONS] ?: 3,
             titleOrder = (prefs[KEY_TITLE_ORDER] ?: "ARTIST,SONG,ALBUM")
@@ -255,18 +275,18 @@ class SettingsDataStore(private val context: Context) {
                     runCatching { AutoCategory.valueOf(name.trim()) }.getOrNull()
                 }
                 .ifEmpty { listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS) },
-            autoShowAlbumArt = prefs[KEY_AUTO_SHOW_ALBUM_ART] ?: true,
-            autoAlbumStyleGrid = prefs[KEY_AUTO_ALBUM_STYLE_GRID] ?: true,
-            autoArtistStyleGrid = prefs[KEY_AUTO_ARTIST_STYLE_GRID] ?: false,
-            autoAutoplayOnConnect = prefs[KEY_AUTO_AUTOPLAY_ON_CONNECT] ?: false,
-            autoVoiceSearch = prefs[KEY_AUTO_VOICE_SEARCH] ?: true,
-            autoSpeedVolumeEnabled = prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false,
+            autoShowAlbumArt = getBool(KEY_AUTO_SHOW_ALBUM_ART, "AUTO_autoShowAlbumArt", true),
+            autoAlbumStyleGrid = getBool(KEY_AUTO_ALBUM_STYLE_GRID, "AUTO_autoAlbumStyleGrid", true),
+            autoArtistStyleGrid = getBool(KEY_AUTO_ARTIST_STYLE_GRID, "AUTO_autoArtistStyleGrid", false),
+            autoAutoplayOnConnect = getBool(KEY_AUTO_AUTOPLAY_ON_CONNECT, "AUTO_autoAutoplayOnConnect", false),
+            autoVoiceSearch = getBool(KEY_AUTO_VOICE_SEARCH, "AUTO_autoVoiceSearch", true),
+            autoSpeedVolumeEnabled = getBool(KEY_AUTO_SPEED_VOLUME_ENABLED, "AUTO_speedVolume", false),
             autoDefaultVolume = prefs[KEY_AUTO_DEFAULT_VOLUME] ?: 50,
             autoMinSpeedThreshold = prefs[KEY_AUTO_MIN_SPEED_THRESHOLD] ?: 15f,
             autoSpeedVolumeRatio = prefs[KEY_AUTO_SPEED_VOLUME_RATIO] ?: 1.0f,
-            autoSpeedUnit = prefs[KEY_AUTO_SPEED_UNIT] ?: "MPH",
-            drivingModeEnabled = prefs[KEY_DRIVING_MODE_ENABLED] ?: false,
-            autoEnableDrivingMode = prefs[KEY_AUTO_ENABLE_DRIVING_MODE] ?: false,
+            autoSpeedUnit = getString(KEY_AUTO_SPEED_UNIT, "AUTO_autoSpeedUnit", "MPH"),
+            drivingModeEnabled = getBool(KEY_DRIVING_MODE_ENABLED, "AUTO_drivingMode", false),
+            autoEnableDrivingMode = getBool(KEY_AUTO_ENABLE_DRIVING_MODE, "AUTO_autoEnableDrivingMode", false),
             autoActionButtonOrder = (prefs[KEY_AUTO_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
                 .split(",")
                 .asSequence()
@@ -1258,6 +1278,72 @@ class SettingsDataStore(private val context: Context) {
             nextProfile = profiles.find { it.id == nextId } ?: Profile.DEFAULT
         }
         return nextProfile
+    }
+
+    suspend fun copyProfile(
+        sourceProfileId: String,
+        newName: String,
+        linkForInheritance: Boolean
+    ): String {
+        val newId = "profile_" + System.currentTimeMillis()
+        context.dataStore.edit { prefs ->
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).toMutableList()
+            val sourceProfile = profiles.find { it.id == sourceProfileId } ?: Profile.DEFAULT
+
+            val newProfile = if (linkForInheritance) {
+                Profile(
+                    id = newId,
+                    name = newName.ifBlank { "${sourceProfile.name} Copy" },
+                    isBuiltIn = false,
+                    isDeletable = true,
+                    overrides = emptyMap(),
+                    parentId = sourceProfile.id
+                )
+            } else {
+                Profile(
+                    id = newId,
+                    name = newName.ifBlank { "${sourceProfile.name} Copy" },
+                    isBuiltIn = false,
+                    isDeletable = true,
+                    overrides = sourceProfile.overrides.toMap(),
+                    parentId = sourceProfile.parentId ?: Profile.DEFAULT_ID
+                )
+            }
+            profiles.add(newProfile)
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            prefs[KEY_ACTIVE_PROFILE_ID] = newId
+        }
+        return newId
+    }
+
+    suspend fun setProfileParent(profileId: String, newParentId: String?) {
+        if (profileId == Profile.DEFAULT_ID) return
+        context.dataStore.edit { prefs ->
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).toMutableList()
+            val index = profiles.indexOfFirst { it.id == profileId }
+            if (index >= 0) {
+                val targetProfile = profiles[index]
+                val updatedProfile = targetProfile.copy(parentId = newParentId)
+                val testList = profiles.toMutableList().apply { set(index, updatedProfile) }
+
+                var current: Profile? = updatedProfile
+                val visited = mutableSetOf<String>()
+                var hasCycle = false
+                while (current != null) {
+                    if (!visited.add(current.id)) {
+                        hasCycle = true
+                        break
+                    }
+                    val nextParentId = current.parentId
+                    current = if (nextParentId != null) testList.find { it.id == nextParentId } else null
+                }
+
+                if (!hasCycle) {
+                    profiles[index] = updatedProfile
+                    prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+                }
+            }
+        }
     }
 }
 

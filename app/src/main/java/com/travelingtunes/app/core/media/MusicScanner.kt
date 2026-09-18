@@ -119,8 +119,14 @@ class MusicScanner(
     suspend fun downloadMissingArtwork(): Int = albumArtDownloader.downloadMissingArtwork()
     fun cancelDownloadArt() = albumArtDownloader.cancelDownload()
 
+    fun cancelVolumeAnalysis() {
+        _isAnalyzingVolume.value = false
+        _volumeAnalysisStatusMessage.value = "Volume analysis paused."
+    }
+
     suspend fun analyzeLibraryVolumeLevels(
-        customSettings: com.travelingtunes.app.core.model.NormalizationSettings? = null
+        customSettings: com.travelingtunes.app.core.model.NormalizationSettings? = null,
+        forceRescan: Boolean = false
     ): Pair<Int, Int> = withContext(Dispatchers.IO) {
         if (_isAnalyzingVolume.value) return@withContext Pair(0, 0)
         _isAnalyzingVolume.value = true
@@ -134,6 +140,7 @@ class MusicScanner(
             context = context,
             database = musicDatabase,
             settings = normSettings,
+            forceRescan = forceRescan,
             onProgress = { current, total, status ->
                 _volumeAnalysisProgressCurrent.value = current
                 _volumeAnalysisProgressTotal.value = total

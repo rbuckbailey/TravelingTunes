@@ -100,17 +100,6 @@ fun adjustContrastForBackground(
         if (bestMatched != null) {
             return Color((bestMatched and 0x00FFFFFF) or -0x1000000)
         }
-
-        val maxContrastSwatch = matchedSwatches.maxByOrNull { swatchInt ->
-            val swatchOpaque = (swatchInt and 0x00FFFFFF) or -0x1000000
-            calculateWcagContrast(swatchOpaque, bgInt)
-        }
-        if (maxContrastSwatch != null) {
-            val maxOpaque = (maxContrastSwatch and 0x00FFFFFF) or -0x1000000
-            if (calculateWcagContrast(maxOpaque, bgInt) >= 3.0) {
-                return Color(maxOpaque)
-            }
-        }
     }
 
     // Pass 2: Static / Custom theme pass: Alter Brightness & Saturation via HSL to make text stand out
@@ -272,13 +261,13 @@ fun adjustSecondaryContrastForBackground(
             return Color((bestDistinctSwatch and 0x00FFFFFF) or -0x1000000)
         }
 
-        // Pass 2: Relaxed search through matchedSwatches (bg contrast >= 2.5, distToPrimary >= 18.0)
+        // Pass 2: Relaxed search through matchedSwatches (bg contrast >= minContrastRatio, distToPrimary >= 18.0)
         val relaxedSwatch = matchedSwatches.find { swatchInt ->
             val swatchOpaque = (swatchInt and 0x00FFFFFF) or -0x1000000
             if (swatchOpaque == primaryInt) return@find false
 
             val contrastToBg = calculateWcagContrast(swatchOpaque, bgInt)
-            if (contrastToBg < 2.5) return@find false
+            if (contrastToBg < minContrastRatio) return@find false
 
             val distToPrimary = colorDistanceLAB(swatchOpaque, primaryInt)
             if (distToPrimary < 18.0) return@find false
@@ -310,7 +299,7 @@ fun adjustSecondaryContrastForBackground(
         }
     }
     val synthInt = ColorUtils.HSLToColor(primaryHsl) or -0x1000000
-    if (calculateWcagContrast(synthInt, bgInt) >= 2.5) {
+    if (calculateWcagContrast(synthInt, bgInt) >= minContrastRatio) {
         return Color(synthInt)
     }
 

@@ -8,13 +8,42 @@ data class Profile(
     val name: String,
     val isBuiltIn: Boolean = false,
     val isDeletable: Boolean = true,
-    val overrides: Map<String, String> = emptyMap()
+    val overrides: Map<String, String> = emptyMap(),
+    val parentId: String? = null
 ) {
     fun toJson(): String {
         val overridesEntries = overrides.entries.joinToString(",") { (k, v) ->
             "\"${escapeJson(k)}\": \"${escapeJson(v)}\""
         }
-        return "{\"id\": \"${escapeJson(id)}\", \"name\": \"${escapeJson(name)}\", \"isBuiltIn\": $isBuiltIn, \"isDeletable\": $isDeletable, \"overrides\": {$overridesEntries}}"
+        val parentField = if (parentId != null) ", \"parentId\": \"${escapeJson(parentId)}\"" else ""
+        return "{\"id\": \"${escapeJson(id)}\", \"name\": \"${escapeJson(name)}\", \"isBuiltIn\": $isBuiltIn, \"isDeletable\": $isDeletable$parentField, \"overrides\": {$overridesEntries}}"
+    }
+
+    fun getEffectiveOverride(key: String, allProfiles: List<Profile>): String? {
+        var current: Profile? = this
+        val visited = mutableSetOf<String>()
+        while (current != null) {
+            if (!visited.add(current.id)) break
+            if (current.overrides.containsKey(key)) {
+                return current.overrides[key]
+            }
+            val nextParentId = current.parentId ?: if (current.id != DEFAULT_ID) DEFAULT_ID else null
+            current = if (nextParentId != null) allProfiles.find { it.id == nextParentId } else null
+        }
+        return null
+    }
+
+    fun getAncestorChain(allProfiles: List<Profile>): List<Profile> {
+        val chain = mutableListOf<Profile>()
+        var current: Profile? = this
+        val visited = mutableSetOf<String>()
+        while (current != null) {
+            if (!visited.add(current.id)) break
+            chain.add(current)
+            val nextParentId = current.parentId ?: if (current.id != DEFAULT_ID) DEFAULT_ID else null
+            current = if (nextParentId != null) allProfiles.find { it.id == nextParentId } else null
+        }
+        return chain
     }
 
     companion object {
@@ -26,7 +55,8 @@ data class Profile(
             name = "Default",
             isBuiltIn = true,
             isDeletable = false,
-            overrides = emptyMap()
+            overrides = emptyMap(),
+            parentId = null
         )
 
         val TRAVELING = Profile(
@@ -40,7 +70,8 @@ data class Profile(
                 "LIBRARY_gpsVolume" to "true",
                 "gpsVolume" to "true",
                 "autoSpeedVolumeEnabled" to "true"
-            )
+            ),
+            parentId = DEFAULT_ID
         )
 
         private fun escapeJson(s: String): String {
@@ -52,6 +83,7 @@ data class Profile(
             val name = runCatching { json.optString("name", "Default") }.getOrDefault("Default").ifEmpty { "Default" }
             val isBuiltIn = runCatching { json.optBoolean("isBuiltIn", false) }.getOrDefault(false)
             val isDeletable = runCatching { json.optBoolean("isDeletable", true) }.getOrDefault(true)
+            val parentId = runCatching { json.optString("parentId", "").takeIf { it.isNotEmpty() } }.getOrNull()
             val overridesMap = mutableMapOf<String, String>()
             runCatching {
                 val overridesObj = json.optJSONObject("overrides")
@@ -64,7 +96,8 @@ data class Profile(
                 name = name,
                 isBuiltIn = isBuiltIn || id == DEFAULT_ID || id == TRAVELING_ID,
                 isDeletable = if (id == DEFAULT_ID || id == TRAVELING_ID) false else isDeletable,
-                overrides = overridesMap
+                overrides = overridesMap,
+                parentId = if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID)
             )
         }
 
@@ -81,16 +114,7 @@ data class Profile(
                 val list = mutableListOf<Profile>()
                 for (i in 0 until array.length()) {
                     val item = array.getJSONObject(i)
-                    val id = item.optString("id", DEFAULT_ID).ifEmpty { DEFAULT_ID }
-                    val name = item.optString("name", "Default").ifEmpty { "Default" }
-                    val isBuiltIn = item.optBoolean("isBuiltIn", false)
-                    val isDeletable = item.optBoolean("isDeletable", true)
-                    val overridesMap = mutableMapOf<String, String>()
-                    val overridesObj = item.optJSONObject("overrides")
-                    overridesObj?.keys()?.forEach { k ->
-                        overridesMap[k] = overridesObj.optString(k)
-                    }
-                    list.add(Profile(id, name, isBuiltIn || id == DEFAULT_ID || id == TRAVELING_ID, if (id == DEFAULT_ID || id == TRAVELING_ID) false else isDeletable, overridesMap))
+                    list.add(fromJson(item))
                 }
                 list.toList()
             }.getOrNull()
@@ -107,11 +131,13 @@ data class Profile(
                     val nameMatch = Regex(""""name"\s*:\s*"([^"]+)"""").find(objStr)
                     val isBuiltInMatch = Regex(""""isBuiltIn"\s*:\s*(true|false)""").find(objStr)
                     val isDeletableMatch = Regex(""""isDeletable"\s*:\s*(true|false)""").find(objStr)
+                    val parentIdMatch = Regex(""""parentId"\s*:\s*"([^"]+)"""").find(objStr)
 
                     val id = idMatch?.groupValues?.get(1) ?: continue
                     val name = nameMatch?.groupValues?.get(1) ?: id
                     val isBuiltIn = isBuiltInMatch?.groupValues?.get(1)?.toBoolean() ?: false
                     val isDeletable = isDeletableMatch?.groupValues?.get(1)?.toBoolean() ?: true
+                    val parentId = parentIdMatch?.groupValues?.get(1)
 
                     val overridesMap = mutableMapOf<String, String>()
                     val overridesSub = Regex(""""overrides"\s*:\s*\{([^}]+)\}""").find(objStr)?.groupValues?.get(1)
@@ -121,7 +147,7 @@ data class Profile(
                             overridesMap[p.groupValues[1]] = p.groupValues[2]
                         }
                     }
-                    profilesList.add(Profile(id, name, isBuiltIn || id == DEFAULT_ID || id == TRAVELING_ID, if (id == DEFAULT_ID || id == TRAVELING_ID) false else isDeletable, overridesMap))
+                    profilesList.add(Profile(id, name, isBuiltIn || id == DEFAULT_ID || id == TRAVELING_ID, if (id == DEFAULT_ID || id == TRAVELING_ID) false else isDeletable, overridesMap, if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID)))
                 }
                 profilesList
             }

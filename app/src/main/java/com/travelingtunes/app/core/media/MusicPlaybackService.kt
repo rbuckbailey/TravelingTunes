@@ -1,11 +1,9 @@
 package com.travelingtunes.app.core.media
 
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.OptIn
-import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -24,7 +22,6 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
-import com.travelingtunes.app.MainActivity
 import com.travelingtunes.app.R
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.datastore.SettingsDataStore
@@ -33,6 +30,8 @@ import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureTrigger
+import com.travelingtunes.app.core.model.RepeatMode
+import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -123,11 +122,9 @@ class MusicPlaybackService : MediaLibraryService() {
         fun startService(context: Context) {
             val intent = Intent(context.applicationContext, MusicPlaybackService::class.java)
             try {
-                ContextCompat.startForegroundService(context.applicationContext, intent)
+                context.applicationContext.startService(intent)
             } catch (e: Exception) {
-                try {
-                    context.applicationContext.startService(intent)
-                } catch (_: Exception) {}
+                android.util.Log.w("MusicPlaybackService", "Failed to startService", e)
             }
         }
     }
@@ -146,19 +143,8 @@ class MusicPlaybackService : MediaLibraryService() {
 
         val player = getOrCreatePlayer(applicationContext)
 
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
         val sessionCallback = AutoLibrarySessionCallback()
         val session = MediaLibrarySession.Builder(this, player, sessionCallback)
-            .setSessionActivity(pendingIntent)
             .build()
         addSession(session)
         sharedSession = session
@@ -170,10 +156,10 @@ class MusicPlaybackService : MediaLibraryService() {
                 playbackManager.shuffleMode,
                 settingsDataStore.gestureBindingsFlow,
                 settingsDataStore.displaySettingsFlow
-            ) { _, _, bindings, settings ->
+            ) { repeatMode, shuffleMode, bindings, settings ->
                 autoDisplaySettings = settings
                 sharedSession?.let { session ->
-                    updateCustomLayout(session, bindings, settings)
+                    updateCustomLayout(session, bindings, settings, repeatMode, shuffleMode)
                 }
             }.collect {}
         }
@@ -193,14 +179,12 @@ class MusicPlaybackService : MediaLibraryService() {
         sharedSession?.let { session ->
             try {
                 removeSession(session)
-                session.player.release()
                 session.release()
             } catch (e: Exception) {
-                android.util.Log.e("MusicPlaybackService", "Error releasing session/player in onDestroy", e)
+                android.util.Log.e("MusicPlaybackService", "Error releasing session in onDestroy", e)
             }
             sharedSession = null
         }
-        sharedPlayer = null
         super.onDestroy()
     }
 
@@ -256,12 +240,35 @@ class MusicPlaybackService : MediaLibraryService() {
         }
     }
 
-    private fun actionToCommandButton(action: GestureAction): CommandButton? {
+    private fun actionToCommandButton(
+        action: GestureAction,
+        repeatMode: RepeatMode = RepeatMode.OFF,
+        shuffleMode: ShuffleMode = ShuffleMode.OFF
+    ): CommandButton? {
         val command = actionToSessionCommand(action) ?: return null
-        val iconRes = actionToIconRes(action)
+        val (displayName, iconRes) = when (action) {
+            GestureAction.TOGGLE_REPEAT -> {
+                repeatMode.displayName to when (repeatMode) {
+                    RepeatMode.OFF -> R.drawable.ic_repeat_off
+                    RepeatMode.SONG -> R.drawable.ic_repeat_song
+                    RepeatMode.ALBUM -> R.drawable.ic_repeat_album
+                    RepeatMode.ARTIST -> R.drawable.ic_repeat_artist
+                    RepeatMode.GENRE -> R.drawable.ic_repeat_genre
+                    RepeatMode.FOLDER -> R.drawable.ic_repeat_folder
+                }
+            }
+            GestureAction.TOGGLE_SHUFFLE -> {
+                shuffleMode.displayName to when (shuffleMode) {
+                    ShuffleMode.OFF -> R.drawable.ic_shuffle_off
+                    ShuffleMode.SONGS -> R.drawable.ic_shuffle_songs
+                    ShuffleMode.ALBUMS -> R.drawable.ic_shuffle_albums
+                }
+            }
+            else -> action.displayName to actionToIconRes(action)
+        }
         return CommandButton.Builder()
             .setSessionCommand(command)
-            .setDisplayName(action.displayName)
+            .setDisplayName(displayName)
             .setIconResId(iconRes)
             .setEnabled(true)
             .build()
@@ -270,7 +277,9 @@ class MusicPlaybackService : MediaLibraryService() {
     private fun updateCustomLayout(
         session: MediaLibrarySession,
         bindings: Map<GestureTrigger, GestureBinding>,
-        autoSettings: DisplaySettings
+        autoSettings: DisplaySettings,
+        repeatMode: RepeatMode = RepeatMode.OFF,
+        shuffleMode: ShuffleMode = ShuffleMode.OFF
     ) {
         val buttons = mutableListOf<CommandButton>()
         val configuredActions = autoSettings.autoActionButtonOrder.filter {
@@ -295,7 +304,7 @@ class MusicPlaybackService : MediaLibraryService() {
         }
 
         for (action in actionsToUse) {
-            actionToCommandButton(action)?.let {
+            actionToCommandButton(action, repeatMode, shuffleMode)?.let {
                 buttons.add(it)
             }
         }
@@ -335,6 +344,42 @@ class MusicPlaybackService : MediaLibraryService() {
                     .setTitle("Traveling Tunes")
                     .setIsBrowsable(true)
                     .setIsPlayable(false)
+                    .build()
+            )
+            .build()
+
+        private val showPlayScreenItem = MediaItem.Builder()
+            .setMediaId("show_play_screen")
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle("Show Play Screen")
+                    .setSubtitle("Return to play screen")
+                    .setIsBrowsable(false)
+                    .setIsPlayable(true)
+                    .setExtras(Bundle().apply {
+                        putInt(
+                            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+                            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+                        )
+                    })
+                    .build()
+            )
+            .build()
+
+        private val shuffleAllItem = MediaItem.Builder()
+            .setMediaId("shuffle_all")
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle("Shuffle All Songs")
+                    .setSubtitle("Shuffle entire music library")
+                    .setIsBrowsable(false)
+                    .setIsPlayable(true)
+                    .setExtras(Bundle().apply {
+                        putInt(
+                            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+                            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+                        )
+                    })
                     .build()
             )
             .build()
@@ -456,54 +501,74 @@ class MusicPlaybackService : MediaLibraryService() {
                 actionToSessionCommand(act)?.let { availableCommands.add(it) }
             }
 
-            serviceScope.launch {
+            val restoreJob = serviceScope.launch(Dispatchers.Main) {
                 val savedState = settingsDataStore.savedPlaybackStateFlow.first()
                 val displaySettings = settingsDataStore.displaySettingsFlow.first()
                 val dbSongs = musicDatabase.getAllSongs()
                 val allSongs = dbSongs.ifEmpty { mediaStoreRepository.getAllSongs() }
 
-                withContext(Dispatchers.Main) {
-                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
 
-                    if (playbackManager.currentPlaylist.value.isEmpty() || playbackManager.player.mediaItemCount == 0) {
-                        if (allSongs.isNotEmpty()) {
-                            if (savedState.queueIds.isNotEmpty()) {
-                                val songMap = allSongs.associateBy { it.id }
-                                val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
-                                val finalQueue = restoredQueue.ifEmpty { allSongs }
+                if (playbackManager.currentPlaylist.value.isEmpty() || playbackManager.player.mediaItemCount == 0) {
+                    if (allSongs.isNotEmpty()) {
+                        if (savedState.queueIds.isNotEmpty()) {
+                            val songMap = allSongs.associateBy { it.id }
+                            val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
+                            val finalQueue = restoredQueue.ifEmpty { allSongs }
 
-                                playbackManager.restorePlaybackState(
-                                    songs = finalQueue,
-                                    startIndex = savedState.activeSongIndex,
-                                    positionMs = savedState.positionMs,
-                                    shuffle = savedState.isShuffle,
-                                    repeat = savedState.isRepeat,
-                                    repeatMode = savedState.repeatMode,
-                                    shuffleMode = savedState.shuffleMode
-                                )
-                            } else {
-                                playbackManager.restorePlaybackState(
-                                    songs = allSongs,
-                                    startIndex = 0,
-                                    positionMs = 0L,
-                                    shuffle = false,
-                                    repeat = false
-                                )
-                            }
+                            playbackManager.restorePlaybackState(
+                                songs = finalQueue,
+                                startIndex = savedState.activeSongIndex,
+                                positionMs = savedState.positionMs,
+                                shuffle = savedState.isShuffle,
+                                repeat = savedState.isRepeat,
+                                repeatMode = savedState.repeatMode,
+                                shuffleMode = savedState.shuffleMode
+                            )
+                        } else {
+                            playbackManager.restorePlaybackState(
+                                songs = allSongs,
+                                startIndex = 0,
+                                positionMs = 0L,
+                                shuffle = false,
+                                repeat = false
+                            )
                         }
-                    } else {
-                        playbackManager.ensurePlayerReadyForPlayback()
                     }
+                } else {
+                    playbackManager.ensurePlayerReadyForPlayback()
+                }
 
-                    if (displaySettings.autoAutoplayOnConnect) {
-                        playbackManager.play()
-                    }
+                if (displaySettings.autoAutoplayOnConnect) {
+                    playbackManager.play()
                 }
             }
 
+            kotlinx.coroutines.runBlocking {
+                try {
+                    kotlinx.coroutines.withTimeout(500L) {
+                        restoreJob.join()
+                    }
+                } catch (_: Exception) {}
+            }
+
+            val playerCommands = connectionResult.availablePlayerCommands.buildUpon()
+                .add(androidx.media3.common.Player.COMMAND_GET_CURRENT_MEDIA_ITEM)
+                .add(androidx.media3.common.Player.COMMAND_GET_TIMELINE)
+                .add(androidx.media3.common.Player.COMMAND_GET_TRACKS)
+                .add(androidx.media3.common.Player.COMMAND_GET_METADATA)
+                .add(androidx.media3.common.Player.COMMAND_PLAY_PAUSE)
+                .add(androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT)
+                .add(androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS)
+                .add(androidx.media3.common.Player.COMMAND_SEEK_TO_MEDIA_ITEM)
+                .add(androidx.media3.common.Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
+                .add(androidx.media3.common.Player.COMMAND_SET_SHUFFLE_MODE)
+                .add(androidx.media3.common.Player.COMMAND_SET_REPEAT_MODE)
+                .build()
+
             return MediaSession.ConnectionResult.accept(
                 availableCommands.build(),
-                connectionResult.availablePlayerCommands
+                playerCommands
             )
         }
 
@@ -513,6 +578,7 @@ class MusicPlaybackService : MediaLibraryService() {
             customCommand: SessionCommand,
             args: Bundle
         ): ListenableFuture<SessionResult> {
+            val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
             when (customCommand.customAction) {
                 "com.travelingtunes.app.ACTION_PLAY_CURRENT_ALBUM" -> {
                     playCurrentAlbum()
@@ -521,22 +587,18 @@ class MusicPlaybackService : MediaLibraryService() {
                     playCurrentArtist()
                 }
                 "com.travelingtunes.app.ACTION_NEXT_ALBUM" -> {
-                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
                     playbackManager.nextAlbum()
                 }
                 "com.travelingtunes.app.ACTION_PREVIOUS_ALBUM" -> {
-                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
                     playbackManager.previousAlbum()
                 }
                 "com.travelingtunes.app.ACTION_SHUFFLE_ALL_SONGS" -> {
                     shuffleAllSongs()
                 }
                 "com.travelingtunes.app.ACTION_TOGGLE_REPEAT" -> {
-                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
                     playbackManager.toggleRepeat()
                 }
                 "com.travelingtunes.app.ACTION_TOGGLE_SHUFFLE" -> {
-                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
                     playbackManager.toggleShuffle()
                 }
                 "com.travelingtunes.app.ACTION_TOGGLE_DRIVING_MODE" -> {
@@ -544,27 +606,26 @@ class MusicPlaybackService : MediaLibraryService() {
                         settingsDataStore.toggleDrivingMode()
                     }
                 }
-                "com.travelingtunes.app.ACTION_PLAY_PAUSE", "com.travelingtunes.app.ACTION_PLAY", "com.travelingtunes.app.ACTION_PAUSE" -> {
-                    val player = session.player
-                    if (player.isPlaying) player.pause() else player.play()
+                "com.travelingtunes.app.ACTION_PLAY_PAUSE" -> {
+                    playbackManager.togglePlayPause()
+                }
+                "com.travelingtunes.app.ACTION_PLAY" -> {
+                    playbackManager.play()
+                }
+                "com.travelingtunes.app.ACTION_PAUSE" -> {
+                    playbackManager.pause()
                 }
                 "com.travelingtunes.app.ACTION_NEXT" -> {
-                    val player = session.player
-                    if (player.hasNextMediaItem()) player.seekToNextMediaItem()
+                    playbackManager.next()
                 }
                 "com.travelingtunes.app.ACTION_PREVIOUS" -> {
-                    val player = session.player
-                    if (player.hasPreviousMediaItem()) player.seekToPreviousMediaItem()
+                    playbackManager.previous()
                 }
                 "com.travelingtunes.app.ACTION_FAST_FORWARD" -> {
-                    val player = session.player
-                    val target = (player.currentPosition + 10000L).coerceAtMost(player.duration)
-                    player.seekTo(target)
+                    playbackManager.fastForward()
                 }
                 "com.travelingtunes.app.ACTION_REWIND" -> {
-                    val player = session.player
-                    val target = (player.currentPosition - 10000L).coerceAtLeast(0L)
-                    player.seekTo(target)
+                    playbackManager.rewind()
                 }
             }
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
@@ -605,8 +666,10 @@ class MusicPlaybackService : MediaLibraryService() {
             serviceScope.launch {
                 val items = mutableListOf<MediaItem>()
                 val showArt = autoDisplaySettings.autoShowAlbumArt
+                items.add(showPlayScreenItem)
                 when (parentId) {
                     "root" -> {
+                        items.add(shuffleAllItem)
                         val categoryMap = mapOf(
                             AutoCategory.SONGS to categorySongs,
                             AutoCategory.ALBUMS to categoryAlbums,
@@ -622,6 +685,7 @@ class MusicPlaybackService : MediaLibraryService() {
                         }
                     }
                     "category_songs" -> {
+                        items.add(shuffleAllItem)
                         val songs = getAllSongsHelper()
                         items.addAll(songs.map { songToMediaItem(it, showArt) })
                     }
@@ -784,6 +848,14 @@ class MusicPlaybackService : MediaLibraryService() {
             val future = SettableFuture.create<LibraryResult<MediaItem>>()
 
             serviceScope.launch {
+                if (mediaId == "show_play_screen") {
+                    future.set(LibraryResult.ofItem(showPlayScreenItem, null))
+                    return@launch
+                }
+                if (mediaId == "shuffle_all") {
+                    future.set(LibraryResult.ofItem(shuffleAllItem, null))
+                    return@launch
+                }
                 val songId = mediaId.toLongOrNull()
                 if (songId != null) {
                     val allSongs = getAllSongsHelper()
@@ -867,42 +939,84 @@ class MusicPlaybackService : MediaLibraryService() {
                 val songMap = allSongs.associateBy { it.id.toString() }
 
                 val resolvedItems = mutableListOf<MediaItem>()
+                val resolvedSongs = mutableListOf<Song>()
                 var playStartIndex = startIndex
 
                 if (mediaItems.size == 1) {
                     val requestedId = mediaItems[0].mediaId
                     val matchedSong = songMap[requestedId]
 
-                    if (matchedSong != null) {
+                    if (requestedId == "show_play_screen") {
+                        var returnPosMs = startPositionMs
+                        withContext(Dispatchers.Main) {
+                            val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                            val playlist = playbackManager.currentPlaylist.value
+                            val currentSong = playbackManager.currentSong.value
+                            if (playlist.isNotEmpty() && currentSong != null) {
+                                val songIndex = playlist.indexOfFirst { it.id == currentSong.id }.coerceAtLeast(0)
+                                val currentPos = playbackManager.player.currentPosition.coerceAtLeast(0L)
+                                returnPosMs = currentPos
+                                resolvedSongs.addAll(playlist)
+                                resolvedItems.addAll(playlist.map { songToMediaItem(it) })
+                                playStartIndex = songIndex
+                                playbackManager.ensurePlayerReadyForPlayback(songIndex, currentPos)
+                            } else {
+                                playbackManager.shuffleAllSongs()
+                                val shuffledQueue = playbackManager.currentPlaylist.value
+                                resolvedSongs.addAll(shuffledQueue)
+                                resolvedItems.addAll(shuffledQueue.map { songToMediaItem(it) })
+                                playStartIndex = 0
+                                returnPosMs = 0L
+                            }
+                        }
+                        val safeStartIndex = playStartIndex.coerceIn(0, (resolvedItems.size - 1).coerceAtLeast(0))
+                        future.set(MediaSession.MediaItemsWithStartPosition(resolvedItems, safeStartIndex, returnPosMs))
+                        return@launch
+                    } else if (requestedId == "shuffle_all") {
+                        withContext(Dispatchers.Main) {
+                            val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                            playbackManager.shuffleAllSongs()
+                            val shuffledQueue = playbackManager.currentPlaylist.value
+                            resolvedSongs.addAll(shuffledQueue)
+                            resolvedItems.addAll(shuffledQueue.map { songToMediaItem(it) })
+                        }
+                        playStartIndex = 0
+                    } else if (matchedSong != null) {
                         val albumSongs = allSongs.filter { it.album.equals(matchedSong.album, ignoreCase = true) }
                         val queueSongs = if (albumSongs.size > 1) albumSongs else allSongs
 
                         val songIndex = queueSongs.indexOfFirst { it.id == matchedSong.id }
                         if (songIndex >= 0) {
+                            resolvedSongs.addAll(queueSongs)
                             resolvedItems.addAll(queueSongs.map { songToMediaItem(it) })
                             playStartIndex = songIndex
                         } else {
+                            resolvedSongs.add(matchedSong)
                             resolvedItems.add(songToMediaItem(matchedSong))
                             playStartIndex = 0
                         }
                     } else if (requestedId.startsWith("album_")) {
                         val albumName = requestedId.removePrefix("album_")
                         val songs = allSongs.filter { it.album.equals(albumName, ignoreCase = true) }
+                        resolvedSongs.addAll(songs)
                         resolvedItems.addAll(songs.map { songToMediaItem(it) })
                         playStartIndex = 0
                     } else if (requestedId.startsWith("artist_")) {
                         val artistName = requestedId.removePrefix("artist_")
                         val songs = allSongs.filter { it.artist.equals(artistName, ignoreCase = true) }
+                        resolvedSongs.addAll(songs)
                         resolvedItems.addAll(songs.map { songToMediaItem(it) })
                         playStartIndex = 0
                     } else if (requestedId.startsWith("genre_")) {
                         val genreName = requestedId.removePrefix("genre_")
                         val songs = allSongs.filter { it.genre.equals(genreName, ignoreCase = true) }
+                        resolvedSongs.addAll(songs)
                         resolvedItems.addAll(songs.map { songToMediaItem(it) })
                         playStartIndex = 0
                     } else if (requestedId.startsWith("folder_")) {
                         val folderPath = requestedId.removePrefix("folder_")
                         val songs = allSongs.filter { it.folderPath.equals(folderPath, ignoreCase = true) }
+                        resolvedSongs.addAll(songs)
                         resolvedItems.addAll(songs.map { songToMediaItem(it) })
                         playStartIndex = 0
                     } else {
@@ -912,6 +1026,7 @@ class MusicPlaybackService : MediaLibraryService() {
                     for (item in mediaItems) {
                         val song = songMap[item.mediaId]
                         if (song != null) {
+                            resolvedSongs.add(song)
                             resolvedItems.add(songToMediaItem(song))
                         } else {
                             resolvedItems.add(item)
@@ -920,6 +1035,14 @@ class MusicPlaybackService : MediaLibraryService() {
                 }
 
                 val safeStartIndex = playStartIndex.coerceIn(0, (resolvedItems.size - 1).coerceAtLeast(0))
+
+                if (resolvedSongs.isNotEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                        playbackManager.setPlaylistFromAuto(resolvedSongs, safeStartIndex)
+                    }
+                }
+
                 future.set(MediaSession.MediaItemsWithStartPosition(resolvedItems, safeStartIndex, startPositionMs))
             }
 
@@ -940,7 +1063,17 @@ class MusicPlaybackService : MediaLibraryService() {
                 val resolvedItems = mutableListOf<MediaItem>()
                 for (item in mediaItems) {
                     val song = songMap[item.mediaId]
-                    if (song != null) {
+                    if (item.mediaId == "show_play_screen") {
+                        val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                        val playlist = playbackManager.currentPlaylist.value
+                        if (playlist.isNotEmpty()) {
+                            resolvedItems.addAll(playlist.map { songToMediaItem(it) })
+                        }
+                    } else if (item.mediaId == "shuffle_all") {
+                        val allSongs = getAllSongsHelper()
+                        val shuffled = allSongs.shuffled()
+                        resolvedItems.addAll(shuffled.map { songToMediaItem(it) })
+                    } else if (song != null) {
                         resolvedItems.add(songToMediaItem(song))
                     } else if (item.mediaId.startsWith("album_")) {
                         val albumName = item.mediaId.removePrefix("album_")
@@ -972,7 +1105,7 @@ class MusicPlaybackService : MediaLibraryService() {
 }
 
 fun songToMediaItem(song: Song, showAlbumArt: Boolean = true): MediaItem {
-    val artUri = if (showAlbumArt) (song.artworkUri ?: song.contentUri) else null
+    val artUri = if (showAlbumArt) song.artworkUri else null
     val metadata = MediaMetadata.Builder()
         .setTitle(song.title)
         .setArtist(song.artist)

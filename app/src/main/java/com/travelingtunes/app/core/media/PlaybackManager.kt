@@ -58,9 +58,18 @@ class PlaybackManager(
     private var isPlayerInErrorState = false
 
     private fun getValidPlayer(): ExoPlayer {
-        if (!MusicPlaybackService.isPlayerValid(_player) || isPlayerInErrorState) {
+        val current = _player
+        if (!MusicPlaybackService.isPlayerValid(current) || isPlayerInErrorState) {
             android.util.Log.i("PlaybackManager", "getValidPlayer: current player is invalid or in error state. Rebinding...")
             rebindPlayer()
+        } else {
+            val shared = MusicPlaybackService.getOrCreatePlayer(context)
+            if (current !== shared) {
+                android.util.Log.i("PlaybackManager", "getValidPlayer: _player diverged from sharedPlayer. Syncing...")
+                try { current.removeListener(playerListener) } catch (_: Exception) {}
+                _player = shared
+                _player.addListener(playerListener)
+            }
         }
         return _player
     }
@@ -120,6 +129,8 @@ class PlaybackManager(
 
     private val _currentVolumeRatio = MutableStateFlow(0.5f)
     val currentVolumeRatio: StateFlow<Float> = _currentVolumeRatio.asStateFlow()
+    @Volatile
+    private var lastManualVolumeAdjustMs = 0L
 
     private val _repeatMode = MutableStateFlow(RepeatMode.OFF)
     val repeatMode: StateFlow<RepeatMode> = _repeatMode.asStateFlow()
@@ -157,7 +168,7 @@ class PlaybackManager(
                 Player.STATE_ENDED -> "STATE_ENDED"
                 else -> "UNKNOWN($playbackState)"
             }
-            android.util.Log.d("PlaybackManager", "onPlaybackStateChanged: $stateString, isPlaying=${try { _player.isPlaying } catch(_: Exception) { false }}")
+            android.util.Log.d("PlaybackManager", "onPlaybackStateChanged: $stateString, isPlaying=${try { player.isPlaying } catch(_: Exception) { false }}")
             if (playbackState == Player.STATE_READY) {
                 consecutiveErrorCount = 0
             }
@@ -166,21 +177,30 @@ class PlaybackManager(
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             _lastMediaItemTransitionReason.value = reason
             val playlist = _currentPlaylist.value
-            val currentIndex = try { _player.currentMediaItemIndex } catch (_: Exception) { -1 }
-            val song = if (currentIndex in playlist.indices) {
+            val p = player
+            val currentIndex = try { p.currentMediaItemIndex } catch (_: Exception) { -1 }
+            val mediaId = mediaItem?.mediaId?.toLongOrNull()
+
+            val song = if (currentIndex in playlist.indices && (mediaId == null || playlist[currentIndex].id == mediaId)) {
                 playlist[currentIndex]
-            } else {
-                val mediaId = mediaItem?.mediaId?.toLongOrNull()
+            } else if (mediaId != null) {
                 playlist.find { it.id == mediaId }
+            } else null
+
+            if (song != null) {
+                _currentSong.value = song
+            } else if (currentIndex in playlist.indices) {
+                _currentSong.value = playlist[currentIndex]
             }
-            _currentSong.value = song
-            _durationMs.value = try { _player.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
-            applyNormalizationModifier(song)
-            android.util.Log.d("PlaybackManager", "onMediaItemTransition: title='${song?.title}', reason=$reason, index=$currentIndex")
+
+            _durationMs.value = try { p.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
+            applyNormalizationModifier(_currentSong.value)
+            android.util.Log.d("PlaybackManager", "onMediaItemTransition: title='${_currentSong.value?.title}', reason=$reason, index=$currentIndex")
         }
 
         override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-            val currentItem = try { _player.currentMediaItem } catch (_: Exception) { null }
+            val p = player
+            val currentItem = try { p.currentMediaItem } catch (_: Exception) { null }
             android.util.Log.e(
                 "PlaybackManager",
                 "Player error encountered: errorCode=${error.errorCode} (${error.errorCodeName}), message=${error.message}, currentMediaId=${currentItem?.mediaId}, uri=${currentItem?.localConfiguration?.uri}",
@@ -199,17 +219,17 @@ class PlaybackManager(
                 _isPlaying.value = false
                 _actionHudText.value = "Audio engine busy"
                 isPlayerInErrorState = true
-                try { _player.stop() } catch (_: Exception) {}
+                try { p.stop() } catch (_: Exception) {}
                 consecutiveErrorCount = 0
                 return
             }
 
-            if (try { _player.hasNextMediaItem() } catch (_: Exception) { false }) {
+            if (try { p.hasNextMediaItem() } catch (_: Exception) { false }) {
                 android.util.Log.i("PlaybackManager", "Player error occurred, skipping to next media item")
                 try {
-                    _player.seekToNextMediaItem()
-                    _player.prepare()
-                    _player.play()
+                    p.seekToNextMediaItem()
+                    p.prepare()
+                    p.play()
                 } catch (e: Exception) {
                     isPlayerInErrorState = true
                 }
@@ -362,6 +382,9 @@ class PlaybackManager(
     }
 
     private fun updateVolumeRatio() {
+        if (System.currentTimeMillis() - lastManualVolumeAdjustMs < 1500L) {
+            return
+        }
         val curr = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         if (max > 0) {
@@ -463,6 +486,17 @@ class PlaybackManager(
         player.play()
 
         AlbumArtCache.instance.preCacheSurroundingSongs(context, activeQueue, playIndex)
+        persistCurrentPlaybackState()
+    }
+
+    fun setPlaylistFromAuto(songs: List<Song>, startIndex: Int) {
+        if (songs.isEmpty()) return
+        unshuffledPlaylist = songs
+        if (masterPlaylist.isEmpty()) {
+            masterPlaylist = songs
+        }
+        _currentPlaylist.value = songs
+        _currentSong.value = songs.getOrNull(startIndex)
         persistCurrentPlaybackState()
     }
 
@@ -705,16 +739,19 @@ class PlaybackManager(
     }
 
     fun increaseVolume() {
+        lastManualVolumeAdjustMs = 0L
         audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
         updateVolumeRatio()
     }
 
     fun decreaseVolume() {
+        lastManualVolumeAdjustMs = 0L
         audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
         updateVolumeRatio()
     }
 
     fun adjustVolumeByDelta(deltaY: Float, heightPx: Float = 1000f) {
+        lastManualVolumeAdjustMs = System.currentTimeMillis()
         val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         if (maxVol <= 0) return
 

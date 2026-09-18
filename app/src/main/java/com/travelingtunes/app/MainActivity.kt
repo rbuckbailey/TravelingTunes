@@ -179,7 +179,7 @@ class MainActivity : ComponentActivity() {
                 displaySettings.drivingModeEnabled,
                 displaySettings.autoEnableDrivingMode
             ) {
-                val isSpeedVolumeActive = displaySettings.autoSpeedVolumeEnabled && displaySettings.drivingModeEnabled
+                val isSpeedVolumeActive = displaySettings.autoSpeedVolumeEnabled
                 val shouldTrack = gpsVolumeEnabled || isSpeedVolumeActive || displaySettings.autoEnableDrivingMode || displaySettings.drivingModeEnabled
                 if (shouldTrack) {
                     speedVolumeManager.updateConfig(
@@ -188,7 +188,7 @@ class MainActivity : ComponentActivity() {
                         minSpeedThreshold = displaySettings.autoMinSpeedThreshold,
                         speedVolumeRatio = displaySettings.autoSpeedVolumeRatio,
                         speedUnit = displaySettings.autoSpeedUnit,
-                        drivingModeEnabled = displaySettings.drivingModeEnabled,
+                        drivingModeEnabled = displaySettings.drivingModeEnabled || isSpeedVolumeActive,
                         autoEnableDrivingMode = displaySettings.autoEnableDrivingMode,
                         onMotionDetected = {
                             lifecycleScope.launch {
@@ -523,7 +523,8 @@ fun TravelingTunesNavHost(
                 volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
                 onSelectNormalizationMode = { mode -> coroutineScope.launch { settingsDataStore.setNormalizationMode(mode) } },
                 onUpdateNormalizationSettings = { settings -> coroutineScope.launch { settingsDataStore.setNormalizationSettings(settings) } },
-                onAnalyzeVolumeLevels = { coroutineScope.launch { musicScanner.analyzeLibraryVolumeLevels() } },
+                onAnalyzeVolumeLevels = { forceRescan -> coroutineScope.launch { musicScanner.analyzeLibraryVolumeLevels(forceRescan = forceRescan) } },
+                onCancelAnalyzeVolumeLevels = { musicScanner.cancelVolumeAnalysis() },
                 onToggleAutoRescan = onToggleAutoRescan,
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = onRescanMusicFolder,

@@ -275,6 +275,7 @@ object AudioVolumeAnalyzer {
         context: Context,
         database: MusicDatabase,
         settings: NormalizationSettings = NormalizationSettings(),
+        forceRescan: Boolean = false,
         onProgress: (current: Int, total: Int, status: String) -> Unit = { _, _, _ -> }
     ): Pair<Int, Int> = BackgroundTaskGate.runAsBackgroundTask {
         val allSongs = database.getAllSongs()
@@ -286,7 +287,15 @@ object AudioVolumeAnalyzer {
         val total = allSongs.size
         for ((index, song) in allSongs.withIndex()) {
             BackgroundTaskGate.checkYieldAndPause()
-            onProgress(index + 1, total, "Analyzing volume: ${song.title}")
+
+            val isAlreadyAnalyzed = song.avgVolume > 0.0001f
+            if (isAlreadyAnalyzed && !forceRescan) {
+                analyzedCount++
+                onProgress(index + 1, total, "Skipping already analyzed (${index + 1}/$total): ${song.title}")
+                continue
+            }
+
+            onProgress(index + 1, total, "Analyzing volume (${index + 1}/$total): ${song.title}")
             try {
                 val result = analyzeSong(context, song, settings)
                 database.updateSongVolumeAnalysis(

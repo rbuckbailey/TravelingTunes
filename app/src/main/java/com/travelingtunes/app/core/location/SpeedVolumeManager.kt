@@ -6,16 +6,19 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.database.ContentObserver
+import android.location.Location
 import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 class SpeedVolumeManager(private val context: Context) {
@@ -42,8 +45,12 @@ class SpeedVolumeManager(private val context: Context) {
     var currentSpeedInUnit: Float = 0f
         private set
 
+    private var smoothedSpeedInUnit: Float = -1f
+    private var lastLocation: Location? = null
+    private var lastLocationUpdateTimeMs: Long = 0L
+
     val isSpeedVolumeActive: Boolean
-        get() = speedVolumeEnabled && drivingModeEnabled
+        get() = speedVolumeEnabled
 
     private var isAdjustingProgrammatically = false
     private var lastStreamVolume: Int = -1
@@ -73,16 +80,52 @@ class SpeedVolumeManager(private val context: Context) {
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             val location = result.lastLocation ?: return
-            val speedMps = if (location.hasSpeed()) location.speed else 0f
-            val speedInUnit = if (speedUnit.equals("KPH", ignoreCase = true)) speedMps * 3.6f else speedMps * 2.23694f
 
-            if (autoEnableDrivingMode && !drivingModeEnabled && speedInUnit >= 5.0f) {
-                drivingModeEnabled = true
-                onMotionDetected?.invoke()
+            // Reject coarse/erratic updates (e.g. wild cell jumps entering/exiting tunnels)
+            if (location.hasAccuracy() && location.accuracy > 100f) {
+                return
             }
 
-            if (isSpeedVolumeActive) {
-                adjustVolumeForSpeed(speedInUnit)
+            var speedMps = -1f
+            if (location.hasSpeed() && location.speed >= 0f) {
+                speedMps = location.speed
+            } else {
+                val prevLoc = lastLocation
+                if (prevLoc != null) {
+                    val dtSec = (location.time - prevLoc.time) / 1000f
+                    if (dtSec in 0.3f..15.0f) {
+                        val distMeters = prevLoc.distanceTo(location)
+                        val calcSpeed = distMeters / dtSec
+                        if (calcSpeed in 0f..100f) { // max ~224 mph
+                            speedMps = calcSpeed
+                        }
+                    }
+                }
+            }
+
+            lastLocation = location
+
+            if (speedMps >= 0f) {
+                val rawSpeedInUnit = if (speedUnit.equals("KPH", ignoreCase = true)) speedMps * 3.6f else speedMps * 2.23694f
+
+                // Exponential Moving Average (EMA) smoothing to eliminate speed jitter
+                if (smoothedSpeedInUnit < 0f) {
+                    smoothedSpeedInUnit = rawSpeedInUnit
+                } else {
+                    smoothedSpeedInUnit = (0.35f * rawSpeedInUnit) + (0.65f * smoothedSpeedInUnit)
+                }
+
+                lastLocationUpdateTimeMs = System.currentTimeMillis()
+                currentSpeedInUnit = smoothedSpeedInUnit
+
+                if (autoEnableDrivingMode && !drivingModeEnabled && smoothedSpeedInUnit >= 5.0f) {
+                    drivingModeEnabled = true
+                    onMotionDetected?.invoke()
+                }
+
+                if (isSpeedVolumeActive) {
+                    adjustVolumeForSpeed(smoothedSpeedInUnit)
+                }
             }
         }
     }
@@ -125,6 +168,9 @@ class SpeedVolumeManager(private val context: Context) {
         if (isTracking) return
         initialVolumeIndex = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         lastStreamVolume = initialVolumeIndex
+        smoothedSpeedInUnit = -1f
+        lastLocation = null
+        lastLocationUpdateTimeMs = System.currentTimeMillis()
 
         try {
             val filter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
@@ -143,8 +189,10 @@ class SpeedVolumeManager(private val context: Context) {
             )
         } catch (ignored: Exception) {}
 
-        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_BALANCED_POWER_ACCURACY, 4000L)
-            .setMinUpdateIntervalMillis(2000L)
+        // HIGH_ACCURACY priority with sensor fusion for robust speed tracking in automotive contexts & tunnels
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+            .setMinUpdateIntervalMillis(500L)
+            .setGranularity(Granularity.GRANULARITY_FINE)
             .build()
 
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
@@ -169,15 +217,28 @@ class SpeedVolumeManager(private val context: Context) {
         currentSpeedInUnit = speedInUnit
         if (!isSpeedVolumeActive) return
 
+        val now = System.currentTimeMillis()
+        val timeSinceLastFixMs = now - lastLocationUpdateTimeMs
+
+        // Tunnel Dead Reckoning Support:
+        // When entering a tunnel (GPS lost for up to 20s), hold the last known driving speed & volume
+        val effectiveSpeed = if (timeSinceLastFixMs > 20_000L && speedInUnit > 0f) {
+            // After 20 seconds of no location fixes, gradually decay speed toward 0
+            val excessSec = ((timeSinceLastFixMs - 20_000L) / 1000f).coerceAtLeast(0f)
+            (speedInUnit * 0.9.pow(excessSec.toDouble()).toFloat()).coerceAtLeast(0f)
+        } else {
+            speedInUnit
+        }
+
         val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         if (maxVol <= 0) return
 
         val baseVolIndex = ((defaultVolumePercent / 100f) * maxVol).roundToInt().coerceIn(0, maxVol)
 
-        val targetVol = if (speedInUnit <= minSpeedThreshold) {
+        val targetVol = if (effectiveSpeed <= minSpeedThreshold) {
             baseVolIndex
         } else {
-            val excessSpeed = speedInUnit - minSpeedThreshold
+            val excessSpeed = effectiveSpeed - minSpeedThreshold
             val boostIndex = ((excessSpeed / 10f) * speedVolumeRatio).toInt()
             (baseVolIndex + boostIndex).coerceIn(0, maxVol)
         }
@@ -200,7 +261,8 @@ class SpeedVolumeManager(private val context: Context) {
         val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         if (maxVol <= 0) return
 
-        val excessSpeed = (currentSpeedInUnit - minSpeedThreshold).coerceAtLeast(0f)
+        val speed = if (smoothedSpeedInUnit >= 0f) smoothedSpeedInUnit else currentSpeedInUnit
+        val excessSpeed = (speed - minSpeedThreshold).coerceAtLeast(0f)
         val boostIndex = ((excessSpeed / 10f) * speedVolumeRatio).toInt()
 
         val newBaseVolIndex = (newVolumeIndex - boostIndex).coerceIn(0, maxVol)
@@ -212,4 +274,3 @@ class SpeedVolumeManager(private val context: Context) {
         }
     }
 }
-

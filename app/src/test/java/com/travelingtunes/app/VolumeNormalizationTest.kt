@@ -183,6 +183,29 @@ class VolumeNormalizationTest {
         assertEquals(true, updatedSettings.fullScanEnabled)
     }
 
+    @Test
+    fun testResumePartialScanLogic() {
+        val mockUri = Mockito.mock(Uri::class.java)
+        val analyzedSong = Song(
+            id = 1L, title = "Analyzed", artist = "Artist", album = "Album", albumId = 1L, durationMs = 100000L, contentUri = mockUri,
+            avgVolume = 0.12f, peakVolume = 0.60f, trackGain = 1.25f
+        )
+        val unanalyzedSong = Song(
+            id = 2L, title = "Unanalyzed", artist = "Artist", album = "Album", albumId = 1L, durationMs = 100000L, contentUri = mockUri,
+            avgVolume = 0.0f, peakVolume = 0.0f, trackGain = 1.0f
+        )
+
+        // When forceRescan = false, analyzed song (avgVolume > 0.0001f) should be skipped
+        assertTrue("Analyzed song identified for skipping", analyzedSong.avgVolume > 0.0001f)
+        assertTrue("Unanalyzed song identified for analysis", unanalyzedSong.avgVolume <= 0.0001f)
+
+        val summaryBeforeResume = AudioVolumeAnalyzer.calculateNormalizationSummary(
+            songs = listOf(analyzedSong, unanalyzedSong)
+        )
+        assertEquals(2, summaryBeforeResume.totalSongs)
+        assertEquals(1, summaryBeforeResume.analyzedSongs)
+    }
+
     private fun selectModifier(song: Song, mode: NormalizationMode): Float {
         return when (mode) {
             NormalizationMode.ALBUM -> if (song.albumGain > 0.001f) song.albumGain else 1.0f

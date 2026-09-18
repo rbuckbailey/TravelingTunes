@@ -389,13 +389,13 @@ object AlbumArtColorExtractor {
             return candInt
         }
 
-        // Pass 2: Relaxed pass (bg contrast >= 2.5, LAB dist to primary >= 20.0, hue diff >= 20 degrees if saturated)
+        // Pass 2: Pass requiring bg contrast >= 3.0, LAB dist to primary >= 20.0, hue diff >= 20 degrees if saturated
         for (swatch in candidates) {
             val candInt = swatch.rgb or 0xFF000000.toInt()
             if (candInt == primaryTextInt) continue
 
             val contrastToBg = calculateContrastSafe(candInt, bgInt)
-            if (contrastToBg < 2.5) continue
+            if (contrastToBg < 3.0) continue
 
             val distToPrimary = colorDistance(candInt, primaryTextInt)
             if (distToPrimary < 20.0) continue
@@ -411,8 +411,8 @@ object AlbumArtColorExtractor {
             return candInt
         }
 
-        // Pass 3: Maximize score among valid candidates with bg contrast >= 2.5
-        val validCandidates = candidates.map { it.rgb or 0xFF000000.toInt() }.filter { it != primaryTextInt && calculateContrastSafe(it, bgInt) >= 2.5 }
+        // Pass 3: Maximize score among valid candidates with bg contrast >= 3.0
+        val validCandidates = candidates.map { it.rgb or 0xFF000000.toInt() }.filter { it != primaryTextInt && calculateContrastSafe(it, bgInt) >= 3.0 }
         val bestCandidate = validCandidates.maxByOrNull { candInt ->
             val candHsl = FloatArray(3)
             ColorUtils.colorToHSL(candInt, candHsl)
@@ -451,10 +451,10 @@ object AlbumArtColorExtractor {
             }
         }
         val synthesized = ColorUtils.HSLToColor(primaryHsl) or 0xFF000000.toInt()
-        if (calculateContrastSafe(synthesized, bgInt) >= 2.8) {
+        if (calculateContrastSafe(synthesized, bgInt) >= 3.0) {
             return synthesized
         }
-        return ColorUtils.blendARGB(primaryTextInt, bgInt, 0.35f) or 0xFF000000.toInt()
+        return improveContrastHsl(synthesized, bgInt, targetContrast = 3.0)
     }
 
     private fun calculateContrastSafe(foreground: Int, background: Int): Double {

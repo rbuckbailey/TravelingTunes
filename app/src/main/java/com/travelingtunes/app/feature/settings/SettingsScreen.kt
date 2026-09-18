@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Folder
@@ -229,7 +230,8 @@ fun SettingsScreen(
     volumeAnalysisProgressTotal: Int = 0,
     onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
     onUpdateNormalizationSettings: (NormalizationSettings) -> Unit = {},
-    onAnalyzeVolumeLevels: () -> Unit = {},
+    onAnalyzeVolumeLevels: (forceRescan: Boolean) -> Unit = {},
+    onCancelAnalyzeVolumeLevels: () -> Unit = {},
     onPickMusicFolder: () -> Unit = {},
     onRescanMusicFolder: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
@@ -614,6 +616,7 @@ fun SettingsScreen(
                                     }
                                 },
                                 onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
+                                onCancelAnalyzeVolumeLevels = onCancelAnalyzeVolumeLevels,
                                 onToggleAutoRescan = onToggleAutoRescan,
                                 availableFonts = availableFonts,
                                 onPickMusicFolder = onPickMusicFolder,
@@ -858,6 +861,7 @@ fun SettingsScreen(
                             }
                         },
                         onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
+                        onCancelAnalyzeVolumeLevels = onCancelAnalyzeVolumeLevels,
                         onToggleAutoRescan = onToggleAutoRescan,
                         availableFonts = availableFonts,
                         onPickMusicFolder = onPickMusicFolder,
@@ -1034,7 +1038,8 @@ private fun SubmenuContent(
     onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
     onUpdateNormalizationSettings: (NormalizationSettings) -> Unit = {},
     onOpenNormalizationReport: () -> Unit = {},
-    onAnalyzeVolumeLevels: () -> Unit = {},
+    onAnalyzeVolumeLevels: (forceRescan: Boolean) -> Unit = {},
+    onCancelAnalyzeVolumeLevels: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
     availableFonts: List<FontOption>,
     onPickMusicFolder: () -> Unit,
@@ -1110,6 +1115,7 @@ private fun SubmenuContent(
                     onUpdateNormalizationSettings = onUpdateNormalizationSettings,
                     onOpenNormalizationReport = onOpenNormalizationReport,
                     onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
+                    onCancelAnalyzeVolumeLevels = onCancelAnalyzeVolumeLevels,
                     onToggleAutoRescan = onToggleAutoRescan,
                     libraryStats = libraryStats,
                     onPickMusicFolder = onPickMusicFolder,
@@ -1210,7 +1216,8 @@ private fun LibrarySettingsContent(
     onSelectNormalizationMode: (NormalizationMode) -> Unit = {},
     onUpdateNormalizationSettings: (NormalizationSettings) -> Unit = {},
     onOpenNormalizationReport: () -> Unit = {},
-    onAnalyzeVolumeLevels: () -> Unit = {},
+    onAnalyzeVolumeLevels: (forceRescan: Boolean) -> Unit = {},
+    onCancelAnalyzeVolumeLevels: () -> Unit = {},
     onToggleAutoRescan: (Boolean) -> Unit = {},
     onPickMusicFolder: () -> Unit,
     onRescanMusicFolder: () -> Unit,
@@ -1624,6 +1631,9 @@ private fun LibrarySettingsContent(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                val isPartialScan = normalizationSummary.analyzedSongs > 0 && normalizationSummary.analyzedSongs < normalizationSummary.totalSongs
+                val isAllAnalyzed = normalizationSummary.totalSongs > 0 && normalizationSummary.analyzedSongs == normalizationSummary.totalSongs
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1632,14 +1642,27 @@ private fun LibrarySettingsContent(
                     TextButton(onClick = onOpenNormalizationReport) {
                         Text("View Report", fontWeight = FontWeight.Bold)
                     }
-                    TextButton(
-                        onClick = onAnalyzeVolumeLevels,
-                        enabled = !isAnalyzingVolume
-                    ) {
-                        Text(
-                            text = if (isAnalyzingVolume) "Analyzing..." else "Analyze Volume",
-                            fontWeight = FontWeight.Bold
-                        )
+
+                    if (isAnalyzingVolume) {
+                        TextButton(onClick = onCancelAnalyzeVolumeLevels) {
+                            Text("Pause Scan", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        }
+                    } else {
+                        val buttonText = when {
+                            isPartialScan -> "Resume Volume Scan"
+                            isAllAnalyzed -> "Re-analyze Volume"
+                            else -> "Analyze Volume"
+                        }
+                        val forceRescan = isAllAnalyzed
+
+                        TextButton(
+                            onClick = { onAnalyzeVolumeLevels(forceRescan) }
+                        ) {
+                            Text(
+                                text = buttonText,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -3095,155 +3118,152 @@ private fun AndroidAutoSettingsContent(
                     }
                     Switch(
                         checked = displaySettings.autoSpeedVolumeEnabled,
-                        enabled = displaySettings.drivingModeEnabled,
                         onCheckedChange = { checked ->
                             onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeEnabled = checked))
                         }
                     )
                 }
 
-                if (displaySettings.drivingModeEnabled && displaySettings.autoSpeedVolumeEnabled) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                    // Speed Unit Selector
+                // Speed Unit Selector
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Speed Unit",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Choose units for speed measurements",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = displaySettings.autoSpeedUnit.equals("MPH", ignoreCase = true),
+                            onClick = {
+                                onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "MPH"))
+                            },
+                            label = { Text("MPH") }
+                        )
+                        FilterChip(
+                            selected = displaySettings.autoSpeedUnit.equals("KPH", ignoreCase = true),
+                            onClick = {
+                                onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "KPH"))
+                            },
+                            label = { Text("KPH") }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Configurable Default Volume
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Speed Unit",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Choose units for speed measurements",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = displaySettings.autoSpeedUnit.equals("MPH", ignoreCase = true),
-                                onClick = {
-                                    onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "MPH"))
-                                },
-                                label = { Text("MPH") }
-                            )
-                            FilterChip(
-                                selected = displaySettings.autoSpeedUnit.equals("KPH", ignoreCase = true),
-                                onClick = {
-                                    onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "KPH"))
-                                },
-                                label = { Text("KPH") }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Configurable Default Volume
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Configurable Default Volume",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "${displaySettings.autoDefaultVolume}%",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
                         Text(
-                            text = "Baseline volume level before speed-based increase",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Configurable Default Volume",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
                         )
-                        Slider(
-                            value = displaySettings.autoDefaultVolume.toFloat(),
-                            onValueChange = { value ->
-                                onUpdateDisplaySettings(displaySettings.copy(autoDefaultVolume = value.roundToInt()))
-                            },
-                            valueRange = 0f..100f,
-                            steps = 99
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Minimum Speed Threshold
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Minimum Speed Threshold",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "${displaySettings.autoMinSpeedThreshold.roundToInt()} ${displaySettings.autoSpeedUnit}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
                         Text(
-                            text = "Speed at which volume auto-increase begins",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Slider(
-                            value = displaySettings.autoMinSpeedThreshold,
-                            onValueChange = { value ->
-                                onUpdateDisplaySettings(displaySettings.copy(autoMinSpeedThreshold = value))
-                            },
-                            valueRange = 5f..60f,
-                            steps = 54
+                            text = "${displaySettings.autoDefaultVolume}%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
+                    Text(
+                        text = "Baseline volume level before speed-based increase",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Slider(
+                        value = displaySettings.autoDefaultVolume.toFloat(),
+                        onValueChange = { value ->
+                            onUpdateDisplaySettings(displaySettings.copy(autoDefaultVolume = value.roundToInt()))
+                        },
+                        valueRange = 0f..100f,
+                        steps = 99
+                    )
+                }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                    // Rate-of-Increase Ratio
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Volume Increase Rate",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "${"%.1f".format(displaySettings.autoSpeedVolumeRatio)} vol step / 10 ${displaySettings.autoSpeedUnit}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                // Minimum Speed Threshold
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
-                            text = "Rate of volume increase per 10 ${displaySettings.autoSpeedUnit} above threshold",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Minimum Speed Threshold",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
                         )
-                        Slider(
-                            value = displaySettings.autoSpeedVolumeRatio,
-                            onValueChange = { value ->
-                                onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeRatio = value))
-                            },
-                            valueRange = 0.1f..5.0f,
-                            steps = 48
+                        Text(
+                            text = "${displaySettings.autoMinSpeedThreshold.roundToInt()} ${displaySettings.autoSpeedUnit}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
+                    Text(
+                        text = "Speed at which volume auto-increase begins",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Slider(
+                        value = displaySettings.autoMinSpeedThreshold,
+                        onValueChange = { value ->
+                            onUpdateDisplaySettings(displaySettings.copy(autoMinSpeedThreshold = value))
+                        },
+                        valueRange = 5f..60f,
+                        steps = 54
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Rate-of-Increase Ratio
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Volume Increase Rate",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "${"%.1f".format(displaySettings.autoSpeedVolumeRatio)} vol step / 10 ${displaySettings.autoSpeedUnit}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = "Rate of volume increase per 10 ${displaySettings.autoSpeedUnit} above threshold",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Slider(
+                        value = displaySettings.autoSpeedVolumeRatio,
+                        onValueChange = { value ->
+                            onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeRatio = value))
+                        },
+                        valueRange = 0.1f..5.0f,
+                        steps = 48
+                    )
                 }
             }
         }
@@ -3265,6 +3285,10 @@ private fun ProfilesSettingsContent(
     var renamingProfileId by remember { mutableStateOf<String?>(null) }
     var renamingName by remember { mutableStateOf("") }
 
+    var copyingProfile by remember { mutableStateOf<Profile?>(null) }
+    var copyName by remember { mutableStateOf("") }
+    var copyLinkForInheritance by remember { mutableStateOf(true) }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // Active Profile Selector Card
         Card(
@@ -3280,7 +3304,7 @@ private fun ProfilesSettingsContent(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = if (activeProfile.id == Profile.DEFAULT_ID) "Current profile: ${activeProfile.name} (Default baseline settings)" else "Current profile: ${activeProfile.name} (${activeProfile.overrides.size} overrides relative to Default)",
+                    text = if (activeProfile.id == Profile.DEFAULT_ID) "Current profile: ${activeProfile.name} (Default baseline settings)" else "Current profile: ${activeProfile.name} (${activeProfile.overrides.size} overrides relative to parent)",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -3334,6 +3358,11 @@ private fun ProfilesSettingsContent(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 profiles.forEach { profile ->
+                    val currentParent = profiles.find { it.id == (profile.parentId ?: Profile.DEFAULT_ID) } ?: Profile.DEFAULT
+                    val validParents = profiles.filter { candidate ->
+                        candidate.id != profile.id && !profile.getAncestorChain(profiles).any { it.id == candidate.id }
+                    }
+
                     ListItem(
                         headlineContent = {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -3347,13 +3376,40 @@ private fun ProfilesSettingsContent(
                             }
                         },
                         supportingContent = {
-                            Text(
-                                if (profile.id == Profile.DEFAULT_ID) "Default baseline settings for TravelingTunes"
-                                else "${profile.overrides.size} setting overrides relative to Default"
-                            )
+                            Column {
+                                Text(
+                                    if (profile.id == Profile.DEFAULT_ID) "Default baseline settings for TravelingTunes"
+                                    else "Inherits from: ${currentParent.name} • ${profile.overrides.size} local overrides"
+                                )
+                                if (profile.id != Profile.DEFAULT_ID && validParents.size > 1) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text("Inherit from:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        validParents.forEach { parentCandidate ->
+                                            FilterChip(
+                                                selected = currentParent.id == parentCandidate.id,
+                                                onClick = {
+                                                    coroutineScope.launch {
+                                                        settingsDataStore.setProfileParent(profile.id, parentCandidate.id)
+                                                    }
+                                                },
+                                                label = { Text(parentCandidate.name, fontSize = 11.sp) },
+                                                modifier = Modifier.height(28.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = {
+                                    copyingProfile = profile
+                                    copyName = "${profile.name} Copy"
+                                    copyLinkForInheritance = true
+                                }) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy Profile")
+                                }
                                 if (!profile.isBuiltIn) {
                                     IconButton(onClick = {
                                         renamingProfileId = profile.id
@@ -3555,6 +3611,66 @@ private fun ProfilesSettingsContent(
             },
             dismissButton = {
                 TextButton(onClick = { renamingProfileId = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Dialog: Copy Profile
+    copyingProfile?.let { srcProf ->
+        AlertDialog(
+            onDismissRequest = { copyingProfile = null },
+            title = { Text("Copy Profile: ${srcProf.name}") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Enter name for copied profile:")
+                    androidx.compose.material3.OutlinedTextField(
+                        value = copyName,
+                        onValueChange = { copyName = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { copyLinkForInheritance = !copyLinkForInheritance }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Switch(
+                            checked = copyLinkForInheritance,
+                            onCheckedChange = { copyLinkForInheritance = it }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Link for Inheritance from ${srcProf.name}", fontWeight = FontWeight.Medium)
+                            Text(
+                                if (copyLinkForInheritance) "Inherits settings from ${srcProf.name}. Changes in ${srcProf.name} will automatically flow to this profile."
+                                else "Creates an independent snapshot copy with ${srcProf.name}'s current values.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (copyName.isNotBlank()) {
+                            coroutineScope.launch {
+                                settingsDataStore.copyProfile(srcProf.id, copyName.trim(), copyLinkForInheritance)
+                            }
+                        }
+                        copyingProfile = null
+                    }
+                ) {
+                    Text("Copy")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { copyingProfile = null }) {
                     Text("Cancel")
                 }
             }

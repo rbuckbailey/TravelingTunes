@@ -276,6 +276,31 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testAdjustContrastForBackgroundMatchedThemeLowContrastFallbackToWhiteOrBlack() {
+        val lowContrastText = androidx.compose.ui.graphics.Color(0xFF222222)
+        val darkBg = androidx.compose.ui.graphics.Color(0xFF121212)
+        // Swatches that all have low contrast (< 4.5) against darkBg
+        val lowContrastSwatches = listOf(
+            android.graphics.Color.rgb(0x20, 0x20, 0x20),
+            android.graphics.Color.rgb(0x30, 0x30, 0x30)
+        )
+
+        val adjusted = adjustContrastForBackground(
+            textColor = lowContrastText,
+            backgroundColor = darkBg,
+            matchedSwatches = lowContrastSwatches,
+            isMatchedTheme = true
+        )
+
+        val contrastRatio = com.travelingtunes.app.core.theme.calculateWcagContrast(
+            adjusted.toArgb(),
+            darkBg.toArgb()
+        )
+        assertTrue("Contrast ratio should be >= 4.5, was $contrastRatio", contrastRatio >= 4.5)
+        assertTrue("Fallback color should be White or Black", adjusted == androidx.compose.ui.graphics.Color.White || adjusted == androidx.compose.ui.graphics.Color.Black)
+    }
+
+    @Test
     fun testAdjustSecondaryContrastForBackgroundDistinctHueAndContrast() {
         val darkBg = androidx.compose.ui.graphics.Color(0xFF000020)
         val primaryYellowText = androidx.compose.ui.graphics.Color(0xFFFFD700)
@@ -1258,5 +1283,31 @@ class GestureAndSettingsTest {
         assertTrue(json.contains("\"activeProfileId\": \"traveling\""))
         assertTrue(json.contains("\"profiles\":"))
         assertTrue(json.contains("\"rawPreferences\":"))
+    }
+
+    @Test
+    fun testProfileCopyAndInheritanceLinking() {
+        val parent = Profile(
+            id = "parent_1",
+            name = "Commute",
+            overrides = mapOf("gpsVolume" to "true", "artistFontSize" to "45.0")
+        )
+        val child = Profile(
+            id = "child_1",
+            name = "Commute Night",
+            parentId = "parent_1",
+            overrides = mapOf("artistFontSize" to "35.0")
+        )
+        val profiles = listOf(Profile.DEFAULT, Profile.TRAVELING, parent, child)
+
+        assertEquals("35.0", child.getEffectiveOverride("artistFontSize", profiles))
+        assertEquals("true", child.getEffectiveOverride("gpsVolume", profiles))
+        assertEquals(null, child.getEffectiveOverride("titleShrinkLong", profiles))
+
+        val ancestors = child.getAncestorChain(profiles)
+        assertEquals(3, ancestors.size)
+        assertEquals("child_1", ancestors[0].id)
+        assertEquals("parent_1", ancestors[1].id)
+        assertEquals("default", ancestors[2].id)
     }
 }

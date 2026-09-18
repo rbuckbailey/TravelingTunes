@@ -1,3 +1,7 @@
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -40,6 +44,67 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            if (output != null) {
+                output.outputFileName = "traveling-tunes-${output.outputFileName}"
+            }
+        }
+
+        val variantNameCap = variant.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        val copyApkTask = tasks.register("copyApkFor$variantNameCap") {
+            dependsOn(variant.packageApplicationProvider)
+            outputs.upToDateWhen { false }
+            doLast {
+                val destDir = file("/Users/buck/Library/CloudStorage/GoogleDrive-r.buck.bailey@gmail.com/My Drive/APK")
+                destDir.mkdirs()
+
+                val apkFiles = mutableListOf<File>()
+                variant.outputs.forEach { output ->
+                    val file = output.outputFile
+                    if (file != null && file.exists()) {
+                        apkFiles.add(file)
+                    }
+                }
+
+                val apkDir = File(project.rootDir, "app/build/outputs/apk/${variant.name}")
+                if (apkDir.exists()) {
+                    apkDir.walkTopDown().filter { it.isFile && it.extension == "apk" }.forEach { file ->
+                        if (!apkFiles.contains(file)) {
+                            apkFiles.add(file)
+                        }
+                    }
+                }
+
+                logger.quiet("DEBUG DEST_DIR=${destDir.canonicalPath}")
+                logger.quiet("DEBUG APK_FILES=${apkFiles.map { it.absolutePath }}")
+
+                apkFiles.forEach { file ->
+                    val destFile = File(destDir, file.name)
+                    try {
+                        if (destFile.exists()) {
+                            destFile.delete()
+                        }
+                        Files.copy(
+                            file.toPath(),
+                            destFile.toPath(),
+                            StandardCopyOption.REPLACE_EXISTING
+                        )
+                        logger.quiet("COPIED APK: ${file.name} -> ${destFile.absolutePath}")
+                    } catch (e: Exception) {
+                        logger.error("Failed to copy APK ${file.name} to ${destFile.absolutePath}: ${e.message}")
+                    }
+                }
+            }
+        }
+
+        variant.assembleProvider.configure {
+            dependsOn(copyApkTask)
+        }
     }
 }
 

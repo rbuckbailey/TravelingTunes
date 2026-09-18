@@ -233,9 +233,9 @@ fun PlayerScreen(
     val durationMs = durationMsState.value
     val currentVolumeRatio = currentVolumeRatioState.value
 
-    val currentPositionMsProvider = remember { { playbackManager.currentPositionMs.value } }
-    val durationMsProvider = remember { { playbackManager.durationMs.value } }
-    val currentVolumeRatioProvider = remember { { playbackManager.currentVolumeRatio.value } }
+    val currentPositionMsProvider = remember(currentPositionMs) { { currentPositionMs } }
+    val durationMsProvider = remember(durationMs) { { durationMs } }
+    val currentVolumeRatioProvider = remember(currentVolumeRatio) { { currentVolumeRatio } }
 
     val isPlaying by playbackManager.isPlaying.collectAsState()
     val repeatMode by playbackManager.repeatMode.collectAsState()
@@ -1135,6 +1135,7 @@ fun PlayerScreen(
         Box(modifier = hudBoundsModifier) {
             // 3. Geometric Volume HUD Overlay (Bar / Line / Edge)
             VolumeHudOverlay(
+                volumeRatio = currentVolumeRatio,
                 volumeRatioProvider = currentVolumeRatioProvider,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
@@ -1143,6 +1144,8 @@ fun PlayerScreen(
 
             // 4. Geometric Progress / Playback Bar Overlay (Edge Bar / Line)
             ProgressHudOverlay(
+                currentPositionMs = currentPositionMs,
+                durationMs = durationMs,
                 currentPositionMsProvider = currentPositionMsProvider,
                 durationMsProvider = durationMsProvider,
                 displaySettings = displaySettings,
@@ -1254,10 +1257,13 @@ fun PlayerScreen(
                         effectiveSettingsDataStore.setNormalizationMode(mode)
                     }
                 },
-                onAnalyzeVolumeLevels = {
+                onAnalyzeVolumeLevels = { force ->
                     coroutineScope.launch {
-                        musicScanner?.analyzeLibraryVolumeLevels()
+                        musicScanner?.analyzeLibraryVolumeLevels(forceRescan = force)
                     }
+                },
+                onCancelAnalyzeVolumeLevels = {
+                    musicScanner?.cancelVolumeAnalysis()
                 },
                 onToggleAutoRescan = { enabled ->
                     coroutineScope.launch {
@@ -2230,78 +2236,127 @@ fun VolumeHudOverlay(
             Modifier.border(1.dp, Color.White.copy(alpha = 0.45f), shape)
         } else Modifier
 
-        when (displaySettings.hudType) {
-            HudTypeOption.EDGE_HUD -> {
-                Box(modifier = modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .width(lineThicknessDp)
-                            .fillMaxHeight()
-                            .align(Alignment.BottomEnd)
-                            .graphicsLayer {
-                                val ratio = (volumeRatioProvider?.invoke() ?: volumeRatio).coerceIn(0.01f, 1f)
-                                scaleY = ratio
-                                transformOrigin = TransformOrigin(0.5f, 1.0f)
-                            }
-                            .clip(shape)
-                            .background(
-                                if (isMondrian) Color.Black
-                                else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
-                                else primaryColor.copy(alpha = 0.50f)
-                            )
-                            .then(glassModifier)
-                    )
-                }
-            }
-            HudTypeOption.NUMBER -> {
-                Box(modifier = modifier.fillMaxSize()) {
-                    val lineThicknessPx = with(LocalDensity.current) { lineThicknessDp.toPx() }
-                    Box(
-                        modifier = Modifier
-                            .then(if (themeSettings.isRounded) Modifier.padding(horizontal = 12.dp) else Modifier)
-                            .fillMaxWidth()
-                            .height(lineThicknessDp)
-                            .graphicsLayer {
-                                val ratio = (volumeRatioProvider?.invoke() ?: volumeRatio).coerceIn(0.01f, 1f)
-                                translationY = (size.height - lineThicknessPx) * (1f - ratio)
-                            }
-                            .clip(shape)
-                            .background(
-                                if (isMondrian) Color.Black
-                                else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
-                                else primaryColor.copy(alpha = 0.70f)
-                            )
-                            .then(glassModifier)
-                    )
-                }
-            }
-            HudTypeOption.BAR_VOLUME -> {
-                val barShape = if (themeSettings.isRounded) RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) else RectangleShape
-                val barGlassModifier = if (themeSettings.isGlass) {
-                    Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), barShape)
-                } else Modifier
-                val barPadding = if (themeSettings.isRounded) Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp) else Modifier
+        Box(modifier = modifier.fillMaxSize()) {
+            val lineThicknessPx = with(LocalDensity.current) { lineThicknessDp.toPx() }
+            val currentRatio = (volumeRatioProvider?.invoke() ?: volumeRatio).coerceIn(0.01f, 1f)
 
-                Box(
-                    modifier = modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight()
-                        .then(barPadding)
-                        .graphicsLayer {
-                            val ratio = (volumeRatioProvider?.invoke() ?: volumeRatio).coerceIn(0.01f, 1f)
-                            scaleY = ratio
-                            transformOrigin = TransformOrigin(0.5f, 1.0f)
-                        }
-                        .clip(barShape)
-                        .background(
-                            if (isMondrian) Color.Black
-                            else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.25f)
-                            else primaryColor.copy(alpha = 0.20f)
+            when (displaySettings.hudType) {
+                HudTypeOption.EDGE_HUD -> {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        // Track background line
+                        Box(
+                            modifier = Modifier
+                                .width(lineThicknessDp)
+                                .fillMaxHeight()
+                                .align(Alignment.BottomEnd)
+                                .clip(shape)
+                                .background(primaryColor.copy(alpha = 0.12f))
                         )
-                        .then(barGlassModifier)
-                )
+                        // Active volume edge bar
+                        Box(
+                            modifier = Modifier
+                                .width(lineThicknessDp)
+                                .fillMaxHeight()
+                                .align(Alignment.BottomEnd)
+                                .graphicsLayer {
+                                    scaleY = currentRatio
+                                    transformOrigin = TransformOrigin(0.5f, 1.0f)
+                                }
+                                .clip(shape)
+                                .background(
+                                    if (isMondrian) Color.Black
+                                    else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.50f)
+                                    else primaryColor.copy(alpha = 0.75f)
+                                )
+                                .then(glassModifier)
+                        )
+                    }
+                }
+                HudTypeOption.NUMBER -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(if (themeSettings.isRounded) Modifier.padding(horizontal = 12.dp) else Modifier)
+                            .graphicsLayer {
+                                translationY = (size.height - lineThicknessPx) * (1f - currentRatio)
+                            }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(lineThicknessDp)
+                                .clip(shape)
+                                .background(
+                                    if (isMondrian) Color.Black
+                                    else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.60f)
+                                    else primaryColor.copy(alpha = 0.85f)
+                                )
+                                .then(glassModifier)
+                        )
+                    }
+                }
+                HudTypeOption.BAR_VOLUME -> {
+                    val barShape = if (themeSettings.isRounded) RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) else RectangleShape
+                    val barGlassModifier = if (themeSettings.isGlass) {
+                        Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), barShape)
+                    } else Modifier
+                    val barPadding = if (themeSettings.isRounded) Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp) else Modifier
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .then(barPadding)
+                    ) {
+                        // Track background container
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(barShape)
+                                .background(
+                                    if (isMondrian) Color.Black.copy(alpha = 0.08f)
+                                    else primaryColor.copy(alpha = 0.06f)
+                                )
+                        )
+                        // Volume fill bar
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    scaleY = currentRatio
+                                    transformOrigin = TransformOrigin(0.5f, 1.0f)
+                                }
+                                .clip(barShape)
+                                .background(
+                                    if (isMondrian) Color.Black
+                                    else if (themeSettings.isGlass) primaryColor.copy(alpha = 0.35f)
+                                    else primaryColor.copy(alpha = 0.30f)
+                                )
+                                .then(barGlassModifier)
+                        )
+                        // Bright top indicator cap line across top edge of volume level
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    translationY = (1f - currentRatio) * size.height
+                                }
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isMondrian) Color.Black
+                                        else MaterialTheme.colorScheme.primary
+                                    )
+                            )
+                        }
+                    }
+                }
+                HudTypeOption.NONE -> {}
             }
-            HudTypeOption.NONE -> {}
         }
     }
 }
@@ -2365,19 +2420,22 @@ fun ProgressHudOverlay(
             }
         }
         ScrubHudTypeOption.POPUP -> {
-            Box(modifier = modifier.fillMaxSize()) {
-                val lineThicknessPx = with(LocalDensity.current) { lineThicknessDp.toPx() }
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        val d = durationMsProvider?.invoke() ?: durationMs
+                        val p = currentPositionMsProvider?.invoke() ?: currentPositionMs
+                        val ratio = if (d > 0L) (p.toFloat() / d.toFloat()).coerceIn(0f, 1f) else 0f
+                        val lineThicknessPx = with(density) { lineThicknessDp.toPx() }
+                        translationX = (size.width - lineThicknessPx) * ratio
+                    }
+            ) {
                 Box(
                     modifier = Modifier
                         .then(if (themeSettings.isRounded) Modifier.padding(vertical = 12.dp) else Modifier)
                         .fillMaxHeight()
                         .width(lineThicknessDp)
-                        .graphicsLayer {
-                            val d = durationMsProvider?.invoke() ?: durationMs
-                            val p = currentPositionMsProvider?.invoke() ?: currentPositionMs
-                            val ratio = if (d > 0L) (p.toFloat() / d.toFloat()).coerceIn(0f, 1f) else 0f
-                            translationX = (size.width - lineThicknessPx) * ratio
-                        }
                         .clip(shape)
                         .background(
                             if (isMondrian) Color.Black
