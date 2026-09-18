@@ -1354,4 +1354,45 @@ class GestureAndSettingsTest {
         assertEquals("DOCKED", dockedProfile.getEffectiveOverride("artDisplayLayout", profiles))
         assertEquals("OVERLAY", undockedProfile.getEffectiveOverride("artDisplayLayout", profiles))
     }
+
+    @Test
+    fun testProfileSettingChangesDoNotPropagateToOtherProfiles() {
+        val defaultProfile = Profile.DEFAULT
+        val dockedProfile = Profile.DOCKED
+        var undockedProfile = Profile.UNDOCKED
+
+        val initialProfiles = listOf(defaultProfile, Profile.TRAVELING, dockedProfile, undockedProfile)
+
+        // Docked and Undocked inherit from Default, and override artDisplayLayout
+        assertEquals("DOCKED", dockedProfile.getEffectiveOverride("artDisplayLayout", initialProfiles))
+        assertEquals("OVERLAY", undockedProfile.getEffectiveOverride("artDisplayLayout", initialProfiles))
+
+        // Undocked initially inherits Default font size (null local override)
+        assertEquals(null, undockedProfile.overrides["artistFontSize"])
+        assertEquals(null, dockedProfile.overrides["artistFontSize"])
+
+        // Simulate updating a setting while Undocked profile is active
+        val updatedUndockedMap = undockedProfile.overrides.toMutableMap().apply {
+            put("artistFontSize", "65.0")
+            put("DISPLAY_artistFontSize", "65.0")
+            put("stretchArt", "true")
+            put("DISPLAY_stretchArt", "true")
+        }
+        undockedProfile = undockedProfile.copy(overrides = updatedUndockedMap)
+
+        val updatedProfiles = listOf(defaultProfile, Profile.TRAVELING, dockedProfile, undockedProfile)
+
+        // Undocked profile now has local overrides
+        assertEquals("65.0", undockedProfile.getEffectiveOverride("artistFontSize", updatedProfiles))
+        assertEquals("true", undockedProfile.getEffectiveOverride("stretchArt", updatedProfiles))
+
+        // Docked profile and Default profile remain untouched
+        assertEquals(null, dockedProfile.overrides["artistFontSize"])
+        assertEquals(null, dockedProfile.getEffectiveOverride("artistFontSize", updatedProfiles))
+        assertEquals(null, dockedProfile.getEffectiveOverride("stretchArt", updatedProfiles))
+
+        // Docked profile still has its own layout override ("DOCKED") and didn't get affected by Undocked's changes
+        assertEquals("DOCKED", dockedProfile.getEffectiveOverride("artDisplayLayout", updatedProfiles))
+        assertEquals("OVERLAY", undockedProfile.getEffectiveOverride("artDisplayLayout", updatedProfiles))
+    }
 }

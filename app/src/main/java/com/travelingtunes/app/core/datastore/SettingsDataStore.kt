@@ -205,9 +205,90 @@ class SettingsDataStore(private val context: Context) {
             return prefs[prefKey] ?: defaultVal
         }
 
+        fun getInt(prefKey: Preferences.Key<Int>, overrideKey: String, defaultVal: Int): Int {
+            val ov = activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles)
+            if (ov != null) return ov.toIntOrNull() ?: defaultVal
+            return prefs[prefKey] ?: defaultVal
+        }
+
         fun getString(prefKey: Preferences.Key<String>, overrideKey: String, defaultVal: String): String {
             return activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles) ?: prefs[prefKey] ?: defaultVal
         }
+
+        val artScaleOv = activeProfile.getEffectiveOverride("albumArtScale", profiles) ?: activeProfile.getEffectiveOverride("DISPLAY_albumArtScale", profiles)
+        val albumArtScale = if (artScaleOv != null) {
+            ArtScaleOption.entries.find { it.name.equals(artScaleOv, ignoreCase = true) }
+                ?: ArtScaleOption.entries.getOrNull(artScaleOv.toIntOrNull() ?: -1)
+                ?: ArtScaleOption.FILL_SCREEN
+        } else {
+            ArtScaleOption.entries.getOrElse(prefs[KEY_ALBUM_ART_SCALE] ?: 0) { ArtScaleOption.FILL_SCREEN }
+        }
+
+        val portAlignOv = activeProfile.getEffectiveOverride("artAlignmentPortrait", profiles) ?: activeProfile.getEffectiveOverride("DISPLAY_artAlignmentPortrait", profiles)
+        val artAlignmentPortrait = if (portAlignOv != null) {
+            ArtAlignmentPortrait.entries.find { it.name.equals(portAlignOv, ignoreCase = true) } ?: ArtAlignmentPortrait.MIDDLE
+        } else {
+            ArtAlignmentPortrait.entries.find { it.name.equals(prefs[KEY_ART_ALIGNMENT_PORTRAIT], ignoreCase = true) } ?: ArtAlignmentPortrait.MIDDLE
+        }
+
+        val landAlignOv = activeProfile.getEffectiveOverride("artAlignmentLandscape", profiles) ?: activeProfile.getEffectiveOverride("DISPLAY_artAlignmentLandscape", profiles)
+        val artAlignmentLandscape = if (landAlignOv != null) {
+            ArtAlignmentLandscape.entries.find { it.name.equals(landAlignOv, ignoreCase = true) } ?: ArtAlignmentLandscape.CENTER
+        } else {
+            ArtAlignmentLandscape.entries.find { it.name.equals(prefs[KEY_ART_ALIGNMENT_LANDSCAPE], ignoreCase = true) } ?: ArtAlignmentLandscape.CENTER
+        }
+
+        val prioOv = activeProfile.getEffectiveOverride("matchArtColorPriority", profiles) ?: activeProfile.getEffectiveOverride("DISPLAY_matchArtColorPriority", profiles)
+        val matchArtColorPriority = if (prioOv != null) {
+            ArtColorPriority.entries.find { it.name.equals(prioOv, ignoreCase = true) }
+                ?: ArtColorPriority.entries.getOrNull(prioOv.toIntOrNull() ?: -1)
+                ?: ArtColorPriority.CENTER
+        } else {
+            ArtColorPriority.entries.getOrElse(prefs[KEY_MATCH_ART_COLOR_PRIORITY] ?: 0) { ArtColorPriority.CENTER }
+        }
+
+        val hudOv = activeProfile.getEffectiveOverride("hudType", profiles) ?: activeProfile.getEffectiveOverride("DISPLAY_hudType", profiles)
+        val hudType = if (hudOv != null) {
+            HudTypeOption.entries.find { it.name.equals(hudOv, ignoreCase = true) || it.value == hudOv.toIntOrNull() } ?: HudTypeOption.BAR_VOLUME
+        } else {
+            HudTypeOption.entries.find { it.value == (prefs[KEY_HUD_TYPE] ?: 1) } ?: HudTypeOption.BAR_VOLUME
+        }
+
+        val scrubOv = activeProfile.getEffectiveOverride("scrubHudType", profiles) ?: activeProfile.getEffectiveOverride("DISPLAY_scrubHudType", profiles)
+        val scrubHudType = if (scrubOv != null) {
+            ScrubHudTypeOption.entries.find { it.name.equals(scrubOv, ignoreCase = true) || it.value == scrubOv.toIntOrNull() } ?: ScrubHudTypeOption.EDGE_HUD
+        } else {
+            ScrubHudTypeOption.entries.find { it.value == (prefs[KEY_SCRUB_HUD_TYPE] ?: 2) } ?: ScrubHudTypeOption.EDGE_HUD
+        }
+
+        val titleOrderStr = getString(KEY_TITLE_ORDER, "titleOrder", prefs[KEY_TITLE_ORDER] ?: "ARTIST,SONG,ALBUM")
+        val titleOrder = titleOrderStr.split(",")
+            .mapNotNull { name -> runCatching { TitleRowType.valueOf(name.trim()) }.getOrNull() }
+            .ifEmpty { listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM) }
+
+        val catOrderStr = getString(KEY_AUTO_CATEGORY_ORDER, "autoCategoryOrder", prefs[KEY_AUTO_CATEGORY_ORDER] ?: "SONGS,ALBUMS,ARTISTS,GENRES,FOLDERS")
+        val autoCategoryOrder = catOrderStr.split(",")
+            .mapNotNull { name -> runCatching { AutoCategory.valueOf(name.trim()) }.getOrNull() }
+            .ifEmpty { listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS) }
+
+        val actionOrderStr = getString(KEY_AUTO_ACTION_BUTTON_ORDER, "autoActionButtonOrder", prefs[KEY_AUTO_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
+        val autoActionButtonOrder = actionOrderStr.split(",")
+            .asSequence()
+            .mapNotNull { name -> runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim()) }
+            .filter { (it != GestureAction.UNASSIGNED) && (it != GestureAction.OTHER_OPTION) }
+            .toList()
+            .ifEmpty {
+                listOf(
+                    GestureAction.PLAY_CURRENT_ALBUM,
+                    GestureAction.PLAY_CURRENT_ARTIST,
+                    GestureAction.PLAY_PAUSE,
+                    GestureAction.NEXT,
+                    GestureAction.PREVIOUS,
+                    GestureAction.TOGGLE_SHUFFLE,
+                    GestureAction.TOGGLE_REPEAT,
+                    GestureAction.SHUFFLE_ALL_SONGS,
+                )
+            }
 
         DisplaySettings(
             artistFontSize = getFloat(KEY_ARTIST_FONT_SIZE, "DISPLAY_artistFontSize", 50f),
@@ -228,14 +309,10 @@ class SettingsDataStore(private val context: Context) {
             titleScrollLong = getBool(KEY_TITLE_SCROLL_LONG, "DISPLAY_titleScrollLong", false),
             showAlbumArt = getBool(KEY_SHOW_ALBUM_ART, "DISPLAY_showAlbumArt", true),
             albumArtColors = getBool(KEY_ALBUM_ART_COLORS, "DISPLAY_albumArtColors", true),
-            albumArtScale = ArtScaleOption.entries.getOrElse(prefs[KEY_ALBUM_ART_SCALE] ?: 0) { ArtScaleOption.FILL_SCREEN },
-            artAlignmentPortrait = ArtAlignmentPortrait.entries.find {
-                it.name.equals(prefs[KEY_ART_ALIGNMENT_PORTRAIT], ignoreCase = true)
-            } ?: ArtAlignmentPortrait.MIDDLE,
-            artAlignmentLandscape = ArtAlignmentLandscape.entries.find {
-                it.name.equals(prefs[KEY_ART_ALIGNMENT_LANDSCAPE], ignoreCase = true)
-            } ?: ArtAlignmentLandscape.CENTER,
-            albumArtFade = (prefs[KEY_ALBUM_ART_FADE] ?: 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
+            albumArtScale = albumArtScale,
+            artAlignmentPortrait = artAlignmentPortrait,
+            artAlignmentLandscape = artAlignmentLandscape,
+            albumArtFade = getFloat(KEY_ALBUM_ART_FADE, "albumArtFade", 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
             artDisplayLayout = run {
                 val artLayoutOverride = activeProfile.getEffectiveOverride("DISPLAY_artDisplayLayout", profiles)
                     ?: activeProfile.getEffectiveOverride("artDisplayLayout", profiles)
@@ -250,11 +327,11 @@ class SettingsDataStore(private val context: Context) {
                 }
             },
             stretchArt = getBool(KEY_STRETCH_ART, "DISPLAY_stretchArt", false),
-            matchArtColorPriority = ArtColorPriority.entries.getOrElse(prefs[KEY_MATCH_ART_COLOR_PRIORITY] ?: 0) { ArtColorPriority.CENTER },
+            matchArtColorPriority = matchArtColorPriority,
             adaptiveDockedArt = getBool(KEY_ADAPTIVE_DOCKED_ART, "DISPLAY_adaptiveDockedArt", false),
             separateTouchZones = getBool(KEY_SEPARATE_TOUCH_ZONES, "DISPLAY_separateTouchZones", false),
-            hudType = HudTypeOption.entries.find { it.value == (prefs[KEY_HUD_TYPE] ?: 1) } ?: HudTypeOption.BAR_VOLUME,
-            scrubHudType = ScrubHudTypeOption.entries.find { it.value == (prefs[KEY_SCRUB_HUD_TYPE] ?: 2) } ?: ScrubHudTypeOption.EDGE_HUD,
+            hudType = hudType,
+            scrubHudType = scrubHudType,
             volumeAlwaysOn = getBool(KEY_VOLUME_ALWAYS_ON, "DISPLAY_volumeAlwaysOn", true),
             showStatusBar = getBool(KEY_SHOW_STATUS_BAR, "DISPLAY_showStatusBar", false),
             showActions = getBool(KEY_SHOW_ACTIONS, "DISPLAY_showActions", true),
@@ -273,82 +350,80 @@ class SettingsDataStore(private val context: Context) {
             albumUnderline = getBool(KEY_ALBUM_UNDERLINE, "DISPLAY_albumUnderline", false),
             keepScreenOn = getBool(KEY_KEEP_SCREEN_ON, "DISPLAY_keepScreenOn", true),
             immersiveMode = getBool(KEY_IMMERSIVE_MODE, "DISPLAY_immersiveMode", true),
-            numEdgeRegions = prefs[KEY_NUM_EDGE_REGIONS] ?: 3,
-            numArtEdgeRegions = prefs[KEY_NUM_ART_EDGE_REGIONS] ?: 3,
-            titleOrder = (prefs[KEY_TITLE_ORDER] ?: "ARTIST,SONG,ALBUM")
-                .split(",")
-                .mapNotNull { name ->
-                    runCatching { TitleRowType.valueOf(name.trim()) }.getOrNull()
-                }
-                .ifEmpty { listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM) },
-            autoCategoryOrder = (prefs[KEY_AUTO_CATEGORY_ORDER] ?: "SONGS,ALBUMS,ARTISTS,GENRES,FOLDERS")
-                .split(",")
-                .mapNotNull { name ->
-                    runCatching { AutoCategory.valueOf(name.trim()) }.getOrNull()
-                }
-                .ifEmpty { listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS) },
+            numEdgeRegions = getInt(KEY_NUM_EDGE_REGIONS, "numEdgeRegions", 3),
+            numArtEdgeRegions = getInt(KEY_NUM_ART_EDGE_REGIONS, "numArtEdgeRegions", 3),
+            titleOrder = titleOrder,
+            autoCategoryOrder = autoCategoryOrder,
             autoShowAlbumArt = getBool(KEY_AUTO_SHOW_ALBUM_ART, "AUTO_autoShowAlbumArt", true),
             autoAlbumStyleGrid = getBool(KEY_AUTO_ALBUM_STYLE_GRID, "AUTO_autoAlbumStyleGrid", true),
             autoArtistStyleGrid = getBool(KEY_AUTO_ARTIST_STYLE_GRID, "AUTO_autoArtistStyleGrid", false),
             autoAutoplayOnConnect = getBool(KEY_AUTO_AUTOPLAY_ON_CONNECT, "AUTO_autoAutoplayOnConnect", false),
             autoVoiceSearch = getBool(KEY_AUTO_VOICE_SEARCH, "AUTO_autoVoiceSearch", true),
             autoSpeedVolumeEnabled = getBool(KEY_AUTO_SPEED_VOLUME_ENABLED, "AUTO_speedVolume", false),
-            autoDefaultVolume = prefs[KEY_AUTO_DEFAULT_VOLUME] ?: 50,
-            autoMinSpeedThreshold = prefs[KEY_AUTO_MIN_SPEED_THRESHOLD] ?: 15f,
-            autoSpeedVolumeRatio = prefs[KEY_AUTO_SPEED_VOLUME_RATIO] ?: 1.0f,
+            autoDefaultVolume = getInt(KEY_AUTO_DEFAULT_VOLUME, "autoDefaultVolume", 50),
+            autoMinSpeedThreshold = getFloat(KEY_AUTO_MIN_SPEED_THRESHOLD, "autoMinSpeedThreshold", 15f),
+            autoSpeedVolumeRatio = getFloat(KEY_AUTO_SPEED_VOLUME_RATIO, "autoSpeedVolumeRatio", 1.0f),
             autoSpeedUnit = getString(KEY_AUTO_SPEED_UNIT, "AUTO_autoSpeedUnit", "MPH"),
             drivingModeEnabled = getBool(KEY_DRIVING_MODE_ENABLED, "AUTO_drivingMode", false),
             autoEnableDrivingMode = getBool(KEY_AUTO_ENABLE_DRIVING_MODE, "AUTO_autoEnableDrivingMode", false),
-            autoActionButtonOrder = (prefs[KEY_AUTO_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
-                .split(",")
-                .asSequence()
-                .mapNotNull { name ->
-                    runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim())
-                }
-                .filter { (it != GestureAction.UNASSIGNED) && (it != GestureAction.OTHER_OPTION) }
-                .toList()
-                .ifEmpty {
-                    listOf(
-                        GestureAction.PLAY_CURRENT_ALBUM,
-                        GestureAction.PLAY_CURRENT_ARTIST,
-                        GestureAction.PLAY_PAUSE,
-                        GestureAction.NEXT,
-                        GestureAction.PREVIOUS,
-                        GestureAction.TOGGLE_SHUFFLE,
-                        GestureAction.TOGGLE_REPEAT,
-                        GestureAction.SHUFFLE_ALL_SONGS,
-                    )
-                }
+            autoActionButtonOrder = autoActionButtonOrder
         )
     }
 
     val themeSettingsFlow: Flow<ThemeSettings> = context.dataStore.data.map { prefs ->
-        val textRed = prefs[KEY_CUSTOM_TEXT_RED] ?: 22f
-        val textGreen = prefs[KEY_CUSTOM_TEXT_GREEN] ?: 22f
-        val textBlue = prefs[KEY_CUSTOM_TEXT_BLUE] ?: 180f
+        val activeProfileId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+        val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+        val activeProfile = profiles.find { it.id == activeProfileId } ?: Profile.DEFAULT
+
+        fun getBool(prefKey: Preferences.Key<Boolean>, overrideKey: String, defaultVal: Boolean): Boolean {
+            val ov = activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles)
+            if (ov != null) return ov.toBooleanStrictOrNull() ?: defaultVal
+            return prefs[prefKey] ?: defaultVal
+        }
+
+        fun getFloat(prefKey: Preferences.Key<Float>, overrideKey: String, defaultVal: Float): Float {
+            val ov = activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles)
+            if (ov != null) return ov.toFloatOrNull() ?: defaultVal
+            return prefs[prefKey] ?: defaultVal
+        }
+
+        fun getInt(prefKey: Preferences.Key<Int>, overrideKey: String, defaultVal: Int): Int {
+            val ov = activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles)
+            if (ov != null) return ov.toIntOrNull() ?: defaultVal
+            return prefs[prefKey] ?: defaultVal
+        }
+
+        fun getString(prefKey: Preferences.Key<String>, overrideKey: String, defaultVal: String): String {
+            return activeProfile.getEffectiveOverride(overrideKey, profiles) ?: activeProfile.getEffectiveOverride(prefKey.name, profiles) ?: prefs[prefKey] ?: defaultVal
+        }
+
+        val textRed = getFloat(KEY_CUSTOM_TEXT_RED, "customTextRed", 22f)
+        val textGreen = getFloat(KEY_CUSTOM_TEXT_GREEN, "customTextGreen", 22f)
+        val textBlue = getFloat(KEY_CUSTOM_TEXT_BLUE, "customTextBlue", 180f)
+
         ThemeSettings(
-            currentThemeName = prefs[KEY_CURRENT_THEME] ?: ColorTheme.MATCH_ALBUM_ART.name,
+            currentThemeName = getString(KEY_CURRENT_THEME, "THEME_currentThemeName", getString(KEY_CURRENT_THEME, "currentThemeName", ColorTheme.MATCH_ALBUM_ART.name)),
             customTextRed = textRed,
             customTextGreen = textGreen,
             customTextBlue = textBlue,
-            customSongTitleRed = prefs[KEY_CUSTOM_SONG_TITLE_RED] ?: textRed,
-            customSongTitleGreen = prefs[KEY_CUSTOM_SONG_TITLE_GREEN] ?: textGreen,
-            customSongTitleBlue = prefs[KEY_CUSTOM_SONG_TITLE_BLUE] ?: textBlue,
-            customArtistTitleRed = prefs[KEY_CUSTOM_ARTIST_TITLE_RED] ?: textRed,
-            customArtistTitleGreen = prefs[KEY_CUSTOM_ARTIST_TITLE_GREEN] ?: textGreen,
-            customArtistTitleBlue = prefs[KEY_CUSTOM_ARTIST_TITLE_BLUE] ?: textBlue,
-            customAlbumTitleRed = prefs[KEY_CUSTOM_ALBUM_TITLE_RED] ?: textRed,
-            customAlbumTitleGreen = prefs[KEY_CUSTOM_ALBUM_TITLE_GREEN] ?: textGreen,
-            customAlbumTitleBlue = prefs[KEY_CUSTOM_ALBUM_TITLE_BLUE] ?: textBlue,
-            customBGRed = prefs[KEY_CUSTOM_BG_RED] ?: 200f,
-            customBGGreen = prefs[KEY_CUSTOM_BG_GREEN] ?: 200f,
-            customBGBlue = prefs[KEY_CUSTOM_BG_BLUE] ?: 100f,
-            dimAtNight = prefs[KEY_DIM_AT_NIGHT] ?: true,
-            invertAtNight = prefs[KEY_INVERT_AT_NIGHT] ?: false,
-            sunRiseHour = prefs[KEY_SUNRISE_HOUR] ?: 6,
-            sunSetHour = prefs[KEY_SUNSET_HOUR] ?: 19,
-            isRounded = prefs[KEY_THEME_ROUNDED] ?: false,
-            isGlass = prefs[KEY_THEME_GLASS] ?: false
+            customSongTitleRed = getFloat(KEY_CUSTOM_SONG_TITLE_RED, "customSongTitleRed", textRed),
+            customSongTitleGreen = getFloat(KEY_CUSTOM_SONG_TITLE_GREEN, "customSongTitleGreen", textGreen),
+            customSongTitleBlue = getFloat(KEY_CUSTOM_SONG_TITLE_BLUE, "customSongTitleBlue", textBlue),
+            customArtistTitleRed = getFloat(KEY_CUSTOM_ARTIST_TITLE_RED, "customArtistTitleRed", textRed),
+            customArtistTitleGreen = getFloat(KEY_CUSTOM_ARTIST_TITLE_GREEN, "customArtistTitleGreen", textGreen),
+            customArtistTitleBlue = getFloat(KEY_CUSTOM_ARTIST_TITLE_BLUE, "customArtistTitleBlue", textBlue),
+            customAlbumTitleRed = getFloat(KEY_CUSTOM_ALBUM_TITLE_RED, "customAlbumTitleRed", textRed),
+            customAlbumTitleGreen = getFloat(KEY_CUSTOM_ALBUM_TITLE_GREEN, "customAlbumTitleGreen", textGreen),
+            customAlbumTitleBlue = getFloat(KEY_CUSTOM_ALBUM_TITLE_BLUE, "customAlbumTitleBlue", textBlue),
+            customBGRed = getFloat(KEY_CUSTOM_BG_RED, "customBGRed", 200f),
+            customBGGreen = getFloat(KEY_CUSTOM_BG_GREEN, "customBGGreen", 200f),
+            customBGBlue = getFloat(KEY_CUSTOM_BG_BLUE, "customBGBlue", 100f),
+            dimAtNight = getBool(KEY_DIM_AT_NIGHT, "THEME_dimAtNight", true),
+            invertAtNight = getBool(KEY_INVERT_AT_NIGHT, "THEME_invertAtNight", false),
+            sunRiseHour = getInt(KEY_SUNRISE_HOUR, "sunRiseHour", 6),
+            sunSetHour = getInt(KEY_SUNSET_HOUR, "sunSetHour", 19),
+            isRounded = getBool(KEY_THEME_ROUNDED, "THEME_isRounded", false),
+            isGlass = getBool(KEY_THEME_GLASS, "THEME_isGlass", false)
         )
     }
 
@@ -443,10 +518,25 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setNormalizationSettings(settings: NormalizationSettings) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_TARGET_RMS] = settings.targetRms.coerceIn(0.05f, 0.30f)
-            prefs[KEY_MAX_PEAK] = settings.maxPeak.coerceIn(0.80f, 0.999f)
-            prefs[KEY_MAX_GAIN_BOOST] = settings.maxGainBoost.coerceIn(1.0f, 10.0f)
-            prefs[KEY_FULL_SCAN_ENABLED] = settings.fullScanEnabled
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId == Profile.DEFAULT_ID) {
+                prefs[KEY_TARGET_RMS] = settings.targetRms.coerceIn(0.05f, 0.30f)
+                prefs[KEY_MAX_PEAK] = settings.maxPeak.coerceIn(0.80f, 0.999f)
+                prefs[KEY_MAX_GAIN_BOOST] = settings.maxGainBoost.coerceIn(1.0f, 10.0f)
+                prefs[KEY_FULL_SCAN_ENABLED] = settings.fullScanEnabled
+            } else {
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                    if (profile.id == activeId) {
+                        val updatedMap = profile.overrides.toMutableMap()
+                        updatedMap["targetRms"] = settings.targetRms.coerceIn(0.05f, 0.30f).toString()
+                        updatedMap["maxPeak"] = settings.maxPeak.coerceIn(0.80f, 0.999f).toString()
+                        updatedMap["maxGainBoost"] = settings.maxGainBoost.coerceIn(1.0f, 10.0f).toString()
+                        updatedMap["fullScanEnabled"] = settings.fullScanEnabled.toString()
+                        profile.copy(overrides = updatedMap)
+                    } else profile
+                }
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            }
         }
     }
 
@@ -539,26 +629,81 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setAutoRescan(enabled: Boolean) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_AUTO_RESCAN] = enabled
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId == Profile.DEFAULT_ID) {
+                prefs[KEY_AUTO_RESCAN] = enabled
+            } else {
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                    if (profile.id == activeId) {
+                        val updatedMap = profile.overrides.toMutableMap()
+                        updatedMap["LIBRARY_autoRescan"] = enabled.toString()
+                        updatedMap["autoRescan"] = enabled.toString()
+                        profile.copy(overrides = updatedMap)
+                    } else profile
+                }
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            }
         }
     }
 
     suspend fun setDrivingModeEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_DRIVING_MODE_ENABLED] = enabled
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId == Profile.DEFAULT_ID) {
+                prefs[KEY_DRIVING_MODE_ENABLED] = enabled
+            } else {
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                    if (profile.id == activeId) {
+                        val updatedMap = profile.overrides.toMutableMap()
+                        updatedMap["AUTO_drivingMode"] = enabled.toString()
+                        updatedMap["drivingModeEnabled"] = enabled.toString()
+                        profile.copy(overrides = updatedMap)
+                    } else profile
+                }
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            }
         }
     }
 
     suspend fun setAutoDefaultVolume(volumePercent: Int) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_AUTO_DEFAULT_VOLUME] = volumePercent.coerceIn(0, 100)
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId == Profile.DEFAULT_ID) {
+                prefs[KEY_AUTO_DEFAULT_VOLUME] = volumePercent.coerceIn(0, 100)
+            } else {
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                    if (profile.id == activeId) {
+                        val updatedMap = profile.overrides.toMutableMap()
+                        updatedMap["autoDefaultVolume"] = volumePercent.coerceIn(0, 100).toString()
+                        profile.copy(overrides = updatedMap)
+                    } else profile
+                }
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            }
         }
     }
 
     suspend fun toggleDrivingMode() {
         context.dataStore.edit { prefs ->
-            val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false
-            prefs[KEY_DRIVING_MODE_ENABLED] = !current
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId == Profile.DEFAULT_ID) {
+                val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false
+                prefs[KEY_DRIVING_MODE_ENABLED] = !current
+            } else {
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                    if (profile.id == activeId) {
+                        val currentVal = profile.overrides["drivingModeEnabled"]?.toBooleanStrictOrNull()
+                            ?: profile.overrides["AUTO_drivingMode"]?.toBooleanStrictOrNull()
+                            ?: prefs[KEY_DRIVING_MODE_ENABLED]
+                            ?: false
+                        val updatedMap = profile.overrides.toMutableMap()
+                        updatedMap["AUTO_drivingMode"] = (!currentVal).toString()
+                        updatedMap["drivingModeEnabled"] = (!currentVal).toString()
+                        profile.copy(overrides = updatedMap)
+                    } else profile
+                }
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            }
         }
     }
 
@@ -616,6 +761,64 @@ class SettingsDataStore(private val context: Context) {
     suspend fun toggleOtherOption(triggerKey: String, optionKey: String) {
         val option = ConfigOption.findByKey(optionKey) ?: return
         context.dataStore.edit { prefs ->
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId != Profile.DEFAULT_ID) {
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                    if (profile.id == activeId) {
+                        val updatedMap = profile.overrides.toMutableMap()
+                        if (option.isBooleanToggle) {
+                            val currentVal = profile.overrides[option.key]?.toBooleanStrictOrNull()
+                                ?: profile.overrides[option.key.removePrefix("DISPLAY_").removePrefix("THEME_").removePrefix("LIBRARY_").removePrefix("AUTO_")]?.toBooleanStrictOrNull()
+                                ?: false
+                            updatedMap[option.key] = (!currentVal).toString()
+                            updatedMap[option.key.removePrefix("DISPLAY_").removePrefix("THEME_").removePrefix("LIBRARY_").removePrefix("AUTO_")] = (!currentVal).toString()
+                        } else if (option.targetValue != null) {
+                            updatedMap[option.key] = option.targetValue
+                            when {
+                                option.key.startsWith("THEME_") -> {
+                                    updatedMap["THEME_currentThemeName"] = option.targetValue
+                                    updatedMap["currentThemeName"] = option.targetValue
+                                }
+                                option.key.startsWith("ALIGN_ARTIST_") -> {
+                                    updatedMap["ALIGN_ARTIST"] = option.targetValue
+                                    updatedMap["artistAlignment"] = option.targetValue
+                                }
+                                option.key.startsWith("ALIGN_SONG_") -> {
+                                    updatedMap["ALIGN_SONG"] = option.targetValue
+                                    updatedMap["songAlignment"] = option.targetValue
+                                }
+                                option.key.startsWith("ALIGN_ALBUM_") -> {
+                                    updatedMap["ALIGN_ALBUM"] = option.targetValue
+                                    updatedMap["albumAlignment"] = option.targetValue
+                                }
+                                option.key.startsWith("ART_SCALE_") -> {
+                                    updatedMap["albumArtScale"] = option.targetValue
+                                }
+                                option.key.startsWith("ART_LAYOUT_") -> {
+                                    updatedMap["DISPLAY_artDisplayLayout"] = option.targetValue
+                                    updatedMap["artDisplayLayout"] = option.targetValue
+                                }
+                                option.key.startsWith("ART_ALIGN_PORT_") -> {
+                                    updatedMap["artAlignmentPortrait"] = option.targetValue
+                                }
+                                option.key.startsWith("ART_ALIGN_LAND_") -> {
+                                    updatedMap["artAlignmentLandscape"] = option.targetValue
+                                }
+                                option.key.startsWith("HUD_TYPE_") -> {
+                                    updatedMap["hudType"] = option.targetValue
+                                }
+                                option.key.startsWith("SCRUB_HUD_TYPE_") -> {
+                                    updatedMap["scrubHudType"] = option.targetValue
+                                }
+                            }
+                        }
+                        profile.copy(overrides = updatedMap)
+                    } else profile
+                }
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+                return@edit
+            }
+
             if (option.isBooleanToggle) {
                 when (option.key) {
                     "DISPLAY_showAlbumArt" -> prefs[KEY_SHOW_ALBUM_ART] = !(prefs[KEY_SHOW_ALBUM_ART] ?: true)
@@ -687,14 +890,12 @@ class SettingsDataStore(private val context: Context) {
                             prefs[KEY_PRIOR_THEME] = currentVal
                         } else {
                             prefs[priorKey] = currentVal
-                            prefs[priorKey] = currentVal
                             prefs[priorArtColorsKey] = currentArtColors
                             prefs[KEY_PRIOR_THEME] = currentVal
                             prefs[KEY_CURRENT_THEME] = targetVal
                             prefs[KEY_ALBUM_ART_COLORS] = (targetVal.equals("Match Album Art", true) || targetVal.equals("Auto By Art", true))
                             if (targetVal.equals("Mondrian", ignoreCase = true)) {
                                 prefs[KEY_ART_DISPLAY_LAYOUT] = ArtLayoutOption.OVERLAY.ordinal
-                                prefs[KEY_ACTIVE_PROFILE_ID] = Profile.UNDOCKED_ID
                             }
                         }
                     }
@@ -772,11 +973,6 @@ class SettingsDataStore(private val context: Context) {
                             ArtLayoutOption.entries.find { it.name.equals(targetVal, true) }?.ordinal ?: 0
                         }
                         prefs[KEY_ART_DISPLAY_LAYOUT] = targetOrdinal
-                        if (targetOrdinal == ArtLayoutOption.DOCKED.ordinal) {
-                            prefs[KEY_ACTIVE_PROFILE_ID] = Profile.DOCKED_ID
-                        } else {
-                            prefs[KEY_ACTIVE_PROFILE_ID] = Profile.UNDOCKED_ID
-                        }
                     }
                     option.key.startsWith("ART_ALIGN_PORT_") -> {
                         val currentVal = prefs[KEY_ART_ALIGNMENT_PORTRAIT] ?: ArtAlignmentPortrait.MIDDLE.name

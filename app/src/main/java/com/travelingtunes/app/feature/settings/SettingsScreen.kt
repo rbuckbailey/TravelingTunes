@@ -2335,7 +2335,8 @@ private fun GesturesSettingsContent(
 ) {
     Column {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
-            val isSeparate = displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
+            val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
+            val isSeparate = isDocked && displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
             Text(
                 text = if (isSeparate) "Number of Title Edge Regions: ${displaySettings.numEdgeRegions}" else "Number of Edge Regions: ${displaySettings.numEdgeRegions}",
                 style = MaterialTheme.typography.bodyMedium,

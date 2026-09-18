@@ -1,6 +1,7 @@
 package com.travelingtunes.app.feature.settings
 
 import androidx.activity.compose.BackHandler
+import com.travelingtunes.app.core.model.ArtLayoutOption
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -411,7 +412,8 @@ fun GestureAssignmentScreen(
                 }
             } else {
                 // Swipe, Tap, or Button Actions list
-                val isSeparate = displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
+                val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
+                val isSeparate = isDocked && displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
                 val numArtEdgeRegions = displaySettings.numArtEdgeRegions
                 val sections = remember(sub, numEdgeRegions, numArtEdgeRegions, isSeparate) {
                     getTriggersForSubmenu(sub, numEdgeRegions, numArtEdgeRegions, isSeparate)
@@ -452,6 +454,7 @@ fun GestureAssignmentScreen(
                                 numEdgeRegions = numRegions,
                                 isArtSection = isArtSection,
                                 isTitleSection = isTitleSection,
+                                isSeparateTouchZones = isSeparate,
                                 onActionSelected = { regionTarget, newAction, otherKey ->
                                     coroutineScope.launch {
                                         when (regionTarget) {
@@ -704,6 +707,7 @@ private fun GestureAssignmentItem(
     numEdgeRegions: Int,
     isArtSection: Boolean = false,
     isTitleSection: Boolean = false,
+    isSeparateTouchZones: Boolean = false,
     onActionSelected: (com.travelingtunes.app.core.model.TouchRegionTarget, GestureAction, String?) -> Unit
 ) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
@@ -811,49 +815,66 @@ private fun GestureAssignmentItem(
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    val isArt = binding.artAction == choice
-                                    val isTitle = binding.titleAction == choice
-                                    val isBoth = binding.action == choice && !hasArtAction && !hasTitleAction
+                                if (isSeparateTouchZones) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        val isArt = binding.artAction == choice
+                                        val isTitle = binding.titleAction == choice
+                                        val isBoth = binding.action == choice && !hasArtAction && !hasTitleAction
 
-                                    FilterChip(
-                                        selected = isArt,
-                                        onClick = {
-                                            isDropdownExpanded = false
-                                            if (choice == GestureAction.OTHER_OPTION) {
-                                                editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.ART
-                                            } else {
-                                                onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.ART, choice, null)
-                                            }
-                                        },
-                                        label = { Text("Art", fontSize = 11.sp) }
-                                    )
-                                    FilterChip(
-                                        selected = isTitle,
-                                        onClick = {
-                                            isDropdownExpanded = false
-                                            if (choice == GestureAction.OTHER_OPTION) {
-                                                editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.TITLE
-                                            } else {
-                                                onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.TITLE, choice, null)
-                                            }
-                                        },
-                                        label = { Text("Title", fontSize = 11.sp) }
-                                    )
-                                    if (!isButton) {
                                         FilterChip(
-                                            selected = isBoth,
+                                            selected = isArt,
                                             onClick = {
                                                 isDropdownExpanded = false
                                                 if (choice == GestureAction.OTHER_OPTION) {
-                                                    editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
+                                                    editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.ART
                                                 } else {
-                                                    onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.BOTH, choice, null)
+                                                    onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.ART, choice, null)
                                                 }
                                             },
-                                            label = { Text("Both", fontSize = 11.sp) }
+                                            label = { Text("Art", fontSize = 11.sp) }
                                         )
+                                        FilterChip(
+                                            selected = isTitle,
+                                            onClick = {
+                                                isDropdownExpanded = false
+                                                if (choice == GestureAction.OTHER_OPTION) {
+                                                    editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.TITLE
+                                                } else {
+                                                    onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.TITLE, choice, null)
+                                                }
+                                            },
+                                            label = { Text("Title", fontSize = 11.sp) }
+                                        )
+                                        if (!isButton) {
+                                            FilterChip(
+                                                selected = isBoth,
+                                                onClick = {
+                                                    isDropdownExpanded = false
+                                                    if (choice == GestureAction.OTHER_OPTION) {
+                                                        editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
+                                                    } else {
+                                                        onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.BOTH, choice, null)
+                                                    }
+                                                },
+                                                label = { Text("Both", fontSize = 11.sp) }
+                                            )
+                                        }
                                     }
+                                } else {
+                                    val isSelected = binding.action == choice
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            isDropdownExpanded = false
+                                            val targetTarget = if (isButton) com.travelingtunes.app.core.model.TouchRegionTarget.TITLE else com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
+                                            if (choice == GestureAction.OTHER_OPTION) {
+                                                editingOptionRegion = targetTarget
+                                            } else {
+                                                onActionSelected(targetTarget, choice, null)
+                                            }
+                                        },
+                                        label = { Text("Select", fontSize = 11.sp) }
+                                    )
                                 }
                             }
                         },
