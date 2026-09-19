@@ -32,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import com.travelingtunes.app.core.database.LibraryStats
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.datastore.SettingsDataStore
+import com.travelingtunes.app.core.location.AmbientNoiseManager
 import com.travelingtunes.app.core.location.SpeedVolumeManager
 import com.travelingtunes.app.core.media.MediaStoreRepository
 import com.travelingtunes.app.core.media.MusicScanner
@@ -55,8 +56,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var playbackManager: PlaybackManager
     private lateinit var mediaStoreRepository: MediaStoreRepository
     private lateinit var speedVolumeManager: SpeedVolumeManager
+    private lateinit var ambientNoiseManager: AmbientNoiseManager
     private lateinit var musicDatabase: MusicDatabase
     private lateinit var musicScanner: MusicScanner
+
+    private var currentGpsSensitivity: Float = 0.5f
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -68,6 +72,34 @@ class MainActivity : ComponentActivity() {
         }
         if (audioGranted) {
             loadInitialMusic()
+        }
+    }
+
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            speedVolumeManager.startTracking(currentGpsSensitivity)
+        } else {
+            android.widget.Toast.makeText(
+                applicationContext,
+                "Location permission is required for Speed-Based Volume Adjustment.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private val recordAudioPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            ambientNoiseManager.startListening()
+        } else {
+            android.widget.Toast.makeText(
+                applicationContext,
+                "Microphone permission is required for Ambient Noise Compensation.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -106,6 +138,7 @@ class MainActivity : ComponentActivity() {
         settingsDataStore = SettingsDataStore(applicationContext)
         mediaStoreRepository = MediaStoreRepository(applicationContext)
         speedVolumeManager = SpeedVolumeManager(applicationContext)
+        ambientNoiseManager = AmbientNoiseManager(applicationContext)
         musicDatabase = MusicDatabase(applicationContext)
         musicScanner = MusicScanner(applicationContext, musicDatabase)
         playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
@@ -179,6 +212,7 @@ class MainActivity : ComponentActivity() {
                 displaySettings.drivingModeEnabled,
                 displaySettings.autoEnableDrivingMode
             ) {
+                currentGpsSensitivity = gpsSensitivity
                 val isSpeedVolumeActive = displaySettings.autoSpeedVolumeEnabled
                 val shouldTrack = gpsVolumeEnabled || isSpeedVolumeActive || displaySettings.autoEnableDrivingMode || displaySettings.drivingModeEnabled
                 if (shouldTrack) {
@@ -201,9 +235,58 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
-                    speedVolumeManager.startTracking(gpsSensitivity)
+
+                    val hasLocationPermission = ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+
+                    if (hasLocationPermission) {
+                        speedVolumeManager.startTracking(gpsSensitivity)
+                    } else {
+                        android.widget.Toast.makeText(
+                            applicationContext,
+                            "Location permission is required for Speed Volume tracking. Requesting permission...",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    }
                 } else {
                     speedVolumeManager.stopTracking()
+                }
+            }
+
+            LaunchedEffect(
+                displaySettings.autoAmbientNoiseEnabled,
+                displaySettings.drivingModeEnabled,
+                displaySettings.autoEnableDrivingMode,
+                displaySettings.autoDefaultVolume
+            ) {
+                val isActive = displaySettings.autoAmbientNoiseEnabled && (displaySettings.drivingModeEnabled || displaySettings.autoEnableDrivingMode)
+                ambientNoiseManager.updateConfig(
+                    ambientNoiseEnabled = displaySettings.autoAmbientNoiseEnabled,
+                    drivingModeEnabled = displaySettings.drivingModeEnabled,
+                    autoEnableDrivingMode = displaySettings.autoEnableDrivingMode,
+                    defaultVolumePercent = displaySettings.autoDefaultVolume
+                )
+                if (isActive) {
+                    val hasMicPermission = ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.RECORD_AUDIO
+                    ) == PackageManager.PERMISSION_GRANTED
+
+                    if (hasMicPermission) {
+                        ambientNoiseManager.startListening()
+                    } else {
+                        android.widget.Toast.makeText(
+                            applicationContext,
+                            "Microphone permission is required for Ambient Noise sensor. Requesting permission...",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                } else {
+                    ambientNoiseManager.stopListening()
                 }
             }
 
@@ -358,14 +441,47 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-
         if (permissionsToRequest.isNotEmpty()) {
             permissionLauncher.launch(permissionsToRequest.toTypedArray())
         } else {
             loadInitialMusic()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkAndRequestFeaturePermissionsIfMissing()
+    }
+
+    private fun checkAndRequestFeaturePermissionsIfMissing() {
+        lifecycleScope.launch {
+            val display = settingsDataStore.displaySettingsFlow.first()
+            val gpsVolume = settingsDataStore.gpsVolumeEnabledFlow.first()
+
+            val isSpeedVolumeActive = display.autoSpeedVolumeEnabled
+            val shouldTrackSpeed = gpsVolume || isSpeedVolumeActive || display.autoEnableDrivingMode || display.drivingModeEnabled
+            if (shouldTrackSpeed) {
+                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    android.widget.Toast.makeText(
+                        applicationContext,
+                        "Location permission was lost for Speed Volume tracking. Requesting permission...",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            }
+
+            val isAmbientNoiseActive = display.autoAmbientNoiseEnabled && (display.drivingModeEnabled || display.autoEnableDrivingMode)
+            if (isAmbientNoiseActive) {
+                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    android.widget.Toast.makeText(
+                        applicationContext,
+                        "Microphone permission was lost for Ambient Noise sensor. Requesting permission...",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
         }
     }
 
@@ -402,6 +518,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         musicScanner.stopAutoRescanWatcher()
         speedVolumeManager.stopTracking()
+        ambientNoiseManager.stopListening()
         super.onDestroy()
     }
 }

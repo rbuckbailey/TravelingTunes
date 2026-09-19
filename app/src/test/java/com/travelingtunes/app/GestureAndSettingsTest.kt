@@ -927,7 +927,7 @@ class GestureAndSettingsTest {
         val display = com.travelingtunes.app.core.model.DisplaySettings()
         org.junit.Assert.assertFalse(display.drivingModeEnabled)
         org.junit.Assert.assertFalse(display.autoEnableDrivingMode)
-        org.junit.Assert.assertFalse(display.autoSpeedVolumeEnabled)
+        org.junit.Assert.assertFalse(display.autoAmbientNoiseEnabled)
         assertEquals(50, display.autoDefaultVolume)
         assertEquals(15f, display.autoMinSpeedThreshold, 0.01f)
         assertEquals(1.0f, display.autoSpeedVolumeRatio, 0.01f)
@@ -937,6 +937,7 @@ class GestureAndSettingsTest {
             drivingModeEnabled = true,
             autoEnableDrivingMode = true,
             autoSpeedVolumeEnabled = true,
+            autoAmbientNoiseEnabled = true,
             autoDefaultVolume = 70,
             autoMinSpeedThreshold = 20f,
             autoSpeedVolumeRatio = 1.5f,
@@ -945,6 +946,7 @@ class GestureAndSettingsTest {
         assertTrue(updated.drivingModeEnabled)
         assertTrue(updated.autoEnableDrivingMode)
         assertTrue(updated.autoSpeedVolumeEnabled)
+        assertTrue(updated.autoAmbientNoiseEnabled)
         assertEquals(70, updated.autoDefaultVolume)
         assertEquals(20f, updated.autoMinSpeedThreshold, 0.01f)
         assertEquals(1.5f, updated.autoSpeedVolumeRatio, 0.01f)
@@ -955,7 +957,36 @@ class GestureAndSettingsTest {
     fun testToggleDrivingModeAction() {
         val action = GestureAction.fromKey("TOGGLE_DRIVING_MODE")
         assertEquals(GestureAction.TOGGLE_DRIVING_MODE, action)
-        assertEquals("Toggle Driving Mode", GestureAction.TOGGLE_DRIVING_MODE.displayName)
+        assertEquals("Toggle Traveling Mode", GestureAction.TOGGLE_DRIVING_MODE.displayName)
+    }
+
+    @Test
+    fun testAmbientNoiseManagerBehavior() {
+        val mockContext = Mockito.mock(Context::class.java)
+        val mockAudioManager = Mockito.mock(AudioManager::class.java)
+        Mockito.`when`(mockContext.applicationContext).thenReturn(mockContext)
+        Mockito.`when`(mockContext.getSystemService(Context.AUDIO_SERVICE)).thenReturn(mockAudioManager)
+        Mockito.`when`(mockAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)).thenReturn(15)
+        Mockito.`when`(mockAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)).thenReturn(7)
+
+        val manager = com.travelingtunes.app.core.location.AmbientNoiseManager(mockContext)
+        manager.updateConfig(
+            ambientNoiseEnabled = true,
+            drivingModeEnabled = false,
+            autoEnableDrivingMode = false,
+            defaultVolumePercent = 50
+        )
+
+        assertFalse(manager.isAmbientNoiseActive)
+
+        manager.updateConfig(
+            ambientNoiseEnabled = true,
+            drivingModeEnabled = true,
+            autoEnableDrivingMode = false,
+            defaultVolumePercent = 50
+        )
+
+        assertTrue(manager.isAmbientNoiseActive)
     }
 
     @Test
@@ -1232,6 +1263,22 @@ class GestureAndSettingsTest {
         assertTrue(travelingProfile.overrides.containsKey("autoEnableDrivingMode"))
         assertTrue(travelingProfile.overrides.containsKey("gpsVolume"))
 
+        val drivingProfile = Profile.DRIVING
+        assertEquals("driving", drivingProfile.id)
+        assertEquals("Driving", drivingProfile.name)
+        assertEquals("traveling", drivingProfile.parentId)
+        assertTrue(drivingProfile.isBuiltIn)
+        assertFalse(drivingProfile.isDeletable)
+        assertEquals("true", drivingProfile.overrides["autoSpeedVolumeEnabled"])
+
+        val transitProfile = Profile.TRANSIT
+        assertEquals("transit", transitProfile.id)
+        assertEquals("Transit", transitProfile.name)
+        assertEquals("traveling", transitProfile.parentId)
+        assertTrue(transitProfile.isBuiltIn)
+        assertFalse(transitProfile.isDeletable)
+        assertEquals("true", transitProfile.overrides["autoAmbientNoiseEnabled"])
+
         val dockedProfile = Profile.DOCKED
         assertEquals("docked", dockedProfile.id)
         assertEquals("Docked Art", dockedProfile.name)
@@ -1254,10 +1301,10 @@ class GestureAndSettingsTest {
             isDeletable = true,
             overrides = mapOf("artistFontSize" to "40.0")
         )
-        val jsonStr = Profile.listToJson(listOf(defaultProfile, travelingProfile, dockedProfile, undockedProfile, customProfile))
+        val jsonStr = Profile.listToJson(listOf(defaultProfile, travelingProfile, drivingProfile, transitProfile, dockedProfile, undockedProfile, customProfile))
         val parsedList = Profile.listFromJson(jsonStr)
 
-        assertEquals(5, parsedList.size)
+        assertEquals(7, parsedList.size)
         val parsedCustom = parsedList.find { it.id == "custom_1" }
         assertNotNull(parsedCustom)
         assertEquals("Night Drive", parsedCustom?.name)
@@ -1276,6 +1323,27 @@ class GestureAndSettingsTest {
         assertTrue(parsedUndocked!!.isBuiltIn)
         assertFalse(parsedUndocked.isDeletable)
         assertEquals("OVERLAY", parsedUndocked.overrides["artDisplayLayout"])
+    }
+
+    @Test
+    fun testProfileEmojiDefaultAndSerialization() {
+        assertEquals("🏷️", Profile.DEFAULT.emoji)
+        assertEquals("🧳", Profile.TRAVELING.emoji)
+        assertEquals("🚗", Profile.DRIVING.emoji)
+        assertEquals("🚆", Profile.TRANSIT.emoji)
+
+        val customProfile = Profile(
+            id = "custom_2",
+            name = "Gym",
+            emoji = "💪"
+        )
+        assertEquals("💪", customProfile.emoji)
+
+        val jsonStr = customProfile.toJson()
+        assertTrue(jsonStr.contains("\"emoji\": \"💪\""))
+
+        val parsed = Profile.listFromJson(Profile.listToJson(listOf(customProfile))).first { it.id == "custom_2" }
+        assertEquals("💪", parsed.emoji)
     }
 
     @Test

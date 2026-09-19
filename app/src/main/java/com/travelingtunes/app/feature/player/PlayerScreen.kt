@@ -2826,6 +2826,11 @@ fun ScreenRegionIconsOverlay(
     val volumeEdgeDisplacement = if (isVolumeEdgeBar && displaySettings != null) (displaySettings.hudLineThickness + 6f).dp else 0.dp
     val isDrivingModeEnabled = displaySettings?.drivingModeEnabled == true
 
+    val activeProfileState = effectiveSettingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT)
+    val activeProfileEmoji = activeProfileState.value.emoji
+    val allProfilesState = effectiveSettingsDataStore.profilesFlow.collectAsState(initial = emptyList())
+    val allProfilesList = allProfilesState.value
+
     Box(modifier = modifier.fillMaxSize()) {
         // Top Edge Regions
         for ((index, slotIdx) in activeSlotIndices.withIndex()) {
@@ -2948,6 +2953,8 @@ fun ScreenRegionIconsOverlay(
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         drivingModeEnabled = isDrivingModeEnabled,
+                        activeProfileEmoji = activeProfileEmoji,
+                        allProfiles = allProfilesList,
                         tint = buttonTint,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
                     )
@@ -3075,6 +3082,8 @@ fun ScreenRegionIconsOverlay(
                         shuffleMode = shuffleMode,
                         isPlaying = isPlaying,
                         drivingModeEnabled = isDrivingModeEnabled,
+                        activeProfileEmoji = activeProfileEmoji,
+                        allProfiles = allProfilesList,
                         tint = buttonTint,
                         iconSize = if (iconBoxSize < 60.dp) 24.dp else 36.dp
                     )

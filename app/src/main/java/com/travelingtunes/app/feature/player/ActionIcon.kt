@@ -5,8 +5,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import com.travelingtunes.app.R
+import com.travelingtunes.app.core.model.Profile
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
 import androidx.compose.material.icons.automirrored.filled.FormatAlignRight
@@ -113,6 +121,8 @@ fun ActionIcon(
     shuffleMode: ShuffleMode = ShuffleMode.OFF,
     isPlaying: Boolean = false,
     drivingModeEnabled: Boolean = false,
+    activeProfileEmoji: String? = null,
+    allProfiles: List<Profile> = emptyList(),
     tint: Color = MaterialTheme.colorScheme.primary,
     iconSize: Dp = 28.dp,
 ) {
@@ -327,12 +337,15 @@ fun ActionIcon(
                 modifier = Modifier.size(iconSize)
             )
 
-            GestureAction.SELECT_PROFILE -> Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = action.displayName,
-                tint = effectiveTint,
-                modifier = Modifier.size(iconSize)
-            )
+            GestureAction.SELECT_PROFILE -> {
+                val emoji = activeProfileEmoji.takeUnless { it.isNullOrBlank() } ?: "🏷️"
+                MonochromeEmojiIcon(
+                    emoji = emoji,
+                    tint = effectiveTint,
+                    iconSize = iconSize,
+                    modifier = modifier
+                )
+            }
 
             GestureAction.RADIAL_MENU -> Icon(
                 imageVector = Icons.Default.DonutLarge,
@@ -345,8 +358,11 @@ fun ActionIcon(
                 if (optionKey != null) {
                     ConfigOptionIcon(
                         optionKey = optionKey,
+                        activeProfileEmoji = activeProfileEmoji,
+                        allProfiles = allProfiles,
                         tint = effectiveTint,
-                        iconSize = iconSize
+                        iconSize = iconSize,
+                        modifier = modifier
                     )
                 } else {
                     Icon(
@@ -363,14 +379,72 @@ fun ActionIcon(
 }
 
 @Composable
+fun MonochromeEmojiIcon(
+    emoji: String,
+    tint: Color,
+    iconSize: Dp,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val fontSize = with(density) { (iconSize * 0.72f).toSp() }
+    val displayEmoji = emoji.ifBlank { "🏷️" }
+
+    Box(
+        modifier = modifier
+            .size(iconSize)
+            .graphicsLayer { alpha = 0.99f }
+            .drawWithContent {
+                drawContent()
+                drawRect(color = tint, blendMode = BlendMode.SrcIn)
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = displayEmoji,
+            style = TextStyle(
+                fontSize = fontSize,
+                textAlign = TextAlign.Center,
+                color = tint
+            ),
+            maxLines = 1,
+            softWrap = false
+        )
+    }
+}
+
+@Composable
 fun ConfigOptionIcon(
     optionKey: String,
     modifier: Modifier = Modifier,
+    activeProfileEmoji: String? = null,
+    allProfiles: List<Profile> = emptyList(),
     tint: Color = MaterialTheme.colorScheme.primary,
     iconSize: Dp = 24.dp,
 ) {
     if (optionKey.equals("THEME_MONDRIAN", ignoreCase = true)) {
         MondrianIcon(modifier = modifier, iconSize = iconSize)
+        return
+    }
+
+    if (optionKey.startsWith("PROFILE_", ignoreCase = true)) {
+        val targetId = optionKey.substringAfter("PROFILE_").lowercase()
+        val foundProfile = allProfiles.find { it.id.equals(targetId, ignoreCase = true) }
+        val emoji = foundProfile?.emoji
+            ?: when (targetId) {
+                "default" -> Profile.DEFAULT.emoji
+                "traveling" -> Profile.TRAVELING.emoji
+                "driving" -> Profile.DRIVING.emoji
+                "transit" -> Profile.TRANSIT.emoji
+                "docked" -> Profile.DOCKED.emoji
+                "undocked" -> Profile.UNDOCKED.emoji
+                else -> activeProfileEmoji ?: "🏷️"
+            }
+        MonochromeEmojiIcon(
+            emoji = emoji,
+            tint = tint,
+            iconSize = iconSize,
+            modifier = modifier
+        )
         return
     }
 
@@ -534,6 +608,7 @@ private fun getConfigOptionIconVector(optionKey: String): Pair<ImageVector, Imag
         "AUTO_drivingMode" -> Icons.Default.DirectionsCar to null
         "AUTO_autoEnableDrivingMode" -> Icons.Default.TimeToLeave to null
         "AUTO_speedVolume" -> Icons.Default.CarRental to null
+        "AUTO_ambientNoise" -> Icons.AutoMirrored.Filled.VolumeUp to null
 
         else -> Icons.Default.Tune to null
     }

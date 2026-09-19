@@ -124,6 +124,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_AUTO_AUTOPLAY_ON_CONNECT = booleanPreferencesKey("autoAutoplayOnConnect")
         val KEY_AUTO_VOICE_SEARCH = booleanPreferencesKey("autoVoiceSearch")
         val KEY_AUTO_SPEED_VOLUME_ENABLED = booleanPreferencesKey("autoSpeedVolumeEnabled")
+        val KEY_AUTO_AMBIENT_NOISE_ENABLED = booleanPreferencesKey("autoAmbientNoiseEnabled")
         val KEY_AUTO_DEFAULT_VOLUME = intPreferencesKey("autoDefaultVolume")
         val KEY_AUTO_MIN_SPEED_THRESHOLD = floatPreferencesKey("autoMinSpeedThreshold")
         val KEY_AUTO_SPEED_VOLUME_RATIO = floatPreferencesKey("autoSpeedVolumeRatio")
@@ -360,6 +361,7 @@ class SettingsDataStore(private val context: Context) {
             autoAutoplayOnConnect = getBool(KEY_AUTO_AUTOPLAY_ON_CONNECT, "AUTO_autoAutoplayOnConnect", false),
             autoVoiceSearch = getBool(KEY_AUTO_VOICE_SEARCH, "AUTO_autoVoiceSearch", true),
             autoSpeedVolumeEnabled = getBool(KEY_AUTO_SPEED_VOLUME_ENABLED, "AUTO_speedVolume", false),
+            autoAmbientNoiseEnabled = getBool(KEY_AUTO_AMBIENT_NOISE_ENABLED, "AUTO_ambientNoise", false),
             autoDefaultVolume = getInt(KEY_AUTO_DEFAULT_VOLUME, "autoDefaultVolume", 50),
             autoMinSpeedThreshold = getFloat(KEY_AUTO_MIN_SPEED_THRESHOLD, "autoMinSpeedThreshold", 15f),
             autoSpeedVolumeRatio = getFloat(KEY_AUTO_SPEED_VOLUME_RATIO, "autoSpeedVolumeRatio", 1.0f),
@@ -648,20 +650,32 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setDrivingModeEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
-            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
-            if (activeId == Profile.DEFAULT_ID) {
-                prefs[KEY_DRIVING_MODE_ENABLED] = enabled
-            } else {
-                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
-                    if (profile.id == activeId) {
-                        val updatedMap = profile.overrides.toMutableMap()
-                        updatedMap["AUTO_drivingMode"] = enabled.toString()
-                        updatedMap["drivingModeEnabled"] = enabled.toString()
-                        profile.copy(overrides = updatedMap)
-                    } else profile
-                }
-                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            prefs[KEY_DRIVING_MODE_ENABLED] = enabled
+            if (!enabled) {
+                prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = false
+                prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] = false
             }
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                if (profile.id == activeId || profile.id == Profile.DEFAULT_ID || profile.id == Profile.UNDOCKED_ID || profile.id == Profile.DOCKED_ID || profile.id == Profile.TRAVELING_ID) {
+                    val updatedMap = profile.overrides.toMutableMap()
+                    updatedMap["AUTO_drivingMode"] = enabled.toString()
+                    updatedMap["drivingModeEnabled"] = enabled.toString()
+                    if (!enabled) {
+                        updatedMap["AUTO_speedVolume"] = "false"
+                        updatedMap["autoSpeedVolumeEnabled"] = "false"
+                        updatedMap["AUTO_ambientNoise"] = "false"
+                        updatedMap["autoAmbientNoiseEnabled"] = "false"
+                    } else {
+                        updatedMap["AUTO_speedVolume"] = (prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false).toString()
+                        updatedMap["autoSpeedVolumeEnabled"] = (prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false).toString()
+                        updatedMap["AUTO_ambientNoise"] = (prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] ?: false).toString()
+                        updatedMap["autoAmbientNoiseEnabled"] = (prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] ?: false).toString()
+                    }
+                    profile.copy(overrides = updatedMap)
+                } else profile
+            }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
         }
     }
 
@@ -685,25 +699,34 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun toggleDrivingMode() {
         context.dataStore.edit { prefs ->
-            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
-            if (activeId == Profile.DEFAULT_ID) {
-                val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false
-                prefs[KEY_DRIVING_MODE_ENABLED] = !current
-            } else {
-                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
-                    if (profile.id == activeId) {
-                        val currentVal = profile.overrides["drivingModeEnabled"]?.toBooleanStrictOrNull()
-                            ?: profile.overrides["AUTO_drivingMode"]?.toBooleanStrictOrNull()
-                            ?: prefs[KEY_DRIVING_MODE_ENABLED]
-                            ?: false
-                        val updatedMap = profile.overrides.toMutableMap()
-                        updatedMap["AUTO_drivingMode"] = (!currentVal).toString()
-                        updatedMap["drivingModeEnabled"] = (!currentVal).toString()
-                        profile.copy(overrides = updatedMap)
-                    } else profile
-                }
-                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false
+            val next = !current
+            prefs[KEY_DRIVING_MODE_ENABLED] = next
+            if (!next) {
+                prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = false
+                prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] = false
             }
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                if (profile.id == activeId || profile.id == Profile.DEFAULT_ID || profile.id == Profile.UNDOCKED_ID || profile.id == Profile.DOCKED_ID || profile.id == Profile.TRAVELING_ID) {
+                    val updatedMap = profile.overrides.toMutableMap()
+                    updatedMap["AUTO_drivingMode"] = next.toString()
+                    updatedMap["drivingModeEnabled"] = next.toString()
+                    if (!next) {
+                        updatedMap["AUTO_speedVolume"] = "false"
+                        updatedMap["autoSpeedVolumeEnabled"] = "false"
+                        updatedMap["AUTO_ambientNoise"] = "false"
+                        updatedMap["autoAmbientNoiseEnabled"] = "false"
+                    } else {
+                        updatedMap["AUTO_speedVolume"] = (prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false).toString()
+                        updatedMap["autoSpeedVolumeEnabled"] = (prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false).toString()
+                        updatedMap["AUTO_ambientNoise"] = (prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] ?: false).toString()
+                        updatedMap["autoAmbientNoiseEnabled"] = (prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] ?: false).toString()
+                    }
+                    profile.copy(overrides = updatedMap)
+                } else profile
+            }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
         }
     }
 
@@ -846,9 +869,32 @@ class SettingsDataStore(private val context: Context) {
                     "THEME_isGlass" -> prefs[KEY_THEME_GLASS] = !(prefs[KEY_THEME_GLASS] ?: false)
                     "LIBRARY_autoRescan" -> prefs[KEY_AUTO_RESCAN] = !(prefs[KEY_AUTO_RESCAN] ?: false)
                     "LIBRARY_gpsVolume" -> prefs[KEY_GPS_VOLUME] = !(prefs[KEY_GPS_VOLUME] ?: false)
-                    "AUTO_drivingMode" -> prefs[KEY_DRIVING_MODE_ENABLED] = !(prefs[KEY_DRIVING_MODE_ENABLED] ?: false)
+                    "AUTO_drivingMode" -> {
+                        val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false
+                        val next = !current
+                        prefs[KEY_DRIVING_MODE_ENABLED] = next
+                        if (!next) {
+                            prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = false
+                            prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] = false
+                        }
+                    }
                     "AUTO_autoEnableDrivingMode" -> prefs[KEY_AUTO_ENABLE_DRIVING_MODE] = !(prefs[KEY_AUTO_ENABLE_DRIVING_MODE] ?: false)
-                    "AUTO_speedVolume" -> prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = !(prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false)
+                    "AUTO_speedVolume" -> {
+                        val current = prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] ?: false
+                        val next = !current
+                        prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = next
+                        if (next) {
+                            prefs[KEY_DRIVING_MODE_ENABLED] = true
+                        }
+                    }
+                    "AUTO_ambientNoise" -> {
+                        val current = prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] ?: false
+                        val next = !current
+                        prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] = next
+                        if (next) {
+                            prefs[KEY_DRIVING_MODE_ENABLED] = true
+                        }
+                    }
                 }
             } else {
                 val priorKey = stringPreferencesKey("${triggerKey}_prior_value")
@@ -1049,17 +1095,21 @@ class SettingsDataStore(private val context: Context) {
                 prefs[KEY_ACTIVE_PROFILE_ID] = Profile.UNDOCKED_ID
             }
             val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
-            if (activeId != Profile.DEFAULT_ID && activeId != Profile.TRAVELING_ID && activeId != Profile.DOCKED_ID && activeId != Profile.UNDOCKED_ID) {
-                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
-                    if (profile.id == activeId) {
-                        val updatedMap = profile.overrides.toMutableMap()
-                        updatedMap["DISPLAY_artDisplayLayout"] = update.artDisplayLayout.name
-                        updatedMap["artDisplayLayout"] = update.artDisplayLayout.name
-                        profile.copy(overrides = updatedMap)
-                    } else profile
-                }
-                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                if (profile.id == activeId || profile.id == Profile.DEFAULT_ID || profile.id == Profile.UNDOCKED_ID || profile.id == Profile.DOCKED_ID || profile.id == Profile.TRAVELING_ID) {
+                    val updatedMap = profile.overrides.toMutableMap()
+                    updatedMap["DISPLAY_artDisplayLayout"] = update.artDisplayLayout.name
+                    updatedMap["artDisplayLayout"] = update.artDisplayLayout.name
+                    updatedMap["AUTO_speedVolume"] = update.autoSpeedVolumeEnabled.toString()
+                    updatedMap["autoSpeedVolumeEnabled"] = update.autoSpeedVolumeEnabled.toString()
+                    updatedMap["AUTO_ambientNoise"] = update.autoAmbientNoiseEnabled.toString()
+                    updatedMap["autoAmbientNoiseEnabled"] = update.autoAmbientNoiseEnabled.toString()
+                    updatedMap["AUTO_drivingMode"] = update.drivingModeEnabled.toString()
+                    updatedMap["drivingModeEnabled"] = update.drivingModeEnabled.toString()
+                    profile.copy(overrides = updatedMap)
+                } else profile
             }
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
             prefs[KEY_ARTIST_FONT_SIZE] = update.artistFontSize
             prefs[KEY_SONG_FONT_SIZE] = update.songFontSize
             prefs[KEY_ALBUM_FONT_SIZE] = update.albumFontSize
@@ -1111,6 +1161,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_AUTO_AUTOPLAY_ON_CONNECT] = update.autoAutoplayOnConnect
             prefs[KEY_AUTO_VOICE_SEARCH] = update.autoVoiceSearch
             prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = update.autoSpeedVolumeEnabled
+            prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] = update.autoAmbientNoiseEnabled
             prefs[KEY_AUTO_DEFAULT_VOLUME] = update.autoDefaultVolume
             prefs[KEY_AUTO_MIN_SPEED_THRESHOLD] = update.autoMinSpeedThreshold
             prefs[KEY_AUTO_SPEED_VOLUME_RATIO] = update.autoSpeedVolumeRatio
@@ -1282,6 +1333,7 @@ class SettingsDataStore(private val context: Context) {
                     autoAutoplayOnConnect = dJson.optBoolean("autoAutoplayOnConnect", currentDisplay.autoAutoplayOnConnect),
                     autoVoiceSearch = dJson.optBoolean("autoVoiceSearch", currentDisplay.autoVoiceSearch),
                     autoSpeedVolumeEnabled = dJson.optBoolean("autoSpeedVolumeEnabled", currentDisplay.autoSpeedVolumeEnabled),
+                    autoAmbientNoiseEnabled = dJson.optBoolean("autoAmbientNoiseEnabled", currentDisplay.autoAmbientNoiseEnabled),
                     autoDefaultVolume = dJson.optInt("autoDefaultVolume", currentDisplay.autoDefaultVolume),
                     autoMinSpeedThreshold = dJson.optDouble("autoMinSpeedThreshold", currentDisplay.autoMinSpeedThreshold.toDouble()).toFloat(),
                     autoSpeedVolumeRatio = dJson.optDouble("autoSpeedVolumeRatio", currentDisplay.autoSpeedVolumeRatio.toDouble()).toFloat(),
@@ -1391,7 +1443,7 @@ class SettingsDataStore(private val context: Context) {
     }
 
     val profileSwitchTargetsFlow: Flow<List<String>> = context.dataStore.data.map { prefs ->
-        val raw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID},${Profile.DOCKED_ID},${Profile.UNDOCKED_ID}"
+        val raw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID},${Profile.DRIVING_ID},${Profile.TRANSIT_ID},${Profile.DOCKED_ID},${Profile.UNDOCKED_ID}"
         raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
     }
 
@@ -1404,13 +1456,14 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    suspend fun createProfile(name: String): String {
+    suspend fun createProfile(name: String, emoji: String = "🏷️"): String {
         val newId = "profile_" + System.currentTimeMillis()
         context.dataStore.edit { prefs ->
             val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).toMutableList()
             val newProfile = Profile(
                 id = newId,
                 name = name.ifBlank { "New Profile" },
+                emoji = emoji.ifBlank { "🏷️" },
                 isBuiltIn = false,
                 isDeletable = true,
                 overrides = emptyMap()
@@ -1422,13 +1475,18 @@ class SettingsDataStore(private val context: Context) {
         return newId
     }
 
-    suspend fun renameProfile(profileId: String, newName: String) {
+    suspend fun renameProfile(profileId: String, newName: String, newEmoji: String? = null) {
         context.dataStore.edit { prefs ->
             val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
             val profile = profiles.find { it.id == profileId }
-            if (profile == null || profile.isBuiltIn || !profile.isDeletable) return@edit
+            if (profile == null) return@edit
             val updated = profiles.map {
-                if (it.id == profileId) it.copy(name = newName.ifBlank { it.name }) else it
+                if (it.id == profileId) {
+                    it.copy(
+                        name = if (newName.isNotBlank()) newName else it.name,
+                        emoji = if (!newEmoji.isNullOrBlank()) newEmoji else it.emoji
+                    )
+                } else it
             }
             prefs[KEY_PROFILES_JSON] = Profile.listToJson(updated)
         }
@@ -1508,7 +1566,7 @@ class SettingsDataStore(private val context: Context) {
         context.dataStore.edit { prefs ->
             val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
             val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
-            val targetIdsRaw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID},${Profile.DOCKED_ID},${Profile.UNDOCKED_ID}"
+            val targetIdsRaw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID},${Profile.DRIVING_ID},${Profile.TRANSIT_ID},${Profile.DOCKED_ID},${Profile.UNDOCKED_ID}"
             val targetIds = targetIdsRaw.split(",").map { it.trim() }.filter { id -> profiles.any { it.id == id } }
                 .ifEmpty { profiles.map { it.id } }
 
@@ -1525,17 +1583,20 @@ class SettingsDataStore(private val context: Context) {
     suspend fun copyProfile(
         sourceProfileId: String,
         newName: String,
-        linkForInheritance: Boolean
+        linkForInheritance: Boolean,
+        newEmoji: String? = null
     ): String {
         val newId = "profile_" + System.currentTimeMillis()
         context.dataStore.edit { prefs ->
             val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).toMutableList()
             val sourceProfile = profiles.find { it.id == sourceProfileId } ?: Profile.DEFAULT
+            val targetEmoji = if (!newEmoji.isNullOrBlank()) newEmoji else sourceProfile.emoji
 
             val newProfile = if (linkForInheritance) {
                 Profile(
                     id = newId,
                     name = newName.ifBlank { "${sourceProfile.name} Copy" },
+                    emoji = targetEmoji,
                     isBuiltIn = false,
                     isDeletable = true,
                     overrides = emptyMap(),
@@ -1545,6 +1606,7 @@ class SettingsDataStore(private val context: Context) {
                 Profile(
                     id = newId,
                     name = newName.ifBlank { "${sourceProfile.name} Copy" },
+                    emoji = targetEmoji,
                     isBuiltIn = false,
                     isDeletable = true,
                     overrides = sourceProfile.overrides.toMap(),

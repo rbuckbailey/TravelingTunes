@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.travelingtunes.app.core.database.MusicDatabase
+import com.travelingtunes.app.feature.player.MonochromeEmojiIcon
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -3030,7 +3031,7 @@ private fun AndroidAutoSettingsContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Card 4: Driving Mode & Speed-Based Volume Adjustment
+        // Card 4: Traveling Mode & Volume Controls
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -3039,26 +3040,26 @@ private fun AndroidAutoSettingsContent(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Driving Mode & Speed Volume",
+                    text = "Traveling Mode & Volume Controls",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Toggle: Driving Mode
+                // Toggle: Traveling Mode
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Driving Mode",
+                            text = "Traveling Mode",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "Manually engage driving mode for driving-optimized behavior",
+                            text = "Manually engage traveling mode for traveling-optimized behavior",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -3066,26 +3067,32 @@ private fun AndroidAutoSettingsContent(
                     Switch(
                         checked = displaySettings.drivingModeEnabled,
                         onCheckedChange = { checked ->
-                            onUpdateDisplaySettings(displaySettings.copy(drivingModeEnabled = checked))
+                            onUpdateDisplaySettings(
+                                displaySettings.copy(
+                                    drivingModeEnabled = checked,
+                                    autoSpeedVolumeEnabled = if (!checked) false else displaySettings.autoSpeedVolumeEnabled,
+                                    autoAmbientNoiseEnabled = if (!checked) false else displaySettings.autoAmbientNoiseEnabled
+                                )
+                            )
                         }
                     )
                 }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Toggle: Automatically Enable Driving Mode
+                // Toggle: Automatically Enable Traveling Mode
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Automatically Enable Driving Mode",
+                            text = "Automatically Enable Traveling Mode",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "Engage driving mode automatically when vehicular motion is detected",
+                            text = "Engage traveling mode automatically when vehicular motion is detected",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -3100,171 +3107,217 @@ private fun AndroidAutoSettingsContent(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Toggle: Speed-Based Volume Adjustment
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                // Hierarchically attached volume adjustments under Traveling Mode
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Speed-Based Volume Adjustment",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "Automatically adjust volume based on vehicle speed",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = displaySettings.autoSpeedVolumeEnabled,
-                        onCheckedChange = { checked ->
-                            onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeEnabled = checked))
+                    // Toggle: Speed-Based Volume Adjustment (Volume by Speed)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Speed-Based Volume Adjustment",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Automatically adjust volume based on vehicle speed",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    )
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                // Speed Unit Selector
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Speed Unit",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "Choose units for speed measurements",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Switch(
+                            checked = displaySettings.autoSpeedVolumeEnabled,
+                            onCheckedChange = { checked ->
+                                onUpdateDisplaySettings(
+                                    displaySettings.copy(
+                                        autoSpeedVolumeEnabled = checked,
+                                        drivingModeEnabled = if (checked) true else displaySettings.drivingModeEnabled
+                                    )
+                                )
+                            }
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = displaySettings.autoSpeedUnit.equals("MPH", ignoreCase = true),
-                            onClick = {
-                                onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "MPH"))
-                            },
-                            label = { Text("MPH") }
-                        )
-                        FilterChip(
-                            selected = displaySettings.autoSpeedUnit.equals("KPH", ignoreCase = true),
-                            onClick = {
-                                onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "KPH"))
-                            },
-                            label = { Text("KPH") }
-                        )
+
+                    if (displaySettings.autoSpeedVolumeEnabled) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Speed Unit Selector
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Speed Unit",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "Choose units for speed measurements",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = displaySettings.autoSpeedUnit.equals("MPH", ignoreCase = true),
+                                    onClick = {
+                                        onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "MPH"))
+                                    },
+                                    label = { Text("MPH") }
+                                )
+                                FilterChip(
+                                    selected = displaySettings.autoSpeedUnit.equals("KPH", ignoreCase = true),
+                                    onClick = {
+                                        onUpdateDisplaySettings(displaySettings.copy(autoSpeedUnit = "KPH"))
+                                    },
+                                    label = { Text("KPH") }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Configurable Default Volume
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Configurable Default Volume",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "${displaySettings.autoDefaultVolume}%",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Text(
+                                text = "Baseline volume level before speed-based increase",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value = displaySettings.autoDefaultVolume.toFloat(),
+                                onValueChange = { value ->
+                                    onUpdateDisplaySettings(displaySettings.copy(autoDefaultVolume = value.roundToInt()))
+                                },
+                                valueRange = 0f..100f,
+                                steps = 99
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Minimum Speed Threshold
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Minimum Speed Threshold",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "${displaySettings.autoMinSpeedThreshold.roundToInt()} ${displaySettings.autoSpeedUnit}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Text(
+                                text = "Speed at which volume auto-increase begins",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value = displaySettings.autoMinSpeedThreshold,
+                                onValueChange = { value ->
+                                    onUpdateDisplaySettings(displaySettings.copy(autoMinSpeedThreshold = value))
+                                },
+                                valueRange = 5f..60f,
+                                steps = 54
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Rate-of-Increase Ratio
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Volume Increase Rate",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "${"%.1f".format(displaySettings.autoSpeedVolumeRatio)} vol step / 10 ${displaySettings.autoSpeedUnit}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Text(
+                                text = "Rate of volume increase per 10 ${displaySettings.autoSpeedUnit} above threshold",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value = displaySettings.autoSpeedVolumeRatio,
+                                onValueChange = { value ->
+                                    onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeRatio = value))
+                                },
+                                valueRange = 0.1f..5.0f,
+                                steps = 48
+                            )
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Configurable Default Volume
-                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Toggle: Ambient Noise
                     Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "Configurable Default Volume",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "${displaySettings.autoDefaultVolume}%",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Text(
-                        text = "Baseline volume level before speed-based increase",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Slider(
-                        value = displaySettings.autoDefaultVolume.toFloat(),
-                        onValueChange = { value ->
-                            onUpdateDisplaySettings(displaySettings.copy(autoDefaultVolume = value.roundToInt()))
-                        },
-                        valueRange = 0f..100f,
-                        steps = 99
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Minimum Speed Threshold
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Minimum Speed Threshold",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "${displaySettings.autoMinSpeedThreshold.roundToInt()} ${displaySettings.autoSpeedUnit}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Ambient Noise",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Listens for ambient sound level and raises volume to compensate",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = displaySettings.autoAmbientNoiseEnabled,
+                            onCheckedChange = { checked ->
+                                onUpdateDisplaySettings(
+                                    displaySettings.copy(
+                                        autoAmbientNoiseEnabled = checked,
+                                        drivingModeEnabled = if (checked) true else displaySettings.drivingModeEnabled
+                                    )
+                                )
+                            }
                         )
                     }
-                    Text(
-                        text = "Speed at which volume auto-increase begins",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Slider(
-                        value = displaySettings.autoMinSpeedThreshold,
-                        onValueChange = { value ->
-                            onUpdateDisplaySettings(displaySettings.copy(autoMinSpeedThreshold = value))
-                        },
-                        valueRange = 5f..60f,
-                        steps = 54
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Rate-of-Increase Ratio
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Volume Increase Rate",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "${"%.1f".format(displaySettings.autoSpeedVolumeRatio)} vol step / 10 ${displaySettings.autoSpeedUnit}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Text(
-                        text = "Rate of volume increase per 10 ${displaySettings.autoSpeedUnit} above threshold",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Slider(
-                        value = displaySettings.autoSpeedVolumeRatio,
-                        onValueChange = { value ->
-                            onUpdateDisplaySettings(displaySettings.copy(autoSpeedVolumeRatio = value))
-                        },
-                        valueRange = 0.1f..5.0f,
-                        steps = 48
-                    )
                 }
             }
         }
@@ -3283,11 +3336,14 @@ private fun ProfilesSettingsContent(
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var newProfileName by remember { mutableStateOf("") }
+    var newProfileEmoji by remember { mutableStateOf("🏷️") }
     var renamingProfileId by remember { mutableStateOf<String?>(null) }
     var renamingName by remember { mutableStateOf("") }
+    var renamingEmoji by remember { mutableStateOf("🏷️") }
 
     var copyingProfile by remember { mutableStateOf<Profile?>(null) }
     var copyName by remember { mutableStateOf("") }
+    var copyEmoji by remember { mutableStateOf("🏷️") }
     var copyLinkForInheritance by remember { mutableStateOf(true) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -3322,7 +3378,19 @@ private fun ProfilesSettingsContent(
                                     settingsDataStore.setActiveProfile(profile.id)
                                 }
                             },
-                            label = { Text(profile.name) }
+                            label = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    MonochromeEmojiIcon(
+                                        emoji = profile.emoji,
+                                        tint = if (profile.id == activeProfile.id) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                        iconSize = 16.dp
+                                    )
+                                    Text(profile.name)
+                                }
+                            }
                         )
                     }
                 }
@@ -3367,6 +3435,11 @@ private fun ProfilesSettingsContent(
                     ListItem(
                         headlineContent = {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                MonochromeEmojiIcon(
+                                    emoji = profile.emoji,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    iconSize = 20.dp
+                                )
                                 Text(profile.name, fontWeight = FontWeight.SemiBold)
                                 if (profile.id == activeProfile.id) {
                                     Text("(Active)", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -3381,7 +3454,9 @@ private fun ProfilesSettingsContent(
                                 Text(
                                     when (profile.id) {
                                         Profile.DEFAULT_ID -> "Default baseline settings for TravelingTunes"
-                                        Profile.TRAVELING_ID -> "Built-in profile configured for Driving & Travel mode"
+                                        Profile.TRAVELING_ID -> "Built-in profile configured for Travel mode"
+                                        Profile.DRIVING_ID -> "Built-in sub-profile inheriting from Traveling, configured for Speed-Based Driving"
+                                        Profile.TRANSIT_ID -> "Built-in sub-profile inheriting from Traveling, configured for Ambient Noise in Transit"
                                         Profile.DOCKED_ID -> "Built-in profile configured for Docked Art mode"
                                         Profile.UNDOCKED_ID -> "Built-in profile configured for Undocked Art mode"
                                         else -> "Inherits from: ${currentParent.name} • ${profile.overrides.size} local overrides"
@@ -3412,17 +3487,19 @@ private fun ProfilesSettingsContent(
                                 IconButton(onClick = {
                                     copyingProfile = profile
                                     copyName = "${profile.name} Copy"
+                                    copyEmoji = profile.emoji
                                     copyLinkForInheritance = true
                                 }) {
                                     Icon(Icons.Default.ContentCopy, contentDescription = "Copy Profile")
                                 }
+                                IconButton(onClick = {
+                                    renamingProfileId = profile.id
+                                    renamingName = profile.name
+                                    renamingEmoji = profile.emoji
+                                }) {
+                                    Icon(Icons.Default.FormatPaint, contentDescription = "Edit Profile")
+                                }
                                 if (!profile.isBuiltIn && profile.isDeletable) {
-                                    IconButton(onClick = {
-                                        renamingProfileId = profile.id
-                                        renamingName = profile.name
-                                    }) {
-                                        Icon(Icons.Default.FormatPaint, contentDescription = "Rename Profile")
-                                    }
                                     IconButton(onClick = {
                                         coroutineScope.launch {
                                             settingsDataStore.deleteProfile(profile.id)
@@ -3551,15 +3628,32 @@ private fun ProfilesSettingsContent(
             onDismissRequest = { showCreateDialog = false },
             title = { Text("Create New Profile") },
             text = {
-                Column {
-                    Text("Enter a name for the new settings profile:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    androidx.compose.material3.OutlinedTextField(
-                        value = newProfileName,
-                        onValueChange = { newProfileName = it },
-                        singleLine = true,
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Enter a name and emoji for the new profile:")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
-                    )
+                    ) {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = newProfileEmoji,
+                            onValueChange = { newProfileEmoji = it.take(2) },
+                            label = { Text("Emoji") },
+                            singleLine = true,
+                            modifier = Modifier.width(80.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                fontSize = 20.sp
+                            )
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = newProfileName,
+                            onValueChange = { newProfileName = it },
+                            label = { Text("Profile Name") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -3567,7 +3661,10 @@ private fun ProfilesSettingsContent(
                     onClick = {
                         if (newProfileName.isNotBlank()) {
                             coroutineScope.launch {
-                                settingsDataStore.createProfile(newProfileName.trim())
+                                settingsDataStore.createProfile(
+                                    newProfileName.trim(),
+                                    newProfileEmoji.trim().ifEmpty { "🏷️" }
+                                )
                             }
                         }
                         showCreateDialog = false
@@ -3584,21 +3681,38 @@ private fun ProfilesSettingsContent(
         )
     }
 
-    // Dialog: Rename Profile
+    // Dialog: Rename/Edit Profile
     renamingProfileId?.let { profId ->
         AlertDialog(
             onDismissRequest = { renamingProfileId = null },
-            title = { Text("Rename Profile") },
+            title = { Text("Edit Profile") },
             text = {
-                Column {
-                    Text("Enter a new name for the profile:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    androidx.compose.material3.OutlinedTextField(
-                        value = renamingName,
-                        onValueChange = { renamingName = it },
-                        singleLine = true,
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Update name and emoji for this profile:")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
-                    )
+                    ) {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = renamingEmoji,
+                            onValueChange = { renamingEmoji = it.take(2) },
+                            label = { Text("Emoji") },
+                            singleLine = true,
+                            modifier = Modifier.width(80.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                fontSize = 20.sp
+                            )
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = renamingName,
+                            onValueChange = { renamingName = it },
+                            label = { Text("Profile Name") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -3606,13 +3720,17 @@ private fun ProfilesSettingsContent(
                     onClick = {
                         if (renamingName.isNotBlank()) {
                             coroutineScope.launch {
-                                settingsDataStore.renameProfile(profId, renamingName.trim())
+                                settingsDataStore.renameProfile(
+                                    profId,
+                                    renamingName.trim(),
+                                    renamingEmoji.trim().ifEmpty { "🏷️" }
+                                )
                             }
                         }
                         renamingProfileId = null
                     }
                 ) {
-                    Text("Rename")
+                    Text("Save")
                 }
             },
             dismissButton = {
@@ -3630,13 +3748,31 @@ private fun ProfilesSettingsContent(
             title = { Text("Copy Profile: ${srcProf.name}") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Enter name for copied profile:")
-                    androidx.compose.material3.OutlinedTextField(
-                        value = copyName,
-                        onValueChange = { copyName = it },
-                        singleLine = true,
+                    Text("Enter name and emoji for copied profile:")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
-                    )
+                    ) {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = copyEmoji,
+                            onValueChange = { copyEmoji = it.take(2) },
+                            label = { Text("Emoji") },
+                            singleLine = true,
+                            modifier = Modifier.width(80.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                fontSize = 20.sp
+                            )
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = copyName,
+                            onValueChange = { copyName = it },
+                            label = { Text("Profile Name") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -3666,7 +3802,12 @@ private fun ProfilesSettingsContent(
                     onClick = {
                         if (copyName.isNotBlank()) {
                             coroutineScope.launch {
-                                settingsDataStore.copyProfile(srcProf.id, copyName.trim(), copyLinkForInheritance)
+                                settingsDataStore.copyProfile(
+                                    srcProf.id,
+                                    copyName.trim(),
+                                    copyLinkForInheritance,
+                                    copyEmoji.trim().ifEmpty { "🏷️" }
+                                )
                             }
                         }
                         copyingProfile = null

@@ -29,7 +29,7 @@ enum class GestureAction(val displayName: String) {
     DECREASE_RATING("Decrease Rating"),
     SHOW_QUICK_START("Show Quick Start"),
     DELETE_DOWNLOADED_ART("Delete Downloaded Art"),
-    TOGGLE_DRIVING_MODE("Toggle Driving Mode"),
+    TOGGLE_DRIVING_MODE("Toggle Traveling Mode"),
     TOGGLE_DOCKED_ART("Toggle Docked Art"),
     SELECT_PROFILE("Select Profile"),
     RADIAL_MENU("Radial Menu"),

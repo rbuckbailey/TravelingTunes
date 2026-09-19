@@ -81,6 +81,7 @@ object SettingsBackupHelper {
         sb.append("    \"autoAutoplayOnConnect\": ${display.autoAutoplayOnConnect},\n")
         sb.append("    \"autoVoiceSearch\": ${display.autoVoiceSearch},\n")
         sb.append("    \"autoSpeedVolumeEnabled\": ${display.autoSpeedVolumeEnabled},\n")
+        sb.append("    \"autoAmbientNoiseEnabled\": ${display.autoAmbientNoiseEnabled},\n")
         sb.append("    \"autoDefaultVolume\": ${display.autoDefaultVolume},\n")
         sb.append("    \"autoMinSpeedThreshold\": ${display.autoMinSpeedThreshold},\n")
         sb.append("    \"autoSpeedVolumeRatio\": ${display.autoSpeedVolumeRatio},\n")

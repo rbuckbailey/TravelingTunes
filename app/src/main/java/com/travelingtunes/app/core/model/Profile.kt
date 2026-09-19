@@ -9,14 +9,15 @@ data class Profile(
     val isBuiltIn: Boolean = false,
     val isDeletable: Boolean = true,
     val overrides: Map<String, String> = emptyMap(),
-    val parentId: String? = null
+    val parentId: String? = null,
+    val emoji: String = "🏷️"
 ) {
     fun toJson(): String {
         val overridesEntries = overrides.entries.joinToString(",") { (k, v) ->
             "\"${escapeJson(k)}\": \"${escapeJson(v)}\""
         }
         val parentField = if (parentId != null) ", \"parentId\": \"${escapeJson(parentId)}\"" else ""
-        return "{\"id\": \"${escapeJson(id)}\", \"name\": \"${escapeJson(name)}\", \"isBuiltIn\": $isBuiltIn, \"isDeletable\": $isDeletable$parentField, \"overrides\": {$overridesEntries}}"
+        return "{\"id\": \"${escapeJson(id)}\", \"name\": \"${escapeJson(name)}\", \"emoji\": \"${escapeJson(emoji)}\", \"isBuiltIn\": $isBuiltIn, \"isDeletable\": $isDeletable$parentField, \"overrides\": {$overridesEntries}}"
     }
 
     fun getEffectiveOverride(key: String, allProfiles: List<Profile>): String? {
@@ -49,10 +50,12 @@ data class Profile(
     companion object {
         const val DEFAULT_ID = "default"
         const val TRAVELING_ID = "traveling"
+        const val DRIVING_ID = "driving"
+        const val TRANSIT_ID = "transit"
         const val DOCKED_ID = "docked"
         const val UNDOCKED_ID = "undocked"
 
-        private val BUILT_IN_IDS = setOf(DEFAULT_ID, TRAVELING_ID, DOCKED_ID, UNDOCKED_ID, "dock")
+        private val BUILT_IN_IDS = setOf(DEFAULT_ID, TRAVELING_ID, DRIVING_ID, TRANSIT_ID, DOCKED_ID, UNDOCKED_ID, "dock")
 
         val DEFAULT = Profile(
             id = DEFAULT_ID,
@@ -60,7 +63,8 @@ data class Profile(
             isBuiltIn = true,
             isDeletable = false,
             overrides = emptyMap(),
-            parentId = null
+            parentId = null,
+            emoji = "🏷️"
         )
 
         val TRAVELING = Profile(
@@ -72,10 +76,38 @@ data class Profile(
                 "AUTO_autoEnableDrivingMode" to "true",
                 "autoEnableDrivingMode" to "true",
                 "LIBRARY_gpsVolume" to "true",
-                "gpsVolume" to "true",
+                "gpsVolume" to "true"
+            ),
+            parentId = DEFAULT_ID,
+            emoji = "🧳"
+        )
+
+        val DRIVING = Profile(
+            id = DRIVING_ID,
+            name = "Driving",
+            isBuiltIn = true,
+            isDeletable = false,
+            overrides = mapOf(
+                "AUTO_drivingMode" to "true",
+                "drivingModeEnabled" to "true",
+                "AUTO_speedVolume" to "true",
                 "autoSpeedVolumeEnabled" to "true"
             ),
-            parentId = DEFAULT_ID
+            parentId = TRAVELING_ID,
+            emoji = "🚗"
+        )
+
+        val TRANSIT = Profile(
+            id = TRANSIT_ID,
+            name = "Transit",
+            isBuiltIn = true,
+            isDeletable = false,
+            overrides = mapOf(
+                "AUTO_ambientNoise" to "true",
+                "autoAmbientNoiseEnabled" to "true"
+            ),
+            parentId = TRAVELING_ID,
+            emoji = "🚆"
         )
 
         val DOCKED = Profile(
@@ -88,7 +120,8 @@ data class Profile(
                 "artDisplayLayout" to "DOCKED",
                 "ART_LAYOUT_DOCKED" to "true"
             ),
-            parentId = DEFAULT_ID
+            parentId = DEFAULT_ID,
+            emoji = "🖼️"
         )
 
         val UNDOCKED = Profile(
@@ -101,7 +134,8 @@ data class Profile(
                 "artDisplayLayout" to "OVERLAY",
                 "ART_LAYOUT_OVERLAY" to "true"
             ),
-            parentId = DEFAULT_ID
+            parentId = DEFAULT_ID,
+            emoji = "📱"
         )
 
         private fun escapeJson(s: String): String {
@@ -111,6 +145,7 @@ data class Profile(
         fun fromJson(json: JSONObject): Profile {
             val id = runCatching { json.optString("id", DEFAULT_ID) }.getOrDefault(DEFAULT_ID).ifEmpty { DEFAULT_ID }
             val name = runCatching { json.optString("name", "Default") }.getOrDefault("Default").ifEmpty { "Default" }
+            val emoji = runCatching { json.optString("emoji", "🏷️") }.getOrDefault("🏷️").ifEmpty { "🏷️" }
             val isBuiltIn = runCatching { json.optBoolean("isBuiltIn", false) }.getOrDefault(false)
             val isDeletable = runCatching { json.optBoolean("isDeletable", true) }.getOrDefault(true)
             val parentId = runCatching { json.optString("parentId", "").takeIf { it.isNotEmpty() } }.getOrNull()
@@ -128,7 +163,8 @@ data class Profile(
                 isBuiltIn = isBuiltInProfile,
                 isDeletable = if (isBuiltInProfile) false else isDeletable,
                 overrides = overridesMap,
-                parentId = if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID)
+                parentId = if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID),
+                emoji = emoji
             )
         }
 
@@ -138,7 +174,7 @@ data class Profile(
 
         fun listFromJson(jsonStr: String?): List<Profile> {
             if (jsonStr.isNullOrEmpty()) {
-                return listOf(DEFAULT, TRAVELING, DOCKED, UNDOCKED)
+                return listOf(DEFAULT, TRAVELING, DRIVING, TRANSIT, DOCKED, UNDOCKED)
             }
             val fromOrgJson = runCatching {
                 val array = JSONArray(jsonStr)
@@ -160,12 +196,14 @@ data class Profile(
                     val objStr = match.value
                     val idMatch = Regex(""""id"\s*:\s*"([^"]+)"""").find(objStr)
                     val nameMatch = Regex(""""name"\s*:\s*"([^"]+)"""").find(objStr)
+                    val emojiMatch = Regex(""""emoji"\s*:\s*"([^"]+)"""").find(objStr)
                     val isBuiltInMatch = Regex(""""isBuiltIn"\s*:\s*(true|false)""").find(objStr)
                     val isDeletableMatch = Regex(""""isDeletable"\s*:\s*(true|false)""").find(objStr)
                     val parentIdMatch = Regex(""""parentId"\s*:\s*"([^"]+)"""").find(objStr)
 
                     val id = idMatch?.groupValues?.get(1) ?: continue
                     val name = nameMatch?.groupValues?.get(1) ?: id
+                    val emoji = emojiMatch?.groupValues?.get(1)?.ifEmpty { "🏷️" } ?: "🏷️"
                     val isBuiltIn = isBuiltInMatch?.groupValues?.get(1)?.toBoolean() ?: false
                     val isDeletable = isDeletableMatch?.groupValues?.get(1)?.toBoolean() ?: true
                     val parentId = parentIdMatch?.groupValues?.get(1)
@@ -179,7 +217,7 @@ data class Profile(
                         }
                     }
                     val isBuiltInProfile = isBuiltIn || id in BUILT_IN_IDS
-                    profilesList.add(Profile(id, name, isBuiltInProfile, if (isBuiltInProfile) false else isDeletable, overridesMap, if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID)))
+                    profilesList.add(Profile(id, name, isBuiltInProfile, if (isBuiltInProfile) false else isDeletable, overridesMap, if (id == DEFAULT_ID) null else (parentId ?: DEFAULT_ID), emoji))
                 }
                 profilesList
             }
@@ -194,10 +232,22 @@ data class Profile(
                     add(if (defaultIdx >= 0) defaultIdx + 1 else 0, TRAVELING)
                 }
             }
-            if (resultList.none { it.id == DOCKED_ID }) {
+            if (resultList.none { it.id == DRIVING_ID }) {
                 val travIdx = resultList.indexOfFirst { it.id == TRAVELING_ID }
                 resultList = resultList.toMutableList().apply {
-                    add(if (travIdx >= 0) travIdx + 1 else resultList.size, DOCKED)
+                    add(if (travIdx >= 0) travIdx + 1 else resultList.size, DRIVING)
+                }
+            }
+            if (resultList.none { it.id == TRANSIT_ID }) {
+                val drvIdx = resultList.indexOfFirst { it.id == DRIVING_ID }
+                resultList = resultList.toMutableList().apply {
+                    add(if (drvIdx >= 0) drvIdx + 1 else resultList.size, TRANSIT)
+                }
+            }
+            if (resultList.none { it.id == DOCKED_ID }) {
+                val trsIdx = resultList.indexOfFirst { it.id == TRANSIT_ID }
+                resultList = resultList.toMutableList().apply {
+                    add(if (trsIdx >= 0) trsIdx + 1 else resultList.size, DOCKED)
                 }
             }
             if (resultList.none { it.id == UNDOCKED_ID }) {

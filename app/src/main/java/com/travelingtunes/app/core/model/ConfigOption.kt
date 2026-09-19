@@ -80,14 +80,17 @@ data class ConfigOption(
             ConfigOption("LIBRARY_autoRescan", "Music Library", "Auto Rescan Library", isBooleanToggle = true),
             ConfigOption("LIBRARY_gpsVolume", "Music Library", "Speed-Dependent Volume", isBooleanToggle = true),
 
-            // Android Auto & Driving Mode
-            ConfigOption("AUTO_drivingMode", "Android Auto", "Driving Mode", isBooleanToggle = true),
-            ConfigOption("AUTO_autoEnableDrivingMode", "Android Auto", "Auto-Enable Driving Mode", isBooleanToggle = true),
-            ConfigOption("AUTO_speedVolume", "Android Auto", "Speed-Based Volume Adjustment", isBooleanToggle = true),
+            // Traveling Mode & Volume
+            ConfigOption("AUTO_drivingMode", "Traveling Mode", "Traveling Mode", isBooleanToggle = true),
+            ConfigOption("AUTO_autoEnableDrivingMode", "Traveling Mode", "Auto-Enable Traveling Mode", isBooleanToggle = true),
+            ConfigOption("AUTO_speedVolume", "Traveling Mode", "Speed-Based Volume Adjustment", isBooleanToggle = true),
+            ConfigOption("AUTO_ambientNoise", "Traveling Mode", "Ambient Noise Volume Adjustment", isBooleanToggle = true),
 
             // Profiles
             ConfigOption("PROFILE_DEFAULT", "Profiles", "Profile: Default", isBooleanToggle = false, targetValue = "default"),
-            ConfigOption("PROFILE_TRAVELING", "Profiles", "Profile: Traveling", isBooleanToggle = false, targetValue = "traveling")
+            ConfigOption("PROFILE_TRAVELING", "Profiles", "Profile: Traveling", isBooleanToggle = false, targetValue = "traveling"),
+            ConfigOption("PROFILE_DRIVING", "Profiles", "Profile: Driving", isBooleanToggle = false, targetValue = "driving"),
+            ConfigOption("PROFILE_TRANSIT", "Profiles", "Profile: Transit", isBooleanToggle = false, targetValue = "transit")
         )
 
         private val dynamicOptions = mutableListOf<ConfigOption>()

@@ -132,6 +132,7 @@ data class DisplaySettings(
     val autoAutoplayOnConnect: Boolean = false,
     val autoVoiceSearch: Boolean = true,
     val autoSpeedVolumeEnabled: Boolean = false,
+    val autoAmbientNoiseEnabled: Boolean = false,
     val autoDefaultVolume: Int = 50,
     val autoMinSpeedThreshold: Float = 15f,
     val autoSpeedVolumeRatio: Float = 1.0f,
