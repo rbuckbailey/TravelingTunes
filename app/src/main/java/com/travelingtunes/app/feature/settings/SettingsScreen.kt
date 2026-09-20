@@ -3,9 +3,11 @@ package com.travelingtunes.app.feature.settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.feature.player.MonochromeEmojiIcon
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -33,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -430,9 +433,85 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = if (!isWideScreen && activeSubmenu != null) activeSubmenu.title else "Traveling Tunes Settings"
-                    )
+                    val activeProf = settingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT).value
+                    val allProfs by settingsDataStore.profilesFlow.collectAsState(initial = emptyList())
+                    var showProfileMenu by remember { mutableStateOf(false) }
+
+                    Box {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { showProfileMenu = true }
+                                .padding(horizontal = 6.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (!isWideScreen && activeSubmenu != null) {
+                                    "${activeSubmenu.title} (${activeProf.name})"
+                                } else if (activeProf.id == Profile.DEFAULT_ID) {
+                                    "Traveling Tunes Settings"
+                                } else {
+                                    "Traveling Tunes Settings (${activeProf.name})"
+                                },
+                                fontWeight = FontWeight.Bold
+                            )
+                            MonochromeEmojiIcon(
+                                emoji = activeProf.emoji,
+                                tint = MaterialTheme.colorScheme.primary,
+                                iconSize = 18.dp
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Switch Profile",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showProfileMenu,
+                            onDismissRequest = { showProfileMenu = false }
+                        ) {
+                            Text(
+                                text = "Active Editing Profile",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                            HorizontalDivider()
+                            allProfs.forEach { profile ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            MonochromeEmojiIcon(
+                                                emoji = profile.emoji,
+                                                tint = if (profile.id == activeProf.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                iconSize = 18.dp
+                                            )
+                                            Text(
+                                                text = profile.name,
+                                                fontWeight = if (profile.id == activeProf.id) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (profile.id == activeProf.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            if (profile.id == activeProf.id) {
+                                                Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        showProfileMenu = false
+                                        coroutineScope.launch {
+                                            settingsDataStore.setActiveProfile(profile.id)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = handleBack) {
@@ -3331,23 +3410,29 @@ private fun ProfilesSettingsContent(
     val coroutineScope = rememberCoroutineScope()
     val profiles by settingsDataStore.profilesFlow.collectAsState(initial = listOf(Profile.DEFAULT, Profile.TRAVELING))
     val activeProfile by settingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT)
+    val activeStack by settingsDataStore.activeProfileStackFlow.collectAsState(initial = listOf(Profile.DEFAULT))
     val selectionMode by settingsDataStore.profileSelectionModeFlow.collectAsState(initial = ProfileSelectionMode.MENU)
     val switchTargets by settingsDataStore.profileSwitchTargetsFlow.collectAsState(initial = listOf(Profile.DEFAULT_ID, Profile.TRAVELING_ID))
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var newProfileName by remember { mutableStateOf("") }
     var newProfileEmoji by remember { mutableStateOf("🏷️") }
+    var newProfileParentId by remember { mutableStateOf(Profile.DEFAULT_ID) }
+
     var renamingProfileId by remember { mutableStateOf<String?>(null) }
     var renamingName by remember { mutableStateOf("") }
     var renamingEmoji by remember { mutableStateOf("🏷️") }
+    var renamingParentId by remember { mutableStateOf<String?>(null) }
 
     var copyingProfile by remember { mutableStateOf<Profile?>(null) }
     var copyName by remember { mutableStateOf("") }
     var copyEmoji by remember { mutableStateOf("🏷️") }
     var copyLinkForInheritance by remember { mutableStateOf(true) }
 
+    var expandedProfiles by remember { mutableStateOf(setOf<String>()) }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Active Profile Selector Card
+        // Active Profile Stack & Priority Card
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -3356,26 +3441,92 @@ private fun ProfilesSettingsContent(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Active Profile",
+                    text = "Active Profile Stack (Priority Order)",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = if (activeProfile.id == Profile.DEFAULT_ID) "Current profile: ${activeProfile.name} (Default baseline settings)" else "Current profile: ${activeProfile.name} (${activeProfile.overrides.size} overrides relative to parent)",
+                    text = "Profiles near the top override profiles below them. Multiple profiles can be active together.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+
+                activeStack.forEachIndexed { index, profile ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("#${index + 1}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                            MonochromeEmojiIcon(emoji = profile.emoji, tint = MaterialTheme.colorScheme.primary, iconSize = 20.dp)
+                            Text(profile.name, fontWeight = FontWeight.Medium)
+                            if (index == 0) {
+                                Text("(Primary)", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Row {
+                            if (index > 0) {
+                                IconButton(
+                                    onClick = {
+                                        val newStack = activeStack.map { it.id }.toMutableList().apply {
+                                            val tmp = this[index]
+                                            this[index] = this[index - 1]
+                                            this[index - 1] = tmp
+                                        }
+                                        coroutineScope.launch {
+                                            settingsDataStore.setActiveProfileStack(newStack)
+                                        }
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Move Up")
+                                }
+                            }
+                            if (index < activeStack.size - 1) {
+                                IconButton(
+                                    onClick = {
+                                        val newStack = activeStack.map { it.id }.toMutableList().apply {
+                                            val tmp = this[index]
+                                            this[index] = this[index + 1]
+                                            this[index + 1] = tmp
+                                        }
+                                        coroutineScope.launch {
+                                            settingsDataStore.setActiveProfileStack(newStack)
+                                        }
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Move Down")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Toggle Active Profiles:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     profiles.forEach { profile ->
+                        val isActiveInStack = activeStack.any { it.id == profile.id }
                         FilterChip(
-                            selected = profile.id == activeProfile.id,
+                            selected = isActiveInStack,
                             onClick = {
+                                val newStack = if (isActiveInStack) {
+                                    activeStack.map { it.id }.filterNot { it == profile.id }
+                                } else {
+                                    listOf(profile.id) + activeStack.map { it.id }
+                                }.ifEmpty { listOf(Profile.DEFAULT_ID) }
                                 coroutineScope.launch {
-                                    settingsDataStore.setActiveProfile(profile.id)
+                                    settingsDataStore.setActiveProfileStack(newStack)
                                 }
                             },
                             label = {
@@ -3385,7 +3536,7 @@ private fun ProfilesSettingsContent(
                                 ) {
                                     MonochromeEmojiIcon(
                                         emoji = profile.emoji,
-                                        tint = if (profile.id == activeProfile.id) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                        tint = if (isActiveInStack) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                         iconSize = 16.dp
                                     )
                                     Text(profile.name)
@@ -3417,6 +3568,8 @@ private fun ProfilesSettingsContent(
                     )
                     OutlinedButton(onClick = {
                         newProfileName = ""
+                        newProfileEmoji = "🏷️"
+                        newProfileParentId = Profile.DEFAULT_ID
                         showCreateDialog = true
                     }) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -3429,7 +3582,7 @@ private fun ProfilesSettingsContent(
                 profiles.forEach { profile ->
                     val currentParent = profiles.find { it.id == (profile.parentId ?: Profile.DEFAULT_ID) } ?: Profile.DEFAULT
                     val validParents = profiles.filter { candidate ->
-                        candidate.id != profile.id && !profile.getAncestorChain(profiles).any { it.id == candidate.id }
+                        candidate.id != profile.id && !candidate.getAncestorChain(profiles).any { it.id == profile.id }
                     }
 
                     ListItem(
@@ -3454,18 +3607,18 @@ private fun ProfilesSettingsContent(
                                 Text(
                                     when (profile.id) {
                                         Profile.DEFAULT_ID -> "Default baseline settings for TravelingTunes"
-                                        Profile.TRAVELING_ID -> "Built-in profile configured for Travel mode"
+                                        Profile.TRAVELING_ID -> "Built-in profile inheriting from Default"
                                         Profile.DRIVING_ID -> "Built-in sub-profile inheriting from Traveling, configured for Speed-Based Driving"
                                         Profile.TRANSIT_ID -> "Built-in sub-profile inheriting from Traveling, configured for Ambient Noise in Transit"
-                                        Profile.DOCKED_ID -> "Built-in profile configured for Docked Art mode"
-                                        Profile.UNDOCKED_ID -> "Built-in profile configured for Undocked Art mode"
-                                        else -> "Inherits from: ${currentParent.name} • ${profile.overrides.size} local overrides"
+                                        Profile.DOCKED_ID -> "Built-in profile inheriting from Default, configured for Docked Art mode"
+                                        Profile.UNDOCKED_ID -> "Built-in profile inheriting from Default, configured for Undocked Art mode"
+                                        else -> "Inherits from: ${currentParent.name}"
                                     }
                                 )
-                                if (profile.id != Profile.DEFAULT_ID && validParents.size > 1) {
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                if (!profile.isBuiltIn && validParents.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Text("Inherit from:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("Inherit from:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         validParents.forEach { parentCandidate ->
                                             FilterChip(
                                                 selected = currentParent.id == parentCandidate.id,
@@ -3474,9 +3627,79 @@ private fun ProfilesSettingsContent(
                                                         settingsDataStore.setProfileParent(profile.id, parentCandidate.id)
                                                     }
                                                 },
-                                                label = { Text(parentCandidate.name, fontSize = 11.sp) },
+                                                label = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                        MonochromeEmojiIcon(emoji = parentCandidate.emoji, tint = if (currentParent.id == parentCandidate.id) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface, iconSize = 14.dp)
+                                                        Text(parentCandidate.name, fontSize = 11.sp)
+                                                    }
+                                                },
                                                 modifier = Modifier.height(28.dp)
                                             )
+                                        }
+                                    }
+                                }
+
+                                if (profile.overrides.isNotEmpty()) {
+                                    val isExpanded = expandedProfiles.contains(profile.id)
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable {
+                                                expandedProfiles = if (isExpanded) expandedProfiles - profile.id else expandedProfiles + profile.id
+                                            }
+                                            .padding(vertical = 4.dp, horizontal = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isExpanded) "Hide local changes (${profile.overrides.size})" else "Show local changes (${profile.overrides.size})",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Icon(
+                                            imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                            contentDescription = if (isExpanded) "Hide local changes" else "Show local changes",
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+
+                                    AnimatedVisibility(visible = isExpanded) {
+                                        Column(modifier = Modifier.padding(top = 4.dp)) {
+                                            profile.overrides.forEach { (key, value) ->
+                                                val option = com.travelingtunes.app.core.model.ConfigOption.findByKey(key)
+                                                val label = option?.title ?: key
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        "• $label: $value",
+                                                        fontSize = 11.sp,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                    IconButton(
+                                                        onClick = {
+                                                            coroutineScope.launch {
+                                                                settingsDataStore.revertSettingForProfile(profile.id, key)
+                                                            }
+                                                        },
+                                                        modifier = Modifier.size(20.dp)
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.Close,
+                                                            contentDescription = "Revert $label",
+                                                            modifier = Modifier.size(12.dp),
+                                                            tint = MaterialTheme.colorScheme.error
+                                                        )
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -3496,6 +3719,7 @@ private fun ProfilesSettingsContent(
                                     renamingProfileId = profile.id
                                     renamingName = profile.name
                                     renamingEmoji = profile.emoji
+                                    renamingParentId = profile.parentId
                                 }) {
                                     Icon(Icons.Default.FormatPaint, contentDescription = "Edit Profile")
                                 }
@@ -3629,7 +3853,7 @@ private fun ProfilesSettingsContent(
             title = { Text("Create New Profile") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Enter a name and emoji for the new profile:")
+                    Text("Enter a name, emoji, and parent inheritance for the new profile:")
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -3654,6 +3878,28 @@ private fun ProfilesSettingsContent(
                             modifier = Modifier.weight(1f)
                         )
                     }
+
+                    Column {
+                        Text("Inherit Settings From:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.horizontalScroll(rememberScrollState())
+                        ) {
+                            profiles.forEach { parentCandidate ->
+                                FilterChip(
+                                    selected = newProfileParentId == parentCandidate.id,
+                                    onClick = { newProfileParentId = parentCandidate.id },
+                                    label = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            MonochromeEmojiIcon(emoji = parentCandidate.emoji, tint = if (newProfileParentId == parentCandidate.id) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface, iconSize = 14.dp)
+                                            Text(parentCandidate.name, fontSize = 12.sp)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -3663,7 +3909,8 @@ private fun ProfilesSettingsContent(
                             coroutineScope.launch {
                                 settingsDataStore.createProfile(
                                     newProfileName.trim(),
-                                    newProfileEmoji.trim().ifEmpty { "🏷️" }
+                                    newProfileEmoji.trim().ifEmpty { "🏷️" },
+                                    newProfileParentId
                                 )
                             }
                         }
@@ -3683,12 +3930,16 @@ private fun ProfilesSettingsContent(
 
     // Dialog: Rename/Edit Profile
     renamingProfileId?.let { profId ->
+        val currentProf = profiles.find { it.id == profId }
+        val validParents = profiles.filter { candidate ->
+            candidate.id != profId && !candidate.getAncestorChain(profiles).any { it.id == profId }
+        }
         AlertDialog(
             onDismissRequest = { renamingProfileId = null },
             title = { Text("Edit Profile") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Update name and emoji for this profile:")
+                    Text("Update name, emoji, and parent inheritance:")
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -3713,6 +3964,31 @@ private fun ProfilesSettingsContent(
                             modifier = Modifier.weight(1f)
                         )
                     }
+
+                    if (currentProf?.isBuiltIn == false && validParents.isNotEmpty()) {
+                        Column {
+                            Text("Inherit Settings From:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.horizontalScroll(rememberScrollState())
+                            ) {
+                                validParents.forEach { parentCandidate ->
+                                    val isSelected = (renamingParentId ?: currentProf.parentId ?: Profile.DEFAULT_ID) == parentCandidate.id
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { renamingParentId = parentCandidate.id },
+                                        label = {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                MonochromeEmojiIcon(emoji = parentCandidate.emoji, tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface, iconSize = 14.dp)
+                                                Text(parentCandidate.name, fontSize = 12.sp)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -3723,7 +3999,8 @@ private fun ProfilesSettingsContent(
                                 settingsDataStore.renameProfile(
                                     profId,
                                     renamingName.trim(),
-                                    renamingEmoji.trim().ifEmpty { "🏷️" }
+                                    renamingEmoji.trim().ifEmpty { "🏷️" },
+                                    renamingParentId
                                 )
                             }
                         }

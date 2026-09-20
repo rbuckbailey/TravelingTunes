@@ -48,6 +48,17 @@ data class Profile(
     }
 
     companion object {
+        fun resolveEffectiveOverride(
+            key: String,
+            activeStack: List<Profile>,
+            allProfiles: List<Profile>
+        ): String? {
+            for (profile in activeStack) {
+                val override = profile.getEffectiveOverride(key, allProfiles)
+                if (override != null) return override
+            }
+            return null
+        }
         const val DEFAULT_ID = "default"
         const val TRAVELING_ID = "traveling"
         const val DRIVING_ID = "driving"
@@ -256,7 +267,18 @@ data class Profile(
                     add(if (dockIdx >= 0) dockIdx + 1 else resultList.size, UNDOCKED)
                 }
             }
-            return resultList
+            return resultList.map { profile ->
+                when (profile.id) {
+                    DEFAULT_ID -> profile.copy(parentId = null)
+                    TRAVELING_ID -> profile.copy(parentId = DEFAULT_ID)
+                    DRIVING_ID -> profile.copy(parentId = TRAVELING_ID)
+                    TRANSIT_ID -> profile.copy(parentId = TRAVELING_ID)
+                    DOCKED_ID -> profile.copy(parentId = DEFAULT_ID)
+                    UNDOCKED_ID -> profile.copy(parentId = DEFAULT_ID)
+                    "dock" -> profile.copy(parentId = DEFAULT_ID)
+                    else -> profile
+                }
+            }
         }
     }
 }

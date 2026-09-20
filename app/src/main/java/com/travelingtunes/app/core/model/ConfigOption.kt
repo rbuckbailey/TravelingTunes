@@ -108,7 +108,28 @@ data class ConfigOption(
 
         fun findByKey(key: String?): ConfigOption? {
             if (key.isNullOrEmpty()) return null
-            return getAllOptions().find { it.key.equals(key, ignoreCase = true) }
+            val match = getAllOptions().find { it.key.equals(key, ignoreCase = true) }
+            if (match != null) return match
+
+            val baseKey = key.removeSuffix("Continuous")
+                .removeSuffix("_art")
+                .removeSuffix("_title")
+                .removeSuffix("_other_target")
+                .removeSuffix("_art_other_target")
+                .removeSuffix("_title_other_target")
+            val trigger = GestureTrigger.entries.find { it.key.equals(baseKey, ignoreCase = true) || it.name.equals(baseKey, ignoreCase = true) }
+            if (trigger != null) {
+                val suffixDesc = when {
+                    key.endsWith("_art") -> " (Art Zone)"
+                    key.endsWith("_title") -> " (Title Zone)"
+                    key.endsWith("_other_target") || key.endsWith("_art_other_target") || key.endsWith("_title_other_target") -> " Target"
+                    key.endsWith("Continuous") -> " Continuous"
+                    else -> ""
+                }
+                return ConfigOption(key, "Gestures", "Gesture: ${trigger.displayName}$suffixDesc", isBooleanToggle = false)
+            }
+
+            return null
         }
     }
 }

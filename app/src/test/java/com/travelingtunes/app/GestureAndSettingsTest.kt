@@ -1326,6 +1326,21 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testBuiltInInheritancesEnforcedAndNonEditable() {
+        assertEquals(null, Profile.DEFAULT.parentId)
+        assertEquals("default", Profile.TRAVELING.parentId)
+        assertEquals("traveling", Profile.DRIVING.parentId)
+        assertEquals("traveling", Profile.TRANSIT.parentId)
+        assertEquals("default", Profile.DOCKED.parentId)
+        assertEquals("default", Profile.UNDOCKED.parentId)
+
+        val tamperedJson = """[{"id":"driving","name":"Driving","isBuiltIn":true,"parentId":"default"}]"""
+        val parsed = Profile.listFromJson(tamperedJson)
+        val driving = parsed.find { it.id == "driving" }
+        assertEquals("traveling", driving?.parentId)
+    }
+
+    @Test
     fun testProfileEmojiDefaultAndSerialization() {
         assertEquals("🏷️", Profile.DEFAULT.emoji)
         assertEquals("🧳", Profile.TRAVELING.emoji)
@@ -1357,6 +1372,19 @@ class GestureAndSettingsTest {
 
         val seqMode = ProfileSelectionMode.fromKey("SEQUENTIAL")
         assertEquals(ProfileSelectionMode.SEQUENTIAL, seqMode)
+    }
+
+    @Test
+    fun testGestureBindingProfileOverrideResolution() {
+        val trigger = com.travelingtunes.app.core.model.GestureTrigger.TAP_1_1
+        val customProfile = Profile(
+            id = "custom_gestures",
+            name = "Gesture Custom",
+            overrides = mapOf(trigger.key to "FastForward")
+        )
+        val stack = listOf(customProfile, Profile.DEFAULT)
+        val override = Profile.resolveEffectiveOverride(trigger.key, stack, listOf(Profile.DEFAULT, customProfile))
+        assertEquals("FastForward", override)
     }
 
     @Test
