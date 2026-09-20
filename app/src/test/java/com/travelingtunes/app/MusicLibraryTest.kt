@@ -94,4 +94,26 @@ class MusicLibraryTest {
         assertEquals(true, state.isShuffle)
         assertEquals(false, state.isRepeat)
     }
+
+    @Test
+    fun testSongFolderArtworkLinking() {
+        val mockContentUri = Mockito.mock(Uri::class.java)
+        val mockFolderArtUri = Mockito.mock(Uri::class.java)
+
+        val song = Song(
+            id = 201L,
+            title = "Folder Art Track",
+            artist = "Artist",
+            album = "Folder Album",
+            albumId = 601L,
+            durationMs = 180000L,
+            contentUri = mockContentUri,
+            artworkUri = mockFolderArtUri,
+            folderPath = "Music/FolderAlbum",
+            fileName = "track.mp3"
+        )
+
+        assertEquals(mockFolderArtUri, song.artworkUri)
+        assertEquals("Music/FolderAlbum", song.folderPath)
+    }
 }

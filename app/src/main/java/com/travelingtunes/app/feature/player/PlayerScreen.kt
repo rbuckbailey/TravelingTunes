@@ -27,6 +27,13 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.PointerInputScope
@@ -164,6 +171,43 @@ private fun resolveGestureBinding(
         action = GestureAction.fromKey(trigger.defaultActionKey),
         isContinuous = trigger.isContinuousDefault
     )
+}
+
+fun keyCodeToKeyboardTrigger(keyCode: Int, isShiftPressed: Boolean = false, unicodeChar: Int = 0): GestureTrigger? {
+    if (unicodeChar == '?'.code) return GestureTrigger.KEY_QUESTION
+    return when (keyCode) {
+        android.view.KeyEvent.KEYCODE_SPACE -> GestureTrigger.KEY_SPACE
+        android.view.KeyEvent.KEYCODE_F -> GestureTrigger.KEY_F
+        android.view.KeyEvent.KEYCODE_DPAD_LEFT -> GestureTrigger.KEY_LEFT
+        android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> GestureTrigger.KEY_RIGHT
+        android.view.KeyEvent.KEYCODE_DPAD_UP -> GestureTrigger.KEY_UP
+        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> GestureTrigger.KEY_DOWN
+        android.view.KeyEvent.KEYCODE_ESCAPE -> GestureTrigger.KEY_ESC
+        android.view.KeyEvent.KEYCODE_TAB -> GestureTrigger.KEY_TAB
+        android.view.KeyEvent.KEYCODE_Q -> GestureTrigger.KEY_Q
+        android.view.KeyEvent.KEYCODE_SLASH -> GestureTrigger.KEY_QUESTION
+        android.view.KeyEvent.KEYCODE_F1 -> GestureTrigger.KEY_F1
+        android.view.KeyEvent.KEYCODE_F2 -> GestureTrigger.KEY_F2
+        android.view.KeyEvent.KEYCODE_F3 -> GestureTrigger.KEY_F3
+        android.view.KeyEvent.KEYCODE_F4 -> GestureTrigger.KEY_F4
+        android.view.KeyEvent.KEYCODE_F5 -> GestureTrigger.KEY_F5
+        android.view.KeyEvent.KEYCODE_F6 -> GestureTrigger.KEY_F6
+        android.view.KeyEvent.KEYCODE_F7 -> GestureTrigger.KEY_F7
+        android.view.KeyEvent.KEYCODE_F8 -> GestureTrigger.KEY_F8
+        android.view.KeyEvent.KEYCODE_F9 -> GestureTrigger.KEY_F9
+        android.view.KeyEvent.KEYCODE_F10 -> GestureTrigger.KEY_F10
+        android.view.KeyEvent.KEYCODE_F11 -> GestureTrigger.KEY_F11
+        android.view.KeyEvent.KEYCODE_F12 -> GestureTrigger.KEY_F12
+        android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+        android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
+        android.view.KeyEvent.KEYCODE_MEDIA_PAUSE -> GestureTrigger.KEY_MEDIA_PLAY_PAUSE
+        android.view.KeyEvent.KEYCODE_MEDIA_NEXT -> GestureTrigger.KEY_MEDIA_NEXT
+        android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS -> GestureTrigger.KEY_MEDIA_PREVIOUS
+        android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> GestureTrigger.KEY_MEDIA_FAST_FORWARD
+        android.view.KeyEvent.KEYCODE_MEDIA_REWIND -> GestureTrigger.KEY_MEDIA_REWIND
+        android.view.KeyEvent.KEYCODE_MEDIA_STOP -> GestureTrigger.KEY_MEDIA_STOP
+        else -> null
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -944,8 +988,52 @@ fun PlayerScreen(
         }
     }
 
+    val keyboardFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        keyboardFocusRequester.requestFocus()
+    }
+
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .focusRequester(keyboardFocusRequester)
+            .focusable()
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    val nativeEvent = keyEvent.nativeKeyEvent
+                    val trigger = keyCodeToKeyboardTrigger(
+                        keyCode = nativeEvent.keyCode,
+                        isShiftPressed = keyEvent.isShiftPressed,
+                        unicodeChar = nativeEvent.getUnicodeChar(nativeEvent.metaState)
+                    )
+                    if (trigger != null) {
+                        val binding = resolveGestureBinding(trigger, gestureBindings)
+                        val action = binding.action
+                        if (action != GestureAction.UNASSIGNED) {
+                            handleGestureAction(
+                                action = action,
+                                trigger = trigger,
+                                playbackManager = playbackManager,
+                                musicScanner = musicScanner,
+                                musicDatabase = musicDatabase,
+                                coroutineScope = coroutineScope,
+                                onOpenSongPicker = { dir -> openSongPicker(dir, trigger) },
+                                onOpenSongPickerWithFilter = { dir, cat, art, alb -> openSongPicker(dir, trigger, cat, art, alb) },
+                                onOpenQueue = { dir -> openQueue(dir, trigger) },
+                                onOpenSettings = { dir -> openMenu(dir, trigger) },
+                                onOpenQuickStart = onOpenQuickStart,
+                                onOpenProfilePicker = { showProfilePicker = true },
+                                settingsDataStore = effectiveSettingsDataStore,
+                                gestureBindings = gestureBindings,
+                                pagerState = pagerState,
+                                pageCount = pageCount
+                            )
+                            return@onKeyEvent true
+                        }
+                    }
+                }
+                false
+            }
     ) {
         if (isMondrian) {
             MondrianBackground(

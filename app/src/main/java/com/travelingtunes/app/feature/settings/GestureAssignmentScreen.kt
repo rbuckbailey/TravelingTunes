@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DonutLarge
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Swipe
@@ -104,6 +105,11 @@ enum class GestureSubmenu(
         description = "Configure top and bottom edge region screen buttons",
         icon = Icons.Default.RadioButtonChecked
     ),
+    KEYBOARD(
+        title = "Keyboard Controls",
+        description = "Configure physical keyboard and media button shortcuts",
+        icon = Icons.Default.Keyboard
+    ),
     RADIAL_MENU(
         title = "Radial Menu Actions",
         description = "Configure action items (up to 12) for assigned Radial Menus",
@@ -123,6 +129,8 @@ fun GestureTrigger.getSubmenu(): GestureSubmenu {
         GestureCategory.LONG_PRESS -> GestureSubmenu.TAP
 
         GestureCategory.SCREEN_REGION -> GestureSubmenu.BUTTON
+
+        GestureCategory.KEYBOARD -> GestureSubmenu.KEYBOARD
     }
 }
 
@@ -190,6 +198,42 @@ fun getTriggersForSubmenu(
                 )
             }
         }
+        GestureSubmenu.KEYBOARD -> mapOf(
+            "Navigation & Control Keys" to listOf(
+                GestureTrigger.KEY_SPACE,
+                GestureTrigger.KEY_F,
+                GestureTrigger.KEY_LEFT,
+                GestureTrigger.KEY_RIGHT,
+                GestureTrigger.KEY_UP,
+                GestureTrigger.KEY_DOWN,
+                GestureTrigger.KEY_ESC,
+                GestureTrigger.KEY_TAB,
+                GestureTrigger.KEY_Q,
+                GestureTrigger.KEY_QUESTION
+            ),
+            "F1-F12 Edge Buttons" to listOf(
+                GestureTrigger.KEY_F1,
+                GestureTrigger.KEY_F2,
+                GestureTrigger.KEY_F3,
+                GestureTrigger.KEY_F4,
+                GestureTrigger.KEY_F5,
+                GestureTrigger.KEY_F6,
+                GestureTrigger.KEY_F7,
+                GestureTrigger.KEY_F8,
+                GestureTrigger.KEY_F9,
+                GestureTrigger.KEY_F10,
+                GestureTrigger.KEY_F11,
+                GestureTrigger.KEY_F12
+            ),
+            "UI & Hardware Media Buttons" to listOf(
+                GestureTrigger.KEY_MEDIA_PLAY_PAUSE,
+                GestureTrigger.KEY_MEDIA_NEXT,
+                GestureTrigger.KEY_MEDIA_PREVIOUS,
+                GestureTrigger.KEY_MEDIA_FAST_FORWARD,
+                GestureTrigger.KEY_MEDIA_REWIND,
+                GestureTrigger.KEY_MEDIA_STOP
+            )
+        )
         GestureSubmenu.RADIAL_MENU -> emptyMap()
     }
 }
@@ -215,7 +259,7 @@ fun GestureAssignmentScreen(
         if (hasRadialMenuAssigned) {
             GestureSubmenu.entries
         } else {
-            listOf(GestureSubmenu.SWIPE, GestureSubmenu.TAP, GestureSubmenu.BUTTON)
+            listOf(GestureSubmenu.SWIPE, GestureSubmenu.TAP, GestureSubmenu.BUTTON, GestureSubmenu.KEYBOARD)
         }
     }
 

@@ -692,16 +692,18 @@ class GestureAndSettingsTest {
     @Test
     fun testGestureSubmenuCategories() {
         val submenus = com.travelingtunes.app.feature.settings.GestureSubmenu.entries
-        assertEquals(4, submenus.size)
+        assertEquals(5, submenus.size)
         assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.SWIPE, submenus[0])
         assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.TAP, submenus[1])
         assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.BUTTON, submenus[2])
-        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.RADIAL_MENU, submenus[3])
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.KEYBOARD, submenus[3])
+        assertEquals(com.travelingtunes.app.feature.settings.GestureSubmenu.RADIAL_MENU, submenus[4])
 
         assertEquals("Swipe Actions", submenus[0].title)
         assertEquals("Tap Actions", submenus[1].title)
         assertEquals("Button Actions", submenus[2].title)
-        assertEquals("Radial Menu Actions", submenus[3].title)
+        assertEquals("Keyboard Controls", submenus[3].title)
+        assertEquals("Radial Menu Actions", submenus[4].title)
     }
 
     @Test
@@ -1490,5 +1492,83 @@ class GestureAndSettingsTest {
         // Docked profile still has its own layout override ("DOCKED") and didn't get affected by Undocked's changes
         assertEquals("DOCKED", dockedProfile.getEffectiveOverride("artDisplayLayout", updatedProfiles))
         assertEquals("OVERLAY", undockedProfile.getEffectiveOverride("artDisplayLayout", updatedProfiles))
+    }
+
+    @Test
+    fun testKeyboardTriggersAndDefaults() {
+        assertEquals(com.travelingtunes.app.core.model.GestureCategory.KEYBOARD, GestureTrigger.KEY_SPACE.category)
+        assertEquals("PlayPause", GestureTrigger.KEY_SPACE.defaultActionKey)
+
+        assertEquals(com.travelingtunes.app.core.model.GestureCategory.KEYBOARD, GestureTrigger.KEY_F.category)
+        assertEquals("ToggleDockedArt", GestureTrigger.KEY_F.defaultActionKey)
+
+        assertEquals("Rewind", GestureTrigger.KEY_LEFT.defaultActionKey)
+        assertEquals("FastForward", GestureTrigger.KEY_RIGHT.defaultActionKey)
+        assertEquals("VolumeUp", GestureTrigger.KEY_UP.defaultActionKey)
+        assertEquals("VolumeDown", GestureTrigger.KEY_DOWN.defaultActionKey)
+        assertEquals("Menu", GestureTrigger.KEY_ESC.defaultActionKey)
+        assertEquals("SongPicker", GestureTrigger.KEY_TAB.defaultActionKey)
+        assertEquals("ShowQueue", GestureTrigger.KEY_Q.defaultActionKey)
+        assertEquals("ShowQuickStart", GestureTrigger.KEY_QUESTION.defaultActionKey)
+
+        assertEquals("ToggleRepeat", GestureTrigger.KEY_F1.defaultActionKey)
+        assertEquals("Rewind", GestureTrigger.KEY_F2.defaultActionKey)
+        assertEquals("PlayCurrentArtist", GestureTrigger.KEY_F3.defaultActionKey)
+        assertEquals("PlayCurrentAlbum", GestureTrigger.KEY_F4.defaultActionKey)
+        assertEquals("ShuffleAllSongs", GestureTrigger.KEY_F5.defaultActionKey)
+        assertEquals("FastForward", GestureTrigger.KEY_F6.defaultActionKey)
+        assertEquals("SongPicker", GestureTrigger.KEY_F7.defaultActionKey)
+        assertEquals("Previous", GestureTrigger.KEY_F8.defaultActionKey)
+        assertEquals("ShowQueue", GestureTrigger.KEY_F9.defaultActionKey)
+        assertEquals("PlayPause", GestureTrigger.KEY_F10.defaultActionKey)
+        assertEquals("ShowQuickStart", GestureTrigger.KEY_F11.defaultActionKey)
+        assertEquals("Next", GestureTrigger.KEY_F12.defaultActionKey)
+
+        assertEquals("PlayPause", GestureTrigger.KEY_MEDIA_PLAY_PAUSE.defaultActionKey)
+        assertEquals("Next", GestureTrigger.KEY_MEDIA_NEXT.defaultActionKey)
+        assertEquals("Previous", GestureTrigger.KEY_MEDIA_PREVIOUS.defaultActionKey)
+        assertEquals("FastForward", GestureTrigger.KEY_MEDIA_FAST_FORWARD.defaultActionKey)
+        assertEquals("Rewind", GestureTrigger.KEY_MEDIA_REWIND.defaultActionKey)
+        assertEquals("Pause", GestureTrigger.KEY_MEDIA_STOP.defaultActionKey)
+    }
+
+    @Test
+    fun testKeyCodeToKeyboardTriggerMapping() {
+        assertEquals(GestureTrigger.KEY_SPACE, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_SPACE))
+        assertEquals(GestureTrigger.KEY_F, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_F))
+        assertEquals(GestureTrigger.KEY_LEFT, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_DPAD_LEFT))
+        assertEquals(GestureTrigger.KEY_RIGHT, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_DPAD_RIGHT))
+        assertEquals(GestureTrigger.KEY_UP, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_DPAD_UP))
+        assertEquals(GestureTrigger.KEY_DOWN, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_DPAD_DOWN))
+        assertEquals(GestureTrigger.KEY_ESC, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_ESCAPE))
+        assertEquals(GestureTrigger.KEY_TAB, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_TAB))
+        assertEquals(GestureTrigger.KEY_Q, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_Q))
+        assertEquals(GestureTrigger.KEY_QUESTION, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(0, unicodeChar = '?'.code))
+        assertEquals(GestureTrigger.KEY_F1, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_F1))
+        assertEquals(GestureTrigger.KEY_F12, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_F12))
+        assertEquals(GestureTrigger.KEY_MEDIA_PLAY_PAUSE, com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger(android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+    }
+
+    @Test
+    fun testKeyboardSubmenuTriggers() {
+        val keyboardTriggersMap = com.travelingtunes.app.feature.settings.getTriggersForSubmenu(
+            com.travelingtunes.app.feature.settings.GestureSubmenu.KEYBOARD,
+            numEdgeRegions = 3
+        )
+
+        assertEquals(3, keyboardTriggersMap.size)
+        assertTrue(keyboardTriggersMap.containsKey("Navigation & Control Keys"))
+        assertTrue(keyboardTriggersMap.containsKey("F1-F12 Edge Buttons"))
+        assertTrue(keyboardTriggersMap.containsKey("UI & Hardware Media Buttons"))
+
+        val navKeys = keyboardTriggersMap["Navigation & Control Keys"]!!
+        assertTrue(navKeys.contains(GestureTrigger.KEY_SPACE))
+        assertTrue(navKeys.contains(GestureTrigger.KEY_F))
+        assertTrue(navKeys.contains(GestureTrigger.KEY_QUESTION))
+
+        val fKeys = keyboardTriggersMap["F1-F12 Edge Buttons"]!!
+        assertEquals(12, fKeys.size)
+        assertEquals(GestureTrigger.KEY_F1, fKeys[0])
+        assertEquals(GestureTrigger.KEY_F12, fKeys[11])
     }
 }

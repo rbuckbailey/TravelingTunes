@@ -72,6 +72,20 @@ val PAGES = listOf(
             "Top-Right Corner: Toggle Shuffle",
             "1-Finger Long Press: Open Settings Menu"
         )
+    ),
+    QuickStartPage(
+        title = "Keyboard Controls & Shortcuts",
+        description = "Mappable physical keyboard & media button shortcuts.",
+        gestureInstructions = listOf(
+            "Space Bar: Play / Pause",
+            "Left / Right Arrows: Rewind / Fast Forward",
+            "Up / Down Arrows: Volume Up / Volume Down",
+            "F Key: Toggle Docked Art Layout",
+            "Q Key: Current Queue | Tab: Song Picker",
+            "Esc: Menu | ? Key: Help / Quick Start",
+            "F1-F12 Keys: Top & Bottom Edge Region Buttons",
+            "UI & Media Buttons: Play/Pause, Next, Prev, FF, Rewind, Stop"
+        )
     )
 )
 

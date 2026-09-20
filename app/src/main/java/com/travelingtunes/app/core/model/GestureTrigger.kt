@@ -8,7 +8,8 @@ enum class GestureCategory {
     TWO_FINGER_TAP,
     THREE_FINGER_TAP,
     LONG_PRESS,
-    SCREEN_REGION
+    SCREEN_REGION,
+    KEYBOARD
 }
 
 enum class GestureTrigger(
@@ -67,7 +68,39 @@ enum class GestureTrigger(
     CORNER_BOTTOM_CENTER("BottomCenter", "Bottom Region 4", GestureCategory.SCREEN_REGION, "PlayPause"),
     CORNER_BOTTOM_5("BottomRegion5", "Bottom Region 5", GestureCategory.SCREEN_REGION, "ShowQuickStart"),
     CORNER_BOTTOM_6("BottomRegion6", "Bottom Region 6", GestureCategory.SCREEN_REGION, "Next"),
-    CORNER_BOTTOM_RIGHT("BottomRight", "Bottom Region 7", GestureCategory.SCREEN_REGION, "Menu");
+    CORNER_BOTTOM_RIGHT("BottomRight", "Bottom Region 7", GestureCategory.SCREEN_REGION, "Menu"),
+
+    // Keyboard & Media Shortcuts
+    KEY_SPACE("KeySpace", "Space Bar", GestureCategory.KEYBOARD, "PlayPause"),
+    KEY_F("KeyF", "'F' Key (Toggle Art)", GestureCategory.KEYBOARD, "ToggleDockedArt"),
+    KEY_LEFT("KeyLeft", "Left Arrow (Rewind)", GestureCategory.KEYBOARD, "Rewind"),
+    KEY_RIGHT("KeyRight", "Right Arrow (Fast Forward)", GestureCategory.KEYBOARD, "FastForward"),
+    KEY_UP("KeyUp", "Up Arrow (Volume Up)", GestureCategory.KEYBOARD, "VolumeUp"),
+    KEY_DOWN("KeyDown", "Down Arrow (Volume Down)", GestureCategory.KEYBOARD, "VolumeDown"),
+    KEY_ESC("KeyEsc", "Escape (Menu)", GestureCategory.KEYBOARD, "Menu"),
+    KEY_TAB("KeyTab", "Tab (Song Picker)", GestureCategory.KEYBOARD, "SongPicker"),
+    KEY_Q("KeyQ", "'Q' Key (Queue)", GestureCategory.KEYBOARD, "ShowQueue"),
+    KEY_QUESTION("KeyQuestion", "'?' Key (Help)", GestureCategory.KEYBOARD, "ShowQuickStart"),
+
+    KEY_F1("KeyF1", "F1 Edge Button", GestureCategory.KEYBOARD, "ToggleRepeat"),
+    KEY_F2("KeyF2", "F2 Edge Button", GestureCategory.KEYBOARD, "Rewind"),
+    KEY_F3("KeyF3", "F3 Edge Button", GestureCategory.KEYBOARD, "PlayCurrentArtist"),
+    KEY_F4("KeyF4", "F4 Edge Button", GestureCategory.KEYBOARD, "PlayCurrentAlbum"),
+    KEY_F5("KeyF5", "F5 Edge Button", GestureCategory.KEYBOARD, "ShuffleAllSongs"),
+    KEY_F6("KeyF6", "F6 Edge Button", GestureCategory.KEYBOARD, "FastForward"),
+    KEY_F7("KeyF7", "F7 Edge Button", GestureCategory.KEYBOARD, "SongPicker"),
+    KEY_F8("KeyF8", "F8 Edge Button", GestureCategory.KEYBOARD, "Previous"),
+    KEY_F9("KeyF9", "F9 Edge Button", GestureCategory.KEYBOARD, "ShowQueue"),
+    KEY_F10("KeyF10", "F10 Edge Button", GestureCategory.KEYBOARD, "PlayPause"),
+    KEY_F11("KeyF11", "F11 Edge Button", GestureCategory.KEYBOARD, "ShowQuickStart"),
+    KEY_F12("KeyF12", "F12 Edge Button", GestureCategory.KEYBOARD, "Next"),
+
+    KEY_MEDIA_PLAY_PAUSE("MediaPlayPause", "Media Play / Pause", GestureCategory.KEYBOARD, "PlayPause"),
+    KEY_MEDIA_NEXT("MediaNext", "Media Next", GestureCategory.KEYBOARD, "Next"),
+    KEY_MEDIA_PREVIOUS("MediaPrevious", "Media Previous", GestureCategory.KEYBOARD, "Previous"),
+    KEY_MEDIA_FAST_FORWARD("MediaFastForward", "Media Fast Forward", GestureCategory.KEYBOARD, "FastForward"),
+    KEY_MEDIA_REWIND("MediaRewind", "Media Rewind", GestureCategory.KEYBOARD, "Rewind"),
+    KEY_MEDIA_STOP("MediaStop", "Media Stop", GestureCategory.KEYBOARD, "Pause");
 
     companion object {
         val TOP_REGION_SLOTS = listOf(

@@ -410,6 +410,25 @@ class MusicScanner(
         _isScanning.value = false
     }
 
+    private fun findFolderArtworkUri(currentDir: DocumentFile): Uri? {
+        val imageExtensions = setOf("jpg", "jpeg", "png", "webp")
+        val files = currentDir.listFiles()
+        val imageFiles = files.filter { file ->
+            file.isFile && imageExtensions.contains(file.name.orEmpty().substringAfterLast('.', "").lowercase())
+        }
+        if (imageFiles.isEmpty()) return null
+
+        val preferredKeywords = listOf("cover", "folder", "album", "art", "artwork", "front")
+        for (keyword in preferredKeywords) {
+            val match = imageFiles.find { file ->
+                val nameWithoutExt = file.name.orEmpty().substringBeforeLast('.').lowercase()
+                nameWithoutExt == keyword || nameWithoutExt.contains(keyword)
+            }
+            if (match != null) return match.uri
+        }
+        return imageFiles.first().uri
+    }
+
     private suspend fun traverseDocumentTree(
         rootDir: DocumentFile,
         currentDir: DocumentFile,
@@ -418,6 +437,8 @@ class MusicScanner(
         artworkCacheDir: File
     ) {
         val files = currentDir.listFiles()
+        val folderArtUri = findFolderArtworkUri(currentDir)
+
         for (file in files) {
             BackgroundTaskGate.checkYieldAndPause()
             if (file.isDirectory) {
@@ -432,6 +453,7 @@ class MusicScanner(
                         currentDir = currentDir,
                         relativePath = relativePath,
                         artworkCacheDir = artworkCacheDir,
+                        folderArtUri = folderArtUri,
                         idSeed = foundSongs.size + 1L
                     )
                     if (song != null) {
@@ -449,6 +471,7 @@ class MusicScanner(
         currentDir: DocumentFile,
         relativePath: String,
         artworkCacheDir: File,
+        folderArtUri: Uri? = null,
         idSeed: Long
     ): Song? {
         val contentUri = file.uri
@@ -511,7 +534,7 @@ class MusicScanner(
             val yearStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)
             val year = yearStr?.trim()?.toIntOrNull() ?: 0
 
-            val artworkUri = extractAndSaveArtwork(mmr, album, artist, artworkCacheDir)
+            val artworkUri = folderArtUri ?: extractAndSaveArtwork(mmr, album, artist, artworkCacheDir)
 
             // Generate stable numeric ID from Uri string
             val songId = kotlin.math.abs(contentUri.toString().hashCode().toLong())
