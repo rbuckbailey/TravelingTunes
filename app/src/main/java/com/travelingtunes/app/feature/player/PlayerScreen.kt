@@ -210,13 +210,35 @@ fun keyCodeToKeyboardTrigger(keyCode: Int, isShiftPressed: Boolean = false, unic
     }
 }
 
+data class PlayerScannerStatus(
+    val isScanning: Boolean = false,
+    val scanStatusMessage: String? = null,
+    val isDownloadingArt: Boolean = false,
+    val artDownloadStatusMessage: String? = null,
+    val artDownloadDownloadedCount: Int = 0,
+    val artDownloadFailedCount: Int = 0,
+    val artDownloadTotalCount: Int = 0,
+    val lastAuditReport: AlbumArtAuditReport? = null,
+    val autoRescanEnabled: Boolean = false,
+    val autoRescanStatusMessage: String? = null,
+    val isAutoRescanWaiting: Boolean = false
+)
+
+data class PlayerNavigationCallbacks(
+    val onOpenSettings: () -> Unit = {},
+    val onOpenQuickStart: () -> Unit = {},
+    val onOpenGestureAssignments: () -> Unit = {},
+    val onOpenDownloadedArtBrowser: () -> Unit = {},
+    val onOpenDuplicateTrackIdentifier: () -> Unit = {}
+)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayerScreen(
     playbackManager: PlaybackManager,
     musicDatabase: MusicDatabase,
-    displaySettings: DisplaySettings,
-    gestureBindings: Map<GestureTrigger, GestureBinding>,
+    displaySettings: DisplaySettings = DisplaySettings(),
+    gestureBindings: Map<GestureTrigger, GestureBinding> = emptyMap(),
     musicScanner: MusicScanner? = null,
     settingsDataStore: SettingsDataStore? = null,
     themeSettings: ThemeSettings = ThemeSettings(),
@@ -224,28 +246,32 @@ fun PlayerScreen(
     musicFolderName: String? = null,
     lastScanTime: Long = 0L,
     libraryStats: LibraryStats = LibraryStats(),
-    isScanning: Boolean = false,
-    scanStatusMessage: String? = null,
-    isDownloadingArt: Boolean = false,
-    artDownloadStatusMessage: String? = null,
-    artDownloadDownloadedCount: Int = 0,
-    artDownloadFailedCount: Int = 0,
-    artDownloadTotalCount: Int = 0,
-    lastAuditReport: AlbumArtAuditReport? = null,
-    autoRescanEnabled: Boolean = false,
-    autoRescanStatusMessage: String? = null,
-    isAutoRescanWaiting: Boolean = false,
+    scannerStatus: PlayerScannerStatus = PlayerScannerStatus(),
+    navigationCallbacks: PlayerNavigationCallbacks = PlayerNavigationCallbacks(),
     onToggleAutoRescan: (Boolean) -> Unit = {},
     onDismissFirstRunPrompt: () -> Unit = {},
     onPickMusicFolder: () -> Unit = {},
     onRescanMusicFolder: () -> Unit = {},
-    onDownloadMissingArt: () -> Unit = {},
-    onOpenSettings: () -> Unit,
-    onOpenQuickStart: () -> Unit,
-    onOpenGestureAssignments: () -> Unit = {},
-    onOpenDownloadedArtBrowser: () -> Unit = {},
-    onOpenDuplicateTrackIdentifier: () -> Unit = {}
+    onDownloadMissingArt: () -> Unit = {}
 ) {
+    val isScanning = scannerStatus.isScanning
+    val scanStatusMessage = scannerStatus.scanStatusMessage
+    val isDownloadingArt = scannerStatus.isDownloadingArt
+    val artDownloadStatusMessage = scannerStatus.artDownloadStatusMessage
+    val artDownloadDownloadedCount = scannerStatus.artDownloadDownloadedCount
+    val artDownloadFailedCount = scannerStatus.artDownloadFailedCount
+    val artDownloadTotalCount = scannerStatus.artDownloadTotalCount
+    val lastAuditReport = scannerStatus.lastAuditReport
+    val autoRescanEnabled = scannerStatus.autoRescanEnabled
+    val autoRescanStatusMessage = scannerStatus.autoRescanStatusMessage
+    val isAutoRescanWaiting = scannerStatus.isAutoRescanWaiting
+
+    val onOpenSettings = navigationCallbacks.onOpenSettings
+    val onOpenQuickStart = navigationCallbacks.onOpenQuickStart
+    val onOpenGestureAssignments = navigationCallbacks.onOpenGestureAssignments
+    val onOpenDownloadedArtBrowser = navigationCallbacks.onOpenDownloadedArtBrowser
+    val onOpenDuplicateTrackIdentifier = navigationCallbacks.onOpenDuplicateTrackIdentifier
+
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
@@ -268,18 +294,15 @@ fun PlayerScreen(
 
     val currentSong by playbackManager.currentSong.collectAsState()
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
-    val currentPositionMsState = playbackManager.currentPositionMs.collectAsState()
-    val durationMsState = playbackManager.durationMs.collectAsState()
-    val currentVolumeRatioState = playbackManager.currentVolumeRatio.collectAsState()
     val actionHudText by playbackManager.actionHudText.collectAsState()
 
-    val currentPositionMs = currentPositionMsState.value
-    val durationMs = durationMsState.value
-    val currentVolumeRatio = currentVolumeRatioState.value
+    val currentPositionMsProvider = remember(playbackManager) { { playbackManager.currentPositionMs.value } }
+    val durationMsProvider = remember(playbackManager) { { playbackManager.durationMs.value } }
+    val currentVolumeRatioProvider = remember(playbackManager) { { playbackManager.currentVolumeRatio.value } }
 
-    val currentPositionMsProvider = remember(currentPositionMs) { { currentPositionMs } }
-    val durationMsProvider = remember(durationMs) { { durationMs } }
-    val currentVolumeRatioProvider = remember(currentVolumeRatio) { { currentVolumeRatio } }
+    val currentPositionMs = currentPositionMsProvider()
+    val durationMs = durationMsProvider()
+    val currentVolumeRatio = currentVolumeRatioProvider()
 
     val isPlaying by playbackManager.isPlaying.collectAsState()
     val repeatMode by playbackManager.repeatMode.collectAsState()
@@ -528,7 +551,13 @@ fun PlayerScreen(
 
     val isForegroundBusy = pagerState.isScrollInProgress ||
             activePageAction != null ||
-            showRadialMenu
+            showRadialMenu ||
+            activeContinuousAction != null ||
+            pageDragOffsetX != 0f ||
+            pageDragOffsetY != 0f ||
+            showSongPicker ||
+            showQueue ||
+            showMenu
 
     LaunchedEffect(isForegroundBusy) {
         com.travelingtunes.app.core.media.BackgroundTaskGate.notifyForegroundBusy(isForegroundBusy)

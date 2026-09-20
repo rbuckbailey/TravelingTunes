@@ -588,23 +588,30 @@ fun TravelingTunesNavHost(
                 musicFolderName = musicFolderName,
                 lastScanTime = lastScanTime,
                 libraryStats = libraryStats,
-                isScanning = isScanning,
-                scanStatusMessage = scanStatusMessage,
-                isDownloadingArt = isDownloadingArt,
-                artDownloadStatusMessage = artDownloadStatusMessage,
-                artDownloadDownloadedCount = artDownloadDownloadedCount,
-                artDownloadFailedCount = artDownloadFailedCount,
-                artDownloadTotalCount = artDownloadTotalCount,
-                lastAuditReport = lastAuditReport,
+                scannerStatus = com.travelingtunes.app.feature.player.PlayerScannerStatus(
+                    isScanning = isScanning,
+                    scanStatusMessage = scanStatusMessage,
+                    isDownloadingArt = isDownloadingArt,
+                    artDownloadStatusMessage = artDownloadStatusMessage,
+                    artDownloadDownloadedCount = artDownloadDownloadedCount,
+                    artDownloadFailedCount = artDownloadFailedCount,
+                    artDownloadTotalCount = artDownloadTotalCount,
+                    lastAuditReport = lastAuditReport,
+                    autoRescanEnabled = autoRescanEnabled,
+                    autoRescanStatusMessage = autoRescanStatusMessage,
+                    isAutoRescanWaiting = isAutoRescanWaiting
+                ),
+                navigationCallbacks = com.travelingtunes.app.feature.player.PlayerNavigationCallbacks(
+                    onOpenSettings = { navController.navigate("settings") },
+                    onOpenQuickStart = { navController.navigate("quickstart") },
+                    onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
+                    onOpenDownloadedArtBrowser = { navController.navigate("downloaded_art_browser") },
+                    onOpenDuplicateTrackIdentifier = { navController.navigate("duplicate_track_identifier") }
+                ),
                 onDismissFirstRunPrompt = onDismissFirstRunPrompt,
                 onPickMusicFolder = onPickMusicFolder,
                 onRescanMusicFolder = onRescanMusicFolder,
-                onDownloadMissingArt = onDownloadMissingArt,
-                onOpenSettings = { navController.navigate("settings") },
-                onOpenQuickStart = { navController.navigate("quickstart") },
-                onOpenGestureAssignments = { navController.navigate("gesture_assignments") },
-                onOpenDownloadedArtBrowser = { navController.navigate("downloaded_art_browser") },
-                onOpenDuplicateTrackIdentifier = { navController.navigate("duplicate_track_identifier") }
+                onDownloadMissingArt = onDownloadMissingArt
             )
         }
         composable("settings") {

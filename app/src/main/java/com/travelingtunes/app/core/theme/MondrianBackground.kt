@@ -246,72 +246,8 @@ fun MondrianMaskedLayout(
     volumeRatioProvider: (() -> Float)? = null,
     content: @Composable () -> Unit
 ) {
-    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
-    if (!isMondrian) {
-        content()
-        return
-    }
-
-    val layout = remember(song?.id, song?.albumId, song?.album, song?.title) {
-        MondrianThemeHelper.generateLayoutForSong(song)
-    }
-
     Box(modifier = modifier) {
-        // Layer 1: Base Black content
         content()
-
-        // Layer 2: White content masked ONLY to black segments and grid lines
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
-                .drawWithContent {
-                    val curPos = currentPositionMsProvider?.invoke() ?: currentPositionMs
-                    val dur = durationMsProvider?.invoke() ?: durationMs
-                    val vol = volumeRatioProvider?.invoke() ?: volumeRatio
-
-                    val w = size.width
-                    val h = size.height
-                    val progressRatio = if (dur > 0L) {
-                        (curPos.toFloat() / dur.toFloat()).coerceIn(0.02f, 0.98f)
-                    } else {
-                        0.5f
-                    }
-                    val clampedVolumeRatio = vol.coerceIn(0.02f, 0.98f)
-                    val splitX = w * progressRatio
-                    val splitY = h * (1f - clampedVolumeRatio)
-
-                    drawBlackSegmentsMask(
-                        w = w,
-                        h = h,
-                        splitX = splitX,
-                        splitY = splitY,
-                        layout = layout
-                    )
-
-                    drawIntoCanvas { canvas ->
-                        val paint = androidx.compose.ui.graphics.Paint().apply {
-                            blendMode = BlendMode.SrcIn
-                        }
-                        canvas.saveLayer(androidx.compose.ui.geometry.Rect(0f, 0f, w, h), paint)
-                        drawContent()
-                        canvas.restore()
-                    }
-                }
-        ) {
-            MaterialTheme(
-                colorScheme = MaterialTheme.colorScheme.copy(
-                    primary = Color.White,
-                    secondary = Color.White,
-                    tertiary = Color.White,
-                    onBackground = Color.White,
-                    onSurface = Color.White,
-                    onSurfaceVariant = Color.White
-                )
-            ) {
-                content()
-            }
-        }
     }
 }
 

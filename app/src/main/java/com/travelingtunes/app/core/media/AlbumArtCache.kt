@@ -13,7 +13,15 @@ import kotlinx.coroutines.launch
 
 class AlbumArtCache private constructor() {
 
-    private val cache = LruCache<Long, ImageBitmap>(30)
+    private val maxMemoryBytes = (Runtime.getRuntime().maxMemory() / 8)
+        .toInt()
+        .coerceIn(8 * 1024 * 1024, 32 * 1024 * 1024)
+
+    private val cache = object : LruCache<Long, ImageBitmap>(maxMemoryBytes) {
+        override fun sizeOf(key: Long, value: ImageBitmap): Int {
+            return value.width * value.height * 4
+        }
+    }
     private val scope = CoroutineScope(Dispatchers.IO + Job())
 
     companion object {

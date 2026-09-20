@@ -234,8 +234,7 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
 
         // Long press timeout expired while finger is still held down
         if (event == null) {
-            val currDuration = System.currentTimeMillis() - startTime
-            if (!isSwipeHandled && !isLongPressHandled && !isSystemTopEdge && !isSystemBottomEdge && currDuration >= longPressThresholdMs) {
+            if (!isSystemTopEdge && !isSystemBottomEdge) {
                 val totalDist = hypot(totalDx, totalDy)
                 if (totalDist < longPressSlopPx) {
                     val trigger = if (maxFingers == 1) {
