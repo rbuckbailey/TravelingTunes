@@ -760,6 +760,7 @@ fun PlayerScreen(
                         onOpenQueue = { dir -> openQueue(dir, trigger) },
                         onOpenSettings = { dir -> openMenu(dir, trigger) },
                         onOpenQuickStart = onOpenQuickStart,
+                        onOpenProfilePicker = { showProfilePicker = true },
                         settingsDataStore = effectiveSettingsDataStore,
                         gestureBindings = gestureBindings,
                         overrideOtherOptionKey = resolvedOtherKey,
@@ -794,6 +795,7 @@ fun PlayerScreen(
                         onOpenQueue = { dir -> openQueue(dir, trig) },
                         onOpenSettings = { dir -> openMenu(dir, trig) },
                         onOpenQuickStart = onOpenQuickStart,
+                        onOpenProfilePicker = { showProfilePicker = true },
                         settingsDataStore = effectiveSettingsDataStore,
                         gestureBindings = gestureBindings
                     )
@@ -904,6 +906,7 @@ fun PlayerScreen(
                             onOpenQueue = { dir -> openQueue(dir, currentSlideTrigger) },
                             onOpenSettings = { dir -> openMenu(dir, currentSlideTrigger) },
                             onOpenQuickStart = onOpenQuickStart,
+                            onOpenProfilePicker = { showProfilePicker = true },
                             settingsDataStore = effectiveSettingsDataStore,
                             gestureBindings = gestureBindings,
                             overrideOtherOptionKey = currentOtherKey,
@@ -1129,6 +1132,7 @@ fun PlayerScreen(
                 onOpenQuickStart = onOpenQuickStart,
                 onShowRepeatOptions = { showRepeatOptionsDialog = true },
                 onShowShuffleOptions = { showShuffleOptionsDialog = true },
+                onOpenProfilePicker = { showProfilePicker = true },
                 settingsDataStore = effectiveSettingsDataStore
             )
         }
@@ -1302,9 +1306,10 @@ fun PlayerScreen(
                     onOpenQuickStart = onOpenQuickStart,
                     onShowRepeatOptions = { showRepeatOptionsDialog = true },
                     onShowShuffleOptions = { showShuffleOptionsDialog = true },
+                    onOpenProfilePicker = { showProfilePicker = true },
                     numEdgeRegions = displaySettings.numEdgeRegions,
                     displaySettings = displaySettings,
-                    settingsDataStore = settingsDataStore
+                    settingsDataStore = effectiveSettingsDataStore
                 )
             }
         }
@@ -1447,9 +1452,9 @@ fun PlayerScreen(
         }
 
         // Select Profile Dialog
-        if (showProfilePicker && settingsDataStore != null) {
-            val profiles by settingsDataStore.profilesFlow.collectAsState(initial = listOf(Profile.DEFAULT, Profile.TRAVELING))
-            val activeProfile by settingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT)
+        if (showProfilePicker) {
+            val profiles by effectiveSettingsDataStore.profilesFlow.collectAsState(initial = listOf(Profile.DEFAULT, Profile.TRAVELING))
+            val activeProfile by effectiveSettingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT)
             AlertDialog(
                 onDismissRequest = { showProfilePicker = false },
                 title = { Text("Select Settings Profile") },
@@ -1462,7 +1467,7 @@ fun PlayerScreen(
                                     .fillMaxWidth()
                                     .clickable {
                                         coroutineScope.launch {
-                                            settingsDataStore.setActiveProfile(profile.id)
+                                            effectiveSettingsDataStore.setActiveProfile(profile.id)
                                         }
                                         showProfilePicker = false
                                     }
@@ -1472,13 +1477,13 @@ fun PlayerScreen(
                                     selected = profile.id == activeProfile.id,
                                     onClick = {
                                         coroutineScope.launch {
-                                            settingsDataStore.setActiveProfile(profile.id)
+                                            effectiveSettingsDataStore.setActiveProfile(profile.id)
                                         }
                                         showProfilePicker = false
                                     }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(profile.name, fontWeight = FontWeight.Medium)
+                                Text("${profile.emoji}  ${profile.name}", fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -1536,6 +1541,7 @@ fun PlayerScreen(
                         onOpenQueue = { dir -> openQueue(dir, trig) },
                         onOpenSettings = { dir -> openMenu(dir, trig) },
                         onOpenQuickStart = onOpenQuickStart,
+                        onOpenProfilePicker = { showProfilePicker = true },
                         settingsDataStore = effectiveSettingsDataStore,
                         gestureBindings = gestureBindings,
                         radialSlotIndex = activeRadialSelectedIndex
@@ -1645,6 +1651,7 @@ private fun TitleAndButtonsContainer(
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
+    onOpenProfilePicker: () -> Unit = {},
     dockAdjacentEdge: DockAdjacentEdge? = null,
     settingsDataStore: SettingsDataStore? = null,
     modifier: Modifier = Modifier
@@ -1681,6 +1688,7 @@ private fun TitleAndButtonsContainer(
                 onOpenQuickStart = onOpenQuickStart,
                 onShowRepeatOptions = onShowRepeatOptions,
                 onShowShuffleOptions = onShowShuffleOptions,
+                onOpenProfilePicker = onOpenProfilePicker,
                 numEdgeRegions = displaySettings.numEdgeRegions,
                 dockAdjacentEdge = dockAdjacentEdge,
                 displaySettings = displaySettings,
@@ -1782,6 +1790,7 @@ fun PlayerPageContent(
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
+    onOpenProfilePicker: () -> Unit = {},
     settingsDataStore: SettingsDataStore? = null
 ) {
     val contextPage = LocalContext.current
@@ -1861,6 +1870,7 @@ fun PlayerPageContent(
                 onOpenQuickStart = onOpenQuickStart,
                 onShowRepeatOptions = onShowRepeatOptions,
                 onShowShuffleOptions = onShowShuffleOptions,
+                onOpenProfilePicker = onOpenProfilePicker,
                 dockAdjacentEdge = dockEdge,
                 modifier = mod
             )
@@ -1890,6 +1900,7 @@ fun PlayerPageContent(
                         onOpenQuickStart = onOpenQuickStart,
                         onShowRepeatOptions = onShowRepeatOptions,
                         onShowShuffleOptions = onShowShuffleOptions,
+                        onOpenProfilePicker = onOpenProfilePicker,
                         numEdgeRegions = displaySettings.numArtEdgeRegions,
                         useArtBindings = true,
                         dockAdjacentEdge = dockEdge,
@@ -2013,6 +2024,7 @@ fun PlayerPageContent(
                 onOpenQuickStart = onOpenQuickStart,
                 onShowRepeatOptions = onShowRepeatOptions,
                 onShowShuffleOptions = onShowShuffleOptions,
+                onOpenProfilePicker = onOpenProfilePicker,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -2922,6 +2934,7 @@ fun ScreenRegionIconsOverlay(
     onOpenQuickStart: () -> Unit,
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
+    onOpenProfilePicker: () -> Unit = {},
     numEdgeRegions: Int = 3,
     useArtBindings: Boolean = false,
     dockAdjacentEdge: DockAdjacentEdge? = null,
@@ -3031,6 +3044,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
                                         onOpenQuickStart = onOpenQuickStart,
+                                        onOpenProfilePicker = onOpenProfilePicker,
                                         settingsDataStore = effectiveSettingsDataStore,
                                         gestureBindings = gestureBindings,
                                         overrideOtherOptionKey = optionKey
@@ -3056,6 +3070,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
                                         onOpenQuickStart = onOpenQuickStart,
+                                        onOpenProfilePicker = onOpenProfilePicker,
                                         settingsDataStore = effectiveSettingsDataStore,
                                         gestureBindings = gestureBindings,
                                         overrideOtherOptionKey = optionKey
@@ -3160,6 +3175,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
                                         onOpenQuickStart = onOpenQuickStart,
+                                        onOpenProfilePicker = onOpenProfilePicker,
                                         settingsDataStore = effectiveSettingsDataStore,
                                         gestureBindings = gestureBindings,
                                         overrideOtherOptionKey = optionKey
@@ -3185,6 +3201,7 @@ fun ScreenRegionIconsOverlay(
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
                                         onOpenQuickStart = onOpenQuickStart,
+                                        onOpenProfilePicker = onOpenProfilePicker,
                                         settingsDataStore = effectiveSettingsDataStore,
                                         gestureBindings = gestureBindings,
                                         overrideOtherOptionKey = optionKey

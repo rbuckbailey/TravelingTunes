@@ -795,16 +795,25 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun toggleDrivingMode() {
         context.dataStore.edit { prefs ->
-            val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false
-            val next = !current
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            val rawStackStr = prefs[KEY_ACTIVE_PROFILE_STACK] ?: activeId
+            val stackIds = rawStackStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+            val activeStack = stackIds.mapNotNull { id -> profiles.find { it.id == id } }.ifEmpty {
+                listOf(profiles.find { it.id == activeId } ?: Profile.DEFAULT)
+            }
+            val ov = Profile.resolveEffectiveOverride("AUTO_drivingMode", activeStack, profiles)
+                ?: Profile.resolveEffectiveOverride("drivingModeEnabled", activeStack, profiles)
+            val currentEffective = ov?.toBooleanStrictOrNull() ?: (prefs[KEY_DRIVING_MODE_ENABLED] ?: false)
+            val next = !currentEffective
+
             prefs[KEY_DRIVING_MODE_ENABLED] = next
             if (!next) {
                 prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = false
                 prefs[KEY_AUTO_AMBIENT_NOISE_ENABLED] = false
             }
-            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
             if (activeId != Profile.DEFAULT_ID) {
-                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                val updatedProfiles = profiles.map { profile ->
                     if (profile.id == activeId) {
                         val updatedMap = profile.overrides.toMutableMap()
                         updatedMap["AUTO_drivingMode"] = next.toString()
@@ -823,7 +832,7 @@ class SettingsDataStore(private val context: Context) {
                         profile.copy(overrides = updatedMap)
                     } else profile
                 }
-                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(updatedProfiles)
             }
         }
     }
@@ -1000,8 +1009,17 @@ class SettingsDataStore(private val context: Context) {
                     "LIBRARY_autoRescan" -> prefs[KEY_AUTO_RESCAN] = !(prefs[KEY_AUTO_RESCAN] ?: false)
                     "LIBRARY_gpsVolume" -> prefs[KEY_GPS_VOLUME] = !(prefs[KEY_GPS_VOLUME] ?: false)
                     "AUTO_drivingMode" -> {
-                        val current = prefs[KEY_DRIVING_MODE_ENABLED] ?: false
-                        val next = !current
+                        val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+                        val rawStackStr = prefs[KEY_ACTIVE_PROFILE_STACK] ?: activeId
+                        val stackIds = rawStackStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                        val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+                        val activeStack = stackIds.mapNotNull { id -> profiles.find { it.id == id } }.ifEmpty {
+                            listOf(profiles.find { it.id == activeId } ?: Profile.DEFAULT)
+                        }
+                        val ov = Profile.resolveEffectiveOverride("AUTO_drivingMode", activeStack, profiles)
+                            ?: Profile.resolveEffectiveOverride("drivingModeEnabled", activeStack, profiles)
+                        val currentEffective = ov?.toBooleanStrictOrNull() ?: (prefs[KEY_DRIVING_MODE_ENABLED] ?: false)
+                        val next = !currentEffective
                         prefs[KEY_DRIVING_MODE_ENABLED] = next
                         if (!next) {
                             prefs[KEY_AUTO_SPEED_VOLUME_ENABLED] = false
@@ -1739,6 +1757,7 @@ class SettingsDataStore(private val context: Context) {
             val nextId = targetIds.getOrElse(nextIndex) { Profile.DEFAULT_ID }
 
             prefs[KEY_ACTIVE_PROFILE_ID] = nextId
+            prefs[KEY_ACTIVE_PROFILE_STACK] = nextId
             nextProfile = profiles.find { it.id == nextId } ?: Profile.DEFAULT
         }
         return nextProfile

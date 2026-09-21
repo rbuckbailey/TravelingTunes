@@ -222,7 +222,7 @@ class MainActivity : ComponentActivity() {
                         minSpeedThreshold = displaySettings.autoMinSpeedThreshold,
                         speedVolumeRatio = displaySettings.autoSpeedVolumeRatio,
                         speedUnit = displaySettings.autoSpeedUnit,
-                        drivingModeEnabled = displaySettings.drivingModeEnabled || isSpeedVolumeActive,
+                        drivingModeEnabled = displaySettings.drivingModeEnabled,
                         autoEnableDrivingMode = displaySettings.autoEnableDrivingMode,
                         onMotionDetected = {
                             lifecycleScope.launch {
