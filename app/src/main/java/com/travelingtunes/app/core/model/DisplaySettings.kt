@@ -13,6 +13,7 @@ enum class TitleRowType(val displayName: String) {
 }
 
 enum class AutoCategory(val displayName: String) {
+    QUEUE("Current Queue"),
     SONGS("Songs"),
     ALBUMS("Albums"),
     ARTISTS("Artists"),
@@ -125,7 +126,7 @@ data class DisplaySettings(
     val numEdgeRegions: Int = 3,
     val numArtEdgeRegions: Int = 3,
     val titleOrder: List<TitleRowType> = listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM),
-    val autoCategoryOrder: List<AutoCategory> = listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS),
+    val autoCategoryOrder: List<AutoCategory> = listOf(AutoCategory.QUEUE, AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS),
     val autoShowAlbumArt: Boolean = true,
     val autoAlbumStyleGrid: Boolean = true,
     val autoArtistStyleGrid: Boolean = false,

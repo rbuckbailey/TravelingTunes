@@ -461,9 +461,11 @@ fun PlayerScreen(
         }
     }
 
+    var isProgrammaticScroll by remember { mutableStateOf(false) }
+
     // Sync pagerState -> PlaybackManager when user swipes pager to a settled page
     LaunchedEffect(pagerState.settledPage) {
-        if (currentPlaylist.isNotEmpty() && pagerState.settledPage in currentPlaylist.indices) {
+        if (!isProgrammaticScroll && currentPlaylist.isNotEmpty() && pagerState.settledPage in currentPlaylist.indices) {
             val selectedSong = currentPlaylist[pagerState.settledPage]
             if (selectedSong.id != currentSong?.id) {
                 playbackManager.playSongAtIndex(pagerState.settledPage)
@@ -474,16 +476,21 @@ fun PlayerScreen(
     // Sync PlaybackManager -> pagerState when song or playlist changes externally
     LaunchedEffect(currentSong?.id, currentPlaylist, lastTransitionReason) {
         if (songIndex in 0 until pageCount && pagerState.currentPage != songIndex) {
-            val isNextTrackAuto = lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
-                    lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT ||
-                    songIndex == pagerState.currentPage + 1
-            if (isNextTrackAuto) {
-                pagerState.animateScrollToPage(
-                    page = songIndex,
-                    animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-                )
-            } else {
-                pagerState.scrollToPage(songIndex)
+            isProgrammaticScroll = true
+            try {
+                val isNextTrackAuto = lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                        lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT ||
+                        songIndex == pagerState.currentPage + 1
+                if (isNextTrackAuto) {
+                    pagerState.animateScrollToPage(
+                        page = songIndex,
+                        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                    )
+                } else {
+                    pagerState.scrollToPage(songIndex)
+                }
+            } finally {
+                isProgrammaticScroll = false
             }
         }
     }

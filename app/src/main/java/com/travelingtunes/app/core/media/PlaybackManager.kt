@@ -931,9 +931,10 @@ class PlaybackManager(
     private fun updateQueuePreservingCurrentSong(
         clearPriorSongs: Boolean = false,
         resetPosition: Boolean = false,
-        autoPlay: Boolean = false
+        autoPlay: Boolean = false,
+        overrideCurrentSong: Song? = null
     ) {
-        val current = _currentSong.value
+        val current = overrideCurrentSong ?: _currentSong.value
         val playlist = _currentPlaylist.value
         val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { playlist } }
 
@@ -1044,6 +1045,7 @@ class PlaybackManager(
             val mediaItems = activeQueue.map { songToMediaItem(it) }
 
             withContext(Dispatchers.Main) {
+                _currentSong.value = activeQueue.getOrNull(newCurrentIndex) ?: current
                 _currentPlaylist.value = activeQueue
 
                 player.repeatMode = playerRepeatMode
@@ -1070,11 +1072,10 @@ class PlaybackManager(
             val targetTrack = albumSongs.firstOrNull() ?: current
 
             withContext(Dispatchers.Main) {
-                _currentSong.value = targetTrack
                 _shuffleMode.value = ShuffleMode.OFF
                 _repeatMode.value = RepeatMode.ALBUM
 
-                updateQueuePreservingCurrentSong(clearPriorSongs = true)
+                updateQueuePreservingCurrentSong(clearPriorSongs = true, overrideCurrentSong = targetTrack)
                 persistCurrentPlaybackState()
             }
         }
@@ -1092,11 +1093,10 @@ class PlaybackManager(
             val targetTrack = artistSongs.firstOrNull() ?: current
 
             withContext(Dispatchers.Main) {
-                _currentSong.value = targetTrack
                 _shuffleMode.value = ShuffleMode.OFF
                 _repeatMode.value = RepeatMode.ARTIST
 
-                updateQueuePreservingCurrentSong(clearPriorSongs = true)
+                updateQueuePreservingCurrentSong(clearPriorSongs = true, overrideCurrentSong = targetTrack)
                 persistCurrentPlaybackState()
             }
         }
@@ -1117,11 +1117,10 @@ class PlaybackManager(
             val targetTrack = folderSongs.firstOrNull() ?: current
 
             withContext(Dispatchers.Main) {
-                _currentSong.value = targetTrack
                 _shuffleMode.value = ShuffleMode.OFF
                 _repeatMode.value = RepeatMode.FOLDER
 
-                updateQueuePreservingCurrentSong(clearPriorSongs = true)
+                updateQueuePreservingCurrentSong(clearPriorSongs = true, overrideCurrentSong = targetTrack)
                 persistCurrentPlaybackState()
             }
         }
@@ -1168,8 +1167,7 @@ class PlaybackManager(
         val nextAlbumSongs = sortAlbumSongs(albumsMap[nextAlbumKey] ?: emptyList())
         val firstTrack = nextAlbumSongs.firstOrNull() ?: return
 
-        _currentSong.value = firstTrack
-        updateQueuePreservingCurrentSong(resetPosition = true, autoPlay = true)
+        updateQueuePreservingCurrentSong(resetPosition = true, autoPlay = true, overrideCurrentSong = firstTrack)
     }
 
     fun previousAlbum() {
@@ -1220,8 +1218,7 @@ class PlaybackManager(
         val prevAlbumSongs = sortAlbumSongs(albumsMap[prevAlbumKey] ?: emptyList())
         val targetTrack = prevAlbumSongs.firstOrNull() ?: return
 
-        _currentSong.value = targetTrack
-        updateQueuePreservingCurrentSong(resetPosition = true, autoPlay = true)
+        updateQueuePreservingCurrentSong(resetPosition = true, autoPlay = true, overrideCurrentSong = targetTrack)
     }
 
     fun getNextSong(): Song? {

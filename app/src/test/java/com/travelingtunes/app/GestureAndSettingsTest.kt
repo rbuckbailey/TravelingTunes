@@ -842,12 +842,13 @@ class GestureAndSettingsTest {
     @Test
     fun testAutoCategoryDefaultsAndReordering() {
         val defaultDisplay = com.travelingtunes.app.core.model.DisplaySettings()
-        assertEquals(5, defaultDisplay.autoCategoryOrder.size)
-        assertEquals(com.travelingtunes.app.core.model.AutoCategory.SONGS, defaultDisplay.autoCategoryOrder[0])
-        assertEquals(com.travelingtunes.app.core.model.AutoCategory.ALBUMS, defaultDisplay.autoCategoryOrder[1])
-        assertEquals(com.travelingtunes.app.core.model.AutoCategory.ARTISTS, defaultDisplay.autoCategoryOrder[2])
-        assertEquals(com.travelingtunes.app.core.model.AutoCategory.GENRES, defaultDisplay.autoCategoryOrder[3])
-        assertEquals(com.travelingtunes.app.core.model.AutoCategory.FOLDERS, defaultDisplay.autoCategoryOrder[4])
+        assertEquals(6, defaultDisplay.autoCategoryOrder.size)
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.QUEUE, defaultDisplay.autoCategoryOrder[0])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.SONGS, defaultDisplay.autoCategoryOrder[1])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.ALBUMS, defaultDisplay.autoCategoryOrder[2])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.ARTISTS, defaultDisplay.autoCategoryOrder[3])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.GENRES, defaultDisplay.autoCategoryOrder[4])
+        assertEquals(com.travelingtunes.app.core.model.AutoCategory.FOLDERS, defaultDisplay.autoCategoryOrder[5])
 
         assertTrue(defaultDisplay.autoShowAlbumArt)
         assertTrue(defaultDisplay.autoAlbumStyleGrid)

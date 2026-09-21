@@ -278,10 +278,11 @@ class SettingsDataStore(private val context: Context) {
             .mapNotNull { name -> runCatching { TitleRowType.valueOf(name.trim()) }.getOrNull() }
             .ifEmpty { listOf(TitleRowType.ARTIST, TitleRowType.SONG, TitleRowType.ALBUM) }
 
-        val catOrderStr = getString(KEY_AUTO_CATEGORY_ORDER, "autoCategoryOrder", prefs[KEY_AUTO_CATEGORY_ORDER] ?: "SONGS,ALBUMS,ARTISTS,GENRES,FOLDERS")
-        val autoCategoryOrder = catOrderStr.split(",")
+        val catOrderStr = getString(KEY_AUTO_CATEGORY_ORDER, "autoCategoryOrder", prefs[KEY_AUTO_CATEGORY_ORDER] ?: "QUEUE,SONGS,ALBUMS,ARTISTS,GENRES,FOLDERS")
+        val parsedCatOrder = catOrderStr.split(",")
             .mapNotNull { name -> runCatching { AutoCategory.valueOf(name.trim()) }.getOrNull() }
-            .ifEmpty { listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS) }
+            .ifEmpty { listOf(AutoCategory.QUEUE, AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS) }
+        val autoCategoryOrder = (parsedCatOrder + AutoCategory.entries).distinct()
 
         val actionOrderStr = getString(KEY_AUTO_ACTION_BUTTON_ORDER, "autoActionButtonOrder", prefs[KEY_AUTO_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
         val autoActionButtonOrder = actionOrderStr.split(",")

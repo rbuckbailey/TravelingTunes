@@ -179,7 +179,7 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 
     private fun notifyAutoChildrenChanged(session: MediaLibrarySession) {
-        listOf("root", "show_play_screen", "category_songs", "category_albums", "category_artists", "category_genres", "category_folders").forEach { parentId ->
+        listOf("root", "show_play_screen", "category_queue", "queue", "category_picker", "category_songs", "category_albums", "category_artists", "category_genres", "category_folders").forEach { parentId ->
             try {
                 session.notifyChildrenChanged(parentId, 0, null)
             } catch (e: Exception) {
@@ -255,7 +255,7 @@ class MusicPlaybackService : MediaLibraryService() {
             GestureAction.PREVIOUS -> R.drawable.ic_previous_song
             GestureAction.FAST_FORWARD -> R.drawable.ic_fast_forward
             GestureAction.REWIND -> R.drawable.ic_rewind
-            GestureAction.SONG_PICKER -> R.drawable.ic_song_picker
+            GestureAction.SONG_PICKER, GestureAction.SHOW_QUEUE -> R.drawable.ic_song_picker
             GestureAction.SELECT_ALBUM_VIEW -> R.drawable.ic_play_current_album
             GestureAction.SELECT_ARTIST_VIEW -> R.drawable.ic_play_current_artist
             GestureAction.MENU -> R.drawable.ic_menu_settings
@@ -400,6 +400,42 @@ class MusicPlaybackService : MediaLibraryService() {
                     .setExtras(Bundle().apply {
                         putInt(
                             MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+                            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+                        )
+                    })
+                    .build()
+            )
+            .build()
+
+        private val categoryQueue = MediaItem.Builder()
+            .setMediaId("category_queue")
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle("Current Queue")
+                    .setSubtitle("View playing queue")
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .setExtras(Bundle().apply {
+                        putInt(
+                            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
+                            MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+                        )
+                    })
+                    .build()
+            )
+            .build()
+
+        private val songPickerItem = MediaItem.Builder()
+            .setMediaId("category_picker")
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle("Song Picker")
+                    .setSubtitle("Browse Music Library (Songs, Albums, Artists...)")
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .setExtras(Bundle().apply {
+                        putInt(
+                            MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
                             MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
                         )
                     })
@@ -650,6 +686,11 @@ class MusicPlaybackService : MediaLibraryService() {
                 "com.travelingtunes.app.ACTION_REWIND" -> {
                     playbackManager.rewind()
                 }
+                "com.travelingtunes.app.ACTION_SHOW_QUEUE", "com.travelingtunes.app.ACTION_SONG_PICKER" -> {
+                    sharedSession?.let { session ->
+                        notifyAutoChildrenChanged(session)
+                    }
+                }
             }
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
         }
@@ -697,12 +738,12 @@ class MusicPlaybackService : MediaLibraryService() {
                     items.add(showPlayScreenItem)
                 }
                 when (parentId) {
-                    "show_play_screen" -> {
-                        // "show_play_screen" is a playable media item representing the play screen; no children
-                    }
-                    "root" -> {
+                    "show_play_screen", "root" -> {
+                        items.add(categoryQueue)
+                        items.add(songPickerItem)
                         items.add(shuffleAllItem)
                         val categoryMap = mapOf(
+                            AutoCategory.QUEUE to categoryQueue,
                             AutoCategory.SONGS to categorySongs,
                             AutoCategory.ALBUMS to categoryAlbums,
                             AutoCategory.ARTISTS to categoryArtists,
@@ -710,11 +751,31 @@ class MusicPlaybackService : MediaLibraryService() {
                             AutoCategory.FOLDERS to categoryFolders
                         )
                         val catOrder = autoDisplaySettings.autoCategoryOrder.ifEmpty {
-                            listOf(AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS)
+                            listOf(AutoCategory.QUEUE, AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS)
                         }
                         catOrder.forEach { cat ->
-                            categoryMap[cat]?.let { items.add(it) }
+                            categoryMap[cat]?.let { if (!items.contains(it)) items.add(it) }
                         }
+                    }
+                    "category_queue", "queue" -> {
+                        items.add(songPickerItem)
+                        val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                        val currentQueue = playbackManager.currentPlaylist.value
+                        if (currentQueue.isNotEmpty()) {
+                            items.addAll(currentQueue.map { songToMediaItem(it, showArt) })
+                        } else {
+                            items.add(shuffleAllItem)
+                            val songs = getAllSongsHelper()
+                            items.addAll(songs.map { songToMediaItem(it, showArt) })
+                        }
+                    }
+                    "category_picker" -> {
+                        items.add(shuffleAllItem)
+                        items.add(categorySongs)
+                        items.add(categoryAlbums)
+                        items.add(categoryArtists)
+                        items.add(categoryGenres)
+                        items.add(categoryFolders)
                     }
                     "category_songs" -> {
                         items.add(shuffleAllItem)
@@ -884,6 +945,14 @@ class MusicPlaybackService : MediaLibraryService() {
                     future.set(LibraryResult.ofItem(showPlayScreenItem, null))
                     return@launch
                 }
+                if (mediaId == "category_queue" || mediaId == "queue") {
+                    future.set(LibraryResult.ofItem(categoryQueue, null))
+                    return@launch
+                }
+                if (mediaId == "category_picker") {
+                    future.set(LibraryResult.ofItem(songPickerItem, null))
+                    return@launch
+                }
                 if (mediaId == "shuffle_all") {
                     future.set(LibraryResult.ofItem(shuffleAllItem, null))
                     return@launch
@@ -1013,19 +1082,45 @@ class MusicPlaybackService : MediaLibraryService() {
                             resolvedItems.addAll(shuffledQueue.map { songToMediaItem(it) })
                         }
                         playStartIndex = 0
+                    } else if (requestedId == "category_queue" || requestedId == "queue" || requestedId == "category_picker") {
+                        withContext(Dispatchers.Main) {
+                            val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                            val playlist = playbackManager.currentPlaylist.value
+                            if (playlist.isNotEmpty()) {
+                                resolvedSongs.addAll(playlist)
+                                resolvedItems.addAll(playlist.map { songToMediaItem(it) })
+                                playStartIndex = 0
+                            } else {
+                                playbackManager.shuffleAllSongs()
+                                val shuffledQueue = playbackManager.currentPlaylist.value
+                                resolvedSongs.addAll(shuffledQueue)
+                                resolvedItems.addAll(shuffledQueue.map { songToMediaItem(it) })
+                                playStartIndex = 0
+                            }
+                        }
                     } else if (matchedSong != null) {
-                        val albumSongs = allSongs.filter { it.album.equals(matchedSong.album, ignoreCase = true) }
-                        val queueSongs = if (albumSongs.size > 1) albumSongs else allSongs
+                        withContext(Dispatchers.Main) {
+                            val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                            val currentQueue = playbackManager.currentPlaylist.value
+                            val inQueueIndex = currentQueue.indexOfFirst { it.id == matchedSong.id }
 
-                        val songIndex = queueSongs.indexOfFirst { it.id == matchedSong.id }
-                        if (songIndex >= 0) {
-                            resolvedSongs.addAll(queueSongs)
-                            resolvedItems.addAll(queueSongs.map { songToMediaItem(it) })
-                            playStartIndex = songIndex
-                        } else {
-                            resolvedSongs.add(matchedSong)
-                            resolvedItems.add(songToMediaItem(matchedSong))
-                            playStartIndex = 0
+                            val queueSongs = if (inQueueIndex >= 0) {
+                                currentQueue
+                            } else {
+                                val albumSongs = allSongs.filter { it.album.equals(matchedSong.album, ignoreCase = true) }
+                                if (albumSongs.size > 1) albumSongs else allSongs
+                            }
+
+                            val songIndex = queueSongs.indexOfFirst { it.id == matchedSong.id }
+                            if (songIndex >= 0) {
+                                resolvedSongs.addAll(queueSongs)
+                                resolvedItems.addAll(queueSongs.map { songToMediaItem(it) })
+                                playStartIndex = songIndex
+                            } else {
+                                resolvedSongs.add(matchedSong)
+                                resolvedItems.add(songToMediaItem(matchedSong))
+                                playStartIndex = 0
+                            }
                         }
                     } else if (requestedId.startsWith("album_")) {
                         val albumName = requestedId.removePrefix("album_")
