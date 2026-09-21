@@ -536,8 +536,13 @@ class PlaybackManager(
             masterPlaylist = songs
         }
         _currentPlaylist.value = songs
-        _currentSong.value = songs.getOrNull(startIndex)
+        val safeIndex = startIndex.coerceIn(0, songs.size - 1)
+        _currentSong.value = songs.getOrNull(safeIndex)
         persistCurrentPlaybackState()
+
+        if (player.playbackState == Player.STATE_IDLE) {
+            player.prepare()
+        }
     }
 
     fun shuffleAllSongs() {
@@ -923,7 +928,11 @@ class PlaybackManager(
         }
     }
 
-    private fun updateQueuePreservingCurrentSong(clearPriorSongs: Boolean = false) {
+    private fun updateQueuePreservingCurrentSong(
+        clearPriorSongs: Boolean = false,
+        resetPosition: Boolean = false,
+        autoPlay: Boolean = false
+    ) {
         val current = _currentSong.value
         val playlist = _currentPlaylist.value
         val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { playlist } }
@@ -1040,10 +1049,10 @@ class PlaybackManager(
                 player.repeatMode = playerRepeatMode
                 player.shuffleModeEnabled = false
 
-                val currentPos = if (clearPriorSongs) 0L else try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
+                val currentPos = if (clearPriorSongs || resetPosition) 0L else try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
                 player.setMediaItems(mediaItems, newCurrentIndex, currentPos)
-                if (clearPriorSongs) {
-                    player.prepare()
+                player.prepare()
+                if (clearPriorSongs || autoPlay || player.isPlaying) {
                     player.play()
                 }
             }
@@ -1160,13 +1169,7 @@ class PlaybackManager(
         val firstTrack = nextAlbumSongs.firstOrNull() ?: return
 
         _currentSong.value = firstTrack
-        updateQueuePreservingCurrentSong()
-
-        val queueIndex = _currentPlaylist.value.indexOfFirst { it.id == firstTrack.id }
-        if (queueIndex != -1) {
-            player.seekTo(queueIndex, 0L)
-            player.play()
-        }
+        updateQueuePreservingCurrentSong(resetPosition = true, autoPlay = true)
     }
 
     fun previousAlbum() {
@@ -1218,13 +1221,7 @@ class PlaybackManager(
         val targetTrack = prevAlbumSongs.firstOrNull() ?: return
 
         _currentSong.value = targetTrack
-        updateQueuePreservingCurrentSong()
-
-        val queueIndex = _currentPlaylist.value.indexOfFirst { it.id == targetTrack.id }
-        if (queueIndex != -1) {
-            player.seekTo(queueIndex, 0L)
-            player.play()
-        }
+        updateQueuePreservingCurrentSong(resetPosition = true, autoPlay = true)
     }
 
     fun getNextSong(): Song? {

@@ -160,8 +160,31 @@ class MusicPlaybackService : MediaLibraryService() {
                 autoDisplaySettings = settings
                 sharedSession?.let { session ->
                     updateCustomLayout(session, bindings, settings, repeatMode, shuffleMode)
+                    notifyAutoChildrenChanged(session)
                 }
             }.collect {}
+        }
+
+        serviceScope.launch {
+            val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+            combine(
+                playbackManager.currentSong,
+                playbackManager.currentPlaylist
+            ) { _, _ ->
+                sharedSession?.let { session ->
+                    notifyAutoChildrenChanged(session)
+                }
+            }.collect {}
+        }
+    }
+
+    private fun notifyAutoChildrenChanged(session: MediaLibrarySession) {
+        listOf("root", "show_play_screen", "category_songs", "category_albums", "category_artists", "category_genres", "category_folders").forEach { parentId ->
+            try {
+                session.notifyChildrenChanged(parentId, 0, null)
+            } catch (e: Exception) {
+                android.util.Log.w("MusicPlaybackService", "Error notifying children changed for $parentId", e)
+            }
         }
     }
 
@@ -636,6 +659,10 @@ class MusicPlaybackService : MediaLibraryService() {
             browser: MediaSession.ControllerInfo,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<MediaItem>> {
+            val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+            val isPlaying = playbackManager.isPlaying.value || playbackManager.player.isPlaying
+            val activeRootItem = if (isPlaying) showPlayScreenItem else rootItem
+
             val rootParams = LibraryParams.Builder()
                 .setExtras(Bundle().apply {
                     putBoolean("android.media.browse.SEARCH_SUPPORTED", autoDisplaySettings.autoVoiceSearch)
@@ -650,7 +677,7 @@ class MusicPlaybackService : MediaLibraryService() {
                 })
                 .build()
 
-            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, rootParams))
+            return Futures.immediateFuture(LibraryResult.ofItem(activeRootItem, rootParams))
         }
 
         override fun onGetChildren(
@@ -666,8 +693,13 @@ class MusicPlaybackService : MediaLibraryService() {
             serviceScope.launch {
                 val items = mutableListOf<MediaItem>()
                 val showArt = autoDisplaySettings.autoShowAlbumArt
-                items.add(showPlayScreenItem)
+                if (parentId != "show_play_screen") {
+                    items.add(showPlayScreenItem)
+                }
                 when (parentId) {
+                    "show_play_screen" -> {
+                        // "show_play_screen" is a playable media item representing the play screen; no children
+                    }
                     "root" -> {
                         items.add(shuffleAllItem)
                         val categoryMap = mapOf(
@@ -1104,19 +1136,25 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 }
 
+@OptIn(UnstableApi::class)
 fun songToMediaItem(song: Song, showAlbumArt: Boolean = true): MediaItem {
     val artUri = if (showAlbumArt) song.artworkUri else null
     val metadata = MediaMetadata.Builder()
         .setTitle(song.title)
+        .setDisplayTitle(song.title)
         .setArtist(song.artist)
+        .setSubtitle(if (song.album.isNotBlank()) "${song.artist} — ${song.album}" else song.artist)
+        .setDescription(song.album)
         .setAlbumTitle(song.album)
+        .setAlbumArtist(song.artist)
         .setGenre(song.genre)
         .setTrackNumber(song.trackNumber)
+        .setDurationMs(song.durationMs)
+        .setIsPlayable(true)
+        .setIsBrowsable(false)
         .apply {
             if (artUri != null) setArtworkUri(artUri)
         }
-        .setIsPlayable(true)
-        .setIsBrowsable(false)
         .setExtras(Bundle().apply {
             putString("folder_path", song.folderPath)
         })

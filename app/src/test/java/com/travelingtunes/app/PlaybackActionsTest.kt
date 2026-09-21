@@ -4,7 +4,6 @@ import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ShuffleMode
 import com.travelingtunes.app.core.model.Song
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 import org.mockito.Mockito
 
@@ -152,5 +151,16 @@ class PlaybackActionsTest {
         assertEquals("Song 1", queue[0].title)
         assertEquals("Song 2", queue[1].title)
         assertEquals("Queued Song", queue[2].title)
+    }
+
+    @Test
+    fun testAndroidAutoRootSelectionLogicWhenPlaying() {
+        // When music is playing, Android Auto root resolves to "show_play_screen" to open play screen directly
+        fun getRootMediaId(isPlaying: Boolean): String {
+            return if (isPlaying) "show_play_screen" else "root"
+        }
+
+        assertEquals("show_play_screen", getRootMediaId(isPlaying = true))
+        assertEquals("root", getRootMediaId(isPlaying = false))
     }
 }

@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -56,7 +57,24 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.focusable
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import com.travelingtunes.app.feature.player.keyCodeToKeyboardTrigger
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -265,6 +283,20 @@ fun GestureAssignmentScreen(
 
     var selectedSubmenu by remember { mutableStateOf<GestureSubmenu?>(initialSubmenu) }
     var editingRadialTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
+    var showAddKeyDialog by remember { mutableStateOf(false) }
+
+    val unassignedKeyboardTriggers = remember(gestureBindings) {
+        GestureTrigger.entries
+            .filter { it.category == GestureCategory.KEYBOARD }
+            .filter { trigger ->
+                val binding = gestureBindings[trigger] ?: GestureBinding(
+                    trigger = trigger,
+                    action = GestureAction.fromKey(trigger.defaultActionKey),
+                    isContinuous = trigger.isContinuousDefault
+                )
+                binding.action == GestureAction.UNASSIGNED
+            }
+    }
 
     BackHandler(enabled = selectedSubmenu != null || editingRadialTrigger != null) {
         if (editingRadialTrigger != null) {
@@ -301,6 +333,11 @@ fun GestureAssignmentScreen(
                     }
                 },
                 actions = {
+                    if (selectedSubmenu == GestureSubmenu.KEYBOARD && editingRadialTrigger == null) {
+                        IconButton(onClick = { showAddKeyDialog = true }) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Keyboard Button")
+                        }
+                    }
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.Close, contentDescription = "Exit to Play Screen")
                     }
@@ -455,99 +492,166 @@ fun GestureAssignmentScreen(
                     }
                 }
             } else {
-                // Swipe, Tap, or Button Actions list
+                // Swipe, Tap, Button, or Keyboard Actions list
                 val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
                 val isSeparate = isDocked && displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
                 val numArtEdgeRegions = displaySettings.numArtEdgeRegions
-                val sections = remember(sub, numEdgeRegions, numArtEdgeRegions, isSeparate) {
-                    getTriggersForSubmenu(sub, numEdgeRegions, numArtEdgeRegions, isSeparate)
+                val visibleSections = remember(sub, numEdgeRegions, numArtEdgeRegions, isSeparate, gestureBindings) {
+                    val rawSections = getTriggersForSubmenu(sub, numEdgeRegions, numArtEdgeRegions, isSeparate)
+                    if (sub == GestureSubmenu.KEYBOARD) {
+                        rawSections.mapValues { (_, triggers) ->
+                            triggers.filter { trigger ->
+                                val currentBinding = gestureBindings[trigger] ?: GestureBinding(
+                                    trigger = trigger,
+                                    action = GestureAction.fromKey(trigger.defaultActionKey),
+                                    isContinuous = trigger.isContinuousDefault
+                                )
+                                currentBinding.action != GestureAction.UNASSIGNED
+                            }
+                        }.filterValues { it.isNotEmpty() }
+                    } else {
+                        rawSections
+                    }
                 }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    sections.forEach { (sectionTitle, triggers) ->
-                        item(key = "header_$sectionTitle") {
-                            Column(
+                    if (sub == GestureSubmenu.KEYBOARD && visibleSections.isEmpty()) {
+                        item(key = "empty_keyboard_message") {
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = sectionTitle,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    text = "No keyboard buttons are currently assigned. Tap '+' to add keyboard buttons.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
-                        items(triggers, key = { "${sectionTitle}_${it.name}" }) { trigger ->
-                            val currentBinding = gestureBindings[trigger] ?: GestureBinding(
-                                trigger = trigger,
-                                action = GestureAction.fromKey(trigger.defaultActionKey),
-                                isContinuous = trigger.isContinuousDefault
-                            )
+                    } else {
+                        visibleSections.forEach { (sectionTitle, triggers) ->
+                            item(key = "header_$sectionTitle") {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                                ) {
+                                    Text(
+                                        text = sectionTitle,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            items(triggers, key = { "${sectionTitle}_${it.name}" }) { trigger ->
+                                val currentBinding = gestureBindings[trigger] ?: GestureBinding(
+                                    trigger = trigger,
+                                    action = GestureAction.fromKey(trigger.defaultActionKey),
+                                    isContinuous = trigger.isContinuousDefault
+                                )
 
-                            val isArtSection = sectionTitle.contains("Art")
-                            val isTitleSection = sectionTitle.contains("Title")
-                            val numRegions = if (isArtSection) numArtEdgeRegions else numEdgeRegions
+                                val isArtSection = sectionTitle.contains("Art")
+                                val isTitleSection = sectionTitle.contains("Title")
+                                val numRegions = if (isArtSection) numArtEdgeRegions else numEdgeRegions
 
-                            GestureAssignmentItem(
-                                trigger = trigger,
-                                binding = currentBinding,
-                                numEdgeRegions = numRegions,
-                                isArtSection = isArtSection,
-                                isTitleSection = isTitleSection,
-                                isSeparateTouchZones = isSeparate,
-                                onActionSelected = { regionTarget, newAction, otherKey ->
-                                    coroutineScope.launch {
-                                        when (regionTarget) {
-                                            com.travelingtunes.app.core.model.TouchRegionTarget.BOTH -> {
-                                                settingsDataStore.updateGestureBinding(
-                                                    trigger = trigger,
-                                                    action = newAction,
-                                                    isContinuous = currentBinding.isContinuous,
-                                                    otherOptionKey = otherKey,
-                                                    artAction = GestureAction.UNASSIGNED,
-                                                    artOtherOptionKey = null,
-                                                    titleAction = GestureAction.UNASSIGNED,
-                                                    titleOtherOptionKey = null
-                                                )
-                                            }
-                                            com.travelingtunes.app.core.model.TouchRegionTarget.ART -> {
-                                                settingsDataStore.updateGestureBinding(
-                                                    trigger = trigger,
-                                                    action = GestureAction.UNASSIGNED,
-                                                    isContinuous = currentBinding.isContinuous,
-                                                    otherOptionKey = null,
-                                                    artAction = newAction,
-                                                    artOtherOptionKey = otherKey,
-                                                    titleAction = currentBinding.titleAction,
-                                                    titleOtherOptionKey = currentBinding.titleOtherOptionKey
-                                                )
-                                            }
-                                            com.travelingtunes.app.core.model.TouchRegionTarget.TITLE -> {
-                                                settingsDataStore.updateGestureBinding(
-                                                    trigger = trigger,
-                                                    action = GestureAction.UNASSIGNED,
-                                                    isContinuous = currentBinding.isContinuous,
-                                                    otherOptionKey = null,
-                                                    artAction = currentBinding.artAction,
-                                                    artOtherOptionKey = currentBinding.artOtherOptionKey,
-                                                    titleAction = newAction,
-                                                    titleOtherOptionKey = otherKey
-                                                )
+                                GestureAssignmentItem(
+                                    trigger = trigger,
+                                    binding = currentBinding,
+                                    numEdgeRegions = numRegions,
+                                    isArtSection = isArtSection,
+                                    isTitleSection = isTitleSection,
+                                    isSeparateTouchZones = isSeparate,
+                                    onActionSelected = { regionTarget, newAction, otherKey ->
+                                        coroutineScope.launch {
+                                            when (regionTarget) {
+                                                com.travelingtunes.app.core.model.TouchRegionTarget.BOTH -> {
+                                                    settingsDataStore.updateGestureBinding(
+                                                        trigger = trigger,
+                                                        action = newAction,
+                                                        isContinuous = currentBinding.isContinuous,
+                                                        otherOptionKey = otherKey,
+                                                        artAction = GestureAction.UNASSIGNED,
+                                                        artOtherOptionKey = null,
+                                                        titleAction = GestureAction.UNASSIGNED,
+                                                        titleOtherOptionKey = null
+                                                    )
+                                                }
+                                                com.travelingtunes.app.core.model.TouchRegionTarget.ART -> {
+                                                    settingsDataStore.updateGestureBinding(
+                                                        trigger = trigger,
+                                                        action = GestureAction.UNASSIGNED,
+                                                        isContinuous = currentBinding.isContinuous,
+                                                        otherOptionKey = null,
+                                                        artAction = newAction,
+                                                        artOtherOptionKey = otherKey,
+                                                        titleAction = currentBinding.titleAction,
+                                                        titleOtherOptionKey = currentBinding.titleOtherOptionKey
+                                                    )
+                                                }
+                                                com.travelingtunes.app.core.model.TouchRegionTarget.TITLE -> {
+                                                    settingsDataStore.updateGestureBinding(
+                                                        trigger = trigger,
+                                                        action = GestureAction.UNASSIGNED,
+                                                        isContinuous = currentBinding.isContinuous,
+                                                        otherOptionKey = null,
+                                                        artAction = currentBinding.artAction,
+                                                        artOtherOptionKey = currentBinding.artOtherOptionKey,
+                                                        titleAction = newAction,
+                                                        titleOtherOptionKey = otherKey
+                                                    )
+                                                }
                                             }
                                         }
                                     }
+                                )
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+
+                    if (sub == GestureSubmenu.KEYBOARD && unassignedKeyboardTriggers.isNotEmpty()) {
+                        item(key = "add_keyboard_button_item") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Button(
+                                    onClick = { showAddKeyDialog = true }
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Add Keyboard Button")
                                 }
-                            )
-                            HorizontalDivider()
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    if (showAddKeyDialog) {
+        AddKeyboardControlDialog(
+            unassignedTriggers = unassignedKeyboardTriggers,
+            onAddKeyBinding = { trigger, action, otherKey ->
+                coroutineScope.launch {
+                    settingsDataStore.updateGestureBinding(
+                        trigger = trigger,
+                        action = action,
+                        otherOptionKey = otherKey
+                    )
+                }
+                showAddKeyDialog = false
+            },
+            onDismissRequest = { showAddKeyDialog = false }
+        )
     }
 }
 
@@ -1300,5 +1404,401 @@ private fun SubmenuCategoryCard(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+private fun formatKeyEventName(nativeEvent: android.view.KeyEvent): Pair<String, GestureTrigger?> {
+    val keyCode = nativeEvent.keyCode
+    val isShift = nativeEvent.isShiftPressed
+    val isCtrl = nativeEvent.isCtrlPressed
+    val isAlt = nativeEvent.isAltPressed
+    val isMeta = nativeEvent.isMetaPressed
+
+    val unicodeChar = nativeEvent.getUnicodeChar(nativeEvent.metaState)
+    val trigger = keyCodeToKeyboardTrigger(keyCode, isShift, unicodeChar)
+
+    val baseName = when (keyCode) {
+        android.view.KeyEvent.KEYCODE_SPACE -> "Space Bar"
+        android.view.KeyEvent.KEYCODE_DPAD_LEFT -> "Left Arrow"
+        android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> "Right Arrow"
+        android.view.KeyEvent.KEYCODE_DPAD_UP -> "Up Arrow"
+        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> "Down Arrow"
+        android.view.KeyEvent.KEYCODE_ESCAPE -> "Escape"
+        android.view.KeyEvent.KEYCODE_TAB -> "Tab"
+        android.view.KeyEvent.KEYCODE_SLASH -> "?"
+        android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+        android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
+        android.view.KeyEvent.KEYCODE_MEDIA_PAUSE -> "Media Play/Pause"
+        android.view.KeyEvent.KEYCODE_MEDIA_NEXT -> "Media Next"
+        android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS -> "Media Previous"
+        android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> "Media Fast Forward"
+        android.view.KeyEvent.KEYCODE_MEDIA_REWIND -> "Media Rewind"
+        android.view.KeyEvent.KEYCODE_MEDIA_STOP -> "Media Stop"
+        in android.view.KeyEvent.KEYCODE_F1..android.view.KeyEvent.KEYCODE_F12 -> "F${keyCode - android.view.KeyEvent.KEYCODE_F1 + 1}"
+        else -> {
+            val charStr = if (unicodeChar > 32) unicodeChar.toChar().uppercase() else ""
+            if (charStr.isNotEmpty()) charStr
+            else android.view.KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
+        }
+    }
+
+    val prefix = buildString {
+        if (isCtrl && keyCode != android.view.KeyEvent.KEYCODE_CTRL_LEFT && keyCode != android.view.KeyEvent.KEYCODE_CTRL_RIGHT) append("Ctrl + ")
+        if (isAlt && keyCode != android.view.KeyEvent.KEYCODE_ALT_LEFT && keyCode != android.view.KeyEvent.KEYCODE_ALT_RIGHT) append("Alt + ")
+        if (isShift && keyCode != android.view.KeyEvent.KEYCODE_SHIFT_LEFT && keyCode != android.view.KeyEvent.KEYCODE_SHIFT_RIGHT) append("Shift + ")
+        if (isMeta && keyCode != android.view.KeyEvent.KEYCODE_META_LEFT && keyCode != android.view.KeyEvent.KEYCODE_META_RIGHT) append("Cmd + ")
+    }
+
+    return Pair("$prefix$baseName", trigger)
+}
+
+@Composable
+private fun AddKeyboardControlDialog(
+    unassignedTriggers: List<GestureTrigger>,
+    onAddKeyBinding: (GestureTrigger, GestureAction, String?) -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+
+    var currentHoldingKeyName by remember { mutableStateOf<String?>(null) }
+    var currentHoldingTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
+    var holdProgress by remember { mutableFloatStateOf(0f) }
+    var statusMessage by remember { mutableStateOf("Press and hold any key or combination for 0.5 seconds") }
+
+    var capturedKeyName by remember { mutableStateOf<String?>(null) }
+    var capturedTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
+
+    var selectedAction by remember { mutableStateOf(GestureAction.PLAY_PAUSE) }
+    var editingOtherOption by remember { mutableStateOf(false) }
+    var selectedOtherOptionKey by remember { mutableStateOf<String?>(null) }
+
+    var isActionDropdownExpanded by remember { mutableStateOf(false) }
+    var holdJob by remember { mutableStateOf<Job?>(null) }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    if (unassignedTriggers.isEmpty() && capturedTrigger == null) {
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = { Text("Add Keyboard Button") },
+            text = { Text("All keyboard buttons are currently assigned.") },
+            confirmButton = {
+                TextButton(onClick = onDismissRequest) {
+                    Text("OK")
+                }
+            }
+        )
+        return
+    }
+
+    AlertDialog(
+        onDismissRequest = {
+            holdJob?.cancel()
+            onDismissRequest()
+        },
+        title = {
+            Text(
+                text = if (capturedKeyName == null) "Define Keyboard Shortcut" else "Assign Action",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .focusable()
+                    .onPreviewKeyEvent { keyEvent ->
+                        if (capturedKeyName != null) return@onPreviewKeyEvent false
+
+                        val nativeEvent = keyEvent.nativeKeyEvent
+                        val (keyName, trigger) = formatKeyEventName(nativeEvent)
+
+                        if (keyEvent.type == KeyEventType.KeyDown) {
+                            if (currentHoldingKeyName != keyName) {
+                                holdJob?.cancel()
+                                currentHoldingKeyName = keyName
+                                currentHoldingTrigger = trigger
+                                holdProgress = 0f
+                                statusMessage = "Holding '$keyName'..."
+
+                                holdJob = coroutineScope.launch {
+                                    val startTime = System.currentTimeMillis()
+                                    while (isActive) {
+                                        val elapsed = System.currentTimeMillis() - startTime
+                                        val p = (elapsed.toFloat() / 500f).coerceIn(0f, 1f)
+                                        holdProgress = p
+                                        if (p >= 1f) {
+                                            capturedKeyName = keyName
+                                            val finalTrigger = trigger
+                                                ?: unassignedTriggers.firstOrNull()
+                                                ?: GestureTrigger.KEY_SPACE
+                                            capturedTrigger = finalTrigger
+                                            val defaultAct = GestureAction.fromKey(finalTrigger.defaultActionKey)
+                                            selectedAction = if (defaultAct != GestureAction.UNASSIGNED) defaultAct else GestureAction.PLAY_PAUSE
+                                            currentHoldingKeyName = null
+                                            holdProgress = 0f
+                                            statusMessage = "Key captured!"
+                                            break
+                                        }
+                                        delay(16)
+                                    }
+                                }
+                            }
+                            return@onPreviewKeyEvent true
+                        } else if (keyEvent.type == KeyEventType.KeyUp) {
+                            if (currentHoldingKeyName != null) {
+                                holdJob?.cancel()
+                                holdJob = null
+                                currentHoldingKeyName = null
+                                holdProgress = 0f
+                                statusMessage = "Key released too early. Hold for 0.5s to register."
+                            }
+                            return@onPreviewKeyEvent true
+                        }
+                        false
+                    }
+            ) {
+                if (capturedKeyName == null) {
+                    // Stage 1: Key Press & Hold 0.5s Ring
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = statusMessage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(160.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                progress = { holdProgress },
+                                modifier = Modifier.fillMaxSize(),
+                                strokeWidth = 10.dp,
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                val activeName = currentHoldingKeyName
+                                if (activeName != null) {
+                                    Text(
+                                        text = activeName,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "${(holdProgress * 100).toInt()}%",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Keyboard,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(36.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Press Key",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Stage 2: Select Action for Captured Key
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "Shortcut Captured",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = capturedKeyName!!,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "Assigned Action",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick = { isActionDropdownExpanded = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        ActionIcon(
+                                            action = selectedAction,
+                                            optionKey = if (selectedAction == GestureAction.OTHER_OPTION) selectedOtherOptionKey else null,
+                                            iconSize = 20.dp,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        val displayTitle = if (selectedAction == GestureAction.OTHER_OPTION) {
+                                            ConfigOption.findByKey(selectedOtherOptionKey)?.title ?: "Select Option..."
+                                        } else {
+                                            selectedAction.displayName
+                                        }
+                                        Text(
+                                            text = displayTitle,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = isActionDropdownExpanded,
+                                onDismissRequest = { isActionDropdownExpanded = false },
+                                modifier = Modifier
+                                    .fillMaxWidth(0.85f)
+                                    .widthIn(max = 400.dp)
+                            ) {
+                                GestureAction.entries.filter { it != GestureAction.UNASSIGNED }.forEach { actionChoice ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                ActionIcon(
+                                                    action = actionChoice,
+                                                    optionKey = if (actionChoice == GestureAction.OTHER_OPTION) selectedOtherOptionKey else null,
+                                                    iconSize = 20.dp,
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(actionChoice.displayName)
+                                            }
+                                        },
+                                        onClick = {
+                                            selectedAction = actionChoice
+                                            isActionDropdownExpanded = false
+                                            if (actionChoice == GestureAction.OTHER_OPTION) {
+                                                editingOtherOption = true
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (capturedKeyName != null) {
+                Button(
+                    onClick = {
+                        val targetTrig = capturedTrigger
+                        if (targetTrig != null) {
+                            onAddKeyBinding(
+                                targetTrig,
+                                selectedAction,
+                                if (selectedAction == GestureAction.OTHER_OPTION) selectedOtherOptionKey else null
+                            )
+                        }
+                    }
+                ) {
+                    Text("Add Shortcut")
+                }
+            }
+        },
+        dismissButton = {
+            if (capturedKeyName != null) {
+                OutlinedButton(
+                    onClick = {
+                        capturedKeyName = null
+                        capturedTrigger = null
+                        statusMessage = "Press and hold any key or combination for 0.5 seconds"
+                    }
+                ) {
+                    Text("Re-record")
+                }
+            } else {
+                TextButton(
+                    onClick = {
+                        holdJob?.cancel()
+                        onDismissRequest()
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        }
+    )
+
+    if (editingOtherOption) {
+        ConfigOptionPickerDialog(
+            initialKey = selectedOtherOptionKey,
+            onOptionSelected = { selectedOpt ->
+                selectedOtherOptionKey = selectedOpt.key
+                editingOtherOption = false
+            },
+            onDismissRequest = { editingOtherOption = false }
+        )
     }
 }

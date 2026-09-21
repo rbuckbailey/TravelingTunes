@@ -296,13 +296,13 @@ fun PlayerScreen(
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
     val actionHudText by playbackManager.actionHudText.collectAsState()
 
-    val currentPositionMsProvider = remember(playbackManager) { { playbackManager.currentPositionMs.value } }
-    val durationMsProvider = remember(playbackManager) { { playbackManager.durationMs.value } }
-    val currentVolumeRatioProvider = remember(playbackManager) { { playbackManager.currentVolumeRatio.value } }
+    val currentPositionMs by playbackManager.currentPositionMs.collectAsState()
+    val durationMs by playbackManager.durationMs.collectAsState()
+    val currentVolumeRatio by playbackManager.currentVolumeRatio.collectAsState()
 
-    val currentPositionMs = currentPositionMsProvider()
-    val durationMs = durationMsProvider()
-    val currentVolumeRatio = currentVolumeRatioProvider()
+    val currentPositionMsProvider = remember(currentPositionMs) { { currentPositionMs } }
+    val durationMsProvider = remember(durationMs) { { durationMs } }
+    val currentVolumeRatioProvider = remember(currentVolumeRatio) { { currentVolumeRatio } }
 
     val isPlaying by playbackManager.isPlaying.collectAsState()
     val repeatMode by playbackManager.repeatMode.collectAsState()
