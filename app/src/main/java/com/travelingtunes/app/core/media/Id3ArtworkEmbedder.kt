@@ -108,6 +108,191 @@ object Id3ArtworkEmbedder {
         Pair(successCount, failedCount)
     }
 
+    suspend fun removeArtworkFromSong(
+        context: Context,
+        song: Song
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val contentResolver = context.contentResolver
+            val tempInFile = File(context.cacheDir, "temp_remove_art_in_${song.id}.tmp")
+            val tempOutFile = File(context.cacheDir, "temp_remove_art_out_${song.id}.tmp")
+
+            contentResolver.openInputStream(song.contentUri)?.use { input ->
+                FileOutputStream(tempInFile).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: return@withContext false
+
+            if (!tempInFile.exists() || tempInFile.length() == 0L) {
+                return@withContext false
+            }
+
+            val fileBytes = tempInFile.readBytes()
+            val fileName = song.fileName.lowercase()
+
+            val success = when {
+                fileName.endsWith(".mp3") || isMp3Header(fileBytes) -> {
+                    removeMp3Id3v2Apic(fileBytes, tempOutFile)
+                }
+                fileName.endsWith(".flac") || isFlacHeader(fileBytes) -> {
+                    removeFlacPicture(fileBytes, tempOutFile)
+                }
+                else -> {
+                    false
+                }
+            }
+
+            if (success && tempOutFile.exists() && tempOutFile.length() > 0) {
+                try {
+                    contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
+                        tempOutFile.inputStream().use { inStream ->
+                            inStream.copyTo(out)
+                        }
+                    }
+                } catch (_: Exception) {
+                    contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
+                        tempOutFile.inputStream().use { inStream ->
+                            inStream.copyTo(out)
+                        }
+                    }
+                }
+                tempInFile.delete()
+                tempOutFile.delete()
+                true
+            } else {
+                tempInFile.delete()
+                tempOutFile.delete()
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun removeArtworkFromAlbum(
+        context: Context,
+        songs: List<Song>
+    ): Pair<Int, Int> = BackgroundTaskGate.runAsBackgroundTask {
+        if (songs.isEmpty()) return@runAsBackgroundTask Pair(0, 0)
+
+        var successCount = 0
+        var failedCount = 0
+
+        for (song in songs) {
+            BackgroundTaskGate.checkYieldAndPause()
+            val ok = removeArtworkFromSong(context, song)
+            if (ok) successCount++ else failedCount++
+        }
+
+        Pair(successCount, failedCount)
+    }
+
+    private fun removeMp3Id3v2Apic(
+        audioBytes: ByteArray,
+        outputFile: File
+    ): Boolean {
+        return try {
+            val (existingFrames, audioPayload) = Id3TagParser.parseAndExtractAudioPayload(audioBytes)
+
+            val retainedFrames = existingFrames.filter { it.id != "APIC" && it.id != "PIC" }
+
+            val tagBodyStream = ByteArrayOutputStream()
+            for (frame in retainedFrames) {
+                tagBodyStream.write(frame.frameBytes)
+            }
+
+            val tagBodyBytes = tagBodyStream.toByteArray()
+
+            FileOutputStream(outputFile).use { fos ->
+                if (tagBodyBytes.isNotEmpty()) {
+                    val synchsafeSize = encodeSynchsafeInt(tagBodyBytes.size)
+                    val id3Header = byteArrayOf(
+                        'I'.code.toByte(), 'D'.code.toByte(), '3'.code.toByte(),
+                        0x03, 0x00,
+                        0x00,
+                        synchsafeSize[0], synchsafeSize[1], synchsafeSize[2], synchsafeSize[3]
+                    )
+                    fos.write(id3Header)
+                    fos.write(tagBodyBytes)
+                }
+                fos.write(audioPayload)
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    private fun removeFlacPicture(
+        audioBytes: ByteArray,
+        outputFile: File
+    ): Boolean {
+        return try {
+            if (audioBytes.size < 4 || !isFlacHeader(audioBytes)) return false
+
+            class FlacBlock(
+                val blockType: Int,
+                val blockData: ByteArray
+            )
+
+            var offset = 4
+            val existingBlocks = mutableListOf<FlacBlock>()
+
+            while (offset + 4 <= audioBytes.size) {
+                val headerByte0 = audioBytes[offset].toInt() and 0xFF
+                val isLast = (headerByte0 and 0x80) != 0
+                val blockType = headerByte0 and 0x7F
+                val len = ((audioBytes[offset + 1].toInt() and 0xFF) shl 16) or
+                          ((audioBytes[offset + 2].toInt() and 0xFF) shl 8) or
+                          (audioBytes[offset + 3].toInt() and 0xFF)
+
+                offset += 4
+                if (offset + len > audioBytes.size) break
+
+                val blockData = audioBytes.copyOfRange(offset, offset + len)
+                existingBlocks.add(FlacBlock(blockType, blockData))
+                offset += len
+
+                if (isLast) break
+            }
+
+            val audioPayload = if (offset <= audioBytes.size) {
+                audioBytes.copyOfRange(offset, audioBytes.size)
+            } else {
+                ByteArray(0)
+            }
+
+            val retainedBlocks = existingBlocks.filter { it.blockType != 6 }
+
+            FileOutputStream(outputFile).use { fos ->
+                fos.write("fLaC".toByteArray(Charsets.ISO_8859_1))
+
+                for (i in retainedBlocks.indices) {
+                    val block = retainedBlocks[i]
+                    val isLastBlock = (i == retainedBlocks.size - 1)
+                    val headerByte0 = (if (isLastBlock) 0x80 else 0x00) or (block.blockType and 0x7F)
+                    val len = block.blockData.size
+
+                    fos.write(headerByte0)
+                    fos.write((len shr 16 and 0xFF))
+                    fos.write((len shr 8 and 0xFF))
+                    fos.write((len and 0xFF))
+                    fos.write(block.blockData)
+                }
+
+                if (audioPayload.isNotEmpty()) {
+                    fos.write(audioPayload)
+                }
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     private fun isMp3Header(bytes: ByteArray): Boolean {
         if (bytes.size >= 3 && bytes[0] == 'I'.code.toByte() && bytes[1] == 'D'.code.toByte() && bytes[2] == '3'.code.toByte()) {
             return true

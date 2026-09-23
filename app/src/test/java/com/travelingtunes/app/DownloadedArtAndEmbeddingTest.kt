@@ -118,6 +118,87 @@ class DownloadedArtAndEmbeddingTest {
     }
 
     @Test
+    fun testMp3ArtworkRemovalPreservesMetadataFrames() {
+        val tempAudioFile = File.createTempFile("test_audio_with_art", ".mp3").apply { deleteOnExit() }
+        val tempOutputFile = File.createTempFile("test_no_art", ".mp3").apply { deleteOnExit() }
+
+        val dummyMp3Audio = byteArrayOf(0xFF.toByte(), 0xFB.toByte(), 0x90.toByte(), 0x64.toByte(), 0x00, 0x00)
+        val dummyJpegBytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+
+        val embedMethod = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "embedMp3Id3v2Apic",
+            ByteArray::class.java,
+            ByteArray::class.java,
+            File::class.java
+        )
+        embedMethod.isAccessible = true
+        embedMethod.invoke(Id3ArtworkEmbedder, dummyMp3Audio, dummyJpegBytes, tempAudioFile)
+
+        val embeddedBytes = tempAudioFile.readBytes()
+        val (embeddedFrames, _) = Id3TagParser.parseAndExtractAudioPayload(embeddedBytes)
+        assertTrue("Embedded MP3 must contain APIC frame", embeddedFrames.any { it.id == "APIC" })
+
+        val removeMethod = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "removeMp3Id3v2Apic",
+            ByteArray::class.java,
+            File::class.java
+        )
+        removeMethod.isAccessible = true
+        val result = removeMethod.invoke(Id3ArtworkEmbedder, embeddedBytes, tempOutputFile) as Boolean
+
+        assertTrue("Removal of MP3 APIC frame should succeed", result)
+        val outputBytes = tempOutputFile.readBytes()
+        val (cleanedFrames, _) = Id3TagParser.parseAndExtractAudioPayload(outputBytes)
+        assertTrue("Cleaned MP3 must NOT contain APIC frame", cleanedFrames.none { it.id == "APIC" || it.id == "PIC" })
+    }
+
+    @Test
+    fun testFlacArtworkRemovalPreservesOtherBlocks() {
+        val tempAudioFile = File.createTempFile("test_flac_with_art", ".flac").apply { deleteOnExit() }
+        val tempOutputFile = File.createTempFile("test_flac_no_art", ".flac").apply { deleteOnExit() }
+
+        val dummyFlacAudio = byteArrayOf('f'.code.toByte(), 'L'.code.toByte(), 'a'.code.toByte(), 'C'.code.toByte(), 0x12, 0x34, 0x56)
+        val dummyJpegBytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+
+        val embedMethod = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "embedFlacPicture",
+            ByteArray::class.java,
+            ByteArray::class.java,
+            File::class.java
+        )
+        embedMethod.isAccessible = true
+        embedMethod.invoke(Id3ArtworkEmbedder, dummyFlacAudio, dummyJpegBytes, tempAudioFile)
+
+        val embeddedBytes = tempAudioFile.readBytes()
+
+        val removeMethod = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "removeFlacPicture",
+            ByteArray::class.java,
+            File::class.java
+        )
+        removeMethod.isAccessible = true
+        val result = removeMethod.invoke(Id3ArtworkEmbedder, embeddedBytes, tempOutputFile) as Boolean
+
+        assertTrue("Removal of FLAC Picture block should succeed", result)
+        val outputBytes = tempOutputFile.readBytes()
+        assertEquals('f'.code.toByte(), outputBytes[0])
+        assertEquals('L'.code.toByte(), outputBytes[1])
+        assertEquals('a'.code.toByte(), outputBytes[2])
+        assertEquals('C'.code.toByte(), outputBytes[3])
+    }
+
+    @Test
+    fun testArtAndTagsEditorCategoriesAndMetadataEmbedding() {
+        val categories = com.travelingtunes.app.feature.settings.ArtEditorCategory.entries
+        assertEquals(5, categories.size)
+        assertEquals("Albums", com.travelingtunes.app.feature.settings.ArtEditorCategory.ALBUMS.displayName)
+        assertEquals("Tracks", com.travelingtunes.app.feature.settings.ArtEditorCategory.TRACKS.displayName)
+        assertEquals("Artists", com.travelingtunes.app.feature.settings.ArtEditorCategory.ARTISTS.displayName)
+        assertEquals("Genres", com.travelingtunes.app.feature.settings.ArtEditorCategory.GENRES.displayName)
+        assertEquals("Folders", com.travelingtunes.app.feature.settings.ArtEditorCategory.FOLDERS.displayName)
+    }
+
+    @Test
     fun testArtworkEmbeddingPreservesExistingGenreAndTextFrames() {
         val tempOutputFile = File.createTempFile("test_art_preserve", ".mp3").apply { deleteOnExit() }
 

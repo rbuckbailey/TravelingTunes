@@ -1083,6 +1083,28 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testRadialMenuStyleEnum() {
+        assertEquals("Fan", com.travelingtunes.app.core.model.RadialMenuStyle.FAN.displayName)
+        assertEquals("List", com.travelingtunes.app.core.model.RadialMenuStyle.LIST.displayName)
+        assertEquals("Radial Circle", com.travelingtunes.app.core.model.RadialMenuStyle.RADIAL.displayName)
+    }
+
+    @Test
+    fun testActionCategoryGroupingAndOtherOptionPlacement() {
+        val groups = GestureAction.getGroupedCategories(excludeRadialMenu = false, excludeUnassigned = false)
+        assertTrue("Grouped categories should not be empty", groups.isNotEmpty())
+
+        val customGroup = groups.last()
+        assertEquals(com.travelingtunes.app.core.model.ActionCategory.CUSTOM, customGroup.category)
+        assertEquals(1, customGroup.actions.size)
+        assertEquals(GestureAction.OTHER_OPTION, customGroup.actions.first())
+
+        val allGroupedActions = groups.flatMap { it.actions }
+        assertTrue("Other Option must be included in grouped categories", allGroupedActions.contains(GestureAction.OTHER_OPTION))
+        assertEquals(GestureAction.OTHER_OPTION, allGroupedActions.last())
+    }
+
+    @Test
     fun testSettingsBackupAndRestoreWithNewDockedAndEdgeOptions() {
         val display = com.travelingtunes.app.core.model.DisplaySettings(
             stretchArt = true,
@@ -1572,4 +1594,67 @@ class GestureAndSettingsTest {
         assertEquals(GestureTrigger.KEY_F1, fKeys[0])
         assertEquals(GestureTrigger.KEY_F12, fKeys[11])
     }
+
+    @Test
+    fun testProfileHierarchyAndMutualExclusivityRules() {
+        val allProfiles = listOf(
+            Profile.DEFAULT,
+            Profile.TRAVELING,
+            Profile.DRIVING,
+            Profile.TRANSIT,
+            Profile.DOCKED,
+            Profile.UNDOCKED
+        )
+
+        // 1. Same-tier / Same-parent profile exclusivity
+        assertTrue(com.travelingtunes.app.core.model.ProfileHierarchyHelper.isMutuallyExclusive(Profile.DOCKED, Profile.UNDOCKED, allProfiles))
+        assertTrue(com.travelingtunes.app.core.model.ProfileHierarchyHelper.isMutuallyExclusive(Profile.DRIVING, Profile.TRANSIT, allProfiles))
+
+        // 2. Different branches can be selected together
+        assertFalse(com.travelingtunes.app.core.model.ProfileHierarchyHelper.isMutuallyExclusive(Profile.DOCKED, Profile.DRIVING, allProfiles))
+        assertFalse(com.travelingtunes.app.core.model.ProfileHierarchyHelper.isMutuallyExclusive(Profile.UNDOCKED, Profile.TRANSIT, allProfiles))
+        assertFalse(com.travelingtunes.app.core.model.ProfileHierarchyHelper.isMutuallyExclusive(Profile.DOCKED, Profile.TRAVELING, allProfiles))
+
+        // 3. Stack computation with mutual exclusivity
+        var stack = listOf(Profile.DEFAULT_ID)
+
+        // Toggle Docked Art ON
+        stack = com.travelingtunes.app.core.model.ProfileHierarchyHelper.computeUpdatedStack(Profile.DOCKED_ID, stack, allProfiles)
+        assertTrue(stack.contains(Profile.DOCKED_ID))
+
+        // Toggle Driving ON -> Driving (Travel branch) and Docked Art (Art branch) are BOTH active
+        stack = com.travelingtunes.app.core.model.ProfileHierarchyHelper.computeUpdatedStack(Profile.DRIVING_ID, stack, allProfiles)
+        assertTrue(stack.contains(Profile.DRIVING_ID))
+        assertTrue(stack.contains(Profile.DOCKED_ID))
+
+        // Toggle Transit ON -> Transit replaces Driving (same-tier Travel), Docked Art remains active!
+        stack = com.travelingtunes.app.core.model.ProfileHierarchyHelper.computeUpdatedStack(Profile.TRANSIT_ID, stack, allProfiles)
+        assertTrue(stack.contains(Profile.TRANSIT_ID))
+        assertFalse(stack.contains(Profile.DRIVING_ID))
+        assertTrue(stack.contains(Profile.DOCKED_ID))
+
+        // Toggle Undocked Art ON -> Undocked Art replaces Docked Art (same-tier Art), Transit remains active!
+        stack = com.travelingtunes.app.core.model.ProfileHierarchyHelper.computeUpdatedStack(Profile.UNDOCKED_ID, stack, allProfiles)
+        assertTrue(stack.contains(Profile.UNDOCKED_ID))
+        assertFalse(stack.contains(Profile.DOCKED_ID))
+        assertTrue(stack.contains(Profile.TRANSIT_ID))
+    }
+
+    @Test
+    fun testCustomProfilesSameTierMutualExclusivity() {
+        val customTravel1 = Profile(id = "custom_drive_1", name = "Custom Drive 1", parentId = Profile.TRAVELING_ID)
+        val customTravel2 = Profile(id = "custom_drive_2", name = "Custom Drive 2", parentId = Profile.TRAVELING_ID)
+        val allProfiles = listOf(Profile.DEFAULT, Profile.TRAVELING, customTravel1, customTravel2)
+
+        assertTrue(com.travelingtunes.app.core.model.ProfileHierarchyHelper.isMutuallyExclusive(customTravel1, customTravel2, allProfiles))
+
+        var stack = listOf(Profile.DEFAULT_ID)
+        stack = com.travelingtunes.app.core.model.ProfileHierarchyHelper.computeUpdatedStack(customTravel1.id, stack, allProfiles)
+        assertTrue(stack.contains(customTravel1.id))
+
+        stack = com.travelingtunes.app.core.model.ProfileHierarchyHelper.computeUpdatedStack(customTravel2.id, stack, allProfiles)
+        assertTrue(stack.contains(customTravel2.id))
+        assertFalse(stack.contains(customTravel1.id))
+    }
 }
+

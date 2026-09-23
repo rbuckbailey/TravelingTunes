@@ -1,5 +1,6 @@
 package com.travelingtunes.app.core.media
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -22,6 +23,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
+import com.travelingtunes.app.MainActivity
 import com.travelingtunes.app.R
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.datastore.SettingsDataStore
@@ -90,6 +92,7 @@ class MusicPlaybackService : MediaLibraryService() {
                         .build(),
                     true
                 )
+                .setWakeMode(C.WAKE_MODE_LOCAL)
                 .setHandleAudioBecomingNoisy(true)
                 .build()
 
@@ -122,9 +125,9 @@ class MusicPlaybackService : MediaLibraryService() {
         fun startService(context: Context) {
             val intent = Intent(context.applicationContext, MusicPlaybackService::class.java)
             try {
-                context.applicationContext.startService(intent)
+                androidx.core.content.ContextCompat.startForegroundService(context.applicationContext, intent)
             } catch (e: Exception) {
-                android.util.Log.w("MusicPlaybackService", "Failed to startService", e)
+                android.util.Log.w("MusicPlaybackService", "Failed to startForegroundService", e)
             }
         }
     }
@@ -143,8 +146,19 @@ class MusicPlaybackService : MediaLibraryService() {
 
         val player = getOrCreatePlayer(applicationContext)
 
+        val openAppIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val sessionActivityPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openAppIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val sessionCallback = AutoLibrarySessionCallback()
         val session = MediaLibrarySession.Builder(this, player, sessionCallback)
+            .setSessionActivity(sessionActivityPendingIntent)
             .build()
         addSession(session)
         sharedSession = session
@@ -191,6 +205,14 @@ class MusicPlaybackService : MediaLibraryService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         return START_STICKY
+    }
+
+    @OptIn(UnstableApi::class)
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // Do not stop the service when the user swipes the app away from recent tasks.
+        // Keeping the service alive ensures the media session, background audio stream,
+        // and notification pane remain active for playback controls and resumption.
+        android.util.Log.i("MusicPlaybackService", "onTaskRemoved called: keeping playback service active in background")
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
@@ -247,7 +269,7 @@ class MusicPlaybackService : MediaLibraryService() {
         return when (action) {
             GestureAction.PLAY_CURRENT_ALBUM -> R.drawable.ic_play_current_album
             GestureAction.PLAY_CURRENT_ARTIST -> R.drawable.ic_play_current_artist
-            GestureAction.SHUFFLE_ALL_SONGS -> R.drawable.ic_toggle_shuffle
+            GestureAction.SHUFFLE_ALL_SONGS -> R.drawable.ic_shuffle_all
             GestureAction.TOGGLE_REPEAT -> R.drawable.ic_toggle_repeat
             GestureAction.TOGGLE_SHUFFLE -> R.drawable.ic_toggle_shuffle
             GestureAction.PLAY_PAUSE, GestureAction.PLAY, GestureAction.PAUSE -> R.drawable.ic_play_pause
@@ -395,6 +417,7 @@ class MusicPlaybackService : MediaLibraryService() {
                 MediaMetadata.Builder()
                     .setTitle("Shuffle All Songs")
                     .setSubtitle("Shuffle entire music library")
+                    .setArtworkUri(android.net.Uri.parse("android.resource://${applicationContext.packageName}/${R.drawable.ic_shuffle_all}"))
                     .setIsBrowsable(false)
                     .setIsPlayable(true)
                     .setExtras(Bundle().apply {

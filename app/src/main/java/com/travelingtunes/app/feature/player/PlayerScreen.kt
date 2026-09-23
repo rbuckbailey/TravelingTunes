@@ -14,6 +14,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TransformOrigin
 import com.travelingtunes.app.core.model.ColorTheme
 import com.travelingtunes.app.core.theme.TravelingTunesTheme
@@ -67,6 +68,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -133,6 +135,7 @@ import com.travelingtunes.app.core.model.GestureCategory
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
 import com.travelingtunes.app.core.model.Profile
+import com.travelingtunes.app.core.model.ProfileHierarchyHelper
 import com.travelingtunes.app.core.model.ProfileSelectionMode
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
@@ -359,6 +362,18 @@ fun PlayerScreen(
         }
     }
 
+    val activeRadialStyle by produceState<com.travelingtunes.app.core.model.RadialMenuStyle>(
+        initialValue = com.travelingtunes.app.core.model.RadialMenuStyle.FAN,
+        key1 = activeRadialTrigger
+    ) {
+        val trigKey = activeRadialTrigger?.key
+        if (trigKey != null && settingsDataStore != null) {
+            settingsDataStore.getRadialMenuStyleFlow(trigKey).collect { value = it }
+        } else {
+            value = com.travelingtunes.app.core.model.RadialMenuStyle.FAN
+        }
+    }
+
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
 
@@ -464,17 +479,20 @@ fun PlayerScreen(
     var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     // Sync pagerState -> PlaybackManager when user swipes pager to a settled page
-    LaunchedEffect(pagerState.settledPage) {
-        if (!isProgrammaticScroll && currentPlaylist.isNotEmpty() && pagerState.settledPage in currentPlaylist.indices) {
-            val selectedSong = currentPlaylist[pagerState.settledPage]
-            if (selectedSong.id != currentSong?.id) {
-                playbackManager.playSongAtIndex(pagerState.settledPage)
+    LaunchedEffect(pagerState) {
+        androidx.compose.runtime.snapshotFlow { Pair(pagerState.settledPage, pagerState.isScrollInProgress) }
+            .collect { (settledPage, isScrolling) ->
+                if (!isScrolling && !isProgrammaticScroll && currentPlaylist.isNotEmpty() && settledPage in currentPlaylist.indices) {
+                    val selectedSong = currentPlaylist[settledPage]
+                    if (selectedSong.id != currentSong?.id) {
+                        playbackManager.playSongAtIndex(settledPage)
+                    }
+                }
             }
-        }
     }
 
-    // Sync PlaybackManager -> pagerState when song or playlist changes externally
-    LaunchedEffect(currentSong?.id, currentPlaylist, lastTransitionReason) {
+    // Sync PlaybackManager -> pagerState when song or playlist changes
+    LaunchedEffect(currentSong?.id, currentPlaylist, songIndex, lastTransitionReason) {
         if (songIndex in 0 until pageCount && pagerState.currentPage != songIndex) {
             isProgrammaticScroll = true
             try {
@@ -484,7 +502,7 @@ fun PlayerScreen(
                 if (isNextTrackAuto) {
                     pagerState.animateScrollToPage(
                         page = songIndex,
-                        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
                     )
                 } else {
                     pagerState.scrollToPage(songIndex)
@@ -555,6 +573,20 @@ fun PlayerScreen(
     var activePageTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
     var activePageOtherKey by remember { mutableStateOf<String?>(null) }
     var dragStartTimeMs by remember { mutableStateOf(0L) }
+
+    // Safety re-sync: guarantee pagerState always matches songIndex when idle
+    LaunchedEffect(pagerState.currentPage, songIndex, activePageAction) {
+        if (!pagerState.isScrollInProgress && activePageAction == null && pageDragOffsetX == 0f && pagerState.currentPage != songIndex) {
+            if (songIndex in 0 until pageCount) {
+                isProgrammaticScroll = true
+                try {
+                    pagerState.scrollToPage(songIndex)
+                } finally {
+                    isProgrammaticScroll = false
+                }
+            }
+        }
+    }
 
     val isForegroundBusy = pagerState.isScrollInProgress ||
             activePageAction != null ||
@@ -722,30 +754,10 @@ fun PlayerScreen(
 
             when (action) {
                 GestureAction.NEXT -> {
-                    val nextIndex = pagerState.currentPage + 1
-                    if (nextIndex in 0 until pageCount) {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(
-                                page = nextIndex,
-                                animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-                            )
-                        }
-                    } else {
-                        playbackManager.next()
-                    }
+                    playbackManager.next()
                 }
                 GestureAction.PREVIOUS, GestureAction.RESTART_PREVIOUS -> {
-                    val prevIndex = pagerState.currentPage - 1
-                    if (prevIndex >= 0) {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(
-                                page = prevIndex,
-                                animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-                            )
-                        }
-                    } else {
-                        playbackManager.previous()
-                    }
+                    playbackManager.previous()
                 }
                 else -> {
                     handleGestureAction(
@@ -997,8 +1009,8 @@ fun PlayerScreen(
     LaunchedEffect(activePageAction, currentSong) {
         if (activePageAction != null) {
             val resolved = when (activePageAction) {
-                GestureAction.NEXT -> playbackManager.getNextSong() ?: currentPlaylist.getOrNull(pagerState.currentPage + 1)
-                GestureAction.PREVIOUS, GestureAction.RESTART_PREVIOUS -> playbackManager.getPreviousSong() ?: currentPlaylist.getOrNull(pagerState.currentPage - 1)
+                GestureAction.NEXT -> playbackManager.getNextSong() ?: currentPlaylist.getOrNull(songIndex + 1)
+                GestureAction.PREVIOUS, GestureAction.RESTART_PREVIOUS -> playbackManager.getPreviousSong() ?: currentPlaylist.getOrNull(songIndex - 1)
                 GestureAction.NEXT_ALBUM -> playbackManager.getNextAlbumFirstTrack()
                 GestureAction.PREVIOUS_ALBUM -> playbackManager.getPreviousAlbumFirstTrack()
                 GestureAction.PLAY_CURRENT_ARTIST -> playbackManager.getArtistFirstTrack()
@@ -1453,48 +1465,70 @@ fun PlayerScreen(
 
         // Select Profile Dialog
         if (showProfilePicker) {
-            val profiles by effectiveSettingsDataStore.profilesFlow.collectAsState(initial = listOf(Profile.DEFAULT, Profile.TRAVELING))
-            val activeProfile by effectiveSettingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT)
+            val profiles by effectiveSettingsDataStore.profilesFlow.collectAsState(initial = listOf(Profile.DEFAULT, Profile.TRAVELING, Profile.DRIVING, Profile.TRANSIT, Profile.DOCKED, Profile.UNDOCKED))
+            val activeStack by effectiveSettingsDataStore.activeProfileStackFlow.collectAsState(initial = listOf(Profile.DEFAULT))
+            val currentStackIds = activeStack.map { it.id }
+
             AlertDialog(
                 onDismissRequest = { showProfilePicker = false },
-                title = { Text("Select Settings Profile") },
+                title = { Text("Select Active Profiles") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Select active profiles. Same-tier profiles are mutually exclusive, while profiles from different branches (e.g. Art + Travel) can be selected together.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         profiles.forEach { profile ->
+                            val isChecked = currentStackIds.contains(profile.id)
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
+                                        val newStack = ProfileHierarchyHelper.computeUpdatedStack(
+                                            profile.id,
+                                            currentStackIds,
+                                            profiles
+                                        )
                                         coroutineScope.launch {
-                                            effectiveSettingsDataStore.setActiveProfile(profile.id)
+                                            effectiveSettingsDataStore.setActiveProfileStack(newStack)
                                         }
-                                        showProfilePicker = false
                                     }
-                                    .padding(vertical = 8.dp, horizontal = 4.dp)
+                                    .padding(vertical = 6.dp, horizontal = 4.dp)
                             ) {
-                                RadioButton(
-                                    selected = profile.id == activeProfile.id,
-                                    onClick = {
+                                Checkbox(
+                                    checked = isChecked,
+                                    onCheckedChange = {
+                                        val newStack = ProfileHierarchyHelper.computeUpdatedStack(
+                                            profile.id,
+                                            currentStackIds,
+                                            profiles
+                                        )
                                         coroutineScope.launch {
-                                            effectiveSettingsDataStore.setActiveProfile(profile.id)
+                                            effectiveSettingsDataStore.setActiveProfileStack(newStack)
                                         }
-                                        showProfilePicker = false
                                     }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("${profile.emoji}  ${profile.name}", fontWeight = FontWeight.Medium)
+                                Text(
+                                    text = "${profile.emoji}  ${profile.name}",
+                                    fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
                             }
                         }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = { showProfilePicker = false }) {
-                        Text("Close")
+                        Text("Done")
                     }
                 }
             )
         }
+
 
         // 12. Duplicate Track Identifier Overlay
         SlidingOverlay(
@@ -1518,6 +1552,7 @@ fun PlayerScreen(
                 actions = activeRadialActions,
                 otherOptionKeys = activeRadialOtherOptionKeys,
                 dragOffset = activeRadialDragOffset,
+                menuStyle = activeRadialStyle,
                 repeatMode = repeatMode,
                 shuffleMode = shuffleMode,
                 isPlaying = isPlaying,
@@ -2297,16 +2332,24 @@ fun PlayerAlbumArtBackground(
         val artAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
         val letterboxBgColor = MaterialTheme.colorScheme.background
 
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .then(
-                    if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
-                        val bgAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
-                        Modifier.background(letterboxBgColor.copy(alpha = bgAlpha))
-                    } else Modifier
+        BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+            val density = LocalDensity.current
+            val containerWidthPx = with(density) { this@BoxWithConstraints.maxWidth.toPx() }
+            val containerHeightPx = with(density) { this@BoxWithConstraints.maxHeight.toPx() }
+
+            if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT && displaySettings.stretchArt && containerWidthPx > 0f && containerHeightPx > 0f) {
+                StretchedFittedArtBackground(
+                    imgBitmap = imgBitmap,
+                    imageAlignment = imageAlignment,
+                    containerWidthPx = containerWidthPx,
+                    containerHeightPx = containerHeightPx,
+                    artAlpha = artAlpha
                 )
-        ) {
+            } else if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
+                val bgAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
+                Box(modifier = Modifier.fillMaxSize().background(letterboxBgColor.copy(alpha = bgAlpha)))
+            }
+
             Image(
                 bitmap = imgBitmap,
                 contentDescription = "Album Art Background",
@@ -2331,6 +2374,157 @@ fun PlayerAlbumArtBackground(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(64.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun StretchedFittedArtBackground(
+    imgBitmap: ImageBitmap,
+    imageAlignment: Alignment,
+    containerWidthPx: Float,
+    containerHeightPx: Float,
+    artAlpha: Float
+) {
+    val androidBmp = remember(imgBitmap) { imgBitmap.asAndroidBitmap() }
+    val bmpWidth = androidBmp.width
+    val bmpHeight = androidBmp.height
+
+    if (bmpWidth <= 0 || bmpHeight <= 0) return
+
+    val bmpAspect = bmpWidth.toFloat() / bmpHeight.toFloat()
+    val containerAspect = containerWidthPx / containerHeightPx
+
+    val leftEdgeBmp = remember(androidBmp) {
+        try {
+            android.graphics.Bitmap.createBitmap(androidBmp, 0, 0, 1, bmpHeight).asImageBitmap()
+        } catch (e: Exception) { null }
+    }
+    val rightEdgeBmp = remember(androidBmp) {
+        try {
+            android.graphics.Bitmap.createBitmap(androidBmp, (bmpWidth - 1).coerceAtLeast(0), 0, 1, bmpHeight).asImageBitmap()
+        } catch (e: Exception) { null }
+    }
+    val topEdgeBmp = remember(androidBmp) {
+        try {
+            android.graphics.Bitmap.createBitmap(androidBmp, 0, 0, bmpWidth, 1).asImageBitmap()
+        } catch (e: Exception) { null }
+    }
+    val bottomEdgeBmp = remember(androidBmp) {
+        try {
+            android.graphics.Bitmap.createBitmap(androidBmp, 0, (bmpHeight - 1).coerceAtLeast(0), bmpWidth, 1).asImageBitmap()
+        } catch (e: Exception) { null }
+    }
+
+    val density = LocalDensity.current
+
+    Box(modifier = Modifier.fillMaxSize().alpha(artAlpha)) {
+        if (containerAspect > bmpAspect) {
+            val fittedWidthPx = containerHeightPx * bmpAspect
+            val extraWidthPx = containerWidthPx - fittedWidthPx
+
+            val leftMarginPx: Float
+            val rightMarginPx: Float
+
+            when (imageAlignment) {
+                Alignment.CenterStart -> {
+                    leftMarginPx = 0f
+                    rightMarginPx = extraWidthPx
+                }
+                Alignment.CenterEnd -> {
+                    leftMarginPx = extraWidthPx
+                    rightMarginPx = 0f
+                }
+                else -> {
+                    leftMarginPx = extraWidthPx / 2f
+                    rightMarginPx = extraWidthPx / 2f
+                }
+            }
+
+            if (leftMarginPx > 0f && leftEdgeBmp != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(with(density) { leftMarginPx.toDp() })
+                        .align(Alignment.CenterStart)
+                ) {
+                    Image(
+                        bitmap = leftEdgeBmp,
+                        contentDescription = null,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            if (rightMarginPx > 0f && rightEdgeBmp != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(with(density) { rightMarginPx.toDp() })
+                        .align(Alignment.CenterEnd)
+                ) {
+                    Image(
+                        bitmap = rightEdgeBmp,
+                        contentDescription = null,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        } else if (containerAspect < bmpAspect) {
+            val fittedHeightPx = containerWidthPx / bmpAspect
+            val extraHeightPx = containerHeightPx - fittedHeightPx
+
+            val topMarginPx: Float
+            val bottomMarginPx: Float
+
+            when (imageAlignment) {
+                Alignment.TopCenter -> {
+                    topMarginPx = 0f
+                    bottomMarginPx = extraHeightPx
+                }
+                Alignment.BottomCenter -> {
+                    topMarginPx = extraHeightPx
+                    bottomMarginPx = 0f
+                }
+                else -> {
+                    topMarginPx = extraHeightPx / 2f
+                    bottomMarginPx = extraHeightPx / 2f
+                }
+            }
+
+            if (topMarginPx > 0f && topEdgeBmp != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(with(density) { topMarginPx.toDp() })
+                        .align(Alignment.TopCenter)
+                ) {
+                    Image(
+                        bitmap = topEdgeBmp,
+                        contentDescription = null,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            if (bottomMarginPx > 0f && bottomEdgeBmp != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(with(density) { bottomMarginPx.toDp() })
+                        .align(Alignment.BottomCenter)
+                ) {
+                    Image(
+                        bitmap = bottomEdgeBmp,
+                        contentDescription = null,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
         }
     }
 }
@@ -2630,38 +2824,10 @@ private fun handleGestureAction(
         GestureAction.PLAY -> playbackManager.play()
         GestureAction.PAUSE -> playbackManager.pause()
         GestureAction.NEXT -> {
-            if (pagerState != null && coroutineScope != null && pageCount > 0) {
-                val nextIndex = pagerState.currentPage + 1
-                if (nextIndex < pageCount) {
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(
-                            page = nextIndex,
-                            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-                        )
-                    }
-                } else {
-                    playbackManager.next()
-                }
-            } else {
-                playbackManager.next()
-            }
+            playbackManager.next()
         }
         GestureAction.PREVIOUS, GestureAction.RESTART_PREVIOUS -> {
-            if (pagerState != null && coroutineScope != null && pageCount > 0) {
-                val prevIndex = pagerState.currentPage - 1
-                if (prevIndex >= 0) {
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(
-                            page = prevIndex,
-                            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-                        )
-                    }
-                } else {
-                    playbackManager.previous()
-                }
-            } else {
-                playbackManager.previous()
-            }
+            playbackManager.previous()
         }
         GestureAction.RESTART -> playbackManager.restart()
         GestureAction.FAST_FORWARD -> playbackManager.fastForward()
@@ -2730,11 +2896,15 @@ private fun handleGestureAction(
                     if (mode == ProfileSelectionMode.MENU) {
                         onOpenProfilePicker()
                     } else {
-                        settingsDataStore.cycleToNextProfile()
+                        val trigKey = trigger?.key ?: "global"
+                        val binding = if (trigger != null) gestureBindings?.get(trigger) else null
+                        val customTargets = binding?.profileSwitchTargets
+                        settingsDataStore.cycleToNextProfileForTrigger(trigKey, customTargets)
                     }
                 }
             }
         }
+
         GestureAction.OTHER_OPTION -> {
             if (settingsDataStore != null && coroutineScope != null) {
                 val trig = trigger ?: GestureTrigger.TAP_1_1
@@ -2743,16 +2913,60 @@ private fun handleGestureAction(
                     ?: if (binding?.artAction == GestureAction.OTHER_OPTION) binding.artOtherOptionKey
                     else if (binding?.titleAction == GestureAction.OTHER_OPTION) binding.titleOtherOptionKey
                     else binding?.otherOptionKey
-                if (targetKey != null) {
-                    coroutineScope.launch {
-                        settingsDataStore.toggleOtherOption(trig.key, targetKey)
-                    }
-                } else {
+
+                val effectiveKey = targetKey ?: run {
                     val slotIndex = radialSlotIndex ?: 0
-                    coroutineScope.launch {
-                        val radialTargetKey = settingsDataStore.getRadialOtherOptionFlow(trig.key, slotIndex).first()
-                            ?: ConfigOption.ALL_OPTIONS.first().key
-                        settingsDataStore.toggleOtherOption("${trig.key}_radial_$slotIndex", radialTargetKey)
+                    kotlinx.coroutines.runBlocking {
+                        settingsDataStore.getRadialOtherOptionFlow(trig.key, slotIndex).first()
+                    }
+                }
+
+                if (effectiveKey != null) {
+                    when (effectiveKey) {
+                        "ACTION_OPEN_ART_TAGS_EDITOR", "ACTION_REPLACE_ART" -> {
+                            onOpenSettings(direction)
+                        }
+                        "ACTION_SONG_PICKER" -> onOpenSongPicker(direction)
+                        "ACTION_SHOW_QUEUE" -> onOpenQueue(direction)
+                        "ACTION_SELECT_ALBUM_VIEW" -> {
+                            val song = playbackManager.currentSong.value
+                            if (onOpenSongPickerWithFilter != null) {
+                                onOpenSongPickerWithFilter(direction, PickerCategory.ALBUMS, song?.artist, song?.album)
+                            } else {
+                                onOpenSongPicker(direction)
+                            }
+                        }
+                        "ACTION_SELECT_ARTIST_VIEW" -> {
+                            val song = playbackManager.currentSong.value
+                            if (onOpenSongPickerWithFilter != null) {
+                                onOpenSongPickerWithFilter(direction, PickerCategory.ARTISTS, song?.artist, null)
+                            } else {
+                                onOpenSongPicker(direction)
+                            }
+                        }
+                        "ACTION_SHOW_QUICK_START" -> onOpenQuickStart()
+                        "ACTION_MENU" -> onOpenSettings(direction)
+                        "ACTION_SELECT_PROFILE" -> onOpenProfilePicker()
+                        "ACTION_DELETE_DOWNLOADED_ART" -> {
+                            val song = playbackManager.currentSong.value
+                            if (song != null && musicScanner != null && musicDatabase != null) {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val songsInAlbum = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                                    musicScanner.albumArtDownloader.deleteDownloadedArtworkForAlbum(song.album, song.artist, songsInAlbum)
+                                    playbackManager.refreshCurrentSongArtwork()
+                                }
+                            }
+                        }
+                        "ACTION_TOGGLE_REPEAT" -> playbackManager.toggleRepeat()
+                        "ACTION_TOGGLE_SHUFFLE" -> playbackManager.toggleShuffle()
+                        "ACTION_SHUFFLE_ALL_SONGS" -> playbackManager.shuffleAllSongs()
+                        "ACTION_PLAY_CURRENT_ARTIST" -> playbackManager.playCurrentArtist()
+                        "ACTION_PLAY_CURRENT_ALBUM" -> playbackManager.playCurrentAlbum()
+                        else -> {
+                            coroutineScope.launch {
+                                settingsDataStore.toggleOtherOption(trig.key, effectiveKey)
+                            }
+                        }
                     }
                 }
             }
@@ -2985,7 +3199,7 @@ fun ScreenRegionIconsOverlay(
                 if (binding.titleAction != GestureAction.UNASSIGNED) binding.titleOtherOptionKey else binding.otherOptionKey
             }
 
-            if (useArtBindings && action == GestureAction.UNASSIGNED) {
+            if (action == GestureAction.UNASSIGNED) {
                 continue
             }
 
@@ -3116,7 +3330,7 @@ fun ScreenRegionIconsOverlay(
                 if (binding.titleAction != GestureAction.UNASSIGNED) binding.titleOtherOptionKey else binding.otherOptionKey
             }
 
-            if (useArtBindings && action == GestureAction.UNASSIGNED) {
+            if (action == GestureAction.UNASSIGNED) {
                 continue
             }
 

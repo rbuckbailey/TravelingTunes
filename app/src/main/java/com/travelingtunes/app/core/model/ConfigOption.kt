@@ -70,6 +70,12 @@ data class ConfigOption(
             ConfigOption("SCRUB_HUD_TYPE_EDGE_HUD", "Art, HUD & Display", "Scrub HUD: Edge Bar", isBooleanToggle = false, targetValue = "EDGE_HUD"),
             ConfigOption("SCRUB_HUD_TYPE_POPUP", "Art, HUD & Display", "Scrub HUD: Line", isBooleanToggle = false, targetValue = "POPUP"),
             ConfigOption("SCRUB_HUD_TYPE_BAR_PROGRESS", "Art, HUD & Display", "Scrub HUD: Bar Fill", isBooleanToggle = false, targetValue = "BAR_PROGRESS"),
+            ConfigOption("DISPLAY_stretchArt", "Art, HUD & Display", "Stretch Art", isBooleanToggle = true),
+            ConfigOption("DISPLAY_adaptiveDockedArt", "Art, HUD & Display", "Adaptive Docked Art", isBooleanToggle = true),
+            ConfigOption("DISPLAY_separateTouchZones", "Art, HUD & Display", "Separate Touch Zones", isBooleanToggle = true),
+            ConfigOption("ACTION_OPEN_ART_TAGS_EDITOR", "Art, HUD & Display", "Art & Tags Editor / Replace Art", isBooleanToggle = false),
+            ConfigOption("ACTION_REPLACE_ART", "Art, HUD & Display", "Replace Artwork", isBooleanToggle = false),
+            ConfigOption("ACTION_DELETE_DOWNLOADED_ART", "Art, HUD & Display", "Delete Downloaded Art", isBooleanToggle = false),
             ConfigOption("DISPLAY_volumeAlwaysOn", "Art, HUD & Display", "Volume Always On", isBooleanToggle = true),
             ConfigOption("DISPLAY_showStatusBar", "Art, HUD & Display", "Show Status Bar", isBooleanToggle = true),
             ConfigOption("DISPLAY_showActions", "Art, HUD & Display", "Show Action Buttons", isBooleanToggle = true),
@@ -77,8 +83,25 @@ data class ConfigOption(
             ConfigOption("DISPLAY_immersiveMode", "Art, HUD & Display", "Immersive Mode", isBooleanToggle = true),
 
             // Music Library
+            ConfigOption("ACTION_SONG_PICKER", "Music Library", "Song Picker", isBooleanToggle = false),
+            ConfigOption("ACTION_SELECT_ALBUM_VIEW", "Music Library", "Select Album View", isBooleanToggle = false),
+            ConfigOption("ACTION_SELECT_ARTIST_VIEW", "Music Library", "Select Artist View", isBooleanToggle = false),
+            ConfigOption("ACTION_SHOW_QUEUE", "Music Library", "Current Queue", isBooleanToggle = false),
+            ConfigOption("ACTION_DUPLICATE_TRACK_IDENTIFIER", "Music Library", "Duplicate Track Finder", isBooleanToggle = false),
             ConfigOption("LIBRARY_autoRescan", "Music Library", "Auto Rescan Library", isBooleanToggle = true),
             ConfigOption("LIBRARY_gpsVolume", "Music Library", "Speed-Dependent Volume", isBooleanToggle = true),
+
+            // Playback
+            ConfigOption("ACTION_TOGGLE_REPEAT", "Playback", "Toggle Repeat Mode", isBooleanToggle = true),
+            ConfigOption("ACTION_TOGGLE_SHUFFLE", "Playback", "Toggle Shuffle Mode", isBooleanToggle = true),
+            ConfigOption("ACTION_SHUFFLE_ALL_SONGS", "Playback", "Shuffle All Songs", isBooleanToggle = false),
+            ConfigOption("ACTION_PLAY_CURRENT_ARTIST", "Playback", "Play Current Artist", isBooleanToggle = false),
+            ConfigOption("ACTION_PLAY_CURRENT_ALBUM", "Playback", "Play Current Album", isBooleanToggle = false),
+
+            // App & Settings
+            ConfigOption("ACTION_MENU", "App & Settings", "Open Settings Menu", isBooleanToggle = false),
+            ConfigOption("ACTION_SHOW_QUICK_START", "App & Settings", "Open Quick Start Help", isBooleanToggle = false),
+            ConfigOption("ACTION_SELECT_PROFILE", "App & Settings", "Open Profile Selector", isBooleanToggle = false),
 
             // Traveling Mode & Volume
             ConfigOption("AUTO_drivingMode", "Traveling Mode", "Traveling Mode", isBooleanToggle = true),
@@ -90,8 +113,11 @@ data class ConfigOption(
             ConfigOption("PROFILE_DEFAULT", "Profiles", "Profile: Default", isBooleanToggle = false, targetValue = "default"),
             ConfigOption("PROFILE_TRAVELING", "Profiles", "Profile: Traveling", isBooleanToggle = false, targetValue = "traveling"),
             ConfigOption("PROFILE_DRIVING", "Profiles", "Profile: Driving", isBooleanToggle = false, targetValue = "driving"),
-            ConfigOption("PROFILE_TRANSIT", "Profiles", "Profile: Transit", isBooleanToggle = false, targetValue = "transit")
+            ConfigOption("PROFILE_TRANSIT", "Profiles", "Profile: Transit", isBooleanToggle = false, targetValue = "transit"),
+            ConfigOption("PROFILE_DOCKED", "Profiles", "Profile: Docked Art", isBooleanToggle = false, targetValue = "docked"),
+            ConfigOption("PROFILE_UNDOCKED", "Profiles", "Profile: Undocked Art", isBooleanToggle = false, targetValue = "undocked")
         )
+
 
         private val dynamicOptions = mutableListOf<ConfigOption>()
 

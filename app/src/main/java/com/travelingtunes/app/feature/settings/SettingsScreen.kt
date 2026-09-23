@@ -123,7 +123,9 @@ import com.travelingtunes.app.core.model.ScrubHudTypeOption
 import com.travelingtunes.app.core.model.ThemeSettings
 import com.travelingtunes.app.core.theme.FontHelper
 import com.travelingtunes.app.core.theme.FontOption
+import androidx.compose.material3.Checkbox
 import com.travelingtunes.app.core.model.Profile
+import com.travelingtunes.app.core.model.ProfileHierarchyHelper
 import com.travelingtunes.app.core.model.ProfileSelectionMode
 import kotlinx.coroutines.launch
 import com.travelingtunes.app.core.theme.luminance
@@ -434,8 +436,15 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     val activeProf = settingsDataStore.activeProfileFlow.collectAsState(initial = Profile.DEFAULT).value
+                    val activeStack by settingsDataStore.activeProfileStackFlow.collectAsState(initial = listOf(Profile.DEFAULT))
                     val allProfs by settingsDataStore.profilesFlow.collectAsState(initial = emptyList())
+                    val currentStackIds = activeStack.map { it.id }
                     var showProfileMenu by remember { mutableStateOf(false) }
+
+                    val stackText = remember(activeStack) {
+                        if (activeStack.size == 1 && activeStack.first().id == Profile.DEFAULT_ID) ""
+                        else " (" + activeStack.joinToString(" + ") { it.name } + ")"
+                    }
 
                     Box {
                         Row(
@@ -448,11 +457,9 @@ fun SettingsScreen(
                         ) {
                             Text(
                                 text = if (!isWideScreen && activeSubmenu != null) {
-                                    "${activeSubmenu.title} (${activeProf.name})"
-                                } else if (activeProf.id == Profile.DEFAULT_ID) {
-                                    "Traveling Tunes Settings"
+                                    "${activeSubmenu.title}$stackText"
                                 } else {
-                                    "Traveling Tunes Settings (${activeProf.name})"
+                                    "Traveling Tunes Settings$stackText"
                                 },
                                 fontWeight = FontWeight.Bold
                             )
@@ -473,7 +480,7 @@ fun SettingsScreen(
                             onDismissRequest = { showProfileMenu = false }
                         ) {
                             Text(
-                                text = "Active Editing Profile",
+                                text = "Active Profile Stack",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -481,31 +488,37 @@ fun SettingsScreen(
                             )
                             HorizontalDivider()
                             allProfs.forEach { profile ->
+                                val isChecked = currentStackIds.contains(profile.id)
                                 DropdownMenuItem(
                                     text = {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
+                                            Checkbox(
+                                                checked = isChecked,
+                                                onCheckedChange = null
+                                            )
                                             MonochromeEmojiIcon(
                                                 emoji = profile.emoji,
-                                                tint = if (profile.id == activeProf.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                tint = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                                 iconSize = 18.dp
                                             )
                                             Text(
                                                 text = profile.name,
-                                                fontWeight = if (profile.id == activeProf.id) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (profile.id == activeProf.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                                fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                             )
-                                            if (profile.id == activeProf.id) {
-                                                Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                            }
                                         }
                                     },
                                     onClick = {
-                                        showProfileMenu = false
+                                        val newStack = ProfileHierarchyHelper.computeUpdatedStack(
+                                            profile.id,
+                                            currentStackIds,
+                                            allProfs
+                                        )
                                         coroutineScope.launch {
-                                            settingsDataStore.setActiveProfile(profile.id)
+                                            settingsDataStore.setActiveProfileStack(newStack)
                                         }
                                     }
                                 )
@@ -1407,9 +1420,9 @@ private fun LibrarySettingsContent(
         }
 
         ListItem(
-            headlineContent = { Text("Album Art Editor") },
+            headlineContent = { Text("Art & Tags Editor") },
             supportingContent = {
-                Text("Manage, replace, or embed downloaded album artwork into ID3 tags")
+                Text("View, edit, and embed album artwork and ID3/FLAC metadata tags across tracks, albums, artists, genres, and folders")
             },
             modifier = Modifier.clickable { onOpenDownloadedArtBrowser() }
         )
@@ -2121,6 +2134,31 @@ private fun ArtSettingsContent(
             }
         }
 
+        if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Stretch Art", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Expand outer edge colors of fitted artwork across surrounding margins (left & right when centered)",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = displaySettings.stretchArt,
+                    onCheckedChange = { checked ->
+                        onUpdateDisplaySettings(displaySettings.copy(stretchArt = checked))
+                    }
+                )
+            }
+        }
+
         val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
 
         val rawPortraitOptions = if (displaySettings.albumArtScale == ArtScaleOption.FILL_SCREEN) {
@@ -2208,28 +2246,6 @@ private fun ArtSettingsContent(
         }
 
         if (displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Stretch Art", fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "Expand inner edge colors of artwork across background behind titles",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Switch(
-                    checked = displaySettings.stretchArt,
-                    onCheckedChange = { checked ->
-                        onUpdateDisplaySettings(displaySettings.copy(stretchArt = checked))
-                    }
-                )
-            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -2402,6 +2418,160 @@ private fun HudSettingsContent(
                     onUpdateDisplaySettings(displaySettings.copy(immersiveMode = checked))
                 }
             )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+        // Card: Notification & On-Screen Action Buttons (Configure & Re-order)
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Notification & On-Screen Action Buttons",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Configure and re-order playback control buttons displayed in your system notification and on-screen controls",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val currentButtons = displaySettings.autoActionButtonOrder
+                var showAddDropdown by remember { mutableStateOf(false) }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currentButtons.forEachIndexed { index, action ->
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DragHandle,
+                                        contentDescription = "Drag handle",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "${index + 1}. ${action.displayName}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (index > 0) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentButtons.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index - 1]
+                                                newOrder[index - 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowUp,
+                                                contentDescription = "Move Up"
+                                            )
+                                        }
+                                    }
+                                    if (index < currentButtons.size - 1) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentButtons.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index + 1]
+                                                newOrder[index + 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowDown,
+                                                contentDescription = "Move Down"
+                                            )
+                                        }
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            val newOrder = currentButtons.toMutableList().apply { removeAt(index) }
+                                            onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Remove Action",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        /*
+                         * CRUCIAL FEATURE: GestureAction.OTHER_OPTION ("Other Option") must ALWAYS be included.
+                         * Do NOT filter it out from action options.
+                         */
+                        val availableActions = GestureAction.entries.filter {
+                            it != GestureAction.UNASSIGNED &&
+                            it !in currentButtons
+                        }
+
+                        if (availableActions.isNotEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                OutlinedButton(
+                                    onClick = { showAddDropdown = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Add Action Button")
+                                }
+
+                                if (showAddDropdown) {
+                                    ActionSelectionDialog(
+                                        title = "Add Action Button",
+                                        excludeRadialMenu = false,
+                                        excludeUnassigned = true,
+                                        onDismissRequest = { showAddDropdown = false },
+                                        onActionSelected = { act ->
+                                            if (act !in currentButtons) {
+                                                val newOrder = currentButtons.toMutableList().apply { add(act) }
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            }
+                                            showAddDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -2788,156 +2958,7 @@ private fun AndroidAutoSettingsContent(
             }
         }
 
-        // Card 3: On-Screen Action Buttons (Configure & Re-order)
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "On-Screen Action Buttons",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Configure and re-order playback control buttons displayed on your Android Auto screen",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val currentButtons = displaySettings.autoActionButtonOrder
-                var showAddDropdown by remember { mutableStateOf(false) }
-
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        currentButtons.forEachIndexed { index, action ->
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DragHandle,
-                                        contentDescription = "Drag handle",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = "${index + 1}. ${action.displayName}",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    if (index > 0) {
-                                        IconButton(
-                                            onClick = {
-                                                val newOrder = currentButtons.toMutableList()
-                                                val temp = newOrder[index]
-                                                newOrder[index] = newOrder[index - 1]
-                                                newOrder[index - 1] = temp
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
-                                            },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.KeyboardArrowUp,
-                                                contentDescription = "Move Up"
-                                            )
-                                        }
-                                    }
-                                    if (index < currentButtons.size - 1) {
-                                        IconButton(
-                                            onClick = {
-                                                val newOrder = currentButtons.toMutableList()
-                                                val temp = newOrder[index]
-                                                newOrder[index] = newOrder[index + 1]
-                                                newOrder[index + 1] = temp
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
-                                            },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.KeyboardArrowDown,
-                                                contentDescription = "Move Down"
-                                            )
-                                        }
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            val newOrder = currentButtons.toMutableList().apply { removeAt(index) }
-                                            onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = "Remove Action",
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        val availableActions = GestureAction.entries.filter {
-                            it != GestureAction.UNASSIGNED &&
-                            it != GestureAction.OTHER_OPTION &&
-                            it !in currentButtons
-                        }
-
-                        if (availableActions.isNotEmpty()) {
-                            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                                OutlinedButton(
-                                    onClick = { showAddDropdown = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Add Action Button")
-                                }
-
-                                DropdownMenu(
-                                    expanded = showAddDropdown,
-                                    onDismissRequest = { showAddDropdown = false }
-                                ) {
-                                    availableActions.forEach { act ->
-                                        DropdownMenuItem(
-                                            text = { Text(act.displayName) },
-                                            onClick = {
-                                                val newOrder = currentButtons.toMutableList().apply { add(act) }
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
-                                                showAddDropdown = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Card 3: Android Auto Display & Behavior Options
+        // Card 2: Android Auto Display & Behavior Options
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -3520,15 +3541,16 @@ private fun ProfilesSettingsContent(
                         FilterChip(
                             selected = isActiveInStack,
                             onClick = {
-                                val newStack = if (isActiveInStack) {
-                                    activeStack.map { it.id }.filterNot { it == profile.id }
-                                } else {
-                                    listOf(profile.id) + activeStack.map { it.id }
-                                }.ifEmpty { listOf(Profile.DEFAULT_ID) }
+                                val newStack = ProfileHierarchyHelper.computeUpdatedStack(
+                                    profile.id,
+                                    activeStack.map { it.id },
+                                    profiles
+                                )
                                 coroutineScope.launch {
                                     settingsDataStore.setActiveProfileStack(newStack)
                                 }
                             },
+
                             label = {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -3801,7 +3823,35 @@ private fun ProfilesSettingsContent(
                 if (selectionMode == ProfileSelectionMode.SEQUENTIAL) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Profiles included in switcher:",
+                        text = "Quick Parent Selection:",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val parentProfiles = listOf(Profile.TRAVELING, Profile.DEFAULT)
+                        parentProfiles.forEach { parent ->
+                            FilterChip(
+                                selected = false,
+                                onClick = {
+                                    val children = ProfileHierarchyHelper.getChildrenOfParent(parent.id, profiles)
+                                    val childIds = children.map { it.id }.filterNot { it == Profile.DEFAULT_ID }
+                                    coroutineScope.launch {
+                                        settingsDataStore.setProfileSwitchTargets(childIds)
+                                    }
+                                },
+                                label = {
+                                    Text("Parent: ${parent.emoji} ${parent.name}", fontSize = 11.sp)
+                                }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Same-tier profiles included in switcher:",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -3838,13 +3888,14 @@ private fun ProfilesSettingsContent(
                                 }
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(profile.name)
+                            Text("${profile.emoji} ${profile.name}")
                         }
                     }
                 }
             }
         }
     }
+
 
     // Dialog: Create Profile
     if (showCreateDialog) {

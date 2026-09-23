@@ -14,6 +14,9 @@ data class GestureBinding(
     val artAction: GestureAction = GestureAction.UNASSIGNED,
     val artOtherOptionKey: String? = null,
     val titleAction: GestureAction = GestureAction.UNASSIGNED,
-    val titleOtherOptionKey: String? = null
+    val titleOtherOptionKey: String? = null,
+    val profileSwitchTargets: List<String>? = null,
+    val profileParentId: String? = null
 )
+
 

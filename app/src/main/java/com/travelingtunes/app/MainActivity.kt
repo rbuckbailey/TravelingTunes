@@ -435,6 +435,9 @@ class MainActivity : ComponentActivity() {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 permissionsToRequest.add(Manifest.permission.READ_MEDIA_AUDIO)
             }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
         } else {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
@@ -487,6 +490,11 @@ class MainActivity : ComponentActivity() {
 
     private fun loadInitialMusic() {
         lifecycleScope.launch {
+            if (playbackManager.currentPlaylist.value.isNotEmpty() && playbackManager.player.mediaItemCount > 0) {
+                android.util.Log.i("MainActivity", "loadInitialMusic: Player already initialized with playlist. Skipping state restore.")
+                return@launch
+            }
+
             val savedState = settingsDataStore.savedPlaybackStateFlow.first()
             val dbSongs = musicDatabase.getAllSongs()
             val allSongs = dbSongs.ifEmpty { mediaStoreRepository.getAllSongs() }

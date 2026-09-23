@@ -1,5 +1,17 @@
 package com.travelingtunes.app.core.model
 
+/**
+ * =========================================================================================
+ * CRUCIAL ARCHITECTURAL FEATURE NOTICE:
+ * GestureAction.OTHER_OPTION ("Other Option") is a CORE feature of TravelingTunes.
+ * It allows binding ANY application preference, setting, or profile override (ConfigOption)
+ * directly to swipe gestures, taps, edge region buttons, radial menus, and keyboard shortcuts.
+ *
+ * DO NOT EVER REMOVE OR FILTER OUT GestureAction.OTHER_OPTION from action selection popups,
+ * dropdown menus, or gesture assignment pickers.
+ * It MUST ALWAYS remain available to the user at the top level at the end of the action list.
+ * =========================================================================================
+ */
 enum class GestureAction(val displayName: String) {
     UNASSIGNED("Unassigned"),
     PLAY("Play"),
@@ -34,13 +46,6 @@ enum class GestureAction(val displayName: String) {
     SELECT_PROFILE("Select Profile"),
     RADIAL_MENU("Radial Menu"),
     OTHER_OPTION("Other Option");
-    // Navigation actions disabled/commented out:
-    // NAVIGATE_TO_CONTACT("Navigate to Contact"),
-    // NAVIGATE_HOME("Navigate Home"),
-    // NAVIGATE_WORK("Navigate to Work"),
-    // SHOW_DIRECTIONS("Show Directions"),
-    // RECENTER_MAP("Recenter Map"),
-    // REPEAT_INSTRUCTIONS("Repeat Navigation Instructions");
 
     companion object {
         fun fromKey(key: String): GestureAction {
@@ -55,5 +60,67 @@ enum class GestureAction(val displayName: String) {
                 it.displayName.filter { c -> c.isLetterOrDigit() }.equals(sanitizedKey, ignoreCase = true)
             } ?: UNASSIGNED
         }
+
+        /**
+         * Returns GestureActions organized logically into categories for selection popups and dropdowns.
+         * CRUCIAL: GestureAction.OTHER_OPTION ("Other Option") is ALWAYS placed at the very end of the
+         * list as a top-level item.
+         */
+        fun getGroupedCategories(
+            excludeRadialMenu: Boolean = false,
+            excludeUnassigned: Boolean = false
+        ): List<ActionCategoryGroup> {
+            val playback = listOf(
+                PLAY_PAUSE, PLAY, PAUSE, NEXT, PREVIOUS,
+                FAST_FORWARD, REWIND, RESTART, RESTART_PREVIOUS
+            )
+
+            val library = listOf(
+                SONG_PICKER, SHOW_QUEUE, SHUFFLE_ALL_SONGS,
+                PLAY_CURRENT_ARTIST, PLAY_CURRENT_ALBUM,
+                NEXT_ALBUM, PREVIOUS_ALBUM,
+                SELECT_ALBUM_VIEW, SELECT_ARTIST_VIEW
+            )
+
+            val volumeAndModes = listOf(
+                VOLUME_UP, VOLUME_DOWN, TOGGLE_REPEAT, TOGGLE_SHUFFLE,
+                INCREASE_RATING, DECREASE_RATING
+            )
+
+            val appAndDisplay = mutableListOf<GestureAction>().apply {
+                if (!excludeUnassigned) add(UNASSIGNED)
+                add(MENU)
+                add(SHOW_QUICK_START)
+                add(SELECT_PROFILE)
+                add(TOGGLE_DRIVING_MODE)
+                add(TOGGLE_DOCKED_ART)
+                add(DELETE_DOWNLOADED_ART)
+                if (!excludeRadialMenu) add(RADIAL_MENU)
+            }
+
+            // CRUCIAL: Custom Action OTHER_OPTION ("Other Option") is always at the top level at the end.
+            val custom = listOf(OTHER_OPTION)
+
+            return listOf(
+                ActionCategoryGroup(ActionCategory.PLAYBACK, playback),
+                ActionCategoryGroup(ActionCategory.LIBRARY, library),
+                ActionCategoryGroup(ActionCategory.VOLUME_AND_MODES, volumeAndModes),
+                ActionCategoryGroup(ActionCategory.APP_AND_DISPLAY, appAndDisplay),
+                ActionCategoryGroup(ActionCategory.CUSTOM, custom)
+            )
+        }
     }
 }
+
+enum class ActionCategory(val displayName: String) {
+    PLAYBACK("Playback Controls"),
+    LIBRARY("Library & Navigation"),
+    VOLUME_AND_MODES("Volume & Playback Modes"),
+    APP_AND_DISPLAY("App & Display"),
+    CUSTOM("Custom Action")
+}
+
+data class ActionCategoryGroup(
+    val category: ActionCategory,
+    val actions: List<GestureAction>
+)

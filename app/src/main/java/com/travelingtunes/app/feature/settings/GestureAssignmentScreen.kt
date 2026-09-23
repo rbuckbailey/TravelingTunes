@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -40,7 +42,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DonutLarge
 import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.RadioButtonChecked
+import com.travelingtunes.app.core.model.RadialMenuStyle
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.TouchApp
@@ -666,6 +671,9 @@ private fun RadialMenuConfigurator(
 ) {
     val coroutineScope = rememberCoroutineScope()
     var editingSlotIndex by remember { mutableStateOf<Int?>(null) }
+    val menuStyle by settingsDataStore.getRadialMenuStyleFlow(trigger.key).collectAsState(initial = RadialMenuStyle.FAN)
+    val isEdgeTrigger = trigger.category == GestureCategory.SCREEN_REGION ||
+            trigger.key.startsWith("KeyF", ignoreCase = true)
 
     LazyColumn(
         modifier = Modifier
@@ -687,10 +695,55 @@ private fun RadialMenuConfigurator(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Pop up actions arranged in a circle around the touch spot. Drag or tap to activate.",
+                        text = "Pop up actions arranged on screen for quick access. Drag or tap to activate.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = "Menu Layout Style",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (isEdgeTrigger) "Edge button menu format" else "Radial menu layout format",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RadialMenuStyle.entries.forEach { styleOption ->
+                            FilterChip(
+                                selected = menuStyle == styleOption,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        settingsDataStore.updateRadialMenuStyle(trigger.key, styleOption)
+                                    }
+                                },
+                                label = {
+                                    Text(
+                                        text = styleOption.displayName,
+                                        fontWeight = if (menuStyle == styleOption) FontWeight.Bold else FontWeight.Normal,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -746,52 +799,81 @@ private fun RadialMenuConfigurator(
                         }
                     }
 
-                    DropdownMenu(
-                        expanded = isDropdownExpanded,
-                        modifier = Modifier.fillMaxWidth(0.85f).widthIn(min = 280.dp, max = 560.dp),
-                        onDismissRequest = { isDropdownExpanded = false }
-                    ) {
-                        GestureAction.entries.filter { it != GestureAction.RADIAL_MENU }.forEach { choice ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        ActionIcon(
-                                            action = choice,
-                                            optionKey = if (choice == GestureAction.OTHER_OPTION) assignedOption.key else null,
-                                            iconSize = 20.dp,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(choice.displayName)
-                                    }
-                                },
-                                onClick = {
-                                    val updated = actions.toMutableList()
-                                    updated[index] = choice
-                                    onUpdateActions(updated)
-                                    isDropdownExpanded = false
-                                    if (choice == GestureAction.OTHER_OPTION) {
-                                        editingSlotIndex = index
-                                    }
+                    if (isDropdownExpanded) {
+                        ActionSelectionDialog(
+                            title = "Select Action for Slot ${index + 1}",
+                            excludeRadialMenu = true,
+                            excludeUnassigned = true,
+                            currentOptionKey = assignedOption.key,
+                            onDismissRequest = { isDropdownExpanded = false },
+                            onActionSelected = { choice ->
+                                val updated = actions.toMutableList()
+                                updated[index] = choice
+                                onUpdateActions(updated)
+                                isDropdownExpanded = false
+                                if (choice == GestureAction.OTHER_OPTION) {
+                                    editingSlotIndex = index
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
                 }
 
-                if (actions.size > 1) {
-                    IconButton(
-                        onClick = {
-                            val updated = actions.toMutableList()
-                            updated.removeAt(index)
-                            onUpdateActions(updated)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (index > 0) {
+                        IconButton(
+                            onClick = {
+                                val updated = actions.toMutableList()
+                                val temp = updated[index]
+                                updated[index] = updated[index - 1]
+                                updated[index - 1] = temp
+                                onUpdateActions(updated)
+                                coroutineScope.launch {
+                                    settingsDataStore.swapRadialOtherOptions(trigger.key, index, index - 1)
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowUp,
+                                contentDescription = "Move Up",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Remove Slot",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                    }
+                    if (index < actions.size - 1) {
+                        IconButton(
+                            onClick = {
+                                val updated = actions.toMutableList()
+                                val temp = updated[index]
+                                updated[index] = updated[index + 1]
+                                updated[index + 1] = temp
+                                onUpdateActions(updated)
+                                coroutineScope.launch {
+                                    settingsDataStore.swapRadialOtherOptions(trigger.key, index, index + 1)
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Move Down",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    if (actions.size > 1) {
+                        IconButton(
+                            onClick = {
+                                val updated = actions.toMutableList()
+                                updated.removeAt(index)
+                                onUpdateActions(updated)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Remove Slot",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
@@ -933,102 +1015,35 @@ private fun GestureAssignmentItem(
                 tint = MaterialTheme.colorScheme.primary
             )
 
-            DropdownMenu(
-                expanded = isDropdownExpanded,
-                modifier = Modifier.fillMaxWidth(0.92f).widthIn(min = 360.dp, max = 680.dp),
-                onDismissRequest = { isDropdownExpanded = false }
-            ) {
-                GestureAction.entries.forEach { choice ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    ActionIcon(
-                                        action = choice,
-                                        optionKey = if (choice == GestureAction.OTHER_OPTION) (displayLines.firstOrNull()?.third ?: binding.otherOptionKey) else null,
-                                        iconSize = 20.dp,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = choice.displayName,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                if (isSeparateTouchZones) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        val isArt = binding.artAction == choice
-                                        val isTitle = binding.titleAction == choice
-                                        val isBoth = binding.action == choice && !hasArtAction && !hasTitleAction
-
-                                        FilterChip(
-                                            selected = isArt,
-                                            onClick = {
-                                                isDropdownExpanded = false
-                                                if (choice == GestureAction.OTHER_OPTION) {
-                                                    editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.ART
-                                                } else {
-                                                    onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.ART, choice, null)
-                                                }
-                                            },
-                                            label = { Text("Art", fontSize = 11.sp) }
-                                        )
-                                        FilterChip(
-                                            selected = isTitle,
-                                            onClick = {
-                                                isDropdownExpanded = false
-                                                if (choice == GestureAction.OTHER_OPTION) {
-                                                    editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.TITLE
-                                                } else {
-                                                    onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.TITLE, choice, null)
-                                                }
-                                            },
-                                            label = { Text("Title", fontSize = 11.sp) }
-                                        )
-                                        if (!isButton) {
-                                            FilterChip(
-                                                selected = isBoth,
-                                                onClick = {
-                                                    isDropdownExpanded = false
-                                                    if (choice == GestureAction.OTHER_OPTION) {
-                                                        editingOptionRegion = com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
-                                                    } else {
-                                                        onActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.BOTH, choice, null)
-                                                    }
-                                                },
-                                                label = { Text("Both", fontSize = 11.sp) }
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    val isSelected = binding.action == choice
-                                    FilterChip(
-                                        selected = isSelected,
-                                        onClick = {
-                                            isDropdownExpanded = false
-                                            val targetTarget = if (isButton) com.travelingtunes.app.core.model.TouchRegionTarget.TITLE else com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
-                                            if (choice == GestureAction.OTHER_OPTION) {
-                                                editingOptionRegion = targetTarget
-                                            } else {
-                                                onActionSelected(targetTarget, choice, null)
-                                            }
-                                        },
-                                        label = { Text("Select", fontSize = 11.sp) }
-                                    )
-                                }
-                            }
-                        },
-                        onClick = {}
-                    )
-                }
+            if (isDropdownExpanded) {
+                ActionSelectionDialog(
+                    title = "Select Action for ${trigger.getDisplayName(numEdgeRegions, isArt = isArtSection, isTitle = isTitleSection)}",
+                    excludeRadialMenu = false,
+                    excludeUnassigned = false,
+                    currentOptionKey = (displayLines.firstOrNull()?.third ?: binding.otherOptionKey),
+                    isSeparateTouchZones = isSeparateTouchZones,
+                    isButton = isButton,
+                    binding = binding,
+                    displayLines = displayLines,
+                    onDismissRequest = { isDropdownExpanded = false },
+                    onActionSelected = { choice ->
+                        isDropdownExpanded = false
+                        val targetTarget = if (isButton) com.travelingtunes.app.core.model.TouchRegionTarget.TITLE else com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
+                        if (choice == GestureAction.OTHER_OPTION) {
+                            editingOptionRegion = targetTarget
+                        } else {
+                            onActionSelected(targetTarget, choice, null)
+                        }
+                    },
+                    onRegionActionSelected = { target, choice, key ->
+                        isDropdownExpanded = false
+                        onActionSelected(target, choice, key)
+                    },
+                    onOpenOtherOptionPicker = { regionTarget ->
+                        isDropdownExpanded = false
+                        editingOptionRegion = regionTarget
+                    }
+                )
             }
         }
     }
@@ -1713,36 +1728,21 @@ private fun AddKeyboardControlDialog(
                                 }
                             }
 
-                            DropdownMenu(
-                                expanded = isActionDropdownExpanded,
-                                onDismissRequest = { isActionDropdownExpanded = false },
-                                modifier = Modifier
-                                    .fillMaxWidth(0.85f)
-                                    .widthIn(max = 400.dp)
-                            ) {
-                                GestureAction.entries.filter { it != GestureAction.UNASSIGNED }.forEach { actionChoice ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                ActionIcon(
-                                                    action = actionChoice,
-                                                    optionKey = if (actionChoice == GestureAction.OTHER_OPTION) selectedOtherOptionKey else null,
-                                                    iconSize = 20.dp,
-                                                    tint = MaterialTheme.colorScheme.primary
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(actionChoice.displayName)
-                                            }
-                                        },
-                                        onClick = {
-                                            selectedAction = actionChoice
-                                            isActionDropdownExpanded = false
-                                            if (actionChoice == GestureAction.OTHER_OPTION) {
-                                                editingOtherOption = true
-                                            }
+                            if (isActionDropdownExpanded) {
+                                ActionSelectionDialog(
+                                    title = "Select Shortcut Action",
+                                    excludeRadialMenu = false,
+                                    excludeUnassigned = true,
+                                    currentOptionKey = selectedOtherOptionKey,
+                                    onDismissRequest = { isActionDropdownExpanded = false },
+                                    onActionSelected = { choice ->
+                                        selectedAction = choice
+                                        isActionDropdownExpanded = false
+                                        if (choice == GestureAction.OTHER_OPTION) {
+                                            editingOtherOption = true
                                         }
-                                    )
-                                }
+                                    }
+                                )
                             }
                         }
                     }
@@ -1800,5 +1800,258 @@ private fun AddKeyboardControlDialog(
             },
             onDismissRequest = { editingOtherOption = false }
         )
+    }
+}
+
+/**
+ * =========================================================================================
+ * CRUCIAL ARCHITECTURAL FEATURE:
+ * ActionSelectionDialog presents GestureActions organized into collapsible categories that are
+ * COLLAPSED BY DEFAULT.
+ *
+ * It is strictly constrained to at most 70% of the screen height, ensuring it NEVER expands
+ * off the bottom edge even when all sections are fully opened.
+ *
+ * GestureAction.OTHER_OPTION ("Other Option") is ALWAYS placed at the top level at the end
+ * of the dialog, fully visible without expanding any category.
+ * =========================================================================================
+ */
+@Composable
+fun ActionSelectionDialog(
+    title: String = "Select Action",
+    excludeRadialMenu: Boolean = false,
+    excludeUnassigned: Boolean = false,
+    currentOptionKey: String? = null,
+    isSeparateTouchZones: Boolean = false,
+    isButton: Boolean = false,
+    binding: GestureBinding? = null,
+    displayLines: List<Triple<String, GestureAction, String?>> = emptyList(),
+    onDismissRequest: () -> Unit,
+    onActionSelected: (GestureAction) -> Unit,
+    onRegionActionSelected: ((com.travelingtunes.app.core.model.TouchRegionTarget, GestureAction, String?) -> Unit)? = null,
+    onOpenOtherOptionPicker: ((com.travelingtunes.app.core.model.TouchRegionTarget?) -> Unit)? = null
+) {
+    val categoryGroups = remember(excludeRadialMenu, excludeUnassigned) {
+        GestureAction.getGroupedCategories(excludeRadialMenu, excludeUnassigned)
+    }
+
+    val expandedCategories = remember { mutableStateMapOf<com.travelingtunes.app.core.model.ActionCategory, Boolean>() }
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val maxDialogHeightDp = (configuration.screenHeightDp * 0.70f).dp.coerceAtLeast(280.dp)
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        modifier = Modifier
+            .fillMaxWidth(0.95f)
+            .heightIn(max = maxDialogHeightDp),
+        title = {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                for (group in categoryGroups) {
+                    val cat = group.category
+                    if (cat == com.travelingtunes.app.core.model.ActionCategory.CUSTOM) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                        for (choice in group.actions) {
+                            ActionDialogItemRow(
+                                choice = choice,
+                                currentOptionKey = currentOptionKey,
+                                isSeparateTouchZones = isSeparateTouchZones,
+                                isButton = isButton,
+                                binding = binding,
+                                displayLines = displayLines,
+                                onActionSelected = onActionSelected,
+                                onRegionActionSelected = onRegionActionSelected,
+                                onOpenOtherOptionPicker = onOpenOtherOptionPicker,
+                                onDismissRequest = onDismissRequest
+                            )
+                        }
+                    } else {
+                        val isExpanded = expandedCategories[cat] ?: false
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { expandedCategories[cat] = !isExpanded }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                                ) {
+                                    Text(
+                                        text = cat.displayName,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Icon(
+                                        imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                if (isExpanded) {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                    Column(modifier = Modifier.padding(vertical = 2.dp)) {
+                                        for (choice in group.actions) {
+                                            ActionDialogItemRow(
+                                                choice = choice,
+                                                currentOptionKey = currentOptionKey,
+                                                isSeparateTouchZones = isSeparateTouchZones,
+                                                isButton = isButton,
+                                                binding = binding,
+                                                displayLines = displayLines,
+                                                onActionSelected = onActionSelected,
+                                                onRegionActionSelected = onRegionActionSelected,
+                                                onOpenOtherOptionPicker = onOpenOtherOptionPicker,
+                                                onDismissRequest = onDismissRequest
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ActionDialogItemRow(
+    choice: GestureAction,
+    currentOptionKey: String?,
+    isSeparateTouchZones: Boolean,
+    isButton: Boolean,
+    binding: GestureBinding?,
+    displayLines: List<Triple<String, GestureAction, String?>>,
+    onActionSelected: (GestureAction) -> Unit,
+    onRegionActionSelected: ((com.travelingtunes.app.core.model.TouchRegionTarget, GestureAction, String?) -> Unit)?,
+    onOpenOtherOptionPicker: ((com.travelingtunes.app.core.model.TouchRegionTarget?) -> Unit)?,
+    onDismissRequest: () -> Unit
+) {
+    val isOtherOption = choice == GestureAction.OTHER_OPTION
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                if (onRegionActionSelected == null) {
+                    onActionSelected(choice)
+                    onDismissRequest()
+                }
+            }
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            ActionIcon(
+                action = choice,
+                optionKey = if (isOtherOption) currentOptionKey else null,
+                iconSize = 20.dp,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = choice.displayName,
+                fontWeight = if (isOtherOption) FontWeight.ExtraBold else FontWeight.Medium,
+                fontSize = 13.sp,
+                color = if (isOtherOption) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        if (onRegionActionSelected != null && binding != null) {
+            val hasArtAction = binding.artAction != GestureAction.UNASSIGNED
+            val hasTitleAction = binding.titleAction != GestureAction.UNASSIGNED
+
+            if (isSeparateTouchZones) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val isArt = binding.artAction == choice
+                    val isTitle = binding.titleAction == choice
+                    val isBoth = binding.action == choice && !hasArtAction && !hasTitleAction
+
+                    FilterChip(
+                        selected = isArt,
+                        onClick = {
+                            onDismissRequest()
+                            if (isOtherOption && onOpenOtherOptionPicker != null) {
+                                onOpenOtherOptionPicker(com.travelingtunes.app.core.model.TouchRegionTarget.ART)
+                            } else {
+                                onRegionActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.ART, choice, null)
+                            }
+                        },
+                        label = { Text("Art", fontSize = 10.sp) }
+                    )
+                    FilterChip(
+                        selected = isTitle,
+                        onClick = {
+                            onDismissRequest()
+                            if (isOtherOption && onOpenOtherOptionPicker != null) {
+                                onOpenOtherOptionPicker(com.travelingtunes.app.core.model.TouchRegionTarget.TITLE)
+                            } else {
+                                onRegionActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.TITLE, choice, null)
+                            }
+                        },
+                        label = { Text("Title", fontSize = 10.sp) }
+                    )
+                    if (!isButton) {
+                        FilterChip(
+                            selected = isBoth,
+                            onClick = {
+                                onDismissRequest()
+                                if (isOtherOption && onOpenOtherOptionPicker != null) {
+                                    onOpenOtherOptionPicker(com.travelingtunes.app.core.model.TouchRegionTarget.BOTH)
+                                } else {
+                                    onRegionActionSelected(com.travelingtunes.app.core.model.TouchRegionTarget.BOTH, choice, null)
+                                }
+                            },
+                            label = { Text("Both", fontSize = 10.sp) }
+                        )
+                    }
+                }
+            } else {
+                val isSelected = binding.action == choice
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        onDismissRequest()
+                        val targetTarget = if (isButton) com.travelingtunes.app.core.model.TouchRegionTarget.TITLE else com.travelingtunes.app.core.model.TouchRegionTarget.BOTH
+                        if (isOtherOption && onOpenOtherOptionPicker != null) {
+                            onOpenOtherOptionPicker(targetTarget)
+                        } else {
+                            onRegionActionSelected(targetTarget, choice, null)
+                        }
+                    },
+                    label = { Text("Select", fontSize = 10.sp) }
+                )
+            }
+        }
     }
 }

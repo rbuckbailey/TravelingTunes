@@ -195,6 +195,7 @@ class PlaybackManager(
 
             _durationMs.value = try { p.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
             applyNormalizationModifier(_currentSong.value)
+            persistCurrentPlaybackState()
             android.util.Log.d("PlaybackManager", "onMediaItemTransition: title='${_currentSong.value?.title}', reason=$reason, index=$currentIndex")
         }
 
@@ -253,6 +254,7 @@ class PlaybackManager(
             }
         }
         _player.addListener(playerListener)
+        MusicPlaybackService.startService(context)
         launchTicker()
     }
 
@@ -313,8 +315,13 @@ class PlaybackManager(
 
         val song = _currentSong.value
         val songId = song?.id ?: -1L
-        val songIndex = playlist.indexOfFirst { it.id == songId }.coerceAtLeast(0)
-        val posMs = player.currentPosition.coerceAtLeast(0L)
+        val playerIndex = try { player.currentMediaItemIndex } catch (_: Exception) { -1 }
+        val songIndex = if (playerIndex in playlist.indices) {
+            playerIndex
+        } else {
+            playlist.indexOfFirst { it.id == songId }.coerceAtLeast(0)
+        }
+        val posMs = try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
         val currRepeat = _repeatMode.value
         val currShuffle = _shuffleMode.value
 
@@ -711,45 +718,33 @@ class PlaybackManager(
     }
 
     fun next() {
-        android.util.Log.d("PlaybackManager", "next called, hasNextMediaItem=${player.hasNextMediaItem()}")
+        val playlist = _currentPlaylist.value
+        android.util.Log.d("PlaybackManager", "next called, playlistSize=${playlist.size}")
+        if (playlist.isEmpty()) return
+
         MusicPlaybackService.startService(context)
         ensurePlayerReadyForPlayback()
-        if (player.hasNextMediaItem()) {
-            player.seekToNextMediaItem()
-            if (player.playbackState == Player.STATE_IDLE) {
-                player.prepare()
-            }
-            player.play()
-            persistCurrentPlaybackState()
-        } else if (_currentPlaylist.value.isNotEmpty()) {
-            player.seekTo(0, 0L)
-            if (player.playbackState == Player.STATE_IDLE) {
-                player.prepare()
-            }
-            player.play()
-            persistCurrentPlaybackState()
-        }
+
+        val currentSongId = _currentSong.value?.id ?: -1L
+        val currentIndex = playlist.indexOfFirst { it.id == currentSongId }.let { if (it != -1) it else 0 }
+        val nextIndex = if (currentIndex + 1 < playlist.size) currentIndex + 1 else 0
+
+        playSongAtIndex(nextIndex)
     }
 
     fun previous() {
-        android.util.Log.d("PlaybackManager", "previous called, hasPreviousMediaItem=${player.hasPreviousMediaItem()}")
+        val playlist = _currentPlaylist.value
+        android.util.Log.d("PlaybackManager", "previous called, playlistSize=${playlist.size}")
+        if (playlist.isEmpty()) return
+
         MusicPlaybackService.startService(context)
         ensurePlayerReadyForPlayback()
-        if (player.hasPreviousMediaItem()) {
-            player.seekToPreviousMediaItem()
-            if (player.playbackState == Player.STATE_IDLE) {
-                player.prepare()
-            }
-            player.play()
-            persistCurrentPlaybackState()
-        } else if (_currentPlaylist.value.isNotEmpty()) {
-            player.seekTo(0, 0L)
-            if (player.playbackState == Player.STATE_IDLE) {
-                player.prepare()
-            }
-            player.play()
-            persistCurrentPlaybackState()
-        }
+
+        val currentSongId = _currentSong.value?.id ?: -1L
+        val currentIndex = playlist.indexOfFirst { it.id == currentSongId }.let { if (it != -1) it else 0 }
+        val prevIndex = if (currentIndex - 1 >= 0) currentIndex - 1 else playlist.size - 1
+
+        playSongAtIndex(prevIndex)
     }
 
     fun restart() {

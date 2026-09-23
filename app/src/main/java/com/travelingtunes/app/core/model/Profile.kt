@@ -293,3 +293,75 @@ enum class ProfileSelectionMode(val displayName: String) {
         }
     }
 }
+
+object ProfileHierarchyHelper {
+    fun getBranchRootId(profile: Profile, allProfiles: List<Profile>): String {
+        if (profile.id == Profile.DEFAULT_ID) return Profile.DEFAULT_ID
+        when (profile.id) {
+            Profile.DOCKED_ID, Profile.UNDOCKED_ID, "dock" -> return "art_branch"
+            Profile.TRAVELING_ID, Profile.DRIVING_ID, Profile.TRANSIT_ID -> return Profile.TRAVELING_ID
+        }
+        var current: Profile? = profile
+        val visited = mutableSetOf<String>()
+        while (current != null && visited.add(current.id)) {
+            if (current.id == Profile.DOCKED_ID || current.id == Profile.UNDOCKED_ID || current.id == "dock") {
+                return "art_branch"
+            }
+            if (current.id == Profile.TRAVELING_ID || current.id == Profile.DRIVING_ID || current.id == Profile.TRANSIT_ID) {
+                return Profile.TRAVELING_ID
+            }
+            val parentId = current.parentId
+            if (parentId == null || parentId == Profile.DEFAULT_ID) {
+                return current.id
+            }
+            current = allProfiles.find { it.id == parentId }
+        }
+        return profile.id
+    }
+
+    fun isMutuallyExclusive(p1: Profile, p2: Profile, allProfiles: List<Profile>): Boolean {
+        if (p1.id == p2.id) return true
+        if (p1.id == Profile.DEFAULT_ID || p2.id == Profile.DEFAULT_ID) return false
+
+        if (p1.parentId != null && p1.parentId != Profile.DEFAULT_ID && p1.parentId == p2.parentId) {
+            return true
+        }
+
+        val branch1 = getBranchRootId(p1, allProfiles)
+        val branch2 = getBranchRootId(p2, allProfiles)
+        if (branch1 == branch2) {
+            return true
+        }
+
+        return false
+    }
+
+
+    fun computeUpdatedStack(
+        toggledProfileId: String,
+        currentStackIds: List<String>,
+        allProfiles: List<Profile>
+    ): List<String> {
+        val toggledProfile = allProfiles.find { it.id == toggledProfileId } ?: return currentStackIds
+
+        val isCurrentlyActive = currentStackIds.contains(toggledProfileId)
+        if (isCurrentlyActive) {
+            val newStack = currentStackIds.filterNot { it == toggledProfileId }
+            return newStack.ifEmpty { listOf(Profile.DEFAULT_ID) }
+        } else {
+            val remainingIds = currentStackIds.filterNot { id ->
+                val existingProfile = allProfiles.find { it.id == id }
+                existingProfile != null && isMutuallyExclusive(toggledProfile, existingProfile, allProfiles)
+            }
+            return listOf(toggledProfileId) + remainingIds
+        }
+    }
+
+    fun getChildrenOfParent(parentId: String, allProfiles: List<Profile>): List<Profile> {
+        if (parentId == Profile.DEFAULT_ID) {
+            return allProfiles.filter { it.parentId == Profile.DEFAULT_ID || it.id in setOf(Profile.DOCKED_ID, Profile.UNDOCKED_ID, Profile.TRAVELING_ID) }
+        }
+        return allProfiles.filter { it.parentId == parentId || (parentId == Profile.TRAVELING_ID && it.id in setOf(Profile.DRIVING_ID, Profile.TRANSIT_ID)) }
+    }
+}
+

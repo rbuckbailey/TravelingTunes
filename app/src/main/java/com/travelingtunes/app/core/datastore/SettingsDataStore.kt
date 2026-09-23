@@ -27,6 +27,8 @@ import com.travelingtunes.app.core.model.HudTypeOption
 import com.travelingtunes.app.core.model.NormalizationMode
 import com.travelingtunes.app.core.model.NormalizationSettings
 import com.travelingtunes.app.core.model.Profile
+import com.travelingtunes.app.core.model.ProfileHierarchyHelper
+import com.travelingtunes.app.core.model.RadialMenuStyle
 import com.travelingtunes.app.core.model.ProfileSelectionMode
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ScrubHudTypeOption
@@ -484,6 +486,9 @@ class SettingsDataStore(private val context: Context) {
             val titleActionKey = getString("${trigger.key}_title", defaultTitleKey)
             val titleOtherOptionKey = getString("${trigger.key}_title_other_target", "")
 
+            val profileTargetsStr = getString("profileSwitchTargets_${trigger.key}", "")
+            val profileParentId = getString("profileParent_${trigger.key}", "")
+
             GestureBinding(
                 trigger = trigger,
                 action = GestureAction.fromKey(actionKey),
@@ -492,7 +497,9 @@ class SettingsDataStore(private val context: Context) {
                 artAction = GestureAction.fromKey(artActionKey),
                 artOtherOptionKey = artOtherOptionKey.ifEmpty { null },
                 titleAction = GestureAction.fromKey(titleActionKey),
-                titleOtherOptionKey = titleOtherOptionKey.ifEmpty { null }
+                titleOtherOptionKey = titleOtherOptionKey.ifEmpty { null },
+                profileSwitchTargets = profileTargetsStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }.ifEmpty { null },
+                profileParentId = profileParentId.ifEmpty { null }
             )
         }
     }
@@ -845,7 +852,9 @@ class SettingsDataStore(private val context: Context) {
         artAction: GestureAction = GestureAction.UNASSIGNED,
         artOtherOptionKey: String? = null,
         titleAction: GestureAction = GestureAction.UNASSIGNED,
-        titleOtherOptionKey: String? = null
+        titleOtherOptionKey: String? = null,
+        profileSwitchTargets: List<String>? = null,
+        profileParentId: String? = null
     ) {
         context.dataStore.edit { prefs ->
             val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
@@ -870,6 +879,13 @@ class SettingsDataStore(private val context: Context) {
                     prefs[stringPreferencesKey("${trigger.key}_title_other_target")] = titleOtherOptionKey
                 } else {
                     prefs.remove(stringPreferencesKey("${trigger.key}_title_other_target"))
+                }
+
+                if (profileSwitchTargets != null) {
+                    prefs[stringPreferencesKey("profileSwitchTargets_${trigger.key}")] = profileSwitchTargets.joinToString(",")
+                }
+                if (profileParentId != null) {
+                    prefs[stringPreferencesKey("profileParent_${trigger.key}")] = profileParentId
                 }
             } else {
                 val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
@@ -896,8 +912,16 @@ class SettingsDataStore(private val context: Context) {
                         } else {
                             updatedMap.remove("${trigger.key}_title_other_target")
                         }
+
+                        if (profileSwitchTargets != null) {
+                            updatedMap["profileSwitchTargets_${trigger.key}"] = profileSwitchTargets.joinToString(",")
+                        }
+                        if (profileParentId != null) {
+                            updatedMap["profileParent_${trigger.key}"] = profileParentId
+                        }
                         profile.copy(overrides = updatedMap)
                     } else profile
+
                 }
                 prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
             }
@@ -920,8 +944,54 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
+    fun getRadialMenuStyleFlow(triggerKey: String): Flow<RadialMenuStyle> {
+        return context.dataStore.data.map { prefs ->
+            val raw = prefs[stringPreferencesKey("radial_style_$triggerKey")]
+            when (raw) {
+                "FAN" -> RadialMenuStyle.FAN
+                "LIST" -> RadialMenuStyle.LIST
+                "RADIAL" -> RadialMenuStyle.RADIAL
+                else -> RadialMenuStyle.FAN
+            }
+        }
+    }
+
+    suspend fun updateRadialMenuStyle(triggerKey: String, style: RadialMenuStyle) {
+        context.dataStore.edit { prefs ->
+            prefs[stringPreferencesKey("radial_style_$triggerKey")] = style.name
+        }
+    }
+
+    suspend fun swapRadialOtherOptions(triggerKey: String, index1: Int, index2: Int) {
+        context.dataStore.edit { prefs ->
+            val key1 = stringPreferencesKey("radial_target_${triggerKey}_$index1")
+            val key2 = stringPreferencesKey("radial_target_${triggerKey}_$index2")
+            val val1 = prefs[key1]
+            val val2 = prefs[key2]
+            if (val2 != null) prefs[key1] = val2 else prefs.remove(key1)
+            if (val1 != null) prefs[key2] = val1 else prefs.remove(key2)
+        }
+    }
+
     suspend fun toggleOtherOption(triggerKey: String, optionKey: String) {
+        if (optionKey.startsWith("PROFILE_", ignoreCase = true)) {
+            val targetId = optionKey.substringAfter("PROFILE_").lowercase()
+            context.dataStore.edit { prefs ->
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+                if (profiles.any { it.id.equals(targetId, ignoreCase = true) }) {
+                    val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+                    val rawStackStr = prefs[KEY_ACTIVE_PROFILE_STACK] ?: activeId
+                    val currentStackIds = rawStackStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                    val matchedProfile = profiles.find { it.id.equals(targetId, ignoreCase = true) } ?: return@edit
+                    val newStack = ProfileHierarchyHelper.computeUpdatedStack(matchedProfile.id, currentStackIds, profiles)
+                    prefs[KEY_ACTIVE_PROFILE_STACK] = newStack.joinToString(",")
+                    prefs[KEY_ACTIVE_PROFILE_ID] = newStack.firstOrNull() ?: Profile.DEFAULT_ID
+                }
+            }
+            return
+        }
         val option = ConfigOption.findByKey(optionKey) ?: return
+
         context.dataStore.edit { prefs ->
             val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
             if (activeId != Profile.DEFAULT_ID) {
@@ -1743,25 +1813,53 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    suspend fun cycleToNextProfile(): Profile {
+    suspend fun setProfileSwitchTargetsForTrigger(triggerKey: String, targetIds: List<String>, parentId: String? = null) {
+        context.dataStore.edit { prefs ->
+            prefs[stringPreferencesKey("profileSwitchTargets_$triggerKey")] = targetIds.joinToString(",")
+            if (parentId != null) {
+                prefs[stringPreferencesKey("profileParent_$triggerKey")] = parentId
+            } else {
+                prefs.remove(stringPreferencesKey("profileParent_$triggerKey"))
+            }
+        }
+    }
+
+    suspend fun cycleToNextProfileForTrigger(triggerKey: String, customTargets: List<String>? = null): Profile {
         var nextProfile = Profile.DEFAULT
         context.dataStore.edit { prefs ->
             val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
             val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
-            val targetIdsRaw = prefs[KEY_PROFILE_SWITCH_TARGETS] ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID},${Profile.DRIVING_ID},${Profile.TRANSIT_ID},${Profile.DOCKED_ID},${Profile.UNDOCKED_ID}"
-            val targetIds = targetIdsRaw.split(",").map { it.trim() }.filter { id -> profiles.any { it.id == id } }
+            val rawStackStr = prefs[KEY_ACTIVE_PROFILE_STACK] ?: activeId
+            val currentStackIds = rawStackStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
+            val triggerTargetsRaw = if (!customTargets.isNullOrEmpty()) {
+                customTargets.joinToString(",")
+            } else {
+                prefs[stringPreferencesKey("profileSwitchTargets_$triggerKey")]
+                    ?: prefs[KEY_PROFILE_SWITCH_TARGETS]
+                    ?: "${Profile.DEFAULT_ID},${Profile.TRAVELING_ID},${Profile.DRIVING_ID},${Profile.TRANSIT_ID},${Profile.DOCKED_ID},${Profile.UNDOCKED_ID}"
+            }
+
+            val targetIds = triggerTargetsRaw.split(",").map { it.trim() }.filter { id -> profiles.any { it.id == id } }
                 .ifEmpty { profiles.map { it.id } }
 
-            val currentIndex = targetIds.indexOf(activeId)
-            val nextIndex = if (currentIndex >= 0) (currentIndex + 1) % targetIds.size else 0
-            val nextId = targetIds.getOrElse(nextIndex) { Profile.DEFAULT_ID }
+            val currentActiveInTarget = targetIds.firstOrNull { currentStackIds.contains(it) }
+            val currentIndex = if (currentActiveInTarget != null) targetIds.indexOf(currentActiveInTarget) else -1
+            val nextIndex = (currentIndex + 1) % targetIds.size
+            val nextTargetId = targetIds[nextIndex]
 
-            prefs[KEY_ACTIVE_PROFILE_ID] = nextId
-            prefs[KEY_ACTIVE_PROFILE_STACK] = nextId
-            nextProfile = profiles.find { it.id == nextId } ?: Profile.DEFAULT
+            val newStack = ProfileHierarchyHelper.computeUpdatedStack(nextTargetId, currentStackIds, profiles)
+            prefs[KEY_ACTIVE_PROFILE_STACK] = newStack.joinToString(",")
+            prefs[KEY_ACTIVE_PROFILE_ID] = newStack.firstOrNull() ?: Profile.DEFAULT_ID
+            nextProfile = profiles.find { it.id == nextTargetId } ?: Profile.DEFAULT
         }
         return nextProfile
     }
+
+    suspend fun cycleToNextProfile(): Profile {
+        return cycleToNextProfileForTrigger("global")
+    }
+
 
     suspend fun copyProfile(
         sourceProfileId: String,

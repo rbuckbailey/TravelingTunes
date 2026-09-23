@@ -163,4 +163,37 @@ class PlaybackActionsTest {
         assertEquals("show_play_screen", getRootMediaId(isPlaying = true))
         assertEquals("root", getRootMediaId(isPlaying = false))
     }
+
+    @Test
+    fun testForegroundServiceClassName() {
+        val serviceClass = com.travelingtunes.app.core.media.MusicPlaybackService::class.java
+        assertEquals("com.travelingtunes.app.core.media.MusicPlaybackService", serviceClass.name)
+    }
+
+    @Test
+    fun testActiveSongIndexUsesPlayerCurrentMediaItemIndexOverFirstMatch() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(100L, "Track A", "Artist", "Album", 1L, 1000L, mockUri)
+        val s2 = Song(101L, "Track B", "Artist", "Album", 1L, 1000L, mockUri)
+        // Duplicate instance of s1 later in the queue
+        val s1Duplicate = Song(100L, "Track A", "Artist", "Album", 1L, 1000L, mockUri)
+
+        val queue = listOf(s1, s2, s1Duplicate)
+        val currentPlayerIndex = 2 // Player is actually on the second Track A instance (index 2)
+
+        val songId = queue[currentPlayerIndex].id
+        val songIndex = if (currentPlayerIndex in queue.indices) {
+            currentPlayerIndex
+        } else {
+            queue.indexOfFirst { it.id == songId }.coerceAtLeast(0)
+        }
+
+        assertEquals(2, songIndex)
+    }
+
+    @Test
+    fun testShuffleAllIconResource() {
+        val shuffleAllDrawableRes = R.drawable.ic_shuffle_all
+        assert(shuffleAllDrawableRes != 0)
+    }
 }

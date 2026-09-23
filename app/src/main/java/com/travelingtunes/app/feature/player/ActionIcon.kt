@@ -247,9 +247,9 @@ fun ActionIcon(
             )
 
             GestureAction.SHUFFLE_ALL_SONGS -> Icon(
-                imageVector = Icons.Default.Shuffle,
+                painter = painterResource(id = R.drawable.ic_shuffle_all),
                 contentDescription = action.displayName,
-                tint = effectiveTint,
+                tint = Color.Unspecified,
                 modifier = Modifier.size(iconSize)
             )
 

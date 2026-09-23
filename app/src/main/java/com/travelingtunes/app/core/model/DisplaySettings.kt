@@ -21,6 +21,12 @@ enum class AutoCategory(val displayName: String) {
     FOLDERS("Folders")
 }
 
+enum class RadialMenuStyle(val displayName: String) {
+    FAN("Fan"),
+    LIST("List"),
+    RADIAL("Radial Circle")
+}
+
 enum class ArtScaleOption(val displayName: String) {
     FILL_SCREEN("Fill Screen"),
     ASPECT_FIT("Fit Screen")
