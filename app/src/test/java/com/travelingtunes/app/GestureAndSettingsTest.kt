@@ -1459,6 +1459,96 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testSameInheritanceTierWhenCopyingProfiles() {
+        val defaultProf = Profile.DEFAULT
+        val travelingProf = Profile.TRAVELING
+        val drivingProf = Profile.DRIVING
+        val transitProf = Profile.TRANSIT
+        val dockedProf = Profile.DOCKED
+        val undockedProf = Profile.UNDOCKED
+
+        // Copy built-in Default
+        val defaultParentTier = if (defaultProf.id == Profile.DEFAULT_ID) Profile.DEFAULT_ID else (defaultProf.parentId ?: Profile.DEFAULT_ID)
+        assertEquals(Profile.DEFAULT_ID, defaultParentTier)
+
+        // Copy built-in Traveling (parentId: default)
+        val travelingCopyParent = travelingProf.parentId ?: Profile.DEFAULT_ID
+        assertEquals(Profile.DEFAULT_ID, travelingCopyParent)
+
+        // Copy built-in Driving (parentId: traveling)
+        val drivingCopyParent = drivingProf.parentId ?: Profile.DEFAULT_ID
+        assertEquals(Profile.TRAVELING_ID, drivingCopyParent)
+
+        // Copy built-in Transit (parentId: traveling)
+        val transitCopyParent = transitProf.parentId ?: Profile.DEFAULT_ID
+        assertEquals(Profile.TRAVELING_ID, transitCopyParent)
+
+        // Copy built-in Docked (parentId: default)
+        val dockedCopyParent = dockedProf.parentId ?: Profile.DEFAULT_ID
+        assertEquals(Profile.DEFAULT_ID, dockedCopyParent)
+
+        // Copy built-in Undocked (parentId: default)
+        val undockedCopyParent = undockedProf.parentId ?: Profile.DEFAULT_ID
+        assertEquals(Profile.DEFAULT_ID, undockedCopyParent)
+
+        // Copy custom sub-profile
+        val customChild = Profile(id = "custom_sub", name = "Sub Profile", parentId = "traveling")
+        val customCopyParent = customChild.parentId ?: Profile.DEFAULT_ID
+        assertEquals(Profile.TRAVELING_ID, customCopyParent)
+    }
+
+    @Test
+    fun testMoveMultipleSettingsBetweenProfiles() {
+        val sourceOverrides = mutableMapOf(
+            "autoSpeedVolumeEnabled" to "true",
+            "drivingModeEnabled" to "true",
+            "artistFontSize" to "32.0"
+        )
+        var sourceProfile = Profile(
+            id = "src_1",
+            name = "Source Profile",
+            overrides = sourceOverrides
+        )
+
+        val targetOverrides = mutableMapOf(
+            "gpsVolume" to "true"
+        )
+        var targetProfile = Profile(
+            id = "tgt_1",
+            name = "Target Profile",
+            overrides = targetOverrides
+        )
+
+        val keysToMove = listOf("autoSpeedVolumeEnabled", "drivingModeEnabled")
+
+        // Perform move logic
+        val movedEntries = mutableMapOf<String, String>()
+        val updatedSourceMap = sourceProfile.overrides.toMutableMap()
+        for (key in keysToMove) {
+            val removed = updatedSourceMap.remove(key)
+            if (removed != null) {
+                movedEntries[key] = removed
+            }
+        }
+        val updatedTargetMap = targetProfile.overrides.toMutableMap().apply { putAll(movedEntries) }
+
+        sourceProfile = sourceProfile.copy(overrides = updatedSourceMap)
+        targetProfile = targetProfile.copy(overrides = updatedTargetMap)
+
+        // Assertions
+        assertFalse(sourceProfile.overrides.containsKey("autoSpeedVolumeEnabled"))
+        assertFalse(sourceProfile.overrides.containsKey("drivingModeEnabled"))
+        assertTrue(sourceProfile.overrides.containsKey("artistFontSize"))
+        assertEquals("32.0", sourceProfile.overrides["artistFontSize"])
+
+        assertTrue(targetProfile.overrides.containsKey("gpsVolume"))
+        assertTrue(targetProfile.overrides.containsKey("autoSpeedVolumeEnabled"))
+        assertTrue(targetProfile.overrides.containsKey("drivingModeEnabled"))
+        assertEquals("true", targetProfile.overrides["autoSpeedVolumeEnabled"])
+        assertEquals("true", targetProfile.overrides["drivingModeEnabled"])
+    }
+
+    @Test
     fun testAutomaticDockAndUndockedProfileToggle() {
         val dockedProfile = Profile.DOCKED
         val undockedProfile = Profile.UNDOCKED

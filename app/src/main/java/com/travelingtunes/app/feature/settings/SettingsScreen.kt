@@ -1,5 +1,10 @@
 package com.travelingtunes.app.feature.settings
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -2738,13 +2744,87 @@ private fun ThemesSettingsContent(
 private fun AboutSettingsContent(
     onOpenQuickStart: () -> Unit
 ) {
-    Column {
-        ListItem(
-            headlineContent = { Text("Show Quick Start Tutorial") },
-            supportingContent = { Text("Learn app gestures, controls, and playback tips") },
-            modifier = Modifier.clickable { onOpenQuickStart() }
+    val context = LocalContext.current
+    var isUnrestricted by remember {
+        mutableStateOf(
+            run {
+                val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+                pm?.isIgnoringBatteryOptimizations(context.packageName) == true
+            }
         )
-        Spacer(modifier = Modifier.height(4.dp))
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Background Playback & Battery Saver",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Android battery optimization may pause or stop background music services when the screen turns off. Setting TravelingTunes to 'Unrestricted' prevents background playback stops and notification loss.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isUnrestricted) "Battery Status: Unrestricted" else "Battery Status: Optimized (Restricted)",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp,
+                            color = if (isUnrestricted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            text = if (isUnrestricted) "Background playback is protected from system sleep." else "Recommended: Tap to set TravelingTunes to Unrestricted.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            try {
+                                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                            }
+                        }
+                    ) {
+                        Text(if (isUnrestricted) "Manage Settings" else "Unrestrict Battery", fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                ListItem(
+                    headlineContent = { Text("Show Quick Start Tutorial") },
+                    supportingContent = { Text("Learn app gestures, controls, and playback tips") },
+                    modifier = Modifier.clickable { onOpenQuickStart() }
+                )
+            }
+        }
+
         Text(
             text = "Traveling Tunes v1.0",
             fontSize = 12.sp,
@@ -3448,7 +3528,11 @@ private fun ProfilesSettingsContent(
     var copyingProfile by remember { mutableStateOf<Profile?>(null) }
     var copyName by remember { mutableStateOf("") }
     var copyEmoji by remember { mutableStateOf("🏷️") }
-    var copyLinkForInheritance by remember { mutableStateOf(true) }
+
+    var showMoveSettingsDialog by remember { mutableStateOf(false) }
+    var moveSourceProfileId by remember { mutableStateOf<String?>(null) }
+    var moveTargetProfileId by remember { mutableStateOf<String?>(null) }
+    var selectedMoveKeys by remember { mutableStateOf(setOf<String>()) }
 
     var expandedProfiles by remember { mutableStateOf(setOf<String>()) }
 
@@ -3588,15 +3672,26 @@ private fun ProfilesSettingsContent(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    OutlinedButton(onClick = {
-                        newProfileName = ""
-                        newProfileEmoji = "🏷️"
-                        newProfileParentId = Profile.DEFAULT_ID
-                        showCreateDialog = true
-                    }) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("New Profile")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = {
+                            val sourceProf = profiles.firstOrNull { it.overrides.isNotEmpty() } ?: profiles.firstOrNull()
+                            moveSourceProfileId = sourceProf?.id
+                            moveTargetProfileId = profiles.firstOrNull { it.id != sourceProf?.id }?.id
+                            selectedMoveKeys = sourceProf?.overrides?.keys ?: emptySet()
+                            showMoveSettingsDialog = true
+                        }) {
+                            Text("Move Settings", fontSize = 12.sp)
+                        }
+                        OutlinedButton(onClick = {
+                            newProfileName = ""
+                            newProfileEmoji = "🏷️"
+                            newProfileParentId = Profile.DEFAULT_ID
+                            showCreateDialog = true
+                        }) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New Profile", fontSize = 12.sp)
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -3729,11 +3824,20 @@ private fun ProfilesSettingsContent(
                         },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (profile.overrides.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        moveSourceProfileId = profile.id
+                                        moveTargetProfileId = profiles.firstOrNull { it.id != profile.id }?.id
+                                        selectedMoveKeys = profile.overrides.keys
+                                        showMoveSettingsDialog = true
+                                    }) {
+                                        Icon(Icons.Default.Tune, contentDescription = "Move Settings from ${profile.name}")
+                                    }
+                                }
                                 IconButton(onClick = {
                                     copyingProfile = profile
                                     copyName = "${profile.name} Copy"
                                     copyEmoji = profile.emoji
-                                    copyLinkForInheritance = true
                                 }) {
                                     Icon(Icons.Default.ContentCopy, contentDescription = "Copy Profile")
                                 }
@@ -4069,8 +4173,196 @@ private fun ProfilesSettingsContent(
         )
     }
 
+    // Dialog: Move Settings Between Profiles
+    if (showMoveSettingsDialog) {
+        val sourceProf = profiles.find { it.id == moveSourceProfileId }
+            ?: profiles.firstOrNull { it.overrides.isNotEmpty() }
+            ?: profiles.firstOrNull()
+            ?: Profile.DEFAULT
+        val availableTargets = profiles.filter { it.id != sourceProf.id }
+        val targetProf = profiles.find { it.id == moveTargetProfileId && it.id != sourceProf.id }
+            ?: availableTargets.firstOrNull()
+            ?: Profile.DEFAULT
+        val sourceOverrides = sourceProf.overrides
+
+        AlertDialog(
+            onDismissRequest = { showMoveSettingsDialog = false },
+            title = { Text("Move Settings Between Profiles") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Source Profile Selector
+                    Column {
+                        Text("From Source Profile:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.horizontalScroll(rememberScrollState())
+                        ) {
+                            profiles.forEach { prof ->
+                                val isSelected = prof.id == sourceProf.id
+                                val count = prof.overrides.size
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        moveSourceProfileId = prof.id
+                                        val newTargets = profiles.filter { it.id != prof.id }
+                                        if (moveTargetProfileId == prof.id || moveTargetProfileId == null) {
+                                            moveTargetProfileId = newTargets.firstOrNull()?.id
+                                        }
+                                        selectedMoveKeys = prof.overrides.keys
+                                    },
+                                    label = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            MonochromeEmojiIcon(
+                                                emoji = prof.emoji,
+                                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                                iconSize = 14.dp
+                                            )
+                                            Text("${prof.name}${if (count > 0) " ($count)" else ""}", fontSize = 12.sp)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Target Profile Selector
+                    Column {
+                        Text("To Target Profile:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.horizontalScroll(rememberScrollState())
+                        ) {
+                            availableTargets.forEach { prof ->
+                                val isSelected = prof.id == targetProf.id
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        moveTargetProfileId = prof.id
+                                    },
+                                    label = {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            MonochromeEmojiIcon(
+                                                emoji = prof.emoji,
+                                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                                iconSize = 14.dp
+                                            )
+                                            Text(prof.name, fontSize = 12.sp)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider()
+
+                    // Settings list with select multiple
+                    if (sourceOverrides.isEmpty()) {
+                        Text(
+                            "Source profile '${sourceProf.name}' has no local setting overrides to move.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Select Settings (${selectedMoveKeys.size}/${sourceOverrides.size}):",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                val allSelected = selectedMoveKeys.size == sourceOverrides.size
+                                TextButton(
+                                    onClick = {
+                                        selectedMoveKeys = if (allSelected) emptySet() else sourceOverrides.keys
+                                    },
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text(if (allSelected) "Deselect All" else "Select All", fontSize = 11.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Column(
+                                modifier = Modifier
+                                    .heightIn(max = 200.dp)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                sourceOverrides.forEach { (key, value) ->
+                                    val option = com.travelingtunes.app.core.model.ConfigOption.findByKey(key)
+                                    val label = option?.title ?: key
+                                    val isChecked = selectedMoveKeys.contains(key)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                selectedMoveKeys = if (isChecked) {
+                                                    selectedMoveKeys - key
+                                                } else {
+                                                    selectedMoveKeys + key
+                                                }
+                                            }
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        Checkbox(
+                                            checked = isChecked,
+                                            onCheckedChange = { checked ->
+                                                selectedMoveKeys = if (checked) {
+                                                    selectedMoveKeys + key
+                                                } else {
+                                                    selectedMoveKeys - key
+                                                }
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                            Text("Value: $value", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (selectedMoveKeys.isNotEmpty() && targetProf.id != sourceProf.id) {
+                            coroutineScope.launch {
+                                settingsDataStore.moveSettings(
+                                    sourceProf.id,
+                                    targetProf.id,
+                                    selectedMoveKeys.toList()
+                                )
+                            }
+                        }
+                        showMoveSettingsDialog = false
+                    },
+                    enabled = selectedMoveKeys.isNotEmpty() && availableTargets.isNotEmpty() && sourceProf.id != targetProf.id
+                ) {
+                    Text("Move (${selectedMoveKeys.size}) Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMoveSettingsDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     // Dialog: Copy Profile
     copyingProfile?.let { srcProf ->
+        val parentProf = profiles.find { it.id == (srcProf.parentId ?: Profile.DEFAULT_ID) } ?: Profile.DEFAULT
         AlertDialog(
             onDismissRequest = { copyingProfile = null },
             title = { Text("Copy Profile: ${srcProf.name}") },
@@ -4101,27 +4393,22 @@ private fun ProfilesSettingsContent(
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { copyLinkForInheritance = !copyLinkForInheritance }
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Switch(
-                            checked = copyLinkForInheritance,
-                            onCheckedChange = { copyLinkForInheritance = it }
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text("Link for Inheritance from ${srcProf.name}", fontWeight = FontWeight.Medium)
-                            Text(
-                                if (copyLinkForInheritance) "Inherits settings from ${srcProf.name}. Changes in ${srcProf.name} will automatically flow to this profile."
-                                else "Creates an independent snapshot copy with ${srcProf.name}'s current values.",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                RoundedCornerShape(8.dp)
                             )
-                        }
+                            .padding(12.dp)
+                    ) {
+                        Text("Inheritance Tier", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            "New copy will be created on the same inheritance tier as ${srcProf.name} (inheriting from ${parentProf.name}) with ${srcProf.overrides.size} setting overrides.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             },
@@ -4133,8 +4420,7 @@ private fun ProfilesSettingsContent(
                                 settingsDataStore.copyProfile(
                                     srcProf.id,
                                     copyName.trim(),
-                                    copyLinkForInheritance,
-                                    copyEmoji.trim().ifEmpty { "🏷️" }
+                                    newEmoji = copyEmoji.trim().ifEmpty { "🏷️" }
                                 )
                             }
                         }

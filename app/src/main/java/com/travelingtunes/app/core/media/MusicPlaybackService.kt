@@ -1,5 +1,7 @@
 package com.travelingtunes.app.core.media
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -12,6 +14,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaConstants
 import androidx.media3.session.MediaLibraryService
@@ -45,6 +48,8 @@ import kotlinx.coroutines.withContext
 class MusicPlaybackService : MediaLibraryService() {
 
     companion object {
+        const val NOTIFICATION_CHANNEL_ID = "traveling_tunes_playback_channel"
+
         @Volatile
         private var sharedPlayer: ExoPlayer? = null
 
@@ -138,11 +143,27 @@ class MusicPlaybackService : MediaLibraryService() {
     private var autoDisplaySettings = DisplaySettings()
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
+    @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
         musicDatabase = MusicDatabase(applicationContext)
         mediaStoreRepository = MediaStoreRepository(applicationContext)
         settingsDataStore = SettingsDataStore(applicationContext)
+
+        createNotificationChannel()
+
+        val notificationProvider = DefaultMediaNotificationProvider.Builder(applicationContext)
+            .setChannelId(NOTIFICATION_CHANNEL_ID)
+            .setChannelName(R.string.app_name)
+            .build()
+        setMediaNotificationProvider(notificationProvider)
+
+        setListener(object : Listener {
+            @OptIn(UnstableApi::class)
+            override fun onForegroundServiceStartNotAllowedException() {
+                android.util.Log.e("MusicPlaybackService", "Foreground service start not allowed exception triggered")
+            }
+        })
 
         val player = getOrCreatePlayer(applicationContext)
 
@@ -192,6 +213,19 @@ class MusicPlaybackService : MediaLibraryService() {
         }
     }
 
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            NOTIFICATION_CHANNEL_ID,
+            "Media Playback Controls",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Media controls and track information notification for background playback"
+            setShowBadge(false)
+        }
+        val manager = getSystemService(NotificationManager::class.java)
+        manager?.createNotificationChannel(channel)
+    }
+
     private fun notifyAutoChildrenChanged(session: MediaLibrarySession) {
         listOf("root", "show_play_screen", "category_queue", "queue", "category_picker", "category_songs", "category_albums", "category_artists", "category_genres", "category_folders").forEach { parentId ->
             try {
@@ -209,10 +243,12 @@ class MusicPlaybackService : MediaLibraryService() {
 
     @OptIn(UnstableApi::class)
     override fun onTaskRemoved(rootIntent: Intent?) {
-        // Do not stop the service when the user swipes the app away from recent tasks.
-        // Keeping the service alive ensures the media session, background audio stream,
-        // and notification pane remain active for playback controls and resumption.
-        android.util.Log.i("MusicPlaybackService", "onTaskRemoved called: keeping playback service active in background")
+        val player = sharedPlayer
+        if (player != null && player.playWhenReady && player.playbackState != ExoPlayer.STATE_IDLE) {
+            android.util.Log.i("MusicPlaybackService", "onTaskRemoved: active playback running, maintaining foreground service")
+        } else {
+            super.onTaskRemoved(rootIntent)
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {

@@ -1860,11 +1860,44 @@ class SettingsDataStore(private val context: Context) {
         return cycleToNextProfileForTrigger("global")
     }
 
+    suspend fun moveSettings(
+        sourceProfileId: String,
+        targetProfileId: String,
+        settingKeys: List<String>
+    ) {
+        if (sourceProfileId == targetProfileId || settingKeys.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).toMutableList()
+            val sourceIdx = profiles.indexOfFirst { it.id == sourceProfileId }
+            val targetIdx = profiles.indexOfFirst { it.id == targetProfileId }
+            if (sourceIdx < 0 || targetIdx < 0) return@edit
+
+            val sourceProfile = profiles[sourceIdx]
+            val targetProfile = profiles[targetIdx]
+
+            val movedEntries = mutableMapOf<String, String>()
+            val updatedSourceOverrides = sourceProfile.overrides.toMutableMap()
+            for (key in settingKeys) {
+                val value = updatedSourceOverrides.remove(key)
+                if (value != null) {
+                    movedEntries[key] = value
+                }
+            }
+
+            val updatedTargetOverrides = targetProfile.overrides.toMutableMap()
+            updatedTargetOverrides.putAll(movedEntries)
+
+            profiles[sourceIdx] = sourceProfile.copy(overrides = updatedSourceOverrides)
+            profiles[targetIdx] = targetProfile.copy(overrides = updatedTargetOverrides)
+
+            prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+        }
+    }
 
     suspend fun copyProfile(
         sourceProfileId: String,
         newName: String,
-        linkForInheritance: Boolean,
+        linkForInheritance: Boolean = false,
         newEmoji: String? = null
     ): String {
         val newId = "profile_" + System.currentTimeMillis()
@@ -1873,27 +1906,21 @@ class SettingsDataStore(private val context: Context) {
             val sourceProfile = profiles.find { it.id == sourceProfileId } ?: Profile.DEFAULT
             val targetEmoji = if (!newEmoji.isNullOrBlank()) newEmoji else sourceProfile.emoji
 
-            val newProfile = if (linkForInheritance) {
-                Profile(
-                    id = newId,
-                    name = newName.ifBlank { "${sourceProfile.name} Copy" },
-                    emoji = targetEmoji,
-                    isBuiltIn = false,
-                    isDeletable = true,
-                    overrides = emptyMap(),
-                    parentId = sourceProfile.id
-                )
+            val targetParentId = if (sourceProfile.id == Profile.DEFAULT_ID) {
+                Profile.DEFAULT_ID
             } else {
-                Profile(
-                    id = newId,
-                    name = newName.ifBlank { "${sourceProfile.name} Copy" },
-                    emoji = targetEmoji,
-                    isBuiltIn = false,
-                    isDeletable = true,
-                    overrides = sourceProfile.overrides.toMap(),
-                    parentId = sourceProfile.parentId ?: Profile.DEFAULT_ID
-                )
+                sourceProfile.parentId ?: Profile.DEFAULT_ID
             }
+
+            val newProfile = Profile(
+                id = newId,
+                name = newName.ifBlank { "${sourceProfile.name} Copy" },
+                emoji = targetEmoji,
+                isBuiltIn = false,
+                isDeletable = true,
+                overrides = sourceProfile.overrides.toMap(),
+                parentId = targetParentId
+            )
             profiles.add(newProfile)
             prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
             prefs[KEY_ACTIVE_PROFILE_ID] = newId
