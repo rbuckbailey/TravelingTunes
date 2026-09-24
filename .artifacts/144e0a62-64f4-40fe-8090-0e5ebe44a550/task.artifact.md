@@ -1,0 +1,6 @@
+- `[x]` Task 1: Fix Media3 service lifecycle, sticky notification, and background FGS crash in `MusicPlaybackService.kt` and `PlaybackManager.kt`
+- `[x]` Task 2: Create `ConnectedDevice` model and DataStore persistence in `SettingsDataStore.kt`
+- `[x]` Task 3: Implement device connection detection in `DeviceConnectionReceiver.kt` and Android Auto connection callback
+- `[x]` Task 4: Implement "Connected to..." submenu under Controls in `SettingsScreen.kt` with re-orderable action list, `+`/`-` buttons, and indented layout
+- `[x]` Task 5: Add unit tests for DataStore persistence and device action sequence execution
+- `[x]` Task 6: Verify build and test on Pixel Fold device

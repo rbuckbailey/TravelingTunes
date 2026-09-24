@@ -22,6 +22,8 @@ import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.GestureBinding
 import com.travelingtunes.app.core.model.GestureCategory
+import com.travelingtunes.app.core.model.ConnectedDevice
+import com.travelingtunes.app.core.model.ConnectedDeviceType
 import com.travelingtunes.app.core.model.GestureTrigger
 import com.travelingtunes.app.core.model.HudTypeOption
 import com.travelingtunes.app.core.model.NormalizationMode
@@ -137,6 +139,9 @@ class SettingsDataStore(private val context: Context) {
 
         // Navigation / Menu State Persistence
         val KEY_LAST_SETTINGS_SUBMENU = stringPreferencesKey("lastSettingsSubmenu")
+
+        // Connected Devices Persistence
+        val KEY_CONNECTED_DEVICES_JSON = stringPreferencesKey("connectedDevicesJson")
 
         // Profiles Persistence
         val KEY_ACTIVE_PROFILE_ID = stringPreferencesKey("activeProfileId")
@@ -1957,6 +1962,133 @@ class SettingsDataStore(private val context: Context) {
                     prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
                 }
             }
+        }
+    }
+
+    // Connected Devices Flow & Helpers
+    val connectedDevicesFlow: Flow<List<ConnectedDevice>> = context.dataStore.data.map { prefs ->
+        val jsonStr = prefs[KEY_CONNECTED_DEVICES_JSON]
+        if (jsonStr.isNullOrBlank()) {
+            emptyList()
+        } else {
+            try {
+                val jsonArray = org.json.JSONArray(jsonStr)
+                val list = mutableListOf<ConnectedDevice>()
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.optJSONObject(i)
+                    if (obj != null) {
+                        val dev = ConnectedDevice.fromJson(obj)
+                        if (dev != null) list.add(dev)
+                    }
+                }
+                list.sortedByDescending { it.lastConnectedMs }
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+    }
+
+    suspend fun recordDeviceConnected(
+        id: String,
+        name: String,
+        type: ConnectedDeviceType
+    ): ConnectedDevice {
+        var updatedDevice: ConnectedDevice? = null
+        context.dataStore.edit { prefs ->
+            val jsonStr = prefs[KEY_CONNECTED_DEVICES_JSON]
+            val currentList = if (jsonStr.isNullOrBlank()) {
+                mutableListOf()
+            } else {
+                try {
+                    val jsonArray = org.json.JSONArray(jsonStr)
+                    val list = mutableListOf<ConnectedDevice>()
+                    for (i in 0 until jsonArray.length()) {
+                        val obj = jsonArray.optJSONObject(i)
+                        if (obj != null) {
+                            val dev = ConnectedDevice.fromJson(obj)
+                            if (dev != null) list.add(dev)
+                        }
+                    }
+                    list
+                } catch (_: Exception) {
+                    mutableListOf()
+                }
+            }
+
+            val existingIndex = currentList.indexOfFirst { it.id == id }
+            val now = System.currentTimeMillis()
+            if (existingIndex != -1) {
+                val existing = currentList[existingIndex]
+                val updated = existing.copy(
+                    name = if (name.isNotBlank()) name else existing.name,
+                    type = type,
+                    lastConnectedMs = now
+                )
+                currentList[existingIndex] = updated
+                updatedDevice = updated
+            } else {
+                val newDevice = ConnectedDevice(
+                    id = id,
+                    name = if (name.isNotBlank()) name else type.displayName,
+                    type = type,
+                    lastConnectedMs = now,
+                    actions = emptyList()
+                )
+                currentList.add(newDevice)
+                updatedDevice = newDevice
+            }
+
+            val outputArray = org.json.JSONArray().apply {
+                currentList.forEach { put(it.toJson()) }
+            }
+            prefs[KEY_CONNECTED_DEVICES_JSON] = outputArray.toString()
+        }
+        return updatedDevice ?: ConnectedDevice(id, name, type)
+    }
+
+    suspend fun updateDeviceActions(deviceId: String, actions: List<GestureAction>) {
+        context.dataStore.edit { prefs ->
+            val jsonStr = prefs[KEY_CONNECTED_DEVICES_JSON] ?: return@edit
+            try {
+                val jsonArray = org.json.JSONArray(jsonStr)
+                val list = mutableListOf<ConnectedDevice>()
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.optJSONObject(i)
+                    if (obj != null) {
+                        val dev = ConnectedDevice.fromJson(obj)
+                        if (dev != null) list.add(dev)
+                    }
+                }
+                val idx = list.indexOfFirst { it.id == deviceId }
+                if (idx != -1) {
+                    list[idx] = list[idx].copy(actions = actions)
+                    val outputArray = org.json.JSONArray().apply {
+                        list.forEach { put(it.toJson()) }
+                    }
+                    prefs[KEY_CONNECTED_DEVICES_JSON] = outputArray.toString()
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    suspend fun removeConnectedDevice(deviceId: String) {
+        context.dataStore.edit { prefs ->
+            val jsonStr = prefs[KEY_CONNECTED_DEVICES_JSON] ?: return@edit
+            try {
+                val jsonArray = org.json.JSONArray(jsonStr)
+                val list = mutableListOf<ConnectedDevice>()
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.optJSONObject(i)
+                    if (obj != null) {
+                        val dev = ConnectedDevice.fromJson(obj)
+                        if (dev != null && dev.id != deviceId) list.add(dev)
+                    }
+                }
+                val outputArray = org.json.JSONArray().apply {
+                    list.forEach { put(it.toJson()) }
+                }
+                prefs[KEY_CONNECTED_DEVICES_JSON] = outputArray.toString()
+            } catch (_: Exception) {}
         }
     }
 }

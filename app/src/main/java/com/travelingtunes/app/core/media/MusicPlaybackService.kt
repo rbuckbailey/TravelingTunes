@@ -18,6 +18,7 @@ import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaConstants
 import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
@@ -130,9 +131,14 @@ class MusicPlaybackService : MediaLibraryService() {
         fun startService(context: Context) {
             val intent = Intent(context.applicationContext, MusicPlaybackService::class.java)
             try {
-                androidx.core.content.ContextCompat.startForegroundService(context.applicationContext, intent)
+                val player = sharedPlayer
+                if (player != null && player.playWhenReady && player.playbackState != ExoPlayer.STATE_IDLE) {
+                    androidx.core.content.ContextCompat.startForegroundService(context.applicationContext, intent)
+                } else {
+                    context.applicationContext.startService(intent)
+                }
             } catch (e: Exception) {
-                android.util.Log.w("MusicPlaybackService", "Failed to startForegroundService", e)
+                android.util.Log.w("MusicPlaybackService", "Failed to start service", e)
             }
         }
     }
@@ -151,12 +157,32 @@ class MusicPlaybackService : MediaLibraryService() {
         settingsDataStore = SettingsDataStore(applicationContext)
 
         createNotificationChannel()
+        DeviceConnectionReceiver.register(applicationContext)
 
-        val notificationProvider = DefaultMediaNotificationProvider.Builder(applicationContext)
+        val defaultProvider = DefaultMediaNotificationProvider.Builder(applicationContext)
             .setChannelId(NOTIFICATION_CHANNEL_ID)
             .setChannelName(R.string.app_name)
             .build()
-        setMediaNotificationProvider(notificationProvider)
+        setMediaNotificationProvider(object : MediaNotification.Provider {
+            override fun createNotification(
+                mediaSession: MediaSession,
+                customLayout: ImmutableList<CommandButton>,
+                actionFactory: MediaNotification.ActionFactory,
+                onNotificationChangedListener: MediaNotification.Provider.Callback
+            ): MediaNotification {
+                val mediaNotification = defaultProvider.createNotification(mediaSession, customLayout, actionFactory, onNotificationChangedListener)
+                mediaNotification.notification.flags = mediaNotification.notification.flags or android.app.Notification.FLAG_ONGOING_EVENT
+                return mediaNotification
+            }
+
+            override fun handleCustomCommand(
+                session: MediaSession,
+                action: String,
+                extras: Bundle
+            ): Boolean {
+                return defaultProvider.handleCustomCommand(session, action, extras)
+            }
+        })
 
         setListener(object : Listener {
             @OptIn(UnstableApi::class)
@@ -227,7 +253,7 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 
     private fun notifyAutoChildrenChanged(session: MediaLibrarySession) {
-        listOf("root", "show_play_screen", "category_queue", "queue", "category_picker", "category_songs", "category_albums", "category_artists", "category_genres", "category_folders").forEach { parentId ->
+        listOf("root", "show_play_screen", "category_queue", "queue").forEach { parentId ->
             try {
                 session.notifyChildrenChanged(parentId, 0, null)
             } catch (e: Exception) {
@@ -257,6 +283,7 @@ class MusicPlaybackService : MediaLibraryService() {
 
     override fun onDestroy() {
         android.util.Log.i("MusicPlaybackService", "onDestroy called")
+        DeviceConnectionReceiver.unregister(applicationContext)
         sharedSession?.let { session ->
             try {
                 removeSession(session)
@@ -619,55 +646,57 @@ class MusicPlaybackService : MediaLibraryService() {
                 actionToSessionCommand(act)?.let { availableCommands.add(it) }
             }
 
-            val restoreJob = serviceScope.launch(Dispatchers.Main) {
+            serviceScope.launch(Dispatchers.IO) {
                 val savedState = settingsDataStore.savedPlaybackStateFlow.first()
                 val displaySettings = settingsDataStore.displaySettingsFlow.first()
                 val dbSongs = musicDatabase.getAllSongs()
                 val allSongs = dbSongs.ifEmpty { mediaStoreRepository.getAllSongs() }
 
-                val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                withContext(Dispatchers.Main) {
+                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
 
-                if (playbackManager.currentPlaylist.value.isEmpty() || playbackManager.player.mediaItemCount == 0) {
-                    if (allSongs.isNotEmpty()) {
-                        if (savedState.queueIds.isNotEmpty()) {
-                            val songMap = allSongs.associateBy { it.id }
-                            val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
-                            val finalQueue = restoredQueue.ifEmpty { allSongs }
+                    if (playbackManager.currentPlaylist.value.isEmpty() || playbackManager.player.mediaItemCount == 0) {
+                        if (allSongs.isNotEmpty()) {
+                            if (savedState.queueIds.isNotEmpty()) {
+                                val songMap = allSongs.associateBy { it.id }
+                                val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
+                                val finalQueue = restoredQueue.ifEmpty { allSongs }
 
-                            playbackManager.restorePlaybackState(
-                                songs = finalQueue,
-                                startIndex = savedState.activeSongIndex,
-                                positionMs = savedState.positionMs,
-                                shuffle = savedState.isShuffle,
-                                repeat = savedState.isRepeat,
-                                repeatMode = savedState.repeatMode,
-                                shuffleMode = savedState.shuffleMode
-                            )
-                        } else {
-                            playbackManager.restorePlaybackState(
-                                songs = allSongs,
-                                startIndex = 0,
-                                positionMs = 0L,
-                                shuffle = false,
-                                repeat = false
-                            )
+                                playbackManager.restorePlaybackState(
+                                    songs = finalQueue,
+                                    startIndex = savedState.activeSongIndex,
+                                    positionMs = savedState.positionMs,
+                                    shuffle = savedState.isShuffle,
+                                    repeat = savedState.isRepeat,
+                                    repeatMode = savedState.repeatMode,
+                                    shuffleMode = savedState.shuffleMode
+                                )
+                            } else {
+                                playbackManager.restorePlaybackState(
+                                    songs = allSongs,
+                                    startIndex = 0,
+                                    positionMs = 0L,
+                                    shuffle = false,
+                                    repeat = false
+                                )
+                            }
                         }
+                    } else {
+                        playbackManager.ensurePlayerReadyForPlayback()
                     }
-                } else {
-                    playbackManager.ensurePlayerReadyForPlayback()
-                }
 
-                if (displaySettings.autoAutoplayOnConnect) {
-                    playbackManager.play()
-                }
-            }
+                    val record = settingsDataStore.recordDeviceConnected(
+                        id = "android_auto_vehicle",
+                        name = "Android Auto Vehicle",
+                        type = com.travelingtunes.app.core.model.ConnectedDeviceType.ANDROID_AUTO
+                    )
 
-            kotlinx.coroutines.runBlocking {
-                try {
-                    kotlinx.coroutines.withTimeout(500L) {
-                        restoreJob.join()
+                    if (record.actions.isNotEmpty()) {
+                        playbackManager.executeActionSequence(record.actions)
+                    } else if (displaySettings.autoAutoplayOnConnect) {
+                        playbackManager.play()
                     }
-                } catch (_: Exception) {}
+                }
             }
 
             val playerCommands = connectionResult.availablePlayerCommands.buildUpon()
@@ -689,6 +718,8 @@ class MusicPlaybackService : MediaLibraryService() {
                 playerCommands
             )
         }
+
+
 
         override fun onCustomCommand(
             session: MediaSession,
@@ -986,7 +1017,13 @@ class MusicPlaybackService : MediaLibraryService() {
                     }
                 }
 
-                future.set(LibraryResult.ofItemList(ImmutableList.copyOf(items), params))
+                val effectivePageSize = if (pageSize > 0) pageSize else 50
+                val effectivePage = if (page >= 0) page else 0
+                val fromIndex = (effectivePage * effectivePageSize).coerceIn(0, items.size)
+                val toIndex = ((effectivePage + 1) * effectivePageSize).coerceIn(fromIndex, items.size)
+                val pagedList = items.subList(fromIndex, toIndex)
+
+                future.set(LibraryResult.ofItemList(ImmutableList.copyOf(pagedList), params))
             }
 
             return future

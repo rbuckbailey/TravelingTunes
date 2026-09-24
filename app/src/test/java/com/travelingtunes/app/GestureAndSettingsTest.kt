@@ -167,16 +167,23 @@ class GestureAndSettingsTest {
     @Test
     fun testSettingsCategoriesNaming() {
         val submenus = com.travelingtunes.app.feature.settings.SettingsSubmenu.entries
-        assertEquals(9, submenus.size)
+        assertEquals(15, submenus.size)
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.PROFILES, submenus[0])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY, submenus[1])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TITLES, submenus[2])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ART, submenus[3])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.HUD, submenus[4])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.THEMES, submenus[5])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, submenus[6])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, submenus[7])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[8])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.SWIPE, submenus[6])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TAP, submenus[7])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTON_ACTIONS, submenus[8])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.KEYBOARD, submenus[9])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.RADIAL_MENU, submenus[10])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.CONNECTED_TO, submenus[11])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTONS, submenus[12])
+        assertEquals("Mini-Player", com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTONS.title)
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, submenus[13])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[14])
 
         val standalone = submenus.filter { it.categoryGroup == null }
         assertEquals(2, standalone.size)
@@ -186,11 +193,17 @@ class GestureAndSettingsTest {
         val appearanceGroup = submenus.filter { it.categoryGroup == "Appearance" }
         assertEquals(4, appearanceGroup.size)
 
-        val controlsGroup = submenus.filter { it.categoryGroup == "Controls" }
-        assertEquals(3, controlsGroup.size)
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.GESTURES, controlsGroup[0])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, controlsGroup[1])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, controlsGroup[2])
+        val reconfigureGroup = submenus.filter { it.categoryGroup == "Reconfigure" }
+        assertEquals(9, reconfigureGroup.size)
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.SWIPE, reconfigureGroup[0])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TAP, reconfigureGroup[1])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTON_ACTIONS, reconfigureGroup[2])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.KEYBOARD, reconfigureGroup[3])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.RADIAL_MENU, reconfigureGroup[4])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.CONNECTED_TO, reconfigureGroup[5])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTONS, reconfigureGroup[6])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, reconfigureGroup[7])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, reconfigureGroup[8])
     }
 
     @Test

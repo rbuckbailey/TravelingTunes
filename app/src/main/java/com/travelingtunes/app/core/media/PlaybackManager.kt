@@ -8,6 +8,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.datastore.SettingsDataStore
+import com.travelingtunes.app.core.model.GestureAction
 import com.travelingtunes.app.core.model.NormalizationMode
 import com.travelingtunes.app.core.model.RepeatMode
 import com.travelingtunes.app.core.model.ShuffleMode
@@ -147,6 +148,11 @@ class PlaybackManager(
     private var unshuffledPlaylist: List<Song> = emptyList()
     private var masterPlaylist: List<Song> = emptyList()
 
+    @Volatile
+    private var isInternalShuffleChange = false
+    @Volatile
+    private var isInternalRepeatChange = false
+
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
     private var consecutiveErrorCount = 0
@@ -240,6 +246,29 @@ class PlaybackManager(
                 isPlayerInErrorState = true
             }
         }
+
+        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+            if (isInternalShuffleChange) return
+            android.util.Log.d("PlaybackManager", "onShuffleModeEnabledChanged: enabled=$shuffleModeEnabled, currentMode=${_shuffleMode.value}")
+            if (shuffleModeEnabled && _shuffleMode.value == ShuffleMode.OFF) {
+                setShuffleMode(ShuffleMode.SONGS)
+            } else if (!shuffleModeEnabled && _shuffleMode.value != ShuffleMode.OFF) {
+                setShuffleMode(ShuffleMode.OFF)
+            }
+        }
+
+        override fun onRepeatModeChanged(repeatMode: Int) {
+            if (isInternalRepeatChange) return
+            android.util.Log.d("PlaybackManager", "onRepeatModeChanged: repeatMode=$repeatMode, currentMode=${_repeatMode.value}")
+            val targetMode = when (repeatMode) {
+                Player.REPEAT_MODE_ONE -> RepeatMode.SONG
+                Player.REPEAT_MODE_ALL -> RepeatMode.ALBUM
+                else -> RepeatMode.OFF
+            }
+            if (_repeatMode.value != targetMode) {
+                setRepeatMode(targetMode)
+            }
+        }
     }
 
     init {
@@ -254,7 +283,6 @@ class PlaybackManager(
             }
         }
         _player.addListener(playerListener)
-        MusicPlaybackService.startService(context)
         launchTicker()
     }
 
@@ -756,6 +784,33 @@ class PlaybackManager(
         player.play()
     }
 
+    fun executeActionSequence(actions: List<GestureAction>) {
+        if (actions.isEmpty()) return
+        scope.launch(Dispatchers.Main) {
+            for (action in actions) {
+                when (action) {
+                    GestureAction.PLAY_PAUSE -> togglePlayPause()
+                    GestureAction.PLAY -> play()
+                    GestureAction.PAUSE -> pause()
+                    GestureAction.NEXT -> next()
+                    GestureAction.PREVIOUS, GestureAction.RESTART_PREVIOUS -> previous()
+                    GestureAction.TOGGLE_REPEAT -> toggleRepeat()
+                    GestureAction.TOGGLE_SHUFFLE -> toggleShuffle()
+                    GestureAction.SHUFFLE_ALL_SONGS -> shuffleAllSongs()
+                    GestureAction.PLAY_CURRENT_ALBUM -> playCurrentAlbum()
+                    GestureAction.PLAY_CURRENT_ARTIST -> playCurrentArtist()
+                    GestureAction.NEXT_ALBUM -> nextAlbum()
+                    GestureAction.PREVIOUS_ALBUM -> previousAlbum()
+                    GestureAction.FAST_FORWARD -> fastForward()
+                    GestureAction.REWIND -> rewind()
+                    GestureAction.VOLUME_UP -> increaseVolume()
+                    GestureAction.VOLUME_DOWN -> decreaseVolume()
+                    else -> {}
+                }
+            }
+        }
+    }
+
     fun restartOrPrevious() {
         if (player.currentPosition > 3000L) {
             player.seekTo(0L)
@@ -871,7 +926,12 @@ class PlaybackManager(
 
     fun setRepeatMode(mode: RepeatMode) {
         _repeatMode.value = mode
-        updateQueuePreservingCurrentSong()
+        isInternalRepeatChange = true
+        try {
+            updateQueuePreservingCurrentSong()
+        } finally {
+            isInternalRepeatChange = false
+        }
         persistCurrentPlaybackState()
     }
 
@@ -886,7 +946,12 @@ class PlaybackManager(
 
     fun setShuffleMode(mode: ShuffleMode) {
         _shuffleMode.value = mode
-        updateQueuePreservingCurrentSong()
+        isInternalShuffleChange = true
+        try {
+            updateQueuePreservingCurrentSong()
+        } finally {
+            isInternalShuffleChange = false
+        }
         persistCurrentPlaybackState()
     }
 
@@ -931,7 +996,6 @@ class PlaybackManager(
     ) {
         val current = overrideCurrentSong ?: _currentSong.value
         val playlist = _currentPlaylist.value
-        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { playlist } }
 
         val playerRepeatMode = when (_repeatMode.value) {
             RepeatMode.SONG -> Player.REPEAT_MODE_ONE
@@ -939,11 +1003,17 @@ class PlaybackManager(
             RepeatMode.OFF -> Player.REPEAT_MODE_OFF
         }
 
-        if (rawBase.isEmpty() || current == null) {
+        if (current == null) {
             return
         }
 
         scope.launch(Dispatchers.Default) {
+            if (masterPlaylist.isEmpty()) {
+                ensureMasterPlaylistLoaded()
+            }
+            val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { playlist } }
+            if (rawBase.isEmpty()) return@launch
+
             val baseList = sortLibrarySongs(rawBase)
             val currentIndex = if (clearPriorSongs) -1 else try { player.currentMediaItemIndex } catch (_: Exception) { -1 }
             val priorSongs = if (!clearPriorSongs && playlist.isNotEmpty() && currentIndex in playlist.indices) {

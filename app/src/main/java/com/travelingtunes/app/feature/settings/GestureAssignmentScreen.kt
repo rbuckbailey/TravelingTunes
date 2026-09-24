@@ -497,146 +497,313 @@ fun GestureAssignmentScreen(
                     }
                 }
             } else {
-                // Swipe, Tap, Button, or Keyboard Actions list
-                val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
-                val isSeparate = isDocked && displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
-                val numArtEdgeRegions = displaySettings.numArtEdgeRegions
-                val visibleSections = remember(sub, numEdgeRegions, numArtEdgeRegions, isSeparate, gestureBindings) {
-                    val rawSections = getTriggersForSubmenu(sub, numEdgeRegions, numArtEdgeRegions, isSeparate)
-                    if (sub == GestureSubmenu.KEYBOARD) {
-                        rawSections.mapValues { (_, triggers) ->
-                            triggers.filter { trigger ->
-                                val currentBinding = gestureBindings[trigger] ?: GestureBinding(
-                                    trigger = trigger,
-                                    action = GestureAction.fromKey(trigger.defaultActionKey),
-                                    isContinuous = trigger.isContinuousDefault
-                                )
-                                currentBinding.action != GestureAction.UNASSIGNED
-                            }
-                        }.filterValues { it.isNotEmpty() }
-                    } else {
-                        rawSections
+                GestureSubmenuContent(
+                    submenu = sub,
+                    settingsDataStore = settingsDataStore,
+                    displaySettings = displaySettings
+                )
+            }
+        }
+    }
+
+    if (showAddKeyDialog) {
+        AddKeyboardControlDialog(
+            unassignedTriggers = unassignedKeyboardTriggers,
+            onAddKeyBinding = { trigger, action, otherKey ->
+                coroutineScope.launch {
+                    settingsDataStore.updateGestureBinding(
+                        trigger = trigger,
+                        action = action,
+                        isContinuous = trigger.isContinuousDefault,
+                        otherOptionKey = otherKey
+                    )
+                }
+            },
+            onDismissRequest = { showAddKeyDialog = false }
+        )
+    }
+}
+
+@Composable
+fun GestureSubmenuContent(
+    submenu: GestureSubmenu,
+    settingsDataStore: SettingsDataStore,
+    displaySettings: DisplaySettings,
+    onResetGestureAssignments: (() -> Unit)? = null
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val gestureBindings by settingsDataStore.gestureBindingsFlow.collectAsState(initial = emptyMap())
+    val numEdgeRegions = displaySettings.numEdgeRegions
+    val numArtEdgeRegions = displaySettings.numArtEdgeRegions
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
+    val isSeparate = isDocked && displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
+
+    var editingRadialTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
+    var showAddKeyDialog by remember { mutableStateOf(false) }
+
+    val radialMenuTriggers = remember(gestureBindings) {
+        gestureBindings.filterValues { it.action == GestureAction.RADIAL_MENU }.keys.toList()
+    }
+
+    val unassignedKeyboardTriggers = remember(gestureBindings) {
+        GestureTrigger.entries
+            .filter { it.category == GestureCategory.KEYBOARD }
+            .filter { trigger ->
+                val binding = gestureBindings[trigger] ?: GestureBinding(
+                    trigger = trigger,
+                    action = GestureAction.fromKey(trigger.defaultActionKey),
+                    isContinuous = trigger.isContinuousDefault
+                )
+                binding.action == GestureAction.UNASSIGNED
+            }
+    }
+
+    val currentRadialTrigger = editingRadialTrigger
+    if (currentRadialTrigger != null) {
+        val radialActionsFlow = remember(currentRadialTrigger) {
+            settingsDataStore.getRadialMenuActionsFlow(currentRadialTrigger.key)
+        }
+        val currentRadialActions by radialActionsFlow.collectAsState(initial = SettingsDataStore.DEFAULT_RADIAL_ACTIONS)
+
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                IconButton(onClick = { editingRadialTrigger = null }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+                Text("${currentRadialTrigger.getDisplayName(numEdgeRegions)} Radial Menu", fontWeight = FontWeight.Bold)
+            }
+            RadialMenuConfigurator(
+                trigger = currentRadialTrigger,
+                numEdgeRegions = numEdgeRegions,
+                actions = currentRadialActions,
+                settingsDataStore = settingsDataStore,
+                onUpdateActions = { newActions ->
+                    coroutineScope.launch {
+                        settingsDataStore.updateRadialMenuActions(currentRadialTrigger.key, newActions)
+                    }
+                },
+                onResetDefaults = {
+                    coroutineScope.launch {
+                        settingsDataStore.resetRadialMenuActions(currentRadialTrigger.key)
                     }
                 }
-
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    if (sub == GestureSubmenu.KEYBOARD && visibleSections.isEmpty()) {
-                        item(key = "empty_keyboard_message") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No keyboard buttons are currently assigned. Tap '+' to add keyboard buttons.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+            )
+        }
+    } else if (submenu == GestureSubmenu.RADIAL_MENU) {
+        if (radialMenuTriggers.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No gesture is currently assigned to 'Radial Menu'. Assign 'Radial Menu' to any swipe, tap, or button gesture to configure its actions.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                item {
+                    Text(
+                        text = "Configured Radial Menus",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
+                items(radialMenuTriggers) { trigger ->
+                    ListItem(
+                        headlineContent = {
+                            Text(trigger.getDisplayName(numEdgeRegions), fontWeight = FontWeight.SemiBold)
+                        },
+                        supportingContent = {
+                            Text("Tap to edit action slots (up to 12)")
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.DonutLarge,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        trailingContent = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            editingRadialTrigger = trigger
                         }
-                    } else {
-                        visibleSections.forEach { (sectionTitle, triggers) ->
-                            item(key = "header_$sectionTitle") {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                                ) {
-                                    Text(
-                                        text = sectionTitle,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                            items(triggers, key = { "${sectionTitle}_${it.name}" }) { trigger ->
-                                val currentBinding = gestureBindings[trigger] ?: GestureBinding(
-                                    trigger = trigger,
-                                    action = GestureAction.fromKey(trigger.defaultActionKey),
-                                    isContinuous = trigger.isContinuousDefault
-                                )
+                    )
+                    HorizontalDivider()
+                }
+                if (onResetGestureAssignments != null) {
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        ListItem(
+                            headlineContent = { Text("Reset All Gesture Assignments", color = MaterialTheme.colorScheme.error) },
+                            modifier = Modifier.clickable { onResetGestureAssignments() }
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        val visibleSections = remember(submenu, numEdgeRegions, numArtEdgeRegions, isSeparate, gestureBindings) {
+            val rawSections = getTriggersForSubmenu(submenu, numEdgeRegions, numArtEdgeRegions, isSeparate)
+            if (submenu == GestureSubmenu.KEYBOARD) {
+                rawSections.mapValues { (_, triggers) ->
+                    triggers.filter { trigger ->
+                        val currentBinding = gestureBindings[trigger] ?: GestureBinding(
+                            trigger = trigger,
+                            action = GestureAction.fromKey(trigger.defaultActionKey),
+                            isContinuous = trigger.isContinuousDefault
+                        )
+                        currentBinding.action != GestureAction.UNASSIGNED
+                    }
+                }.filterValues { it.isNotEmpty() }
+            } else {
+                rawSections
+            }
+        }
 
-                                val isArtSection = sectionTitle.contains("Art")
-                                val isTitleSection = sectionTitle.contains("Title")
-                                val numRegions = if (isArtSection) numArtEdgeRegions else numEdgeRegions
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (submenu == GestureSubmenu.KEYBOARD && visibleSections.isEmpty()) {
+                item(key = "empty_keyboard_message") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No keyboard buttons are currently assigned. Tap '+' to add keyboard buttons.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                visibleSections.forEach { (sectionTitle, triggers) ->
+                    item(key = "header_$sectionTitle") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            Text(
+                                text = sectionTitle,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    items(triggers, key = { "${sectionTitle}_${it.name}" }) { trigger ->
+                        val currentBinding = gestureBindings[trigger] ?: GestureBinding(
+                            trigger = trigger,
+                            action = GestureAction.fromKey(trigger.defaultActionKey),
+                            isContinuous = trigger.isContinuousDefault
+                        )
 
-                                GestureAssignmentItem(
-                                    trigger = trigger,
-                                    binding = currentBinding,
-                                    numEdgeRegions = numRegions,
-                                    isArtSection = isArtSection,
-                                    isTitleSection = isTitleSection,
-                                    isSeparateTouchZones = isSeparate,
-                                    onActionSelected = { regionTarget, newAction, otherKey ->
-                                        coroutineScope.launch {
-                                            when (regionTarget) {
-                                                com.travelingtunes.app.core.model.TouchRegionTarget.BOTH -> {
-                                                    settingsDataStore.updateGestureBinding(
-                                                        trigger = trigger,
-                                                        action = newAction,
-                                                        isContinuous = currentBinding.isContinuous,
-                                                        otherOptionKey = otherKey,
-                                                        artAction = GestureAction.UNASSIGNED,
-                                                        artOtherOptionKey = null,
-                                                        titleAction = GestureAction.UNASSIGNED,
-                                                        titleOtherOptionKey = null
-                                                    )
-                                                }
-                                                com.travelingtunes.app.core.model.TouchRegionTarget.ART -> {
-                                                    settingsDataStore.updateGestureBinding(
-                                                        trigger = trigger,
-                                                        action = GestureAction.UNASSIGNED,
-                                                        isContinuous = currentBinding.isContinuous,
-                                                        otherOptionKey = null,
-                                                        artAction = newAction,
-                                                        artOtherOptionKey = otherKey,
-                                                        titleAction = currentBinding.titleAction,
-                                                        titleOtherOptionKey = currentBinding.titleOtherOptionKey
-                                                    )
-                                                }
-                                                com.travelingtunes.app.core.model.TouchRegionTarget.TITLE -> {
-                                                    settingsDataStore.updateGestureBinding(
-                                                        trigger = trigger,
-                                                        action = GestureAction.UNASSIGNED,
-                                                        isContinuous = currentBinding.isContinuous,
-                                                        otherOptionKey = null,
-                                                        artAction = currentBinding.artAction,
-                                                        artOtherOptionKey = currentBinding.artOtherOptionKey,
-                                                        titleAction = newAction,
-                                                        titleOtherOptionKey = otherKey
-                                                    )
-                                                }
-                                            }
+                        val isArtSection = sectionTitle.contains("Art")
+                        val isTitleSection = sectionTitle.contains("Title")
+                        val numRegions = if (isArtSection) numArtEdgeRegions else numEdgeRegions
+
+                        GestureAssignmentItem(
+                            trigger = trigger,
+                            binding = currentBinding,
+                            numEdgeRegions = numRegions,
+                            isArtSection = isArtSection,
+                            isTitleSection = isTitleSection,
+                            isSeparateTouchZones = isSeparate,
+                            onActionSelected = { regionTarget, newAction, otherKey ->
+                                coroutineScope.launch {
+                                    when (regionTarget) {
+                                        com.travelingtunes.app.core.model.TouchRegionTarget.BOTH -> {
+                                            settingsDataStore.updateGestureBinding(
+                                                trigger = trigger,
+                                                action = newAction,
+                                                isContinuous = currentBinding.isContinuous,
+                                                otherOptionKey = otherKey,
+                                                artAction = GestureAction.UNASSIGNED,
+                                                artOtherOptionKey = null,
+                                                titleAction = GestureAction.UNASSIGNED,
+                                                titleOtherOptionKey = null
+                                            )
+                                        }
+                                        com.travelingtunes.app.core.model.TouchRegionTarget.ART -> {
+                                            settingsDataStore.updateGestureBinding(
+                                                trigger = trigger,
+                                                action = GestureAction.UNASSIGNED,
+                                                isContinuous = currentBinding.isContinuous,
+                                                otherOptionKey = null,
+                                                artAction = newAction,
+                                                artOtherOptionKey = otherKey,
+                                                titleAction = currentBinding.titleAction,
+                                                titleOtherOptionKey = currentBinding.titleOtherOptionKey
+                                            )
+                                        }
+                                        com.travelingtunes.app.core.model.TouchRegionTarget.TITLE -> {
+                                            settingsDataStore.updateGestureBinding(
+                                                trigger = trigger,
+                                                action = GestureAction.UNASSIGNED,
+                                                isContinuous = currentBinding.isContinuous,
+                                                otherOptionKey = null,
+                                                artAction = currentBinding.artAction,
+                                                artOtherOptionKey = currentBinding.artOtherOptionKey,
+                                                titleAction = newAction,
+                                                titleOtherOptionKey = otherKey
+                                            )
                                         }
                                     }
-                                )
-                                HorizontalDivider()
-                            }
-                        }
-                    }
-
-                    if (sub == GestureSubmenu.KEYBOARD && unassignedKeyboardTriggers.isNotEmpty()) {
-                        item(key = "add_keyboard_button_item") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Button(
-                                    onClick = { showAddKeyDialog = true }
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Add Keyboard Button")
                                 }
                             }
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            }
+
+            if (submenu == GestureSubmenu.KEYBOARD && unassignedKeyboardTriggers.isNotEmpty()) {
+                item(key = "add_keyboard_button_item") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Button(
+                            onClick = { showAddKeyDialog = true }
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Add Keyboard Button")
                         }
                     }
+                }
+            }
+
+            if (onResetGestureAssignments != null) {
+                item(key = "reset_gesture_assignments_item") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ListItem(
+                        headlineContent = { Text("Reset All Gesture Assignments", color = MaterialTheme.colorScheme.error) },
+                        modifier = Modifier.clickable { onResetGestureAssignments() }
+                    )
                 }
             }
         }
@@ -650,10 +817,10 @@ fun GestureAssignmentScreen(
                     settingsDataStore.updateGestureBinding(
                         trigger = trigger,
                         action = action,
+                        isContinuous = trigger.isContinuousDefault,
                         otherOptionKey = otherKey
                     )
                 }
-                showAddKeyDialog = false
             },
             onDismissRequest = { showAddKeyDialog = false }
         )

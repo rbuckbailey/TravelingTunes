@@ -97,6 +97,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
@@ -2447,6 +2448,21 @@ private fun StretchedFittedArtBackground(
                         .fillMaxHeight()
                         .width(with(density) { leftMarginPx.toDp() })
                         .align(Alignment.CenterStart)
+                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                        .drawWithContent {
+                            val quarterInchPx = 40f * density.density
+                            val quarterFraction = (quarterInchPx / leftMarginPx).coerceIn(0.02f, 0.40f)
+                            val stop = (1.0f - quarterFraction).coerceAtLeast(0.0f)
+                            val brush = Brush.horizontalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Black.copy(alpha = 0.0f),
+                                    stop to Color.Black.copy(alpha = 1.0f),
+                                    1.0f to Color.Black.copy(alpha = 1.0f)
+                                )
+                            )
+                            drawContent()
+                            drawRect(brush = brush, blendMode = BlendMode.DstIn)
+                        }
                 ) {
                     Image(
                         bitmap = leftEdgeBmp,
@@ -2463,6 +2479,21 @@ private fun StretchedFittedArtBackground(
                         .fillMaxHeight()
                         .width(with(density) { rightMarginPx.toDp() })
                         .align(Alignment.CenterEnd)
+                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                        .drawWithContent {
+                            val quarterInchPx = 40f * density.density
+                            val quarterFraction = (quarterInchPx / rightMarginPx).coerceIn(0.02f, 0.40f)
+                            val stop = quarterFraction.coerceAtMost(1.0f)
+                            val brush = Brush.horizontalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Black.copy(alpha = 1.0f),
+                                    stop to Color.Black.copy(alpha = 1.0f),
+                                    1.0f to Color.Black.copy(alpha = 0.0f)
+                                )
+                            )
+                            drawContent()
+                            drawRect(brush = brush, blendMode = BlendMode.DstIn)
+                        }
                 ) {
                     Image(
                         bitmap = rightEdgeBmp,
@@ -2500,6 +2531,21 @@ private fun StretchedFittedArtBackground(
                         .fillMaxWidth()
                         .height(with(density) { topMarginPx.toDp() })
                         .align(Alignment.TopCenter)
+                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                        .drawWithContent {
+                            val quarterInchPx = 40f * density.density
+                            val quarterFraction = (quarterInchPx / topMarginPx).coerceIn(0.02f, 0.40f)
+                            val stop = (1.0f - quarterFraction).coerceAtLeast(0.0f)
+                            val brush = Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Black.copy(alpha = 0.0f),
+                                    stop to Color.Black.copy(alpha = 1.0f),
+                                    1.0f to Color.Black.copy(alpha = 1.0f)
+                                )
+                            )
+                            drawContent()
+                            drawRect(brush = brush, blendMode = BlendMode.DstIn)
+                        }
                 ) {
                     Image(
                         bitmap = topEdgeBmp,
@@ -2516,6 +2562,21 @@ private fun StretchedFittedArtBackground(
                         .fillMaxWidth()
                         .height(with(density) { bottomMarginPx.toDp() })
                         .align(Alignment.BottomCenter)
+                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                        .drawWithContent {
+                            val quarterInchPx = 40f * density.density
+                            val quarterFraction = (quarterInchPx / bottomMarginPx).coerceIn(0.02f, 0.40f)
+                            val stop = quarterFraction.coerceAtMost(1.0f)
+                            val brush = Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Black.copy(alpha = 1.0f),
+                                    stop to Color.Black.copy(alpha = 1.0f),
+                                    1.0f to Color.Black.copy(alpha = 0.0f)
+                                )
+                            )
+                            drawContent()
+                            drawRect(brush = brush, blendMode = BlendMode.DstIn)
+                        }
                 ) {
                     Image(
                         bitmap = bottomEdgeBmp,

@@ -40,6 +40,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Swipe
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.DonutLarge
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -47,19 +51,31 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.BluetoothConnected
+import androidx.compose.material.icons.filled.BluetoothSearching
+import androidx.compose.material.icons.filled.CastConnected
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FormatPaint
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
+import com.travelingtunes.app.core.model.ConnectedDevice
+import com.travelingtunes.app.core.model.ConnectedDeviceType
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -188,23 +204,59 @@ enum class SettingsSubmenu(
         icon = Icons.Default.Palette,
         categoryGroup = "Appearance"
     ),
-    GESTURES(
-        title = "Gestures & Controls",
-        description = "Touch region sensitivity & gesture action assignments",
+    SWIPE(
+        title = "Swipe Actions",
+        description = "Configure 1, 2, and 3-finger swipe gestures",
+        icon = Icons.Default.Swipe,
+        categoryGroup = "Reconfigure"
+    ),
+    TAP(
+        title = "Tap Actions",
+        description = "Configure 1, 2, and 3-finger taps and long presses",
         icon = Icons.Default.TouchApp,
-        categoryGroup = "Controls"
+        categoryGroup = "Reconfigure"
+    ),
+    BUTTON_ACTIONS(
+        title = "Button Actions",
+        description = "Configure top and bottom edge region screen buttons",
+        icon = Icons.Default.RadioButtonChecked,
+        categoryGroup = "Reconfigure"
+    ),
+    KEYBOARD(
+        title = "Keyboard Controls",
+        description = "Configure physical keyboard and media button shortcuts",
+        icon = Icons.Default.Keyboard,
+        categoryGroup = "Reconfigure"
+    ),
+    RADIAL_MENU(
+        title = "Radial Menu Actions",
+        description = "Configure action items (up to 12) for assigned Radial Menus",
+        icon = Icons.Default.DonutLarge,
+        categoryGroup = "Reconfigure"
+    ),
+    CONNECTED_TO(
+        title = "Connected to...",
+        description = "Connected device history & auto-execute action workflows",
+        icon = Icons.Default.Devices,
+        categoryGroup = "Reconfigure"
+    ),
+    BUTTONS(
+        title = "Mini-Player",
+        description = "Notification & on-screen playback control buttons",
+        icon = Icons.Default.SmartButton,
+        categoryGroup = "Reconfigure"
     ),
     ANDROID_AUTO(
         title = "Android Auto",
         description = "Root category browse order & Android Auto preferences",
         icon = Icons.Default.DirectionsCar,
-        categoryGroup = "Controls"
+        categoryGroup = "Reconfigure"
     ),
     ABOUT(
         title = "Tutorial & About",
         description = "Gesture tutorial & app information",
         icon = Icons.Default.Info,
-        categoryGroup = "Controls"
+        categoryGroup = "Reconfigure"
     )
 }
 
@@ -1266,11 +1318,48 @@ private fun SubmenuContent(
                     onUpdateDisplaySettings = onUpdateDisplaySettings
                 )
 
-                SettingsSubmenu.GESTURES -> GesturesSettingsContent(
+                SettingsSubmenu.SWIPE -> GestureSubmenuContent(
+                    submenu = GestureSubmenu.SWIPE,
+                    settingsDataStore = settingsDataStore,
                     displaySettings = displaySettings,
-                    onUpdateDisplaySettings = onUpdateDisplaySettings,
-                    onOpenGestureAssignments = onOpenGestureAssignments,
                     onResetGestureAssignments = onResetGestureAssignments
+                )
+
+                SettingsSubmenu.TAP -> GestureSubmenuContent(
+                    submenu = GestureSubmenu.TAP,
+                    settingsDataStore = settingsDataStore,
+                    displaySettings = displaySettings,
+                    onResetGestureAssignments = onResetGestureAssignments
+                )
+
+                SettingsSubmenu.BUTTON_ACTIONS -> GestureSubmenuContent(
+                    submenu = GestureSubmenu.BUTTON,
+                    settingsDataStore = settingsDataStore,
+                    displaySettings = displaySettings,
+                    onResetGestureAssignments = onResetGestureAssignments
+                )
+
+                SettingsSubmenu.KEYBOARD -> GestureSubmenuContent(
+                    submenu = GestureSubmenu.KEYBOARD,
+                    settingsDataStore = settingsDataStore,
+                    displaySettings = displaySettings,
+                    onResetGestureAssignments = onResetGestureAssignments
+                )
+
+                SettingsSubmenu.RADIAL_MENU -> GestureSubmenuContent(
+                    submenu = GestureSubmenu.RADIAL_MENU,
+                    settingsDataStore = settingsDataStore,
+                    displaySettings = displaySettings,
+                    onResetGestureAssignments = onResetGestureAssignments
+                )
+
+                SettingsSubmenu.BUTTONS -> ButtonsSettingsContent(
+                    displaySettings = displaySettings,
+                    onUpdateDisplaySettings = onUpdateDisplaySettings
+                )
+
+                SettingsSubmenu.CONNECTED_TO -> ConnectedToSettingsContent(
+                    settingsDataStore = settingsDataStore
                 )
 
                 SettingsSubmenu.PROFILES -> ProfilesSettingsContent(
@@ -2427,169 +2516,8 @@ private fun HudSettingsContent(
         }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+        Text("Edge Region Configuration", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
 
-        // Card: Notification & On-Screen Action Buttons (Configure & Re-order)
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Notification & On-Screen Action Buttons",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Configure and re-order playback control buttons displayed in your system notification and on-screen controls",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val currentButtons = displaySettings.autoActionButtonOrder
-                var showAddDropdown by remember { mutableStateOf(false) }
-
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        currentButtons.forEachIndexed { index, action ->
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DragHandle,
-                                        contentDescription = "Drag handle",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = "${index + 1}. ${action.displayName}",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    if (index > 0) {
-                                        IconButton(
-                                            onClick = {
-                                                val newOrder = currentButtons.toMutableList()
-                                                val temp = newOrder[index]
-                                                newOrder[index] = newOrder[index - 1]
-                                                newOrder[index - 1] = temp
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
-                                            },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.KeyboardArrowUp,
-                                                contentDescription = "Move Up"
-                                            )
-                                        }
-                                    }
-                                    if (index < currentButtons.size - 1) {
-                                        IconButton(
-                                            onClick = {
-                                                val newOrder = currentButtons.toMutableList()
-                                                val temp = newOrder[index]
-                                                newOrder[index] = newOrder[index + 1]
-                                                newOrder[index + 1] = temp
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
-                                            },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.KeyboardArrowDown,
-                                                contentDescription = "Move Down"
-                                            )
-                                        }
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            val newOrder = currentButtons.toMutableList().apply { removeAt(index) }
-                                            onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = "Remove Action",
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        /*
-                         * CRUCIAL FEATURE: GestureAction.OTHER_OPTION ("Other Option") must ALWAYS be included.
-                         * Do NOT filter it out from action options.
-                         */
-                        val availableActions = GestureAction.entries.filter {
-                            it != GestureAction.UNASSIGNED &&
-                            it !in currentButtons
-                        }
-
-                        if (availableActions.isNotEmpty()) {
-                            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                                OutlinedButton(
-                                    onClick = { showAddDropdown = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Add Action Button")
-                                }
-
-                                if (showAddDropdown) {
-                                    ActionSelectionDialog(
-                                        title = "Add Action Button",
-                                        excludeRadialMenu = false,
-                                        excludeUnassigned = true,
-                                        onDismissRequest = { showAddDropdown = false },
-                                        onActionSelected = { act ->
-                                            if (act !in currentButtons) {
-                                                val newOrder = currentButtons.toMutableList().apply { add(act) }
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
-                                            }
-                                            showAddDropdown = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GesturesSettingsContent(
-    displaySettings: DisplaySettings,
-    onUpdateDisplaySettings: (DisplaySettings) -> Unit,
-    onOpenGestureAssignments: () -> Unit,
-    onResetGestureAssignments: () -> Unit
-) {
-    Column {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED
             val isSeparate = isDocked && displaySettings.separateTouchZones && !displaySettings.adaptiveDockedArt
@@ -2636,16 +2564,6 @@ private fun GesturesSettingsContent(
                 )
             }
         }
-        HorizontalDivider()
-        ListItem(
-            headlineContent = { Text("Reconfigure Gesture Assignments") },
-            supportingContent = { Text("Customize 1/2/3 finger swipes, taps, long presses, and edge regions") },
-            modifier = Modifier.clickable { onOpenGestureAssignments() }
-        )
-        ListItem(
-            headlineContent = { Text("Reset All Gesture Assignments") },
-            modifier = Modifier.clickable { onResetGestureAssignments() }
-        )
     }
 }
 
@@ -3502,6 +3420,633 @@ private fun AndroidAutoSettingsContent(
             }
         }
     }
+}
+
+@Composable
+private fun ButtonsSettingsContent(
+    displaySettings: DisplaySettings,
+    onUpdateDisplaySettings: (DisplaySettings) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SmartButton,
+                        contentDescription = "Mini-Player",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Mini-Player Action Buttons",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Configure and re-order playback control buttons displayed in your system notification and mini-player controls.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                val currentButtons = displaySettings.autoActionButtonOrder
+                var showAddDropdown by remember { mutableStateOf(false) }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currentButtons.forEachIndexed { index, action ->
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DragHandle,
+                                        contentDescription = "Drag handle",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "${index + 1}. ${action.displayName}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (index > 0) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentButtons.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index - 1]
+                                                newOrder[index - 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowUp,
+                                                contentDescription = "Move Up"
+                                            )
+                                        }
+                                    }
+                                    if (index < currentButtons.size - 1) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentButtons.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index + 1]
+                                                newOrder[index + 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowDown,
+                                                contentDescription = "Move Down"
+                                            )
+                                        }
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            val newOrder = currentButtons.toMutableList().apply { removeAt(index) }
+                                            onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Remove Action",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        val availableActions = GestureAction.entries.filter {
+                            it != GestureAction.UNASSIGNED &&
+                            it !in currentButtons
+                        }
+
+                        if (availableActions.isNotEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                OutlinedButton(
+                                    onClick = { showAddDropdown = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Add Action Button")
+                                }
+
+                                if (showAddDropdown) {
+                                    ActionSelectionDialog(
+                                        title = "Add Action Button",
+                                        excludeRadialMenu = false,
+                                        excludeUnassigned = true,
+                                        onDismissRequest = { showAddDropdown = false },
+                                        onActionSelected = { act ->
+                                            if (act !in currentButtons) {
+                                                val newOrder = currentButtons.toMutableList().apply { add(act) }
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            }
+                                            showAddDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConnectedToSettingsContent(
+    settingsDataStore: SettingsDataStore
+) {
+    val connectedDevices by settingsDataStore.connectedDevicesFlow.collectAsState(initial = emptyList())
+    val coroutineScope = rememberCoroutineScope()
+
+    var deviceToAddActionFor by remember { mutableStateOf<ConnectedDevice?>(null) }
+    var showAddDeviceDialog by remember { mutableStateOf(false) }
+    var newDeviceName by remember { mutableStateOf("") }
+    var newDeviceType by remember { mutableStateOf(ConnectedDeviceType.BLUETOOTH) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Section Header
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Devices,
+                        contentDescription = "Connected Devices",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Connected to ...",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Configure custom action workflows to execute when specific audio devices connect (Bluetooth, Android Auto, Wired Headphones, etc.).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Connected Device History (${connectedDevices.size})",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            TextButton(onClick = { showAddDeviceDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Add Device")
+            }
+        }
+
+        if (connectedDevices.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BluetoothSearching,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = "No Connected Devices Recorded Yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Devices will automatically appear here when connected via Bluetooth, Android Auto, or wired headphones. You can also manually add a device above.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            connectedDevices.forEach { device ->
+                ConnectedDeviceItemCard(
+                    device = device,
+                    onAddActionClick = { deviceToAddActionFor = device },
+                    onUpdateActions = { newActions ->
+                        coroutineScope.launch {
+                            settingsDataStore.updateDeviceActions(device.id, newActions)
+                        }
+                    },
+                    onRemoveDevice = {
+                        coroutineScope.launch {
+                            settingsDataStore.removeConnectedDevice(device.id)
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    // Add Action Dialog
+    deviceToAddActionFor?.let { device ->
+        AddActionDialog(
+            device = device,
+            onDismiss = { deviceToAddActionFor = null },
+            onSelectAction = { selectedAction ->
+                val updatedActions = device.actions + selectedAction
+                coroutineScope.launch {
+                    settingsDataStore.updateDeviceActions(device.id, updatedActions)
+                }
+                deviceToAddActionFor = null
+            }
+        )
+    }
+
+    // Add Device Manual Dialog
+    if (showAddDeviceDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDeviceDialog = false },
+            title = { Text("Add Connected Device") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = newDeviceName,
+                        onValueChange = { newDeviceName = it },
+                        label = { Text("Device Name") },
+                        placeholder = { Text("e.g. My Car, Headphones") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Text(
+                        text = "Device Type",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Column {
+                        ConnectedDeviceType.entries.forEach { type ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { newDeviceType = type }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                RadioButton(
+                                    selected = (newDeviceType == type),
+                                    onClick = { newDeviceType = type }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(type.displayName)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val name = newDeviceName.ifBlank { newDeviceType.displayName }
+                        val id = "manual_${newDeviceType.name.lowercase()}_${System.currentTimeMillis()}"
+                        coroutineScope.launch {
+                            settingsDataStore.recordDeviceConnected(id, name, newDeviceType)
+                        }
+                        showAddDeviceDialog = false
+                        newDeviceName = ""
+                    }
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDeviceDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun ConnectedDeviceItemCard(
+    device: ConnectedDevice,
+    onAddActionClick: () -> Unit,
+    onUpdateActions: (List<GestureAction>) -> Unit,
+    onRemoveDevice: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header Row: Device Name & Type Icon
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    val icon = when (device.type) {
+                        ConnectedDeviceType.BLUETOOTH -> Icons.Default.BluetoothConnected
+                        ConnectedDeviceType.ANDROID_AUTO -> Icons.Default.DirectionsCar
+                        ConnectedDeviceType.WIRED_HEADPHONES -> Icons.Default.Headphones
+                        ConnectedDeviceType.CAST -> Icons.Default.CastConnected
+                        ConnectedDeviceType.OTHER -> Icons.Default.Devices
+                    }
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = device.type.displayName,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Column {
+                        Text(
+                            text = device.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${device.type.displayName} • ${if (device.actions.isEmpty()) "Do nothing on connect" else "${device.actions.size} action(s)"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                IconButton(onClick = onRemoveDevice) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Remove Device",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Indented Action List
+            if (device.actions.isEmpty()) {
+                Text(
+                    text = "No actions assigned. Default: Do nothing on connect.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    modifier = Modifier.padding(start = 32.dp)
+                )
+            } else {
+                Column(
+                    modifier = Modifier.padding(start = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    device.actions.forEachIndexed { index, action ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "${index + 1}.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = action.displayName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Move Up
+                                IconButton(
+                                    onClick = {
+                                        if (index > 0) {
+                                            val mutable = device.actions.toMutableList()
+                                            val item = mutable.removeAt(index)
+                                            mutable.add(index - 1, item)
+                                            onUpdateActions(mutable)
+                                        }
+                                    },
+                                    enabled = index > 0,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowUp,
+                                        contentDescription = "Move Up"
+                                    )
+                                }
+
+                                // Move Down
+                                IconButton(
+                                    onClick = {
+                                        if (index < device.actions.size - 1) {
+                                            val mutable = device.actions.toMutableList()
+                                            val item = mutable.removeAt(index)
+                                            mutable.add(index + 1, item)
+                                            onUpdateActions(mutable)
+                                        }
+                                    },
+                                    enabled = index < device.actions.size - 1,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "Move Down"
+                                    )
+                                }
+
+                                // Remove "-" button
+                                IconButton(
+                                    onClick = {
+                                        val mutable = device.actions.toMutableList()
+                                        mutable.removeAt(index)
+                                        onUpdateActions(mutable)
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.RemoveCircleOutline,
+                                        contentDescription = "Remove Action",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Add Action "+" button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 32.dp),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                OutlinedButton(
+                    onClick = onAddActionClick,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Action",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Add Action")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddActionDialog(
+    device: ConnectedDevice,
+    onDismiss: () -> Unit,
+    onSelectAction: (GestureAction) -> Unit
+) {
+    val availableActions = remember {
+        listOf(
+            GestureAction.PLAY_PAUSE,
+            GestureAction.PLAY,
+            GestureAction.PAUSE,
+            GestureAction.SHUFFLE_ALL_SONGS,
+            GestureAction.PLAY_CURRENT_ALBUM,
+            GestureAction.PLAY_CURRENT_ARTIST,
+            GestureAction.NEXT,
+            GestureAction.PREVIOUS,
+            GestureAction.TOGGLE_SHUFFLE,
+            GestureAction.TOGGLE_REPEAT,
+            GestureAction.VOLUME_UP,
+            GestureAction.VOLUME_DOWN,
+            GestureAction.FAST_FORWARD,
+            GestureAction.REWIND
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Action for ${device.name}") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 360.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                availableActions.forEach { action ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelectAction(action) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = action.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Icon(
+                            imageVector = Icons.Default.AddCircleOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
