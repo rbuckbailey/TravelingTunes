@@ -723,7 +723,7 @@ fun SettingsScreen(
                         },
                         label = "SettingsDetailSubmenuTransition"
                     ) { targetSubmenu ->
-                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        Box(modifier = Modifier.fillMaxSize()) {
                             SubmenuContent(
                                 submenu = targetSubmenu,
                                 settingsDataStore = settingsDataStore,
@@ -833,13 +833,13 @@ fun SettingsScreen(
                 label = "SettingsSinglePaneTransition",
                 modifier = Modifier.padding(paddingValues)
             ) { targetSubmenu ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                ) {
-                    if (targetSubmenu == null) {
+                if (targetSubmenu == null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp)
+                    ) {
                         // Main Submenu Navigation List
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             // Standalone Items at the top without category label
@@ -967,100 +967,104 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                    } else {
-                        // Selected Submenu Content Page
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                    ) {
                         SubmenuContent(
                             submenu = targetSubmenu,
                             settingsDataStore = settingsDataStore,
                             displaySettings = displaySettings,
-                        themeSettings = themeSettings,
-                        musicFolderName = musicFolderName,
-                        lastScanTime = lastScanTime,
-                        libraryStats = libraryStats,
-                        isScanning = isScanning,
-                        scanStatusMessage = scanStatusMessage,
-                        isDownloadingArt = isDownloadingArt,
-                        artDownloadStatusMessage = artDownloadStatusMessage,
-                        artDownloadDownloadedCount = artDownloadDownloadedCount,
-                        artDownloadFailedCount = artDownloadFailedCount,
-                        artDownloadTotalCount = artDownloadTotalCount,
-                        lastAuditReport = lastAuditReport,
-                        autoRescanEnabled = autoRescanEnabled,
-                        autoRescanStatusMessage = autoRescanStatusMessage,
-                        isAutoRescanWaiting = isAutoRescanWaiting,
-                        cddbOverridesCount = cddbOverridesCount,
-                        isEmbeddingCddb = isEmbeddingCddb,
-                        cddbEmbeddingStatus = cddbEmbeddingStatus,
-                        musicScanner = musicScanner,
-                        normalizationMode = normalizationMode,
-                        normalizationSettings = effectiveNormalizationSettings,
-                        normalizationSummary = effectiveNormalizationSummary,
-                        isAnalyzingVolume = currentIsAnalyzingVolume,
-                        volumeAnalysisStatusMessage = currentVolumeStatusMessage,
-                        volumeAnalysisProgressCurrent = currentVolumeProgress,
-                        volumeAnalysisProgressTotal = totalVolumeProgress,
-                        onSelectNormalizationMode = onSelectNormalizationMode,
-                        onUpdateNormalizationSettings = { newSettings ->
-                            coroutineScope.launch {
-                                settingsDataStore.setNormalizationSettings(newSettings)
-                            }
-                        },
-                        onOpenNormalizationReport = {
-                            coroutineScope.launch {
-                                reportSongs = musicDatabase?.getAllSongs() ?: emptyList()
-                                showNormalizationReportDialog = true
-                            }
-                        },
-                        onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
-                        onCancelAnalyzeVolumeLevels = onCancelAnalyzeVolumeLevels,
-                        onToggleAutoRescan = onToggleAutoRescan,
-                        availableFonts = availableFonts,
-                        onPickMusicFolder = onPickMusicFolder,
-                        onRescanMusicFolder = onRescanMusicFolder,
-                        onDownloadMissingArt = onDownloadMissingArt,
-                        onCancelDownloadArt = onCancelDownloadArt,
-                        onEmbedCddbOverrides = onEmbedCddbOverrides,
-                        onViewAudit = { showAuditDialog = true },
-                        onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
-                        onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
-                        onBackupMetadata = { createMetadataBackupLauncher.launch("traveling_tunes_metadata_backup.json") },
-                        onRestoreMetadata = { restoreMetadataLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
-                        onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
-                        onUpdateDisplaySettings = { newSettings ->
-                            coroutineScope.launch {
-                                settingsDataStore.updateDisplaySettings(newSettings)
-                            }
-                        },
-                        onOpenGestureAssignments = onOpenGestureAssignments,
-                        onResetGestureAssignments = {
-                            coroutineScope.launch {
-                                settingsDataStore.resetAllGestureBindings()
-                            }
-                        },
-                        onSelectPreset = { presetName, isAuto ->
-                            coroutineScope.launch {
-                                settingsDataStore.updateThemeSettings(themeSettings.copy(currentThemeName = presetName))
-                                settingsDataStore.updateDisplaySettings(displaySettings.copy(albumArtColors = isAuto))
-                            }
-                        },
-                        onUpdateThemeSettings = { newTheme ->
-                            coroutineScope.launch {
-                                settingsDataStore.updateThemeSettings(newTheme)
-                            }
-                        },
-                        onOpenBgPicker = { activeColorPicker = "BG" },
-                        onOpenSongPicker = { activeColorPicker = "SONG" },
-                        onOpenArtistPicker = { activeColorPicker = "ARTIST" },
-                        onOpenAlbumPicker = { activeColorPicker = "ALBUM" },
-                        onOpenQuickStart = onOpenQuickStart,
-                        onBackupSettings = { createBackupLauncher.launch("traveling_tunes_settings.json") },
-                        onRestoreSettings = { restoreBackupLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }
-                    )
+                            themeSettings = themeSettings,
+                            musicFolderName = musicFolderName,
+                            lastScanTime = lastScanTime,
+                            libraryStats = libraryStats,
+                            isScanning = isScanning,
+                            scanStatusMessage = scanStatusMessage,
+                            isDownloadingArt = isDownloadingArt,
+                            artDownloadStatusMessage = artDownloadStatusMessage,
+                            artDownloadDownloadedCount = artDownloadDownloadedCount,
+                            artDownloadFailedCount = artDownloadFailedCount,
+                            artDownloadTotalCount = artDownloadTotalCount,
+                            lastAuditReport = lastAuditReport,
+                            autoRescanEnabled = autoRescanEnabled,
+                            autoRescanStatusMessage = autoRescanStatusMessage,
+                            isAutoRescanWaiting = isAutoRescanWaiting,
+                            cddbOverridesCount = cddbOverridesCount,
+                            isEmbeddingCddb = isEmbeddingCddb,
+                            cddbEmbeddingStatus = cddbEmbeddingStatus,
+                            musicScanner = musicScanner,
+                            normalizationMode = normalizationMode,
+                            normalizationSettings = effectiveNormalizationSettings,
+                            normalizationSummary = effectiveNormalizationSummary,
+                            isAnalyzingVolume = currentIsAnalyzingVolume,
+                            volumeAnalysisStatusMessage = currentVolumeStatusMessage,
+                            volumeAnalysisProgressCurrent = currentVolumeProgress,
+                            volumeAnalysisProgressTotal = totalVolumeProgress,
+                            onSelectNormalizationMode = onSelectNormalizationMode,
+                            onUpdateNormalizationSettings = { newSettings ->
+                                coroutineScope.launch {
+                                    settingsDataStore.setNormalizationSettings(newSettings)
+                                }
+                            },
+                            onOpenNormalizationReport = {
+                                coroutineScope.launch {
+                                    reportSongs = musicDatabase?.getAllSongs() ?: emptyList()
+                                    showNormalizationReportDialog = true
+                                }
+                            },
+                            onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
+                            onCancelAnalyzeVolumeLevels = onCancelAnalyzeVolumeLevels,
+                            onToggleAutoRescan = onToggleAutoRescan,
+                            availableFonts = availableFonts,
+                            onPickMusicFolder = onPickMusicFolder,
+                            onRescanMusicFolder = onRescanMusicFolder,
+                            onDownloadMissingArt = onDownloadMissingArt,
+                            onCancelDownloadArt = onCancelDownloadArt,
+                            onEmbedCddbOverrides = onEmbedCddbOverrides,
+                            onViewAudit = { showAuditDialog = true },
+                            onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
+                            onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
+                            onBackupMetadata = { createMetadataBackupLauncher.launch("traveling_tunes_metadata_backup.json") },
+                            onRestoreMetadata = { restoreMetadataLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                            onAddFont = { fontPickerLauncher.launch(arrayOf("*/*")) },
+                            onUpdateDisplaySettings = { newSettings ->
+                                coroutineScope.launch {
+                                    settingsDataStore.updateDisplaySettings(newSettings)
+                                }
+                            },
+                            onOpenGestureAssignments = onOpenGestureAssignments,
+                            onResetGestureAssignments = {
+                                coroutineScope.launch {
+                                    settingsDataStore.resetAllGestureBindings()
+                                }
+                            },
+                            onSelectPreset = { presetName, isAuto ->
+                                coroutineScope.launch {
+                                    settingsDataStore.updateThemeSettings(themeSettings.copy(currentThemeName = presetName))
+                                    settingsDataStore.updateDisplaySettings(displaySettings.copy(albumArtColors = isAuto))
+                                }
+                            },
+                            onUpdateThemeSettings = { newTheme ->
+                                coroutineScope.launch {
+                                    settingsDataStore.updateThemeSettings(newTheme)
+                                }
+                            },
+                            onOpenBgPicker = { activeColorPicker = "BG" },
+                            onOpenSongPicker = { activeColorPicker = "SONG" },
+                            onOpenArtistPicker = { activeColorPicker = "ARTIST" },
+                            onOpenAlbumPicker = { activeColorPicker = "ALBUM" },
+                            onOpenQuickStart = onOpenQuickStart,
+                            onBackupSettings = { createBackupLauncher.launch("traveling_tunes_settings.json") },
+                            onRestoreSettings = { restoreBackupLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }
+                        )
+                    }
                 }
             }
         }
-    }
-}
 
     if (statusToastMessage != null) {
         AlertDialog(
@@ -1153,6 +1157,7 @@ fun SettingsScreen(
             }
         )
     }
+}
 }
 
 @Composable

@@ -1116,21 +1116,40 @@ private fun GestureAssignmentItem(
     val hasTitleAction = binding.titleAction != GestureAction.UNASSIGNED
     val hasBothAction = binding.action != GestureAction.UNASSIGNED
 
+    data class DisplayLineInfo(
+        val regionName: String,
+        val action: GestureAction,
+        val otherKey: String?,
+        val optionTitle: String?
+    )
+
     val displayLines = remember(binding, isButton) {
-        val list = mutableListOf<Triple<String, GestureAction, String?>>()
+        val list = mutableListOf<DisplayLineInfo>()
         if (hasArtAction) {
-            list.add(Triple("Art", binding.artAction, binding.artOtherOptionKey))
+            val title = if (binding.artAction == GestureAction.OTHER_OPTION) {
+                ConfigOption.findByKey(binding.artOtherOptionKey)?.title ?: ConfigOption.ALL_OPTIONS.first().title
+            } else null
+            list.add(DisplayLineInfo("Art", binding.artAction, binding.artOtherOptionKey, title))
         }
         if (hasTitleAction) {
-            list.add(Triple("Title", binding.titleAction, binding.titleOtherOptionKey))
+            val title = if (binding.titleAction == GestureAction.OTHER_OPTION) {
+                ConfigOption.findByKey(binding.titleOtherOptionKey)?.title ?: ConfigOption.ALL_OPTIONS.first().title
+            } else null
+            list.add(DisplayLineInfo("Title", binding.titleAction, binding.titleOtherOptionKey, title))
         }
         if (!isButton && (hasBothAction || list.isEmpty())) {
-            list.add(Triple("Both", binding.action, binding.otherOptionKey))
+            val title = if (binding.action == GestureAction.OTHER_OPTION) {
+                ConfigOption.findByKey(binding.otherOptionKey)?.title ?: ConfigOption.ALL_OPTIONS.first().title
+            } else null
+            list.add(DisplayLineInfo("Both", binding.action, binding.otherOptionKey, title))
         } else if (isButton && list.isEmpty()) {
+            val title = if (binding.action == GestureAction.OTHER_OPTION) {
+                ConfigOption.findByKey(binding.otherOptionKey)?.title ?: ConfigOption.ALL_OPTIONS.first().title
+            } else null
             if (hasBothAction) {
-                list.add(Triple("Title", binding.action, binding.otherOptionKey))
+                list.add(DisplayLineInfo("Title", binding.action, binding.otherOptionKey, title))
             } else {
-                list.add(Triple("Title", GestureAction.UNASSIGNED, null))
+                list.add(DisplayLineInfo("Title", GestureAction.UNASSIGNED, null, null))
             }
         }
         list
@@ -1146,25 +1165,20 @@ private fun GestureAssignmentItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(text = trigger.getDisplayName(numEdgeRegions, isArt = isArtSection, isTitle = isTitleSection), fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(2.dp))
-            displayLines.forEach { (regionName, action, otherKey) ->
-                val optionTitle = remember(otherKey) {
-                    if (action == GestureAction.OTHER_OPTION) {
-                        ConfigOption.findByKey(otherKey)?.title ?: ConfigOption.ALL_OPTIONS.first().title
-                    } else null
-                }
+            displayLines.forEach { line ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(vertical = 1.dp)
                 ) {
                     ActionIcon(
-                        action = action,
-                        optionKey = if (action == GestureAction.OTHER_OPTION) otherKey else null,
+                        action = line.action,
+                        optionKey = if (line.action == GestureAction.OTHER_OPTION) line.otherKey else null,
                         iconSize = 18.dp,
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "$regionName: ${action.displayName}${if (optionTitle != null) " ($optionTitle)" else ""}",
+                        text = "${line.regionName}: ${line.action.displayName}${if (line.optionTitle != null) " (${line.optionTitle})" else ""}",
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -1173,8 +1187,8 @@ private fun GestureAssignmentItem(
         }
 
         Box {
-            val primaryAction = displayLines.firstOrNull()?.second ?: binding.action
-            val primaryOtherKey = displayLines.firstOrNull()?.third ?: binding.otherOptionKey
+            val primaryAction = displayLines.firstOrNull()?.action ?: binding.action
+            val primaryOtherKey = displayLines.firstOrNull()?.otherKey ?: binding.otherOptionKey
             ActionIcon(
                 action = primaryAction,
                 optionKey = if (primaryAction == GestureAction.OTHER_OPTION) primaryOtherKey else null,
@@ -1187,11 +1201,11 @@ private fun GestureAssignmentItem(
                     title = "Select Action for ${trigger.getDisplayName(numEdgeRegions, isArt = isArtSection, isTitle = isTitleSection)}",
                     excludeRadialMenu = false,
                     excludeUnassigned = false,
-                    currentOptionKey = (displayLines.firstOrNull()?.third ?: binding.otherOptionKey),
+                    currentOptionKey = (displayLines.firstOrNull()?.otherKey ?: binding.otherOptionKey),
                     isSeparateTouchZones = isSeparateTouchZones,
                     isButton = isButton,
                     binding = binding,
-                    displayLines = displayLines,
+                    displayLines = displayLines.map { Triple(it.regionName, it.action, it.otherKey) },
                     onDismissRequest = { isDropdownExpanded = false },
                     onActionSelected = { choice ->
                         isDropdownExpanded = false

@@ -153,6 +153,13 @@ class MainActivity : ComponentActivity() {
         CrashLogManager.installHandler(applicationContext, settingsDataStore)
         CrashLogManager.cleanupOldLogs(applicationContext)
 
+        if (CrashLogManager.hasPriorCrash(applicationContext) || CrashLogManager.shouldResetSettingsSubmenu(applicationContext)) {
+            kotlinx.coroutines.runBlocking {
+                settingsDataStore.setLastSettingsSubmenu(null)
+            }
+            CrashLogManager.clearResetSettingsSubmenuFlag(applicationContext)
+        }
+
         requestRequiredPermissions()
 
         setContent {

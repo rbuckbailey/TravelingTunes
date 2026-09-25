@@ -5,9 +5,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
 import com.travelingtunes.app.core.datastore.SettingsDataStore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -21,6 +18,7 @@ object CrashLogManager {
     private const val CRASH_PREFS_NAME = "travelingtunes_crash_prefs"
     private const val KEY_HAS_PRIOR_CRASH = "has_prior_crash"
     private const val KEY_LAST_CRASH_FILE = "last_crash_file"
+    private const val KEY_RESET_SETTINGS_SUBMENU = "reset_settings_submenu"
     private const val CRASH_DIR_NAME = "crash_logs"
     private const val ONE_DAY_MILLIS = 24 * 60 * 60 * 1000L
 
@@ -80,29 +78,26 @@ object CrashLogManager {
 
             crashFile.writeText(logContent)
 
+            // Commit synchronously to disk before process termination
             val prefs = getPrefs(context)
             prefs.edit()
                 .putBoolean(KEY_HAS_PRIOR_CRASH, true)
                 .putString(KEY_LAST_CRASH_FILE, crashFile.absolutePath)
-                .apply()
+                .putBoolean(KEY_RESET_SETTINGS_SUBMENU, true)
+                .commit()
 
-            // Revert settings to base if crash was in settings
-            try {
-                settingsDataStore?.let { dataStore ->
-                    CoroutineScope(Dispatchers.IO).launch {
-                        dataStore.setLastSettingsSubmenu(null)
-                    }
-                }
-                // Fallback direct SharedPreferences modification if DataStore key is used
-                val dataStorePrefs = context.getSharedPreferences("com.travelingtunes.app_preferences", Context.MODE_PRIVATE)
-                dataStorePrefs.edit().remove("lastSettingsSubmenu").apply()
-            } catch (ignored: Exception) {
-            }
-
-            Log.e(TAG, "Crash logged to ${crashFile.absolutePath}", throwable)
+            Log.e(TAG, "Crash logged synchronously to ${crashFile.absolutePath}", throwable)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to write crash log file", e)
         }
+    }
+
+    fun shouldResetSettingsSubmenu(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_RESET_SETTINGS_SUBMENU, false)
+    }
+
+    fun clearResetSettingsSubmenuFlag(context: Context) {
+        getPrefs(context).edit().remove(KEY_RESET_SETTINGS_SUBMENU).apply()
     }
 
     fun cleanupOldLogs(context: Context) {
