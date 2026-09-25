@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -178,11 +180,19 @@ fun SongPickerBottomSheet(
     var artistsList by remember { mutableStateOf<List<String>>(emptyList()) }
     var genresList by remember { mutableStateOf<List<String>>(emptyList()) }
     var foldersList by remember { mutableStateOf<List<String>>(emptyList()) }
+    var artVersion by remember { mutableIntStateOf(0) }
+
+    val songsListState = rememberLazyListState()
+    val albumsListState = rememberLazyListState()
+    val artistsListState = rememberLazyListState()
+    val genresListState = rememberLazyListState()
+    val foldersListState = rememberLazyListState()
+    val streamingListState = rememberLazyListState()
 
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
 
     // Query database when search, category, drill-down selection, or scan state changes
-    LaunchedEffect(searchQuery, selectedCategory, selectedGenre, selectedArtist, selectedAlbum, selectedFolder, currentPlaylist, isScanning, scannedCount) {
+    LaunchedEffect(searchQuery, selectedCategory, selectedGenre, selectedArtist, selectedAlbum, selectedFolder, isScanning, scannedCount) {
         withContext(Dispatchers.IO) {
             if (musicDatabase.getAllSongs().isEmpty() && currentPlaylist.isNotEmpty()) {
                 musicDatabase.insertOrReplaceSongs(currentPlaylist)
@@ -699,13 +709,15 @@ fun SongPickerBottomSheet(
                         EmptyListState("No songs found")
                     } else {
                         LazyColumn(
+                            state = songsListState,
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(songsList.size) { index ->
+                            items(songsList.size, key = { index -> songsList[index].id }) { index ->
                                 val song = songsList[index]
                                 SongItemRow(
                                     song = song,
+                                    artVersion = artVersion,
                                     onPlay = {
                                         coroutineScope.launch {
                                             val selectedSong = songsList[index]
@@ -767,12 +779,14 @@ fun SongPickerBottomSheet(
                         EmptyListState("No albums found")
                     } else {
                         LazyColumn(
+                            state = albumsListState,
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(albumsList) { album ->
+                            items(albumsList, key = { album -> "${album.name}_${album.artist}" }) { album ->
                                 AlbumItemRow(
                                     album = album,
+                                    artVersion = artVersion,
                                     onPlay = {
                                         coroutineScope.launch {
                                             val fullLibrary = musicDatabase.getAllSongs()
@@ -832,10 +846,11 @@ fun SongPickerBottomSheet(
                         EmptyListState("No artists found")
                     } else {
                         LazyColumn(
+                            state = artistsListState,
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(artistsList) { artist ->
+                            items(artistsList, key = { artist -> artist }) { artist ->
                                 ArtistItemRow(
                                     artist = artist,
                                     onPlay = {
@@ -888,10 +903,11 @@ fun SongPickerBottomSheet(
                         EmptyListState("No genres found")
                     } else {
                         LazyColumn(
+                            state = genresListState,
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(genresList) { genre ->
+                            items(genresList, key = { genre -> genre }) { genre ->
                                 GenreItemRow(
                                     genre = genre,
                                     onPlay = {
@@ -932,10 +948,11 @@ fun SongPickerBottomSheet(
                         EmptyListState("No subfolders found")
                     } else {
                         LazyColumn(
+                            state = foldersListState,
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(foldersList) { folder ->
+                            items(foldersList, key = { folder -> folder }) { folder ->
                                 FolderItemRow(
                                     folder = folder,
                                     onPlay = {
@@ -1168,10 +1185,11 @@ fun StreamingPlatformView(
             EmptyListState("No streaming tracks found")
         } else {
             LazyColumn(
+                state = streamingListState,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.fillMaxWidth().weight(1f)
             ) {
-                items(filteredTracks.size) { index ->
+                items(filteredTracks.size, key = { index -> filteredTracks[index].id }) { index ->
                     val track = filteredTracks[index]
                     StreamingTrackRow(
                         track = track,
@@ -1383,6 +1401,7 @@ private fun ArtistItemRow(
 @Composable
 private fun AlbumItemRow(
     album: AlbumInfo,
+    artVersion: Int = 0,
     onPlay: () -> Unit,
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
@@ -1407,6 +1426,7 @@ private fun AlbumItemRow(
         leadingContent = {
             AlbumArtImage(
                 artworkUri = album.artworkUri,
+                artVersion = artVersion,
                 modifier = Modifier
                     .size(52.dp)
                     .clip(RoundedCornerShape(8.dp))
@@ -1447,6 +1467,7 @@ private fun AlbumItemRow(
 @Composable
 private fun SongItemRow(
     song: Song,
+    artVersion: Int = 0,
     onPlay: () -> Unit,
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
@@ -1472,6 +1493,7 @@ private fun SongItemRow(
             AlbumArtImage(
                 song = song,
                 artworkUri = song.artworkUri,
+                artVersion = artVersion,
                 modifier = Modifier
                     .size(52.dp)
                     .clip(RoundedCornerShape(8.dp))
@@ -1582,12 +1604,13 @@ private fun FolderItemRow(
 fun AlbumArtImage(
     song: Song? = null,
     artworkUri: Uri? = null,
+    artVersion: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var bitmap by remember(song?.id, artworkUri) { mutableStateOf<ImageBitmap?>(null) }
+    var bitmap by remember(song?.id, artworkUri, artVersion) { mutableStateOf<ImageBitmap?>(null) }
 
-    LaunchedEffect(song?.id, artworkUri) {
+    LaunchedEffect(song?.id, artworkUri, artVersion) {
         if (song != null) {
             val bmp = loadSongArtwork(context, song)
             bitmap = bmp?.asImageBitmap()

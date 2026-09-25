@@ -1589,7 +1589,8 @@ private fun SubmenuCategoryCard(
     }
 }
 
-private fun formatKeyEventName(nativeEvent: android.view.KeyEvent): Pair<String, GestureTrigger?> {
+private fun formatKeyEventName(nativeEvent: android.view.KeyEvent?): Pair<String, GestureTrigger?> {
+    if (nativeEvent == null) return Pair("Unknown Key", null)
     val keyCode = nativeEvent.keyCode
     val isShift = nativeEvent.isShiftPressed
     val isCtrl = nativeEvent.isCtrlPressed

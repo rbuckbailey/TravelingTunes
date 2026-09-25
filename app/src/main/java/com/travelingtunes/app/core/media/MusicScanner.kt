@@ -376,7 +376,7 @@ class MusicScanner(
         if (_isScanning.value) return@runAsBackgroundTask
         _isScanning.value = true
         _scannedCount.value = 0
-        _statusMessage.value = "Scanning library folder..."
+        _statusMessage.value = "Updating library from Music folder..."
 
         val rootDoc = DocumentFile.fromTreeUri(context, treeUri)
         if (rootDoc == null || !rootDoc.canRead()) {
@@ -384,6 +384,9 @@ class MusicScanner(
             _isScanning.value = false
             return@runAsBackgroundTask
         }
+
+        val existingSongs = musicDatabase.getAllSongs()
+        val existingMap = existingSongs.associateBy { it.contentUri.toString() }
 
         val foundSongs = mutableListOf<Song>()
         val artworkCacheDir = File(context.cacheDir, "album_art").apply { mkdirs() }
@@ -393,16 +396,32 @@ class MusicScanner(
             currentDir = rootDoc,
             relativePath = "",
             foundSongs = foundSongs,
+            existingMap = existingMap,
             artworkCacheDir = artworkCacheDir
         )
 
-        musicDatabase.clearDatabase()
-        clearDuplicateCache()
+        // Find songs in database that are no longer in the Music folder
+        val scannedUris = foundSongs.map { it.contentUri.toString() }.toSet()
+        val removedSongs = existingSongs.filter { it.contentUri.toString() !in scannedUris }
+
+        for (removed in removedSongs) {
+            musicDatabase.deleteSong(removed.id)
+            removeSongFromDuplicateCache(removed.id)
+        }
+
         if (foundSongs.isNotEmpty()) {
             musicDatabase.insertOrReplaceSongs(foundSongs)
-            _statusMessage.value = "Scanned ${foundSongs.size} songs successfully. Analyzing volume levels..."
-            analyzeLibraryVolumeLevels()
-            _statusMessage.value = "Scanned ${foundSongs.size} songs successfully"
+            val addedCount = foundSongs.count { it.contentUri.toString() !in existingMap }
+            val removedCount = removedSongs.size
+            val totalCount = foundSongs.size
+
+            if (addedCount > 0) {
+                _statusMessage.value = "Library updated: $addedCount added, $removedCount removed ($totalCount total). Analyzing volume..."
+                analyzeLibraryVolumeLevels(forceRescan = false)
+            }
+            _statusMessage.value = "Library updated: $addedCount added, $removedCount removed ($totalCount total)"
+        } else if (removedSongs.isNotEmpty()) {
+            _statusMessage.value = "Library updated: ${removedSongs.size} removed (0 songs total)"
         } else {
             _statusMessage.value = "No audio files found in selected folder"
         }
@@ -434,6 +453,7 @@ class MusicScanner(
         currentDir: DocumentFile,
         relativePath: String,
         foundSongs: MutableList<Song>,
+        existingMap: Map<String, Song>,
         artworkCacheDir: File
     ) {
         val files = currentDir.listFiles()
@@ -443,19 +463,25 @@ class MusicScanner(
             BackgroundTaskGate.checkYieldAndPause()
             if (file.isDirectory) {
                 val subFolder = if (relativePath.isEmpty()) file.name.orEmpty() else "$relativePath/${file.name}"
-                traverseDocumentTree(rootDir, file, subFolder, foundSongs, artworkCacheDir)
+                traverseDocumentTree(rootDir, file, subFolder, foundSongs, existingMap, artworkCacheDir)
             } else if (file.isFile) {
                 val name = file.name.orEmpty()
                 val ext = name.substringAfterLast('.', "").lowercase()
                 if (supportedExtensions.contains(ext)) {
-                    val song = processAudioFile(
-                        file = file,
-                        currentDir = currentDir,
-                        relativePath = relativePath,
-                        artworkCacheDir = artworkCacheDir,
-                        folderArtUri = folderArtUri,
-                        idSeed = foundSongs.size + 1L
-                    )
+                    val uriStr = file.uri.toString()
+                    val existing = existingMap[uriStr]
+                    val song = if (existing != null) {
+                        existing
+                    } else {
+                        processAudioFile(
+                            file = file,
+                            currentDir = currentDir,
+                            relativePath = relativePath,
+                            artworkCacheDir = artworkCacheDir,
+                            folderArtUri = folderArtUri,
+                            idSeed = foundSongs.size + 1L
+                        )
+                    }
                     if (song != null) {
                         foundSongs.add(song)
                         _scannedCount.value = foundSongs.size

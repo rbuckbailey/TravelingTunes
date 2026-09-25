@@ -1,5 +1,6 @@
 package com.travelingtunes.app.feature.settings
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -21,15 +22,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import com.travelingtunes.app.core.theme.AlbumArtColorCache
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -83,6 +87,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travelingtunes.app.core.database.AlbumArtBrowserInfo
@@ -222,6 +227,12 @@ fun DownloadedArtBrowserScreen(
         if (searchQuery.isBlank()) allFolders
         else allFolders.filter { it.contains(searchQuery, ignoreCase = true) }
     }
+
+    val albumsListState = rememberLazyListState()
+    val tracksListState = rememberLazyListState()
+    val artistsListState = rememberLazyListState()
+    val genresListState = rememberLazyListState()
+    val foldersListState = rememberLazyListState()
 
     // Photo & File Pickers for Replace Art
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -522,10 +533,11 @@ fun DownloadedArtBrowserScreen(
                     when (selectedCategory) {
                         ArtEditorCategory.ALBUMS -> {
                             LazyColumn(
+                                state = albumsListState,
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                items(filteredAlbums) { albumInfo ->
+                                items(filteredAlbums, key = { album -> "${album.artist}_${album.album}" }) { albumInfo ->
                                     val isSelected = selectedAlbums.contains(albumInfo)
                                     AlbumArtBrowserItemRow(
                                         albumInfo = albumInfo,
@@ -541,6 +553,10 @@ fun DownloadedArtBrowserScreen(
                                         onDelete = {
                                             coroutineScope.launch {
                                                 val songs = musicDatabase.getSongsByAlbumAndArtist(albumInfo.album, albumInfo.artist)
+                                                songs.forEach { song ->
+                                                    AlbumArtCache.instance.remove(song.id)
+                                                    AlbumArtColorCache.instance.removeForSong(song.id)
+                                                }
                                                 albumArtDownloader.deleteDownloadedArtworkForAlbum(albumInfo.album, albumInfo.artist, songs)
                                                 playbackManager.refreshCurrentSongArtwork()
                                                 refreshList()
@@ -577,10 +593,11 @@ fun DownloadedArtBrowserScreen(
                         }
                         ArtEditorCategory.TRACKS -> {
                             LazyColumn(
+                                state = tracksListState,
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                items(filteredSongs) { song ->
+                                items(filteredSongs, key = { song -> song.id }) { song ->
                                     val isSelected = selectedSongs.contains(song)
                                     TrackItemRow(
                                         song = song,
@@ -598,10 +615,11 @@ fun DownloadedArtBrowserScreen(
                         }
                         ArtEditorCategory.ARTISTS -> {
                             LazyColumn(
+                                state = artistsListState,
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                items(filteredArtists) { artist ->
+                                items(filteredArtists, key = { artist -> artist }) { artist ->
                                     val artistSongs = remember(artist, allSongs) { allSongs.filter { it.artist.equals(artist, ignoreCase = true) } }
                                     GroupItemRow(
                                         title = artist,
@@ -617,10 +635,11 @@ fun DownloadedArtBrowserScreen(
                         }
                         ArtEditorCategory.GENRES -> {
                             LazyColumn(
+                                state = genresListState,
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                items(filteredGenres) { genre ->
+                                items(filteredGenres, key = { genre -> genre }) { genre ->
                                     val genreSongs = remember(genre, allSongs) { allSongs.filter { it.genre.equals(genre, ignoreCase = true) } }
                                     GroupItemRow(
                                         title = genre,
@@ -636,10 +655,11 @@ fun DownloadedArtBrowserScreen(
                         }
                         ArtEditorCategory.FOLDERS -> {
                             LazyColumn(
+                                state = foldersListState,
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                items(filteredFolders) { folder ->
+                                items(filteredFolders, key = { folder -> folder }) { folder ->
                                     val folderSongs = remember(folder, allSongs) { allSongs.filter { it.folderPath.equals(folder, ignoreCase = true) } }
                                     GroupItemRow(
                                         title = folder.substringAfterLast('/'),
@@ -1347,6 +1367,137 @@ private fun AlbumArtBrowserItemRow(
     }
 }
 
+enum class TargetAlbumFilterMode(val displayName: String) {
+    ALL("All"),
+    SAME_ARTIST("Same Artist"),
+    MISSING_ART("Missing Art Only"),
+    EMBEDDED("Embedded Art"),
+    DOWNLOADED("Downloaded Art")
+}
+
+enum class SourceAlbumFilterMode(val displayName: String) {
+    ALL("All Albums"),
+    SAME_ARTIST("Same Artist Only")
+}
+
+fun filterTargetAlbums(
+    allAlbums: List<AlbumArtBrowserInfo>,
+    sourceAlbum: AlbumArtBrowserInfo,
+    query: String,
+    filterMode: TargetAlbumFilterMode
+): List<AlbumArtBrowserInfo> {
+    return allAlbums.filter { candidate ->
+        val isNotSource = (candidate.album != sourceAlbum.album || candidate.artist != sourceAlbum.artist)
+        if (!isNotSource) return@filter false
+
+        val matchesQuery = query.isBlank() ||
+                candidate.album.contains(query, ignoreCase = true) ||
+                candidate.artist.contains(query, ignoreCase = true)
+        if (!matchesQuery) return@filter false
+
+        when (filterMode) {
+            TargetAlbumFilterMode.ALL -> true
+            TargetAlbumFilterMode.SAME_ARTIST -> candidate.artist.equals(sourceAlbum.artist, ignoreCase = true)
+            TargetAlbumFilterMode.MISSING_ART -> candidate.artType == ArtworkType.MISSING || candidate.artworkUri == null
+            TargetAlbumFilterMode.EMBEDDED -> candidate.artType == ArtworkType.EMBEDDED
+            TargetAlbumFilterMode.DOWNLOADED -> candidate.artType == ArtworkType.DOWNLOADED
+        }
+    }
+}
+
+fun filterSourceAlbums(
+    allAlbums: List<AlbumArtBrowserInfo>,
+    targetAlbum: AlbumArtBrowserInfo,
+    query: String,
+    filterMode: SourceAlbumFilterMode
+): List<AlbumArtBrowserInfo> {
+    return allAlbums.filter { candidate ->
+        val hasArtAndNotTarget = candidate.artworkUri != null &&
+                (candidate.album != targetAlbum.album || candidate.artist != targetAlbum.artist)
+        if (!hasArtAndNotTarget) return@filter false
+
+        val matchesQuery = query.isBlank() ||
+                candidate.album.contains(query, ignoreCase = true) ||
+                candidate.artist.contains(query, ignoreCase = true)
+        if (!matchesQuery) return@filter false
+
+        when (filterMode) {
+            SourceAlbumFilterMode.ALL -> true
+            SourceAlbumFilterMode.SAME_ARTIST -> candidate.artist.equals(targetAlbum.artist, ignoreCase = true)
+        }
+    }
+}
+
+@Composable
+private fun AlbumArtThumbnail(
+    artworkUri: Uri?,
+    modifier: Modifier = Modifier,
+    size: Dp = 40.dp
+) {
+    val context = LocalContext.current
+    val bitmap = remember(artworkUri) {
+        val uri = artworkUri ?: return@remember null
+        try {
+            if (uri.scheme == "file") {
+                android.graphics.BitmapFactory.decodeFile(uri.path)
+            } else {
+                context.contentResolver.openInputStream(uri)?.use {
+                    android.graphics.BitmapFactory.decodeStream(it)
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Image,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(size * 0.5f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ArtworkStatusBadge(artType: ArtworkType) {
+    val (label, containerColor, contentColor) = when (artType) {
+        ArtworkType.DOWNLOADED -> Triple("Downloaded", MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
+        ArtworkType.EMBEDDED -> Triple("Embedded", MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+        ArtworkType.MISSING -> Triple("Missing Art", MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f), MaterialTheme.colorScheme.onErrorContainer)
+    }
+
+    Surface(
+        color = containerColor,
+        shape = RoundedCornerShape(4.dp),
+        modifier = Modifier.padding(vertical = 1.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Medium,
+            color = contentColor,
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+        )
+    }
+}
+
 @Composable
 private fun ReplaceArtworkDialog(
     targetAlbum: AlbumArtBrowserInfo,
@@ -1359,11 +1510,15 @@ private fun ReplaceArtworkDialog(
     onZoomCandidate: (ArtworkCandidate) -> Unit,
     onCustomSearchResult: (ArtworkCandidate) -> Unit
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("${targetAlbum.artist} ${targetAlbum.album}") }
     var isSearching by remember { mutableStateOf(false) }
     var searchCandidates by remember { mutableStateOf<List<ArtworkCandidate>>(emptyList()) }
     var hasSearched by remember { mutableStateOf(false) }
+
+    var sourceSearchQuery by remember { mutableStateOf("") }
+    var sourceFilterMode by remember { mutableStateOf(SourceAlbumFilterMode.ALL) }
 
     val enabledEngines = remember {
         mutableStateListOf(
@@ -1383,6 +1538,18 @@ private fun ReplaceArtworkDialog(
             hasSearched = true
             searchCandidates = albumArtDownloader.searchCandidatesWithQuery(searchQuery, enabledEngines.toSet())
             isSearching = false
+        }
+    }
+
+    fun openSearchInBrowser() {
+        val queryToUse = if (searchQuery.isNotBlank()) searchQuery else "${targetAlbum.artist} ${targetAlbum.album}"
+        val encodedQuery = Uri.encode("$queryToUse album cover")
+        val url = "https://www.google.com/search?q=$encodedQuery&tbm=isch"
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -1418,13 +1585,27 @@ private fun ReplaceArtworkDialog(
                         }
                     }
 
-                    OutlinedButton(
-                        onClick = { showAlbumCopyPicker = true },
-                        modifier = Modifier.fillMaxWidth()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Copy from another album", fontSize = 12.sp)
+                        OutlinedButton(
+                            onClick = { showAlbumCopyPicker = !showAlbumCopyPicker },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(if (showAlbumCopyPicker) "Hide Copy Picker" else "Copy Album Art", fontSize = 11.sp, maxLines = 1)
+                        }
+
+                        OutlinedButton(
+                            onClick = { openSearchInBrowser() },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Web Browser", fontSize = 11.sp, maxLines = 1)
+                        }
                     }
                 }
 
@@ -1433,26 +1614,70 @@ private fun ReplaceArtworkDialog(
                     Text("Select source album to copy artwork from:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    val albumsWithArt = remember(allAlbums) { allAlbums.filter { it.artworkUri != null && it.album != targetAlbum.album } }
-                    if (albumsWithArt.isEmpty()) {
-                        Text("No other albums with artwork available.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val filteredSources = remember(allAlbums, targetAlbum, sourceSearchQuery, sourceFilterMode) {
+                        filterSourceAlbums(allAlbums, targetAlbum, sourceSearchQuery, sourceFilterMode)
+                    }
+
+                    OutlinedTextField(
+                        value = sourceSearchQuery,
+                        onValueChange = { sourceSearchQuery = it },
+                        placeholder = { Text("Filter source albums...", fontSize = 11.sp) },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        trailingIcon = {
+                            if (sourceSearchQuery.isNotEmpty()) {
+                                IconButton(onClick = { sourceSearchQuery = "" }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(SourceAlbumFilterMode.entries.toTypedArray()) { mode ->
+                            val isSelected = sourceFilterMode == mode
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { sourceFilterMode = mode },
+                                label = { Text(mode.displayName, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    if (filteredSources.isEmpty()) {
+                        Text("No matching source albums found.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 140.dp)
+                                .heightIn(max = 150.dp)
                         ) {
-                            items(albumsWithArt) { source ->
+                            items(filteredSources, key = { "${it.artist}_${it.album}" }) { source ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onCopyFromOtherAlbum(source) }
-                                        .padding(vertical = 6.dp, horizontal = 4.dp)
+                                        .padding(vertical = 4.dp, horizontal = 4.dp)
                                 ) {
-                                    Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                    AlbumArtThumbnail(artworkUri = source.artworkUri, size = 32.dp)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("${source.album} (${source.artist})", fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(source.album, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("${source.artist} • ${source.songCount} tracks", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    ArtworkStatusBadge(artType = source.artType)
                                 }
                             }
                         }
@@ -1506,12 +1731,30 @@ private fun ReplaceArtworkDialog(
                         },
                         modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Button(
                         onClick = { performSearch() },
-                        modifier = Modifier.height(56.dp)
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Search In-App", fontSize = 12.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = { openSearchInBrowser() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Open in Browser", fontSize = 12.sp)
                     }
                 }
 
@@ -1585,45 +1828,189 @@ private fun CopyArtworkDialog(
     onDismiss: () -> Unit,
     onConfirmCopy: (List<AlbumArtBrowserInfo>) -> Unit
 ) {
-    val targetCandidates = remember(allAlbums, sourceAlbum) {
-        allAlbums.filter { it.album != sourceAlbum.album || it.artist != sourceAlbum.artist }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedFilterMode by remember { mutableStateOf(TargetAlbumFilterMode.ALL) }
+
+    val filteredTargets = remember(allAlbums, sourceAlbum, searchQuery, selectedFilterMode) {
+        filterTargetAlbums(allAlbums, sourceAlbum, searchQuery, selectedFilterMode)
     }
+
     val selectedTargets = remember { mutableStateListOf<AlbumArtBrowserInfo>() }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Copy Art From \"${sourceAlbum.album}\"", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Copy Art to Other Albums", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            }
+        },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Select target albums to receive this artwork:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (targetCandidates.isEmpty()) {
-                    Text("No target albums found in library.", fontSize = 12.sp)
-                } else {
+                // Source Album Banner Card
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
                     ) {
+                        AlbumArtThumbnail(artworkUri = sourceAlbum.artworkUri, size = 44.dp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Source: ${sourceAlbum.album}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "${sourceAlbum.artist} • ${sourceAlbum.songCount} tracks",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        ArtworkStatusBadge(artType = sourceAlbum.artType)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "Select target albums to receive artwork:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Search Filter TextField
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Filter albums or artists...", fontSize = 12.sp) },
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear", modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Filter Chips Row
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(TargetAlbumFilterMode.entries.toTypedArray()) { filterMode ->
+                        val isSelected = selectedFilterMode == filterMode
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedFilterMode = filterMode },
+                            label = { Text(filterMode.displayName, fontSize = 11.sp) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Quick Action Bar & Selection Stats
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "${selectedTargets.size} selected (${filteredTargets.size} showing)",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        val missingInFiltered = remember(filteredTargets) {
+                            filteredTargets.filter { it.artType == ArtworkType.MISSING || it.artworkUri == null }
+                        }
+                        if (missingInFiltered.isNotEmpty()) {
+                            TextButton(
+                                onClick = {
+                                    missingInFiltered.forEach { missingItem ->
+                                        if (!selectedTargets.contains(missingItem)) {
+                                            selectedTargets.add(missingItem)
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("Select Missing", fontSize = 11.sp)
+                            }
+                        }
+
+                        val allFilteredSelected = filteredTargets.isNotEmpty() && filteredTargets.all { selectedTargets.contains(it) }
                         TextButton(
                             onClick = {
-                                if (selectedTargets.size == targetCandidates.size) selectedTargets.clear()
-                                else {
-                                    selectedTargets.clear()
-                                    selectedTargets.addAll(targetCandidates)
+                                if (allFilteredSelected) {
+                                    selectedTargets.removeAll(filteredTargets)
+                                } else {
+                                    filteredTargets.forEach { target ->
+                                        if (!selectedTargets.contains(target)) {
+                                            selectedTargets.add(target)
+                                        }
+                                    }
                                 }
-                            }
+                            },
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Text(if (selectedTargets.size == targetCandidates.size) "Deselect All" else "Select All", fontSize = 12.sp)
+                            Text(if (allFilteredSelected) "Deselect Filtered" else "Select All Filtered", fontSize = 11.sp)
                         }
                     }
+                }
 
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Target Albums List
+                if (filteredTargets.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (searchQuery.isNotBlank()) "No albums match \"$searchQuery\"" else "No target albums match filter.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 220.dp)
+                            .heightIn(max = 240.dp)
                     ) {
-                        items(targetCandidates) { target ->
+                        items(filteredTargets, key = { "${it.artist}_${it.album}" }) { target ->
                             val isSelected = selectedTargets.contains(target)
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -1632,19 +2019,41 @@ private fun CopyArtworkDialog(
                                     .clickable {
                                         if (isSelected) selectedTargets.remove(target) else selectedTargets.add(target)
                                     }
-                                    .padding(vertical = 4.dp)
-                            ) {
+                                    .padding(vertical = 4.dp, horizontal = 2.dp)
+                                ) {
                                 Checkbox(
                                     checked = isSelected,
                                     onCheckedChange = {
                                         if (isSelected) selectedTargets.remove(target) else selectedTargets.add(target)
-                                    }
+                                    },
+                                    modifier = Modifier.size(32.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Column {
-                                    Text(target.album, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text("${target.artist} • ${target.songCount} tracks", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                                AlbumArtThumbnail(artworkUri = target.artworkUri, size = 36.dp)
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = target.album,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "${target.artist} • ${target.songCount} tracks",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
+
+                                Spacer(modifier = Modifier.width(4.dp))
+
+                                ArtworkStatusBadge(artType = target.artType)
                             }
                         }
                     }

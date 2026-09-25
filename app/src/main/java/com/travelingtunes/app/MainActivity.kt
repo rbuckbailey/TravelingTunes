@@ -47,6 +47,13 @@ import com.travelingtunes.app.feature.settings.DownloadedArtBrowserScreen
 import com.travelingtunes.app.feature.settings.DuplicateTrackIdentifierScreen
 import com.travelingtunes.app.feature.settings.GestureAssignmentScreen
 import com.travelingtunes.app.feature.settings.SettingsScreen
+import com.travelingtunes.app.core.crash.CrashLogManager
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -143,10 +150,58 @@ class MainActivity : ComponentActivity() {
         musicScanner = MusicScanner(applicationContext, musicDatabase)
         playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
 
+        CrashLogManager.installHandler(applicationContext, settingsDataStore)
+        CrashLogManager.cleanupOldLogs(applicationContext)
+
         requestRequiredPermissions()
 
         setContent {
             val activityScope = rememberCoroutineScope()
+            val localContext = LocalContext.current
+            var showPriorCrashDialog by remember { mutableStateOf(CrashLogManager.hasPriorCrash(localContext)) }
+
+            LaunchedEffect(showPriorCrashDialog) {
+                if (showPriorCrashDialog) {
+                    settingsDataStore.setLastSettingsSubmenu(null)
+                }
+            }
+
+            if (showPriorCrashDialog) {
+                val crashText = remember { CrashLogManager.getLatestCrashLogText(localContext) }
+                AlertDialog(
+                    onDismissRequest = {
+                        CrashLogManager.clearCrashLogs(localContext)
+                        showPriorCrashDialog = false
+                    },
+                    title = { Text("Prior App Crash Detected", fontWeight = FontWeight.Bold) },
+                    text = {
+                        Text("TravelingTunes detected an error during a previous session. Would you like to share the crash log to help diagnose the issue?")
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (!crashText.isNullOrBlank()) {
+                                    CrashLogManager.shareCrashLog(localContext, crashText)
+                                }
+                                CrashLogManager.clearCrashLogs(localContext)
+                                showPriorCrashDialog = false
+                            }
+                        ) {
+                            Text("Share Crash Log")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                CrashLogManager.clearCrashLogs(localContext)
+                                showPriorCrashDialog = false
+                            }
+                        ) {
+                            Text("Dismiss & Clear")
+                        }
+                    }
+                )
+            }
             val displaySettings by settingsDataStore.displaySettingsFlow.collectAsState(initial = com.travelingtunes.app.core.model.DisplaySettings())
             val themeSettings by settingsDataStore.themeSettingsFlow.collectAsState(initial = com.travelingtunes.app.core.model.ThemeSettings())
             val gestureBindings by settingsDataStore.gestureBindingsFlow.collectAsState(initial = emptyMap())

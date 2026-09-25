@@ -1,12 +1,16 @@
-package com.travelingtunes.app
-
 import android.net.Uri
+import com.travelingtunes.app.core.database.AlbumArtBrowserInfo
+import com.travelingtunes.app.core.database.ArtworkType
 import com.travelingtunes.app.core.database.DownloadedAlbumArtInfo
 import com.travelingtunes.app.core.media.ArtworkCandidate
 import com.travelingtunes.app.core.media.Id3ArtworkEmbedder
 import com.travelingtunes.app.core.media.Id3TagEmbedder
 import com.travelingtunes.app.core.media.Id3TagParser
 import com.travelingtunes.app.core.model.GestureAction
+import com.travelingtunes.app.feature.settings.SourceAlbumFilterMode
+import com.travelingtunes.app.feature.settings.TargetAlbumFilterMode
+import com.travelingtunes.app.feature.settings.filterSourceAlbums
+import com.travelingtunes.app.feature.settings.filterTargetAlbums
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -371,5 +375,78 @@ class DownloadedArtAndEmbeddingTest {
         assertTrue(engines.contains(com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.ITUNES))
         assertTrue(engines.contains(com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.COVER_ART_ARCHIVE))
         assertTrue(engines.contains(com.travelingtunes.app.core.media.AlbumArtDownloader.SearchEngine.WEB_SEARCH))
+    }
+
+    @Test
+    fun testFilterTargetAlbumsFilterModesAndQuery() {
+        val mockUri = Mockito.mock(Uri::class.java)
+
+        val source = AlbumArtBrowserInfo(album = "Abbey Road", artist = "The Beatles", songCount = 17, artworkUri = mockUri, artType = ArtworkType.DOWNLOADED)
+        val album1 = AlbumArtBrowserInfo(album = "Let It Be", artist = "The Beatles", songCount = 12, artworkUri = null, artType = ArtworkType.MISSING)
+        val album2 = AlbumArtBrowserInfo(album = "Revolver", artist = "The Beatles", songCount = 14, artworkUri = mockUri, artType = ArtworkType.EMBEDDED)
+        val album3 = AlbumArtBrowserInfo(album = "Dark Side of the Moon", artist = "Pink Floyd", songCount = 10, artworkUri = null, artType = ArtworkType.MISSING)
+        val album4 = AlbumArtBrowserInfo(album = "Wish You Were Here", artist = "Pink Floyd", songCount = 5, artworkUri = mockUri, artType = ArtworkType.DOWNLOADED)
+
+        val allAlbums = listOf(source, album1, album2, album3, album4)
+
+        // Target Filter ALL excludes source
+        val allTargets = filterTargetAlbums(allAlbums, source, "", TargetAlbumFilterMode.ALL)
+        assertEquals(4, allTargets.size)
+        assertTrue(allTargets.none { it.album == "Abbey Road" })
+
+        // Same Artist
+        val sameArtistTargets = filterTargetAlbums(allAlbums, source, "", TargetAlbumFilterMode.SAME_ARTIST)
+        assertEquals(2, sameArtistTargets.size)
+        assertTrue(sameArtistTargets.all { it.artist == "The Beatles" })
+
+        // Missing Art
+        val missingTargets = filterTargetAlbums(allAlbums, source, "", TargetAlbumFilterMode.MISSING_ART)
+        assertEquals(2, missingTargets.size)
+        assertTrue(missingTargets.contains(album1))
+        assertTrue(missingTargets.contains(album3))
+
+        // Embedded Art
+        val embeddedTargets = filterTargetAlbums(allAlbums, source, "", TargetAlbumFilterMode.EMBEDDED)
+        assertEquals(1, embeddedTargets.size)
+        assertEquals(album2, embeddedTargets.first())
+
+        // Downloaded Art
+        val downloadedTargets = filterTargetAlbums(allAlbums, source, "", TargetAlbumFilterMode.DOWNLOADED)
+        assertEquals(1, downloadedTargets.size)
+        assertEquals(album4, downloadedTargets.first())
+
+        // Query Search
+        val queryTargets = filterTargetAlbums(allAlbums, source, "Floyd", TargetAlbumFilterMode.ALL)
+        assertEquals(2, queryTargets.size)
+        assertTrue(queryTargets.all { it.artist == "Pink Floyd" })
+    }
+
+    @Test
+    fun testFilterSourceAlbumsFilterModesAndQuery() {
+        val mockUri = Mockito.mock(Uri::class.java)
+
+        val target = AlbumArtBrowserInfo(album = "Let It Be", artist = "The Beatles", songCount = 12, artworkUri = null, artType = ArtworkType.MISSING)
+        val source1 = AlbumArtBrowserInfo(album = "Abbey Road", artist = "The Beatles", songCount = 17, artworkUri = mockUri, artType = ArtworkType.DOWNLOADED)
+        val source2 = AlbumArtBrowserInfo(album = "Dark Side of the Moon", artist = "Pink Floyd", songCount = 10, artworkUri = mockUri, artType = ArtworkType.EMBEDDED)
+        val source3 = AlbumArtBrowserInfo(album = "Untitled", artist = "Pink Floyd", songCount = 1, artworkUri = null, artType = ArtworkType.MISSING)
+
+        val allAlbums = listOf(target, source1, source2, source3)
+
+        // Source Filter ALL excludes target and albums without artwork
+        val allSources = filterSourceAlbums(allAlbums, target, "", SourceAlbumFilterMode.ALL)
+        assertEquals(2, allSources.size)
+        assertTrue(allSources.contains(source1))
+        assertTrue(allSources.contains(source2))
+        assertTrue(!allSources.contains(source3))
+
+        // Same Artist
+        val sameArtistSources = filterSourceAlbums(allAlbums, target, "", SourceAlbumFilterMode.SAME_ARTIST)
+        assertEquals(1, sameArtistSources.size)
+        assertEquals(source1, sameArtistSources.first())
+
+        // Search Query
+        val querySources = filterSourceAlbums(allAlbums, target, "Dark", SourceAlbumFilterMode.ALL)
+        assertEquals(1, querySources.size)
+        assertEquals(source2, querySources.first())
     }
 }

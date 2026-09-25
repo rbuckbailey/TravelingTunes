@@ -59,6 +59,14 @@ class AlbumArtColorCache private constructor() {
         themeCache.clear()
     }
 
+    fun removeForSong(songId: Long) {
+        val prefix = "${songId}_"
+        synchronized(themeCache) {
+            val keysToRemove = themeCache.keys.filter { it.startsWith(prefix) }
+            keysToRemove.forEach { themeCache.remove(it) }
+        }
+    }
+
     suspend fun getOrExtract(
         context: Context,
         song: Song,
