@@ -1773,24 +1773,28 @@ fun rememberPageTheme(
         if (song != null) com.travelingtunes.app.core.theme.AlbumArtColorCache.makeKey(song.id, innerEdge, displaySettings.matchArtColorPriority) else ""
     }
 
-    var extractedTheme: ColorTheme? by remember(cacheKey, isMatchArt) {
-        mutableStateOf(if (isMatchArt && cacheKey.isNotEmpty()) com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.get(cacheKey) else null)
+    var extractedTheme: ColorTheme? by remember(song?.id, isMatchArt) {
+        val initial = if (isMatchArt && song != null) {
+            com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.get(cacheKey)
+                ?: com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getAnyForSong(song.id)
+        } else null
+        mutableStateOf(initial)
     }
 
-    LaunchedEffect(cacheKey, isMatchArt) {
+    LaunchedEffect(cacheKey, isMatchArt, song?.id) {
         if (isMatchArt && song != null) {
             val cached = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.get(cacheKey)
+                ?: com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getAnyForSong(song.id)
             if (cached != null) {
                 extractedTheme = cached
-            } else {
-                val theme = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getOrExtract(
-                    context = context,
-                    song = song,
-                    innerEdge = innerEdge,
-                    priority = displaySettings.matchArtColorPriority
-                )
-                extractedTheme = theme
             }
+            val theme = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getOrExtract(
+                context = context,
+                song = song,
+                innerEdge = innerEdge,
+                priority = displaySettings.matchArtColorPriority
+            )
+            extractedTheme = theme
         }
     }
 

@@ -335,6 +335,12 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(currentSong?.id, currentSong?.artworkUri, innerEdge, displaySettings.matchArtColorPriority) {
                 val song = currentSong
                 if (song != null) {
+                    val cacheKey = com.travelingtunes.app.core.theme.AlbumArtColorCache.makeKey(song.id, innerEdge, displaySettings.matchArtColorPriority)
+                    val cached = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.get(cacheKey)
+                        ?: com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getAnyForSong(song.id)
+                    if (cached != null) {
+                        dynamicAlbumArtTheme = cached
+                    }
                     val extracted = com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.getOrExtract(
                         context = applicationContext,
                         song = song,

@@ -39,6 +39,14 @@ class AlbumArtColorCache private constructor() {
         return themeCache.get(makeKey(songId, innerEdge, priority))
     }
 
+    fun getAnyForSong(songId: Long): ColorTheme? {
+        val prefix = "${songId}_"
+        synchronized(themeCache) {
+            val entry = themeCache.entries.firstOrNull { it.key.startsWith(prefix) }
+            return entry?.value
+        }
+    }
+
     fun put(key: String, theme: ColorTheme) {
         themeCache.put(key, theme)
     }

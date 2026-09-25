@@ -1,0 +1,20 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/
+.DS_Store
+
+# Local configuration
+local.properties
+
+# Profiler & Heap dumps
+*.hprof
+
+# Captured build outputs
+assets/
+app/src/main/res/drawable/ic_launcher*.png
+app/src/main/res/mipmap*
