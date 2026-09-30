@@ -146,6 +146,17 @@ data class DisplaySettings(
     val autoSpeedUnit: String = "MPH",
     val drivingModeEnabled: Boolean = false,
     val autoEnableDrivingMode: Boolean = false,
+    val pickerAlphabetBarOnLeft: Boolean = false,
+    val miniPlayerActionButtonOrder: List<GestureAction> = listOf(
+        GestureAction.PLAY_CURRENT_ALBUM,
+        GestureAction.PLAY_CURRENT_ARTIST,
+        GestureAction.PLAY_PAUSE,
+        GestureAction.NEXT,
+        GestureAction.PREVIOUS,
+        GestureAction.TOGGLE_SHUFFLE,
+        GestureAction.TOGGLE_REPEAT,
+        GestureAction.SHUFFLE_ALL_SONGS
+    ),
     val autoActionButtonOrder: List<GestureAction> = listOf(
         GestureAction.PLAY_CURRENT_ALBUM,
         GestureAction.PLAY_CURRENT_ARTIST,

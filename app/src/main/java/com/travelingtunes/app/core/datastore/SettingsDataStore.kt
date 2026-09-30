@@ -135,6 +135,8 @@ class SettingsDataStore(private val context: Context) {
         val KEY_AUTO_SPEED_UNIT = stringPreferencesKey("autoSpeedUnit")
         val KEY_DRIVING_MODE_ENABLED = booleanPreferencesKey("drivingModeEnabled")
         val KEY_AUTO_ENABLE_DRIVING_MODE = booleanPreferencesKey("autoEnableDrivingMode")
+        val KEY_PICKER_ALPHABET_BAR_ON_LEFT = booleanPreferencesKey("pickerAlphabetBarOnLeft")
+        val KEY_MINI_PLAYER_ACTION_BUTTON_ORDER = stringPreferencesKey("miniPlayerActionButtonOrder")
         val KEY_AUTO_ACTION_BUTTON_ORDER = stringPreferencesKey("autoActionButtonOrder")
 
         // Navigation / Menu State Persistence
@@ -291,6 +293,25 @@ class SettingsDataStore(private val context: Context) {
             .ifEmpty { listOf(AutoCategory.QUEUE, AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS) }
         val autoCategoryOrder = (parsedCatOrder + AutoCategory.entries).distinct()
 
+        val miniPlayerActionOrderStr = getString(KEY_MINI_PLAYER_ACTION_BUTTON_ORDER, "miniPlayerActionButtonOrder", prefs[KEY_MINI_PLAYER_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
+        val miniPlayerActionButtonOrder = miniPlayerActionOrderStr.split(",")
+            .asSequence()
+            .mapNotNull { name -> runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim()) }
+            .filter { (it != GestureAction.UNASSIGNED) && (it != GestureAction.OTHER_OPTION) }
+            .toList()
+            .ifEmpty {
+                listOf(
+                    GestureAction.PLAY_CURRENT_ALBUM,
+                    GestureAction.PLAY_CURRENT_ARTIST,
+                    GestureAction.PLAY_PAUSE,
+                    GestureAction.NEXT,
+                    GestureAction.PREVIOUS,
+                    GestureAction.TOGGLE_SHUFFLE,
+                    GestureAction.TOGGLE_REPEAT,
+                    GestureAction.SHUFFLE_ALL_SONGS
+                )
+            }
+
         val actionOrderStr = getString(KEY_AUTO_ACTION_BUTTON_ORDER, "autoActionButtonOrder", prefs[KEY_AUTO_ACTION_BUTTON_ORDER] ?: "PLAY_CURRENT_ALBUM,PLAY_CURRENT_ARTIST,PLAY_PAUSE,NEXT,PREVIOUS,TOGGLE_SHUFFLE,TOGGLE_REPEAT,SHUFFLE_ALL_SONGS")
         val autoActionButtonOrder = actionOrderStr.split(",")
             .asSequence()
@@ -387,6 +408,8 @@ class SettingsDataStore(private val context: Context) {
             autoSpeedUnit = getString(KEY_AUTO_SPEED_UNIT, "AUTO_autoSpeedUnit", "MPH"),
             drivingModeEnabled = getBool(KEY_DRIVING_MODE_ENABLED, "AUTO_drivingMode", false),
             autoEnableDrivingMode = getBool(KEY_AUTO_ENABLE_DRIVING_MODE, "AUTO_autoEnableDrivingMode", false),
+            pickerAlphabetBarOnLeft = getBool(KEY_PICKER_ALPHABET_BAR_ON_LEFT, "LIBRARY_pickerAlphabetBarOnLeft", false),
+            miniPlayerActionButtonOrder = miniPlayerActionButtonOrder,
             autoActionButtonOrder = autoActionButtonOrder
         )
     }
@@ -1388,6 +1411,8 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_AUTO_SPEED_UNIT] = update.autoSpeedUnit
             prefs[KEY_DRIVING_MODE_ENABLED] = update.drivingModeEnabled
             prefs[KEY_AUTO_ENABLE_DRIVING_MODE] = update.autoEnableDrivingMode
+            prefs[KEY_PICKER_ALPHABET_BAR_ON_LEFT] = update.pickerAlphabetBarOnLeft
+            prefs[KEY_MINI_PLAYER_ACTION_BUTTON_ORDER] = update.miniPlayerActionButtonOrder.joinToString(",") { it.name }
             prefs[KEY_AUTO_ACTION_BUTTON_ORDER] = update.autoActionButtonOrder.joinToString(",") { it.name }
         }
     }
@@ -1559,6 +1584,14 @@ class SettingsDataStore(private val context: Context) {
                     autoSpeedUnit = dJson.optString("autoSpeedUnit", currentDisplay.autoSpeedUnit),
                     drivingModeEnabled = dJson.optBoolean("drivingModeEnabled", currentDisplay.drivingModeEnabled),
                     autoEnableDrivingMode = dJson.optBoolean("autoEnableDrivingMode", currentDisplay.autoEnableDrivingMode),
+                    pickerAlphabetBarOnLeft = dJson.optBoolean("pickerAlphabetBarOnLeft", currentDisplay.pickerAlphabetBarOnLeft),
+                    miniPlayerActionButtonOrder = dJson.optString("miniPlayerActionButtonOrder", "")
+                        .split(",")
+                        .asSequence()
+                        .mapNotNull { name -> runCatching { GestureAction.valueOf(name.trim()) }.getOrNull() ?: GestureAction.fromKey(name.trim()) }
+                        .filter { (it != GestureAction.UNASSIGNED) && (it != GestureAction.OTHER_OPTION) }
+                        .toList()
+                        .ifEmpty { currentDisplay.miniPlayerActionButtonOrder },
                     autoActionButtonOrder = dJson.optString("autoActionButtonOrder", "")
                         .split(",")
                         .asSequence()

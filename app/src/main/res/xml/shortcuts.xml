@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <capability android:name="actions.intent.PLAY_MUSIC_FROM_SEARCH">
+        <intent
+            android:action="android.media.action.MEDIA_PLAY_FROM_SEARCH"
+            android:targetPackage="com.travelingtunes.app"
+            android:targetClass="com.travelingtunes.app.MainActivity">
+            <parameter
+                android:name="music.query"
+                android:key="query" />
+        </intent>
+    </capability>
+</shortcuts>

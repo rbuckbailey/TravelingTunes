@@ -939,6 +939,36 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testMiniPlayerActionButtonOrderAndPickerAlphabetBarOnLeft() {
+        val defaultDisplay = com.travelingtunes.app.core.model.DisplaySettings()
+        org.junit.Assert.assertFalse(defaultDisplay.pickerAlphabetBarOnLeft)
+        assertTrue(defaultDisplay.miniPlayerActionButtonOrder.contains(com.travelingtunes.app.core.model.GestureAction.PLAY_CURRENT_ALBUM))
+
+        val customButtons = listOf(
+            com.travelingtunes.app.core.model.GestureAction.NEXT,
+            com.travelingtunes.app.core.model.GestureAction.PREVIOUS
+        )
+        val updated = defaultDisplay.copy(
+            pickerAlphabetBarOnLeft = true,
+            miniPlayerActionButtonOrder = customButtons
+        )
+        assertTrue(updated.pickerAlphabetBarOnLeft)
+        assertEquals(2, updated.miniPlayerActionButtonOrder.size)
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.NEXT, updated.miniPlayerActionButtonOrder[0])
+
+        val jsonStr = com.travelingtunes.app.core.datastore.SettingsBackupHelper.exportToJson(
+            display = updated,
+            theme = ThemeSettings(),
+            bindings = emptyMap(),
+            gpsVolume = false,
+            gpsSens = 0.5f,
+            autoRescan = true
+        )
+        assertTrue(jsonStr.contains("\"pickerAlphabetBarOnLeft\": true"))
+        assertTrue(jsonStr.contains("\"miniPlayerActionButtonOrder\": \"NEXT,PREVIOUS\""))
+    }
+
+    @Test
     fun testDrivingModeAndSpeedVolumeDefaults() {
         val display = com.travelingtunes.app.core.model.DisplaySettings()
         org.junit.Assert.assertFalse(display.drivingModeEnabled)

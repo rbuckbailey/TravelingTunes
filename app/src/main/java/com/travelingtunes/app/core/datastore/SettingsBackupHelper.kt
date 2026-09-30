@@ -88,6 +88,8 @@ object SettingsBackupHelper {
         sb.append("    \"autoSpeedUnit\": \"${display.autoSpeedUnit}\",\n")
         sb.append("    \"drivingModeEnabled\": ${display.drivingModeEnabled},\n")
         sb.append("    \"autoEnableDrivingMode\": ${display.autoEnableDrivingMode},\n")
+        sb.append("    \"pickerAlphabetBarOnLeft\": ${display.pickerAlphabetBarOnLeft},\n")
+        sb.append("    \"miniPlayerActionButtonOrder\": \"${display.miniPlayerActionButtonOrder.joinToString(",") { it.name }}\",\n")
         sb.append("    \"autoActionButtonOrder\": \"${display.autoActionButtonOrder.joinToString(",") { it.name }}\"\n")
         sb.append("  },\n")
 

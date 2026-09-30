@@ -767,11 +767,7 @@ class AlbumArtDownloader(
 
     fun fetchImageBitmap(imgUrl: String): Bitmap? {
         val bytes = downloadImageBytes(imgUrl) ?: return null
-        return try {
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        } catch (_: Exception) {
-            null
-        }
+        return com.travelingtunes.app.feature.player.decodeSampledBitmapFromByteArray(bytes, 800, 800)
     }
 
     suspend fun searchCandidatesWithQuery(
@@ -938,12 +934,14 @@ class AlbumArtDownloader(
 
     private fun loadSongArtworkFromUri(context: Context, uri: Uri): Bitmap? {
         return try {
-            if (uri.scheme == "file") {
-                BitmapFactory.decodeFile(uri.path)
+            if (uri.scheme == "file" && uri.path != null) {
+                com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(uri.path!!, 800, 800)
             } else {
-                context.contentResolver.openInputStream(uri)?.use { stream ->
-                    BitmapFactory.decodeStream(stream)
-                }
+                com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
+                    inputStreamSupplier = { context.contentResolver.openInputStream(uri) },
+                    reqWidth = 800,
+                    reqHeight = 800
+                )
             }
         } catch (e: Exception) {
             null

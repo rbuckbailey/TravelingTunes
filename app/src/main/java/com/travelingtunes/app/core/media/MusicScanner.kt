@@ -340,7 +340,7 @@ class MusicScanner(
                                 val embeddedUri = Uri.fromFile(embeddedFile)
                                 musicDatabase.updateAlbumArtwork(album, artist, embeddedUri)
 
-                                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                val bitmap = com.travelingtunes.app.feature.player.decodeSampledBitmapFromByteArray(bytes, 800, 800)
                                 if (bitmap != null) {
                                     val imgBmp = bitmap.asImageBitmap()
                                     for (song in songs) {

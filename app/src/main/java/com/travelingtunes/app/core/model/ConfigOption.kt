@@ -90,6 +90,7 @@ data class ConfigOption(
             ConfigOption("ACTION_DUPLICATE_TRACK_IDENTIFIER", "Music Library", "Duplicate Track Finder", isBooleanToggle = false),
             ConfigOption("LIBRARY_autoRescan", "Music Library", "Auto Rescan Library", isBooleanToggle = true),
             ConfigOption("LIBRARY_gpsVolume", "Music Library", "Speed-Dependent Volume", isBooleanToggle = true),
+            ConfigOption("LIBRARY_pickerAlphabetBarOnLeft", "Music Library", "Alphabet Bar on Left Side", isBooleanToggle = true),
 
             // Playback
             ConfigOption("ACTION_TOGGLE_REPEAT", "Playback", "Toggle Repeat Mode", isBooleanToggle = true),

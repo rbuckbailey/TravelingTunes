@@ -1149,12 +1149,14 @@ private fun AlbumArtBrowserItemRow(
     val bitmap = remember(albumInfo.artworkUri) {
         val uri = albumInfo.artworkUri ?: return@remember null
         try {
-            if (uri.scheme == "file") {
-                android.graphics.BitmapFactory.decodeFile(uri.path)
+            if (uri.scheme == "file" && uri.path != null) {
+                com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(uri.path!!, 400, 400)
             } else {
-                context.contentResolver.openInputStream(uri)?.use {
-                    android.graphics.BitmapFactory.decodeStream(it)
-                }
+                com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
+                    inputStreamSupplier = { context.contentResolver.openInputStream(uri) },
+                    reqWidth = 400,
+                    reqHeight = 400
+                )
             }
         } catch (e: Exception) {
             null
@@ -1438,12 +1440,14 @@ private fun AlbumArtThumbnail(
     val bitmap = remember(artworkUri) {
         val uri = artworkUri ?: return@remember null
         try {
-            if (uri.scheme == "file") {
-                android.graphics.BitmapFactory.decodeFile(uri.path)
+            if (uri.scheme == "file" && uri.path != null) {
+                com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(uri.path!!, 200, 200)
             } else {
-                context.contentResolver.openInputStream(uri)?.use {
-                    android.graphics.BitmapFactory.decodeStream(it)
-                }
+                com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
+                    inputStreamSupplier = { context.contentResolver.openInputStream(uri) },
+                    reqWidth = 200,
+                    reqHeight = 200
+                )
             }
         } catch (e: Exception) {
             null
@@ -2095,12 +2099,14 @@ private fun ZoomableArtPreviewDialog(
                 bitmap = albumArtDownloader.fetchImageBitmap(candidate.url)
             } else if (artworkUri != null) {
                 try {
-                    bitmap = if (artworkUri.scheme == "file") {
-                        android.graphics.BitmapFactory.decodeFile(artworkUri.path)
+                    bitmap = if (artworkUri.scheme == "file" && artworkUri.path != null) {
+                        com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(artworkUri.path!!, 600, 600)
                     } else {
-                        context.contentResolver.openInputStream(artworkUri)?.use {
-                            android.graphics.BitmapFactory.decodeStream(it)
-                        }
+                        com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
+                            inputStreamSupplier = { context.contentResolver.openInputStream(artworkUri) },
+                            reqWidth = 600,
+                            reqHeight = 600
+                        )
                     }
                 } catch (e: Exception) {
                     bitmap = null

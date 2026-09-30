@@ -1,6 +1,8 @@
 package com.travelingtunes.app.core.theme
 
 import android.content.Context
+import androidx.compose.ui.graphics.asAndroidBitmap
+import com.travelingtunes.app.core.media.AlbumArtCache
 import com.travelingtunes.app.core.model.ArtColorPriority
 import com.travelingtunes.app.core.model.ColorTheme
 import com.travelingtunes.app.core.model.Song
@@ -77,7 +79,8 @@ class AlbumArtColorCache private constructor() {
         val cached = themeCache.get(key)
         if (cached != null) return@withContext cached
 
-        val bitmap = loadSongArtwork(context, song)
+        val cachedBitmap = AlbumArtCache.instance.get(song.id)?.asAndroidBitmap()?.takeIf { !it.isRecycled }
+        val bitmap = cachedBitmap ?: loadSongArtwork(context, song)
         if (bitmap != null) {
             val extracted = AlbumArtColorExtractor.extractThemeFromBitmap(
                 bitmap = bitmap,

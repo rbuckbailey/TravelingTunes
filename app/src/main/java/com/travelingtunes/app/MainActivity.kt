@@ -161,6 +161,7 @@ class MainActivity : ComponentActivity() {
         }
 
         requestRequiredPermissions()
+        handleVoiceSearchIntent(intent)
 
         setContent {
             val activityScope = rememberCoroutineScope()
@@ -596,6 +597,34 @@ class MainActivity : ComponentActivity() {
         speedVolumeManager.stopTracking()
         ambientNoiseManager.stopListening()
         super.onDestroy()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleVoiceSearchIntent(intent)
+    }
+
+    private fun handleVoiceSearchIntent(intent: Intent?) {
+        if (intent == null) return
+        val action = intent.action
+        if (action == "android.media.action.MEDIA_PLAY_FROM_SEARCH") {
+            val query = intent.getStringExtra(android.app.SearchManager.QUERY) ?: intent.getStringExtra("query")
+            val focus = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_FOCUS)
+            val title = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_TITLE)
+            val artist = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_ARTIST)
+            val album = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_ALBUM)
+            val genre = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_GENRE)
+
+            playbackManager.playFromSearchQuery(
+                query = query,
+                focus = focus,
+                title = title,
+                artist = artist,
+                album = album,
+                genre = genre
+            )
+        }
     }
 }
 

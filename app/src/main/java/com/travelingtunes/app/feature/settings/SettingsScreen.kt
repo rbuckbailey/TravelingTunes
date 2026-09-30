@@ -1227,7 +1227,11 @@ private fun SubmenuContent(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
             Text(
                 text = submenu.title,
                 style = MaterialTheme.typography.titleMedium,
@@ -1243,6 +1247,8 @@ private fun SubmenuContent(
 
             when (submenu) {
                 SettingsSubmenu.LIBRARY -> LibrarySettingsContent(
+                    displaySettings = displaySettings,
+                    onUpdateDisplaySettings = onUpdateDisplaySettings,
                     musicFolderName = musicFolderName,
                     isScanning = isScanning,
                     lastScanTime = lastScanTime,
@@ -1381,6 +1387,8 @@ private fun SubmenuContent(
 
 @Composable
 private fun LibrarySettingsContent(
+    displaySettings: DisplaySettings = DisplaySettings(),
+    onUpdateDisplaySettings: (DisplaySettings) -> Unit = {},
     musicFolderName: String?,
     isScanning: Boolean,
     lastScanTime: Long,
@@ -1426,6 +1434,18 @@ private fun LibrarySettingsContent(
     onRestoreSettings: () -> Unit = {}
 ) {
     Column {
+        ListItem(
+            headlineContent = { Text("Alphabet Skipping Bar on Left") },
+            supportingContent = { Text("Position the picker alphabet skipping bar on the left side of the UI instead of the right side") },
+            trailingContent = {
+                Switch(
+                    checked = displaySettings.pickerAlphabetBarOnLeft,
+                    onCheckedChange = { checked ->
+                        onUpdateDisplaySettings(displaySettings.copy(pickerAlphabetBarOnLeft = checked))
+                    }
+                )
+            }
+        )
         ListItem(
             headlineContent = { Text("Library Folder") },
             supportingContent = {
@@ -2961,7 +2981,155 @@ private fun AndroidAutoSettingsContent(
             }
         }
 
-        // Card 2: Android Auto Display & Behavior Options
+        // Card 3: Android Auto Action Buttons & Order (Re-orderable)
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Android Auto Action Buttons",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Configure and re-order playback control buttons displayed on your Android Auto media player screen.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val currentAutoButtons = displaySettings.autoActionButtonOrder
+                var showAddAutoDropdown by remember { mutableStateOf(false) }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currentAutoButtons.forEachIndexed { index, action ->
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DragHandle,
+                                        contentDescription = "Drag handle",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "${index + 1}. ${action.displayName}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (index > 0) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentAutoButtons.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index - 1]
+                                                newOrder[index - 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowUp,
+                                                contentDescription = "Move Up"
+                                            )
+                                        }
+                                    }
+                                    if (index < currentAutoButtons.size - 1) {
+                                        IconButton(
+                                            onClick = {
+                                                val newOrder = currentAutoButtons.toMutableList()
+                                                val temp = newOrder[index]
+                                                newOrder[index] = newOrder[index + 1]
+                                                newOrder[index + 1] = temp
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.KeyboardArrowDown,
+                                                contentDescription = "Move Down"
+                                            )
+                                        }
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            val newOrder = currentAutoButtons.toMutableList().apply { removeAt(index) }
+                                            onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Remove Action",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        val availableAutoActions = GestureAction.entries.filter {
+                            it != GestureAction.UNASSIGNED &&
+                            it !in currentAutoButtons
+                        }
+
+                        if (availableAutoActions.isNotEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                OutlinedButton(
+                                    onClick = { showAddAutoDropdown = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Add Action Button")
+                                }
+
+                                if (showAddAutoDropdown) {
+                                    ActionSelectionDialog(
+                                        title = "Add Action Button",
+                                        excludeRadialMenu = false,
+                                        excludeUnassigned = true,
+                                        onDismissRequest = { showAddAutoDropdown = false },
+                                        onActionSelected = { act ->
+                                            if (act !in currentAutoButtons) {
+                                                val newOrder = currentAutoButtons.toMutableList().apply { add(act) }
+                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            }
+                                            showAddAutoDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Card 4: Android Auto Display & Behavior Options
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -3469,7 +3637,7 @@ private fun ButtonsSettingsContent(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                val currentButtons = displaySettings.autoActionButtonOrder
+                val currentButtons = displaySettings.miniPlayerActionButtonOrder
                 var showAddDropdown by remember { mutableStateOf(false) }
 
                 Card(
@@ -3513,7 +3681,7 @@ private fun ButtonsSettingsContent(
                                                 val temp = newOrder[index]
                                                 newOrder[index] = newOrder[index - 1]
                                                 newOrder[index - 1] = temp
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                                onUpdateDisplaySettings(displaySettings.copy(miniPlayerActionButtonOrder = newOrder))
                                             },
                                             modifier = Modifier.size(32.dp)
                                         ) {
@@ -3530,7 +3698,7 @@ private fun ButtonsSettingsContent(
                                                 val temp = newOrder[index]
                                                 newOrder[index] = newOrder[index + 1]
                                                 newOrder[index + 1] = temp
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                                onUpdateDisplaySettings(displaySettings.copy(miniPlayerActionButtonOrder = newOrder))
                                             },
                                             modifier = Modifier.size(32.dp)
                                         ) {
@@ -3543,7 +3711,7 @@ private fun ButtonsSettingsContent(
                                     IconButton(
                                         onClick = {
                                             val newOrder = currentButtons.toMutableList().apply { removeAt(index) }
-                                            onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                            onUpdateDisplaySettings(displaySettings.copy(miniPlayerActionButtonOrder = newOrder))
                                         },
                                         modifier = Modifier.size(32.dp)
                                     ) {
@@ -3582,7 +3750,7 @@ private fun ButtonsSettingsContent(
                                         onActionSelected = { act ->
                                             if (act !in currentButtons) {
                                                 val newOrder = currentButtons.toMutableList().apply { add(act) }
-                                                onUpdateDisplaySettings(displaySettings.copy(autoActionButtonOrder = newOrder))
+                                                onUpdateDisplaySettings(displaySettings.copy(miniPlayerActionButtonOrder = newOrder))
                                             }
                                             showAddDropdown = false
                                         }

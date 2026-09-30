@@ -1053,6 +1053,16 @@ fun PlayerScreen(
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     val nativeEvent = keyEvent.nativeKeyEvent
+                    val isMediaKey = nativeEvent.keyCode in listOf(
+                        android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                        android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
+                        android.view.KeyEvent.KEYCODE_MEDIA_PAUSE,
+                        android.view.KeyEvent.KEYCODE_MEDIA_NEXT,
+                        android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+                        android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+                        android.view.KeyEvent.KEYCODE_MEDIA_REWIND,
+                        android.view.KeyEvent.KEYCODE_MEDIA_STOP
+                    )
                     val trigger = keyCodeToKeyboardTrigger(
                         keyCode = nativeEvent.keyCode,
                         isShiftPressed = keyEvent.isShiftPressed,
@@ -1080,7 +1090,7 @@ fun PlayerScreen(
                                 pagerState = pagerState,
                                 pageCount = pageCount
                             )
-                            return@onKeyEvent true
+                            return@onKeyEvent !isMediaKey
                         }
                     }
                 }
@@ -2392,6 +2402,7 @@ private fun StretchedFittedArtBackground(
     artAlpha: Float
 ) {
     val androidBmp = remember(imgBitmap) { imgBitmap.asAndroidBitmap() }
+    if (androidBmp.isRecycled) return
     val bmpWidth = androidBmp.width
     val bmpHeight = androidBmp.height
 
@@ -3049,40 +3060,116 @@ private fun TextAlignmentOption.toComposeAlignment(): TextAlign {
     }
 }
 
+fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+    val height = options.outHeight
+    val width = options.outWidth
+    var inSampleSize = 1
+
+    if (height > reqHeight || width > reqWidth) {
+        val halfHeight = height / 2
+        val halfWidth = width / 2
+        while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+            inSampleSize *= 2
+        }
+    }
+    return inSampleSize
+}
+
+fun decodeSampledBitmapFromFile(
+    path: String,
+    reqWidth: Int = 800,
+    reqHeight: Int = 800
+): android.graphics.Bitmap? {
+    return try {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, options)
+        if (options.outWidth <= 0 || options.outHeight <= 0) return null
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+        options.inJustDecodeBounds = false
+        BitmapFactory.decodeFile(path, options)
+    } catch (e: Exception) {
+        null
+    }
+}
+
+fun decodeSampledBitmapFromStream(
+    inputStreamSupplier: () -> java.io.InputStream?,
+    reqWidth: Int = 800,
+    reqHeight: Int = 800
+): android.graphics.Bitmap? {
+    return try {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        inputStreamSupplier()?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, options)
+        } ?: return null
+
+        if (options.outWidth <= 0 || options.outHeight <= 0) return null
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+        options.inJustDecodeBounds = false
+        inputStreamSupplier()?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, options)
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+fun decodeSampledBitmapFromByteArray(
+    bytes: ByteArray,
+    reqWidth: Int = 800,
+    reqHeight: Int = 800
+): android.graphics.Bitmap? {
+    return try {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        if (options.outWidth <= 0 || options.outHeight <= 0) return null
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+        options.inJustDecodeBounds = false
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    } catch (e: Exception) {
+        null
+    }
+}
+
 fun android.graphics.Bitmap.cropToSquare(): android.graphics.Bitmap {
-    if (width == height) return this
+    if (isRecycled || width == height) return this
     val size = minOf(width, height)
     val x = (width - size) / 2
     val y = (height - size) / 2
-    return android.graphics.Bitmap.createBitmap(this, x, y, size, size)
+    return try {
+        android.graphics.Bitmap.createBitmap(this, x, y, size, size)
+    } catch (e: Exception) {
+        this
+    }
 }
 
-suspend fun loadSongArtwork(context: android.content.Context, song: Song): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
+suspend fun loadSongArtwork(context: android.content.Context, song: Song, reqSize: Int = 800): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
     // 1. Try explicit song.artworkUri if present (downloaded or scanned artwork)
     if (song.artworkUri != null) {
-        if (song.artworkUri.scheme == "file") {
-            try {
-                val bmp = BitmapFactory.decodeFile(song.artworkUri.path)
-                if (bmp != null) return@withContext bmp.cropToSquare()
-            } catch (ignored: Exception) {}
+        if (song.artworkUri.scheme == "file" && song.artworkUri.path != null) {
+            val bmp = decodeSampledBitmapFromFile(song.artworkUri.path!!, reqSize, reqSize)
+            if (bmp != null) return@withContext bmp.cropToSquare()
         }
-        try {
-            context.contentResolver.openInputStream(song.artworkUri)?.use { stream ->
-                val bmp = BitmapFactory.decodeStream(stream)
-                if (bmp != null) return@withContext bmp.cropToSquare()
-            }
-        } catch (ignored: Exception) {}
+        val bmp = decodeSampledBitmapFromStream(
+            inputStreamSupplier = { context.contentResolver.openInputStream(song.artworkUri) },
+            reqWidth = reqSize,
+            reqHeight = reqSize
+        )
+        if (bmp != null) return@withContext bmp.cropToSquare()
     }
 
     // 2. Try MediaStore album art URI from song.albumId
     if (song.albumId > 0) {
-        try {
-            val albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
-            context.contentResolver.openInputStream(albumArtUri)?.use { stream ->
-                val bmp = BitmapFactory.decodeStream(stream)
-                if (bmp != null) return@withContext bmp.cropToSquare()
-            }
-        } catch (ignored: Exception) {}
+        val albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+        val bmp = decodeSampledBitmapFromStream(
+            inputStreamSupplier = { context.contentResolver.openInputStream(albumArtUri) },
+            reqWidth = reqSize,
+            reqHeight = reqSize
+        )
+        if (bmp != null) return@withContext bmp.cropToSquare()
     }
 
     // 3. Try MediaMetadataRetriever on song.contentUri (embedded ID3 artwork)
@@ -3091,7 +3178,7 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
         mmr.setDataSource(context, song.contentUri)
         val bytes = mmr.embeddedPicture
         if (bytes != null) {
-            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            val bmp = decodeSampledBitmapFromByteArray(bytes, reqSize, reqSize)
             if (bmp != null) return@withContext bmp.cropToSquare()
         }
     } catch (ignored: Exception) {
@@ -3102,7 +3189,7 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song): andro
     // 4. Try ContentResolver.loadThumbnail (Android 10+ / API 29+)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
-            val bmp = context.contentResolver.loadThumbnail(song.contentUri, Size(1024, 1024), null)
+            val bmp = context.contentResolver.loadThumbnail(song.contentUri, Size(reqSize, reqSize), null)
             if (bmp != null) return@withContext bmp.cropToSquare()
         } catch (ignored: Exception) {}
     }
@@ -3650,7 +3737,9 @@ private fun StretchedEdgeBackground(
         }
     }
 
-    val imgBitmap = bitmap?.cropToSquare() ?: return
+    val imgBitmap = remember(bitmap) {
+        bitmap?.takeIf { !it.isRecycled }?.cropToSquare()
+    } ?: return
 
     val edgeBitmap = remember(imgBitmap, dockEdge) {
         val w = imgBitmap.width

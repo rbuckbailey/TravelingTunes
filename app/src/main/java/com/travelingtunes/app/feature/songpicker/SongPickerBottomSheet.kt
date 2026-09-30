@@ -16,10 +16,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import com.travelingtunes.app.core.model.DisplaySettings
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -148,6 +156,9 @@ fun SongPickerBottomSheet(
     val volumeAnalysisProgressCurrent by musicScanner?.volumeAnalysisProgressCurrent?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val volumeAnalysisProgressTotal by musicScanner?.volumeAnalysisProgressTotal?.collectAsState() ?: remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val volumeAnalysisStatusMessage by musicScanner?.volumeAnalysisStatusMessage?.collectAsState() ?: remember { mutableStateOf(null) }
+
+    val displaySettings by (settingsDataStore?.displaySettingsFlow ?: flowOf(DisplaySettings())).collectAsState(initial = DisplaySettings())
+    val pickerAlphabetBarOnLeft = displaySettings.pickerAlphabetBarOnLeft
 
     LaunchedEffect(visible, normalizationSettings, isAnalyzingVolume) {
         if (visible) {
@@ -708,69 +719,77 @@ fun SongPickerBottomSheet(
                     if (songsList.isEmpty()) {
                         EmptyListState("No songs found")
                     } else {
-                        LazyColumn(
-                            state = songsListState,
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        FastScrollablePickerList(
+                            items = songsList,
+                            listState = songsListState,
+                            getItemTitle = { it.title },
+                            alphabetBarOnLeft = pickerAlphabetBarOnLeft,
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(songsList.size, key = { index -> songsList[index].id }) { index ->
-                                val song = songsList[index]
-                                SongItemRow(
-                                    song = song,
-                                    artVersion = artVersion,
-                                    onPlay = {
-                                        coroutineScope.launch {
-                                            val selectedSong = songsList[index]
-                                            val fullList = if (selectedCategory == PickerCategory.SONGS && !hasDrillDown) {
-                                                songsList
-                                            } else {
-                                                val dbSongs = musicDatabase.getAllSongs()
-                                                dbSongs.ifEmpty { songsList }
+                            LazyColumn(
+                                state = songsListState,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(songsList.size, key = { index -> songsList[index].id }) { index ->
+                                    val song = songsList[index]
+                                    SongItemRow(
+                                        song = song,
+                                        artVersion = artVersion,
+                                        onPlay = {
+                                            coroutineScope.launch {
+                                                val selectedSong = songsList[index]
+                                                val fullList = if (selectedCategory == PickerCategory.SONGS && !hasDrillDown) {
+                                                    songsList
+                                                } else {
+                                                    val dbSongs = musicDatabase.getAllSongs()
+                                                    dbSongs.ifEmpty { songsList }
+                                                }
+                                                val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
+                                                playbackManager.setPlaylistAndPlay(fullList, indexInFull)
+                                                if (selectedAlbum != null) {
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                                } else if (selectedArtist != null) {
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
+                                                } else if (selectedGenre != null) {
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
+                                                } else if (selectedFolder != null) {
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
+                                                }
+                                                onDismiss()
                                             }
-                                            val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
-                                            playbackManager.setPlaylistAndPlay(fullList, indexInFull)
-                                            if (selectedAlbum != null) {
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
-                                            } else if (selectedArtist != null) {
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
-                                            } else if (selectedGenre != null) {
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
-                                            } else if (selectedFolder != null) {
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
+                                        },
+                                        onPlayNext = {
+                                            playbackManager.playNext(song)
+                                        },
+                                        onAddToQueue = {
+                                            playbackManager.addSongToQueue(song)
+                                        },
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                val selectedSong = songsList[index]
+                                                val fullList = if (selectedCategory == PickerCategory.SONGS && !hasDrillDown) {
+                                                    songsList
+                                                } else {
+                                                    val dbSongs = musicDatabase.getAllSongs()
+                                                    if (dbSongs.isNotEmpty()) dbSongs else songsList
+                                                }
+                                                val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
+                                                playbackManager.setPlaylistAndPlay(fullList, indexInFull)
+                                                if (selectedAlbum != null) {
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                                } else if (selectedArtist != null) {
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
+                                                } else if (selectedGenre != null) {
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
+                                                } else if (selectedFolder != null) {
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
+                                                }
+                                                onDismiss()
                                             }
-                                            onDismiss()
                                         }
-                                    },
-                                    onPlayNext = {
-                                        playbackManager.playNext(song)
-                                    },
-                                    onAddToQueue = {
-                                        playbackManager.addSongToQueue(song)
-                                    },
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            val selectedSong = songsList[index]
-                                            val fullList = if (selectedCategory == PickerCategory.SONGS && !hasDrillDown) {
-                                                songsList
-                                            } else {
-                                                val dbSongs = musicDatabase.getAllSongs()
-                                                if (dbSongs.isNotEmpty()) dbSongs else songsList
-                                            }
-                                            val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
-                                            playbackManager.setPlaylistAndPlay(fullList, indexInFull)
-                                            if (selectedAlbum != null) {
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
-                                            } else if (selectedArtist != null) {
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
-                                            } else if (selectedGenre != null) {
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
-                                            } else if (selectedFolder != null) {
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
-                                            }
-                                            onDismiss()
-                                        }
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -778,66 +797,74 @@ fun SongPickerBottomSheet(
                     if (albumsList.isEmpty()) {
                         EmptyListState("No albums found")
                     } else {
-                        LazyColumn(
-                            state = albumsListState,
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        FastScrollablePickerList(
+                            items = albumsList,
+                            listState = albumsListState,
+                            getItemTitle = { it.name },
+                            alphabetBarOnLeft = pickerAlphabetBarOnLeft,
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(albumsList, key = { album -> "${album.name}_${album.artist}" }) { album ->
-                                AlbumItemRow(
-                                    album = album,
-                                    artVersion = artVersion,
-                                    onPlay = {
-                                        coroutineScope.launch {
-                                            val fullLibrary = musicDatabase.getAllSongs()
-                                            val albumSongs = musicDatabase.getSongsByAlbum(album.name)
-                                            val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
-                                                albumSongs.filter {
-                                                    (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
-                                                    (selectedArtist == null || it.artist.equals(selectedArtist, true))
+                            LazyColumn(
+                                state = albumsListState,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(albumsList, key = { album -> "${album.name}_${album.artist}" }) { album ->
+                                    AlbumItemRow(
+                                        album = album,
+                                        artVersion = artVersion,
+                                        onPlay = {
+                                            coroutineScope.launch {
+                                                val fullLibrary = musicDatabase.getAllSongs()
+                                                val albumSongs = musicDatabase.getSongsByAlbum(album.name)
+                                                val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
+                                                    albumSongs.filter {
+                                                        (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
+                                                        (selectedArtist == null || it.artist.equals(selectedArtist, true))
+                                                    }
+                                                } else albumSongs
+                                                val playSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
+                                                if (playSongs.isNotEmpty()) {
+                                                    val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else playSongs
+                                                    val targetSong = playSongs.first()
+                                                    val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                                                    playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
                                                 }
-                                            } else albumSongs
-                                            val playSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
-                                            if (playSongs.isNotEmpty()) {
-                                                val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else playSongs
-                                                val targetSong = playSongs.first()
-                                                val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
-                                                playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
+                                                onDismiss()
                                             }
-                                            onDismiss()
+                                        },
+                                        onPlayNext = {
+                                            coroutineScope.launch {
+                                                val albumSongs = musicDatabase.getSongsByAlbum(album.name)
+                                                val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
+                                                    albumSongs.filter {
+                                                        (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
+                                                        (selectedArtist == null || it.artist.equals(selectedArtist, true))
+                                                    }
+                                                } else albumSongs
+                                                val playNextSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
+                                                playbackManager.playNext(playNextSongs)
+                                            }
+                                        },
+                                        onAddToQueue = {
+                                            coroutineScope.launch {
+                                                val albumSongs = musicDatabase.getSongsByAlbum(album.name)
+                                                val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
+                                                    albumSongs.filter {
+                                                        (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
+                                                        (selectedArtist == null || it.artist.equals(selectedArtist, true))
+                                                    }
+                                                } else albumSongs
+                                                val addSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
+                                                playbackManager.addSongsToQueue(addSongs)
+                                            }
+                                        },
+                                        onClick = {
+                                            selectedAlbum = album.name
                                         }
-                                    },
-                                    onPlayNext = {
-                                        coroutineScope.launch {
-                                            val albumSongs = musicDatabase.getSongsByAlbum(album.name)
-                                            val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
-                                                albumSongs.filter {
-                                                    (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
-                                                    (selectedArtist == null || it.artist.equals(selectedArtist, true))
-                                                }
-                                            } else albumSongs
-                                            val playNextSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
-                                            playbackManager.playNext(playNextSongs)
-                                        }
-                                    },
-                                    onAddToQueue = {
-                                        coroutineScope.launch {
-                                            val albumSongs = musicDatabase.getSongsByAlbum(album.name)
-                                            val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
-                                                albumSongs.filter {
-                                                    (selectedGenre == null || it.genre.equals(selectedGenre, true)) &&
-                                                    (selectedArtist == null || it.artist.equals(selectedArtist, true))
-                                                }
-                                            } else albumSongs
-                                            val addSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
-                                            playbackManager.addSongsToQueue(addSongs)
-                                        }
-                                    },
-                                    onClick = {
-                                        selectedAlbum = album.name
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -845,56 +872,64 @@ fun SongPickerBottomSheet(
                     if (artistsList.isEmpty()) {
                         EmptyListState("No artists found")
                     } else {
-                        LazyColumn(
-                            state = artistsListState,
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        FastScrollablePickerList(
+                            items = artistsList,
+                            listState = artistsListState,
+                            getItemTitle = { it },
+                            alphabetBarOnLeft = pickerAlphabetBarOnLeft,
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(artistsList, key = { artist -> artist }) { artist ->
-                                ArtistItemRow(
-                                    artist = artist,
-                                    onPlay = {
-                                        coroutineScope.launch {
-                                            val fullLibrary = musicDatabase.getAllSongs()
-                                            val artistSongs = if (selectedGenre != null) {
-                                                musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
-                                            } else {
-                                                musicDatabase.getSongsByArtist(artist)
+                            LazyColumn(
+                                state = artistsListState,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(artistsList, key = { artist -> artist }) { artist ->
+                                    ArtistItemRow(
+                                        artist = artist,
+                                        onPlay = {
+                                            coroutineScope.launch {
+                                                val fullLibrary = musicDatabase.getAllSongs()
+                                                val artistSongs = if (selectedGenre != null) {
+                                                    musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
+                                                } else {
+                                                    musicDatabase.getSongsByArtist(artist)
+                                                }
+                                                if (artistSongs.isNotEmpty()) {
+                                                    val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else artistSongs
+                                                    val targetSong = artistSongs.first()
+                                                    val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                                                    playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
+                                                }
+                                                onDismiss()
                                             }
-                                            if (artistSongs.isNotEmpty()) {
-                                                val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else artistSongs
-                                                val targetSong = artistSongs.first()
-                                                val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
-                                                playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
+                                        },
+                                        onPlayNext = {
+                                            coroutineScope.launch {
+                                                val allSongs = if (selectedGenre != null) {
+                                                    musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
+                                                } else {
+                                                    musicDatabase.getSongsByArtist(artist)
+                                                }
+                                                playbackManager.playNext(allSongs)
                                             }
-                                            onDismiss()
+                                        },
+                                        onAddToQueue = {
+                                            coroutineScope.launch {
+                                                val allSongs = if (selectedGenre != null) {
+                                                    musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
+                                                } else {
+                                                    musicDatabase.getSongsByArtist(artist)
+                                                }
+                                                playbackManager.addSongsToQueue(allSongs)
+                                            }
+                                        },
+                                        onClick = {
+                                            selectedArtist = artist
                                         }
-                                    },
-                                    onPlayNext = {
-                                        coroutineScope.launch {
-                                            val allSongs = if (selectedGenre != null) {
-                                                musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
-                                            } else {
-                                                musicDatabase.getSongsByArtist(artist)
-                                            }
-                                            playbackManager.playNext(allSongs)
-                                        }
-                                    },
-                                    onAddToQueue = {
-                                        coroutineScope.launch {
-                                            val allSongs = if (selectedGenre != null) {
-                                                musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
-                                            } else {
-                                                musicDatabase.getSongsByArtist(artist)
-                                            }
-                                            playbackManager.addSongsToQueue(allSongs)
-                                        }
-                                    },
-                                    onClick = {
-                                        selectedArtist = artist
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -902,44 +937,52 @@ fun SongPickerBottomSheet(
                     if (genresList.isEmpty()) {
                         EmptyListState("No genres found")
                     } else {
-                        LazyColumn(
-                            state = genresListState,
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        FastScrollablePickerList(
+                            items = genresList,
+                            listState = genresListState,
+                            getItemTitle = { it },
+                            alphabetBarOnLeft = pickerAlphabetBarOnLeft,
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(genresList, key = { genre -> genre }) { genre ->
-                                GenreItemRow(
-                                    genre = genre,
-                                    onPlay = {
-                                        coroutineScope.launch {
-                                            val fullLibrary = musicDatabase.getAllSongs()
-                                            val genreSongs = musicDatabase.getSongsByGenre(genre)
-                                            if (genreSongs.isNotEmpty()) {
-                                                val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else genreSongs
-                                                val targetSong = genreSongs.first()
-                                                val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
-                                                playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
+                            LazyColumn(
+                                state = genresListState,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(genresList, key = { genre -> genre }) { genre ->
+                                    GenreItemRow(
+                                        genre = genre,
+                                        onPlay = {
+                                            coroutineScope.launch {
+                                                val fullLibrary = musicDatabase.getAllSongs()
+                                                val genreSongs = musicDatabase.getSongsByGenre(genre)
+                                                if (genreSongs.isNotEmpty()) {
+                                                    val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else genreSongs
+                                                    val targetSong = genreSongs.first()
+                                                    val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                                                    playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
+                                                }
+                                                onDismiss()
                                             }
-                                            onDismiss()
+                                        },
+                                        onPlayNext = {
+                                            coroutineScope.launch {
+                                                val genreSongs = musicDatabase.getSongsByGenre(genre)
+                                                playbackManager.playNext(genreSongs)
+                                            }
+                                        },
+                                        onAddToQueue = {
+                                            coroutineScope.launch {
+                                                val genreSongs = musicDatabase.getSongsByGenre(genre)
+                                                playbackManager.addSongsToQueue(genreSongs)
+                                            }
+                                        },
+                                        onClick = {
+                                            selectedGenre = genre
                                         }
-                                    },
-                                    onPlayNext = {
-                                        coroutineScope.launch {
-                                            val genreSongs = musicDatabase.getSongsByGenre(genre)
-                                            playbackManager.playNext(genreSongs)
-                                        }
-                                    },
-                                    onAddToQueue = {
-                                        coroutineScope.launch {
-                                            val genreSongs = musicDatabase.getSongsByGenre(genre)
-                                            playbackManager.addSongsToQueue(genreSongs)
-                                        }
-                                    },
-                                    onClick = {
-                                        selectedGenre = genre
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -947,54 +990,62 @@ fun SongPickerBottomSheet(
                     if (foldersList.isEmpty()) {
                         EmptyListState("No subfolders found")
                     } else {
-                        LazyColumn(
-                            state = foldersListState,
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        FastScrollablePickerList(
+                            items = foldersList,
+                            listState = foldersListState,
+                            getItemTitle = { it },
+                            alphabetBarOnLeft = pickerAlphabetBarOnLeft,
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            items(foldersList, key = { folder -> folder }) { folder ->
-                                FolderItemRow(
-                                    folder = folder,
-                                    onPlay = {
-                                        coroutineScope.launch {
-                                            val dbSongs = musicDatabase.getAllSongs()
-                                            val folderSongs = dbSongs.filter {
-                                                it.folderPath.equals(folder, ignoreCase = true) ||
-                                                it.folderPath.startsWith(folder, ignoreCase = true)
+                            LazyColumn(
+                                state = foldersListState,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(foldersList, key = { folder -> folder }) { folder ->
+                                    FolderItemRow(
+                                        folder = folder,
+                                        onPlay = {
+                                            coroutineScope.launch {
+                                                val dbSongs = musicDatabase.getAllSongs()
+                                                val folderSongs = dbSongs.filter {
+                                                    it.folderPath.equals(folder, ignoreCase = true) ||
+                                                    it.folderPath.startsWith(folder, ignoreCase = true)
+                                                }
+                                                if (folderSongs.isNotEmpty()) {
+                                                    val targetSong = folderSongs.first()
+                                                    val indexInMaster = dbSongs.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                                                    playbackManager.setPlaylistAndPlay(dbSongs, indexInMaster)
+                                                    playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
+                                                }
+                                                onDismiss()
                                             }
-                                            if (folderSongs.isNotEmpty()) {
-                                                val targetSong = folderSongs.first()
-                                                val indexInMaster = dbSongs.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
-                                                playbackManager.setPlaylistAndPlay(dbSongs, indexInMaster)
-                                                playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
+                                        },
+                                        onPlayNext = {
+                                            coroutineScope.launch {
+                                                val dbSongs = musicDatabase.getAllSongs()
+                                                val folderSongs = dbSongs.filter {
+                                                    it.folderPath.equals(folder, ignoreCase = true) ||
+                                                    it.folderPath.startsWith(folder, ignoreCase = true)
+                                                }
+                                                playbackManager.playNext(folderSongs)
                                             }
-                                            onDismiss()
+                                        },
+                                        onAddToQueue = {
+                                            coroutineScope.launch {
+                                                val dbSongs = musicDatabase.getAllSongs()
+                                                val folderSongs = dbSongs.filter {
+                                                    it.folderPath.equals(folder, ignoreCase = true) ||
+                                                    it.folderPath.startsWith(folder, ignoreCase = true)
+                                                }
+                                                playbackManager.addSongsToQueue(folderSongs)
+                                            }
+                                        },
+                                        onClick = {
+                                            selectedFolder = folder
                                         }
-                                    },
-                                    onPlayNext = {
-                                        coroutineScope.launch {
-                                            val dbSongs = musicDatabase.getAllSongs()
-                                            val folderSongs = dbSongs.filter {
-                                                it.folderPath.equals(folder, ignoreCase = true) ||
-                                                it.folderPath.startsWith(folder, ignoreCase = true)
-                                            }
-                                            playbackManager.playNext(folderSongs)
-                                        }
-                                    },
-                                    onAddToQueue = {
-                                        coroutineScope.launch {
-                                            val dbSongs = musicDatabase.getAllSongs()
-                                            val folderSongs = dbSongs.filter {
-                                                it.folderPath.equals(folder, ignoreCase = true) ||
-                                                it.folderPath.startsWith(folder, ignoreCase = true)
-                                            }
-                                            playbackManager.addSongsToQueue(folderSongs)
-                                        }
-                                    },
-                                    onClick = {
-                                        selectedFolder = folder
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -1617,12 +1668,14 @@ fun AlbumArtImage(
         } else if (artworkUri != null) {
             withContext(Dispatchers.IO) {
                 try {
-                    val bmp = if (artworkUri.scheme == "file") {
-                        BitmapFactory.decodeFile(artworkUri.path)
+                    val bmp = if (artworkUri.scheme == "file" && artworkUri.path != null) {
+                        com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(artworkUri.path!!, 400, 400)
                     } else {
-                        context.contentResolver.openInputStream(artworkUri)?.use { stream ->
-                            BitmapFactory.decodeStream(stream)
-                        }
+                        com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
+                            inputStreamSupplier = { context.contentResolver.openInputStream(artworkUri) },
+                            reqWidth = 400,
+                            reqHeight = 400
+                        )
                     }
                     bitmap = bmp?.asImageBitmap()
                 } catch (e: Exception) {
@@ -1676,4 +1729,191 @@ private fun formatDuration(durationMs: Long): String {
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return "%d:%02d".format(minutes, seconds)
+}
+
+private fun <T> findTargetIndex(
+    items: List<T>,
+    letter: String,
+    getItemTitle: (T) -> String
+): Int {
+    if (items.isEmpty()) return 0
+    if (letter == "#") {
+        val index = items.indexOfFirst { item ->
+            val firstChar = getItemTitle(item).trimStart().firstOrNull()
+            firstChar != null && !firstChar.isLetter()
+        }
+        return if (index >= 0) index else 0
+    } else {
+        val exactIndex = items.indexOfFirst { item ->
+            getItemTitle(item).trimStart().startsWith(letter, ignoreCase = true)
+        }
+        if (exactIndex >= 0) return exactIndex
+
+        val targetChar = letter.first().lowercaseChar()
+        val nextIndex = items.indexOfFirst { item ->
+            val firstChar = getItemTitle(item).trimStart().firstOrNull()?.lowercaseChar()
+            firstChar != null && firstChar >= targetChar
+        }
+        if (nextIndex >= 0) return nextIndex
+
+        return items.size - 1
+    }
+}
+
+@Composable
+private fun AlphabetSkippingBar(
+    alphabet: List<String>,
+    onLetterSelected: (String) -> Unit,
+    onInteractionEnded: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var barHeight by remember { mutableFloatStateOf(0f) }
+    var currentLetter by remember { mutableStateOf<String?>(null) }
+
+    fun processPosition(y: Float) {
+        if (barHeight > 0 && alphabet.isNotEmpty()) {
+            val index = ((y / barHeight) * alphabet.size).toInt().coerceIn(0, alphabet.size - 1)
+            val letter = alphabet[index]
+            if (currentLetter != letter) {
+                currentLetter = letter
+                onLetterSelected(letter)
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .onGloballyPositioned { coordinates ->
+                barHeight = coordinates.size.height.toFloat()
+            }
+            .pointerInput(alphabet, barHeight) {
+                detectTapGestures(
+                    onPress = { offset ->
+                        processPosition(offset.y)
+                        tryAwaitRelease()
+                        currentLetter = null
+                        onInteractionEnded()
+                    }
+                )
+            }
+            .pointerInput(alphabet, barHeight) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        processPosition(offset.y)
+                    },
+                    onDragEnd = {
+                        currentLetter = null
+                        onInteractionEnded()
+                    },
+                    onDragCancel = {
+                        currentLetter = null
+                        onInteractionEnded()
+                    },
+                    onDrag = { change, _ ->
+                        change.consume()
+                        processPosition(change.position.y)
+                    }
+                )
+            }
+            .padding(vertical = 2.dp)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxHeight().fillMaxWidth()
+        ) {
+            alphabet.forEach { letter ->
+                Text(
+                    text = letter,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
+                    lineHeight = 10.sp,
+                    fontWeight = if (currentLetter == letter) FontWeight.ExtraBold else FontWeight.Normal,
+                    color = if (currentLetter == letter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> FastScrollablePickerList(
+    items: List<T>,
+    listState: LazyListState,
+    getItemTitle: (T) -> String,
+    alphabetBarOnLeft: Boolean,
+    modifier: Modifier = Modifier,
+    lazyColumnContent: @Composable () -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val alphabet = remember { listOf("#") + ('A'..'Z').map { it.toString() } }
+    var activeLetter by remember { mutableStateOf<String?>(null) }
+
+    fun scrollToLetter(letter: String) {
+        if (items.isEmpty()) return
+        val targetIndex = findTargetIndex(items, letter, getItemTitle)
+        coroutineScope.launch {
+            listState.scrollToItem(targetIndex)
+        }
+    }
+
+    Box(modifier = modifier) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            if (alphabetBarOnLeft && items.isNotEmpty()) {
+                AlphabetSkippingBar(
+                    alphabet = alphabet,
+                    onLetterSelected = { letter ->
+                        activeLetter = letter
+                        scrollToLetter(letter)
+                    },
+                    onInteractionEnded = {
+                        activeLetter = null
+                    },
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(24.dp)
+                )
+            }
+
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                lazyColumnContent()
+            }
+
+            if (!alphabetBarOnLeft && items.isNotEmpty()) {
+                AlphabetSkippingBar(
+                    alphabet = alphabet,
+                    onLetterSelected = { letter ->
+                        activeLetter = letter
+                        scrollToLetter(letter)
+                    },
+                    onInteractionEnded = {
+                        activeLetter = null
+                    },
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(24.dp)
+                )
+            }
+        }
+
+        if (activeLetter != null) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .size(64.dp)
+                    .align(Alignment.Center)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = activeLetter!!,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
 }

@@ -131,14 +131,19 @@ class MusicPlaybackService : MediaLibraryService() {
         fun startService(context: Context) {
             val intent = Intent(context.applicationContext, MusicPlaybackService::class.java)
             try {
-                val player = sharedPlayer
-                if (player != null && player.playWhenReady && player.playbackState != ExoPlayer.STATE_IDLE) {
-                    androidx.core.content.ContextCompat.startForegroundService(context.applicationContext, intent)
-                } else {
-                    context.applicationContext.startService(intent)
-                }
+                context.applicationContext.startService(intent)
             } catch (e: Exception) {
-                android.util.Log.w("MusicPlaybackService", "Failed to start service", e)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && e is android.app.ForegroundServiceStartNotAllowedException) {
+                    android.util.Log.w("MusicPlaybackService", "startService not allowed in background", e)
+                } else {
+                    android.util.Log.w("MusicPlaybackService", "startService failed, attempting startForegroundService fallback", e)
+                    try {
+                        intent.putExtra("is_foreground_start", true)
+                        androidx.core.content.ContextCompat.startForegroundService(context.applicationContext, intent)
+                    } catch (e2: Exception) {
+                        android.util.Log.w("MusicPlaybackService", "Fallback startForegroundService failed", e2)
+                    }
+                }
             }
         }
     }
@@ -148,6 +153,52 @@ class MusicPlaybackService : MediaLibraryService() {
     private lateinit var settingsDataStore: SettingsDataStore
     private var autoDisplaySettings = DisplaySettings()
     private val serviceScope = CoroutineScope(Dispatchers.IO)
+
+    private fun startForegroundIfNeeded(): Boolean {
+        return try {
+            val player = sharedPlayer
+            val openAppIntent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                openAppIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val currentMediaItem = player?.currentMediaItem
+            val title = currentMediaItem?.mediaMetadata?.title?.toString()
+                ?.ifEmpty { getString(R.string.app_name) } ?: getString(R.string.app_name)
+            val artist = currentMediaItem?.mediaMetadata?.artist?.toString().orEmpty()
+
+            val notification = androidx.core.app.NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(title)
+                .setContentText(artist)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
+                .build()
+
+            val fgsType = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            } else {
+                0
+            }
+            androidx.core.app.ServiceCompat.startForeground(
+                this,
+                1001,
+                notification,
+                fgsType
+            )
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("MusicPlaybackService", "Failed to start foreground service in onStartCommand", e)
+            false
+        }
+    }
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -264,6 +315,40 @@ class MusicPlaybackService : MediaLibraryService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+
+        val isForegroundStart = intent?.getBooleanExtra("is_foreground_start", false) == true
+        val player = sharedPlayer
+        val isPlayingOrReady = player != null && player.playWhenReady && player.playbackState != ExoPlayer.STATE_IDLE
+
+        if (isForegroundStart || isPlayingOrReady) {
+            val foregroundStarted = startForegroundIfNeeded()
+            if (isForegroundStart && !foregroundStarted) {
+                android.util.Log.w("MusicPlaybackService", "startForeground failed on foreground start request; stopping service to prevent crash")
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+        }
+
+        if (intent?.action == "android.media.action.MEDIA_PLAY_FROM_SEARCH") {
+            val query = intent.getStringExtra(android.app.SearchManager.QUERY) ?: intent.getStringExtra("query")
+            val focus = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_FOCUS)
+            val title = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_TITLE)
+            val artist = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_ARTIST)
+            val album = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_ALBUM)
+            val genre = intent.getStringExtra(android.provider.MediaStore.EXTRA_MEDIA_GENRE)
+
+            serviceScope.launch(Dispatchers.Main) {
+                val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                playbackManager.playFromSearchQuery(
+                    query = query,
+                    focus = focus,
+                    title = title,
+                    artist = artist,
+                    album = album,
+                    genre = genre
+                )
+            }
+        }
         return START_STICKY
     }
 
@@ -382,13 +467,23 @@ class MusicPlaybackService : MediaLibraryService() {
             .build()
     }
 
-    private fun updateCustomLayout(
-        session: MediaLibrarySession,
+    private fun isAndroidAutoController(controller: MediaSession.ControllerInfo): Boolean {
+        val pkg = controller.packageName
+        if (pkg == applicationContext.packageName) return false
+        return pkg == "com.google.android.projection.gearhead" ||
+                pkg == "com.google.android.car.messenger" ||
+                pkg == "com.google.android.autoservice" ||
+                pkg.contains("projection", ignoreCase = true) ||
+                pkg.contains("gearhead", ignoreCase = true) ||
+                pkg.contains("car", ignoreCase = true)
+    }
+
+    private fun buildCustomLayoutButtons(
         bindings: Map<GestureTrigger, GestureBinding>,
         autoSettings: DisplaySettings,
         repeatMode: RepeatMode = RepeatMode.OFF,
         shuffleMode: ShuffleMode = ShuffleMode.OFF
-    ) {
+    ): ImmutableList<CommandButton> {
         val buttons = mutableListOf<CommandButton>()
         val configuredActions = autoSettings.autoActionButtonOrder.filter {
             it != GestureAction.UNASSIGNED && it != GestureAction.OTHER_OPTION
@@ -417,7 +512,17 @@ class MusicPlaybackService : MediaLibraryService() {
             }
         }
 
-        val customLayout = ImmutableList.copyOf(buttons)
+        return ImmutableList.copyOf(buttons)
+    }
+
+    private fun updateCustomLayout(
+        session: MediaLibrarySession,
+        bindings: Map<GestureTrigger, GestureBinding>,
+        autoSettings: DisplaySettings,
+        repeatMode: RepeatMode = RepeatMode.OFF,
+        shuffleMode: ShuffleMode = ShuffleMode.OFF
+    ) {
+        val customLayout = buildCustomLayoutButtons(bindings, autoSettings, repeatMode, shuffleMode)
         if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
             session.setCustomLayout(customLayout)
         } else {
@@ -614,6 +719,51 @@ class MusicPlaybackService : MediaLibraryService() {
             )
             .build()
 
+        override fun onMediaButtonEvent(
+            session: MediaSession,
+            controllerInfo: MediaSession.ControllerInfo,
+            intent: Intent
+        ): Boolean {
+            val keyEvent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, android.view.KeyEvent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            }
+            if (keyEvent != null && keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                when (keyEvent.keyCode) {
+                    android.view.KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                        playbackManager.next()
+                        return true
+                    }
+                    android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                        playbackManager.previous()
+                        return true
+                    }
+                    android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                    android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
+                    android.view.KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                        playbackManager.togglePlayPause()
+                        return true
+                    }
+                    android.view.KeyEvent.KEYCODE_MEDIA_STOP -> {
+                        playbackManager.pause()
+                        return true
+                    }
+                    android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                        playbackManager.fastForward()
+                        return true
+                    }
+                    android.view.KeyEvent.KEYCODE_MEDIA_REWIND -> {
+                        playbackManager.rewind()
+                        return true
+                    }
+                }
+            }
+            return super.onMediaButtonEvent(session, controllerInfo, intent)
+        }
+
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo
@@ -646,55 +796,70 @@ class MusicPlaybackService : MediaLibraryService() {
                 actionToSessionCommand(act)?.let { availableCommands.add(it) }
             }
 
-            serviceScope.launch(Dispatchers.IO) {
-                val savedState = settingsDataStore.savedPlaybackStateFlow.first()
-                val displaySettings = settingsDataStore.displaySettingsFlow.first()
-                val dbSongs = musicDatabase.getAllSongs()
-                val allSongs = dbSongs.ifEmpty { mediaStoreRepository.getAllSongs() }
+            val isAutoController = isAndroidAutoController(controller)
+            val bindings = kotlinx.coroutines.runBlocking { settingsDataStore.gestureBindingsFlow.first() }
+            val customLayout = buildCustomLayoutButtons(
+                bindings = bindings,
+                autoSettings = autoDisplaySettings,
+                repeatMode = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase).repeatMode.value,
+                shuffleMode = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase).shuffleMode.value
+            )
 
-                withContext(Dispatchers.Main) {
-                    val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
-
-                    if (playbackManager.currentPlaylist.value.isEmpty() || playbackManager.player.mediaItemCount == 0) {
-                        if (allSongs.isNotEmpty()) {
-                            if (savedState.queueIds.isNotEmpty()) {
-                                val songMap = allSongs.associateBy { it.id }
-                                val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
-                                val finalQueue = restoredQueue.ifEmpty { allSongs }
-
-                                playbackManager.restorePlaybackState(
-                                    songs = finalQueue,
-                                    startIndex = savedState.activeSongIndex,
-                                    positionMs = savedState.positionMs,
-                                    shuffle = savedState.isShuffle,
-                                    repeat = savedState.isRepeat,
-                                    repeatMode = savedState.repeatMode,
-                                    shuffleMode = savedState.shuffleMode
-                                )
-                            } else {
-                                playbackManager.restorePlaybackState(
-                                    songs = allSongs,
-                                    startIndex = 0,
-                                    positionMs = 0L,
-                                    shuffle = false,
-                                    repeat = false
-                                )
-                            }
-                        }
-                    } else {
-                        playbackManager.ensurePlayerReadyForPlayback()
-                    }
-
+            if (isAutoController) {
+                serviceScope.launch(Dispatchers.IO) {
                     val record = settingsDataStore.recordDeviceConnected(
                         id = "android_auto_vehicle",
                         name = "Android Auto Vehicle",
                         type = com.travelingtunes.app.core.model.ConnectedDeviceType.ANDROID_AUTO
                     )
 
-                    if (record.actions.isNotEmpty()) {
-                        playbackManager.executeActionSequence(record.actions)
-                    } else if (displaySettings.autoAutoplayOnConnect) {
-                        playbackManager.play()
+                    withContext(Dispatchers.Main) {
+                        val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+                        if (record.actions.isNotEmpty()) {
+                            playbackManager.executeActionSequence(record.actions)
+                        } else if (autoDisplaySettings.autoAutoplayOnConnect) {
+                            playbackManager.play()
+                        }
+                    }
+                }
+            } else {
+                serviceScope.launch(Dispatchers.IO) {
+                    val savedState = settingsDataStore.savedPlaybackStateFlow.first()
+                    val dbSongs = musicDatabase.getAllSongs()
+                    val allSongs = dbSongs.ifEmpty { mediaStoreRepository.getAllSongs() }
+
+                    withContext(Dispatchers.Main) {
+                        val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
+
+                        if (playbackManager.currentPlaylist.value.isEmpty() || playbackManager.player.mediaItemCount == 0) {
+                            if (allSongs.isNotEmpty()) {
+                                if (savedState.queueIds.isNotEmpty()) {
+                                    val songMap = allSongs.associateBy { it.id }
+                                    val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
+                                    val finalQueue = restoredQueue.ifEmpty { allSongs }
+
+                                    playbackManager.restorePlaybackState(
+                                        songs = finalQueue,
+                                        startIndex = savedState.activeSongIndex,
+                                        positionMs = savedState.positionMs,
+                                        shuffle = savedState.isShuffle,
+                                        repeat = savedState.isRepeat,
+                                        repeatMode = savedState.repeatMode,
+                                        shuffleMode = savedState.shuffleMode
+                                    )
+                                } else {
+                                    playbackManager.restorePlaybackState(
+                                        songs = allSongs,
+                                        startIndex = 0,
+                                        positionMs = 0L,
+                                        shuffle = false,
+                                        repeat = false
+                                    )
+                                }
+                            }
+                        } else {
+                            playbackManager.ensurePlayerReadyForPlayback()
+                        }
                     }
                 }
             }
@@ -712,6 +877,8 @@ class MusicPlaybackService : MediaLibraryService() {
                 .add(androidx.media3.common.Player.COMMAND_SET_SHUFFLE_MODE)
                 .add(androidx.media3.common.Player.COMMAND_SET_REPEAT_MODE)
                 .build()
+
+            session.setCustomLayout(controller, customLayout)
 
             return MediaSession.ConnectionResult.accept(
                 availableCommands.build(),

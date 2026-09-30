@@ -168,6 +168,7 @@ class PlaybackActionsTest {
     fun testForegroundServiceClassName() {
         val serviceClass = com.travelingtunes.app.core.media.MusicPlaybackService::class.java
         assertEquals("com.travelingtunes.app.core.media.MusicPlaybackService", serviceClass.name)
+        assertEquals("traveling_tunes_playback_channel", com.travelingtunes.app.core.media.MusicPlaybackService.NOTIFICATION_CHANNEL_ID)
     }
 
     @Test
@@ -195,5 +196,75 @@ class PlaybackActionsTest {
     fun testShuffleAllIconResource() {
         val shuffleAllDrawableRes = R.drawable.ic_shuffle_all
         assert(shuffleAllDrawableRes != 0)
+    }
+
+    @Test
+    fun testVoiceSearchQueryResolution() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(101L, "Midnight Rain", "Taylor Swift", "Midnights", 1L, 180000L, mockUri)
+        val s2 = Song(102L, "Lavender Haze", "Taylor Swift", "Midnights", 2L, 200000L, mockUri)
+        val s3 = Song(103L, "Shape of You", "Ed Sheeran", "Divide", 1L, 230000L, mockUri)
+
+        val library = listOf(s1, s2, s3)
+
+        fun resolveSearch(
+            title: String? = null,
+            artist: String? = null,
+            album: String? = null,
+            query: String? = null
+        ): List<Song> {
+            val cleanTitle = title?.trim()?.lowercase().orEmpty()
+            val cleanArtist = artist?.trim()?.lowercase().orEmpty()
+            val cleanAlbum = album?.trim()?.lowercase().orEmpty()
+            val cleanQuery = query?.trim()?.lowercase().orEmpty()
+
+            if (cleanTitle.isNotEmpty()) {
+                val matches = library.filter { song ->
+                    song.title.lowercase().contains(cleanTitle) &&
+                            (cleanArtist.isEmpty() || song.artist.lowercase().contains(cleanArtist)) &&
+                            (cleanAlbum.isEmpty() || song.album.lowercase().contains(cleanAlbum))
+                }
+                if (matches.isNotEmpty()) {
+                    val target = matches.first()
+                    return library.filter { it.album.equals(target.album, ignoreCase = true) }
+                }
+            }
+
+            if (cleanAlbum.isNotEmpty()) {
+                val albumSongs = library.filter { it.album.lowercase().contains(cleanAlbum) }
+                if (albumSongs.isNotEmpty()) return albumSongs
+            }
+
+            if (cleanArtist.isNotEmpty()) {
+                val artistSongs = library.filter { it.artist.lowercase().contains(cleanArtist) }
+                if (artistSongs.isNotEmpty()) return artistSongs
+            }
+
+            if (cleanQuery.isNotEmpty()) {
+                val searchResults = library.filter {
+                    it.title.lowercase().contains(cleanQuery) ||
+                            it.artist.lowercase().contains(cleanQuery) ||
+                            it.album.lowercase().contains(cleanQuery)
+                }
+                if (searchResults.isNotEmpty()) return searchResults
+            }
+
+            return library
+        }
+
+        val titleMatch = resolveSearch(title = "Midnight Rain")
+        assertEquals(2, titleMatch.size)
+        assertEquals("Midnight Rain", titleMatch[0].title)
+
+        val artistMatch = resolveSearch(artist = "Ed Sheeran")
+        assertEquals(1, artistMatch.size)
+        assertEquals("Shape of You", artistMatch[0].title)
+
+        val albumMatch = resolveSearch(album = "Midnights")
+        assertEquals(2, albumMatch.size)
+
+        val queryMatch = resolveSearch(query = "Divide")
+        assertEquals(1, queryMatch.size)
+        assertEquals("Shape of You", queryMatch[0].title)
     }
 }

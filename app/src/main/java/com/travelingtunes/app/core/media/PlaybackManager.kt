@@ -93,11 +93,18 @@ class PlaybackManager(
             val posMs = _currentPositionMs.value.coerceAtLeast(0L)
 
             val mediaItems = playlist.map { songToMediaItem(it) }
-            _player.shuffleModeEnabled = false
-            _player.repeatMode = when (_repeatMode.value) {
-                RepeatMode.SONG -> Player.REPEAT_MODE_ONE
-                RepeatMode.ALBUM, RepeatMode.ARTIST, RepeatMode.GENRE, RepeatMode.FOLDER -> Player.REPEAT_MODE_ALL
-                else -> Player.REPEAT_MODE_OFF
+            isInternalRepeatChange = true
+            isInternalShuffleChange = true
+            try {
+                _player.shuffleModeEnabled = false
+                _player.repeatMode = when (_repeatMode.value) {
+                    RepeatMode.SONG -> Player.REPEAT_MODE_ONE
+                    RepeatMode.ALBUM, RepeatMode.ARTIST, RepeatMode.GENRE, RepeatMode.FOLDER -> Player.REPEAT_MODE_ALL
+                    else -> Player.REPEAT_MODE_OFF
+                }
+            } finally {
+                isInternalRepeatChange = false
+                isInternalShuffleChange = false
             }
             _player.setMediaItems(mediaItems, songIndex, posMs)
             _player.prepare()
@@ -391,11 +398,18 @@ class PlaybackManager(
         _shuffleMode.value = shuffleMode
 
         val applyToPlayer = {
-            player.shuffleModeEnabled = false
-            player.repeatMode = when (repeatMode) {
-                RepeatMode.SONG -> Player.REPEAT_MODE_ONE
-                RepeatMode.ALBUM, RepeatMode.ARTIST, RepeatMode.GENRE, RepeatMode.FOLDER -> Player.REPEAT_MODE_ALL
-                else -> Player.REPEAT_MODE_OFF
+            isInternalRepeatChange = true
+            isInternalShuffleChange = true
+            try {
+                player.shuffleModeEnabled = false
+                player.repeatMode = when (repeatMode) {
+                    RepeatMode.SONG -> Player.REPEAT_MODE_ONE
+                    RepeatMode.ALBUM, RepeatMode.ARTIST, RepeatMode.GENRE, RepeatMode.FOLDER -> Player.REPEAT_MODE_ALL
+                    else -> Player.REPEAT_MODE_OFF
+                }
+            } finally {
+                isInternalRepeatChange = false
+                isInternalShuffleChange = false
             }
 
             player.setMediaItems(mediaItems, safeIndex, safePos)
@@ -570,13 +584,24 @@ class PlaybackManager(
         if (masterPlaylist.isEmpty()) {
             masterPlaylist = songs
         }
-        _currentPlaylist.value = songs
         val safeIndex = startIndex.coerceIn(0, songs.size - 1)
-        _currentSong.value = songs.getOrNull(safeIndex)
-        persistCurrentPlaybackState()
+        val selectedSong = songs.getOrNull(safeIndex)
 
-        if (player.playbackState == Player.STATE_IDLE) {
-            player.prepare()
+        if (_shuffleMode.value != ShuffleMode.OFF && selectedSong != null) {
+            updateQueuePreservingCurrentSong(
+                clearPriorSongs = true,
+                resetPosition = true,
+                autoPlay = true,
+                overrideCurrentSong = selectedSong
+            )
+        } else {
+            _currentPlaylist.value = songs
+            _currentSong.value = selectedSong
+            persistCurrentPlaybackState()
+
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
         }
     }
 
@@ -926,12 +951,7 @@ class PlaybackManager(
 
     fun setRepeatMode(mode: RepeatMode) {
         _repeatMode.value = mode
-        isInternalRepeatChange = true
-        try {
-            updateQueuePreservingCurrentSong()
-        } finally {
-            isInternalRepeatChange = false
-        }
+        updateQueuePreservingCurrentSong()
         persistCurrentPlaybackState()
     }
 
@@ -946,12 +966,7 @@ class PlaybackManager(
 
     fun setShuffleMode(mode: ShuffleMode) {
         _shuffleMode.value = mode
-        isInternalShuffleChange = true
-        try {
-            updateQueuePreservingCurrentSong()
-        } finally {
-            isInternalShuffleChange = false
-        }
+        updateQueuePreservingCurrentSong()
         persistCurrentPlaybackState()
     }
 
@@ -1113,14 +1128,22 @@ class PlaybackManager(
                 _currentSong.value = activeQueue.getOrNull(newCurrentIndex) ?: current
                 _currentPlaylist.value = activeQueue
 
-                player.repeatMode = playerRepeatMode
-                player.shuffleModeEnabled = false
+                isInternalRepeatChange = true
+                isInternalShuffleChange = true
+                try {
+                    player.repeatMode = playerRepeatMode
+                    player.shuffleModeEnabled = false
 
-                val currentPos = if (clearPriorSongs || resetPosition) 0L else try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
-                player.setMediaItems(mediaItems, newCurrentIndex, currentPos)
-                player.prepare()
-                if (clearPriorSongs || autoPlay || player.isPlaying) {
-                    player.play()
+                    val currentPos = if (clearPriorSongs || resetPosition) 0L else try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
+                    val wasPlaying = try { player.playWhenReady && player.playbackState != Player.STATE_IDLE } catch (_: Exception) { false }
+                    player.setMediaItems(mediaItems, newCurrentIndex, currentPos)
+                    player.prepare()
+                    if (clearPriorSongs || autoPlay || wasPlaying) {
+                        player.play()
+                    }
+                } finally {
+                    isInternalRepeatChange = false
+                    isInternalShuffleChange = false
                 }
             }
         }
@@ -1486,6 +1509,115 @@ class PlaybackManager(
 
     fun clearHudAction() {
         _actionHudText.value = null
+    }
+
+    fun playFromSearchQuery(
+        query: String? = null,
+        focus: String? = null,
+        title: String? = null,
+        artist: String? = null,
+        album: String? = null,
+        genre: String? = null
+    ) {
+        MusicPlaybackService.startService(context)
+
+        scope.launch(Dispatchers.IO) {
+            val db = musicDatabase
+            val dbSongs = db?.getAllSongs().orEmpty()
+            val allSongs = if (dbSongs.isNotEmpty()) dbSongs else MediaStoreRepository(context).getAllSongs()
+            if (allSongs.isEmpty()) {
+                withContext(Dispatchers.Main) {
+                    shuffleAllSongs()
+                }
+                return@launch
+            }
+
+            val cleanQuery = query?.trim()?.lowercase().orEmpty()
+            val cleanTitle = title?.trim()?.lowercase().orEmpty()
+            val cleanArtist = artist?.trim()?.lowercase().orEmpty()
+            val cleanAlbum = album?.trim()?.lowercase().orEmpty()
+            val cleanGenre = genre?.trim()?.lowercase().orEmpty()
+
+            var matchedPlaylist = mutableListOf<Song>()
+            var startIndex = 0
+
+            if (cleanTitle.isNotEmpty()) {
+                val matches = allSongs.filter { song ->
+                    val titleMatch = song.title.lowercase().contains(cleanTitle)
+                    val artistMatch = cleanArtist.isEmpty() || song.artist.lowercase().contains(cleanArtist)
+                    val albumMatch = cleanAlbum.isEmpty() || song.album.lowercase().contains(cleanAlbum)
+                    titleMatch && artistMatch && albumMatch
+                }
+
+                if (matches.isNotEmpty()) {
+                    val targetSong = matches.first()
+                    val albumSongs = allSongs.filter { it.album.equals(targetSong.album, ignoreCase = true) }
+                    if (albumSongs.size > 1) {
+                        matchedPlaylist = albumSongs.toMutableList()
+                        startIndex = matchedPlaylist.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
+                    } else {
+                        matchedPlaylist = mutableListOf(targetSong)
+                        startIndex = 0
+                    }
+                }
+            }
+
+            if (matchedPlaylist.isEmpty() && cleanAlbum.isNotEmpty()) {
+                val albumSongs = allSongs.filter { song ->
+                    song.album.lowercase().contains(cleanAlbum) &&
+                            (cleanArtist.isEmpty() || song.artist.lowercase().contains(cleanArtist))
+                }
+                if (albumSongs.isNotEmpty()) {
+                    matchedPlaylist = albumSongs.toMutableList()
+                    startIndex = 0
+                }
+            }
+
+            if (matchedPlaylist.isEmpty() && cleanArtist.isNotEmpty()) {
+                val artistSongs = allSongs.filter { song ->
+                    song.artist.lowercase().contains(cleanArtist)
+                }
+                if (artistSongs.isNotEmpty()) {
+                    matchedPlaylist = artistSongs.toMutableList()
+                    startIndex = 0
+                }
+            }
+
+            if (matchedPlaylist.isEmpty() && cleanGenre.isNotEmpty()) {
+                val genreSongs = allSongs.filter { song ->
+                    song.genre.lowercase().contains(cleanGenre)
+                }
+                if (genreSongs.isNotEmpty()) {
+                    matchedPlaylist = genreSongs.toMutableList()
+                    startIndex = 0
+                }
+            }
+
+            if (matchedPlaylist.isEmpty() && cleanQuery.isNotEmpty()) {
+                val searchResults = if (db != null) {
+                    db.searchSongs(cleanQuery)
+                } else {
+                    allSongs.filter {
+                        it.title.lowercase().contains(cleanQuery) ||
+                                it.artist.lowercase().contains(cleanQuery) ||
+                                it.album.lowercase().contains(cleanQuery)
+                    }
+                }
+                if (searchResults.isNotEmpty()) {
+                    matchedPlaylist = searchResults.toMutableList()
+                    startIndex = 0
+                }
+            }
+
+            if (matchedPlaylist.isEmpty()) {
+                matchedPlaylist = allSongs.toMutableList()
+                startIndex = 0
+            }
+
+            withContext(Dispatchers.Main) {
+                setPlaylistAndPlay(matchedPlaylist, startIndex = startIndex, shuffle = false)
+            }
+        }
     }
 
     fun release() {
