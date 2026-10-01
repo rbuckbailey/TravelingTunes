@@ -834,6 +834,53 @@ class AlbumArtDownloader(
         artworkUri
     }
 
+    fun getOriginalArtworkBitmap(album: String, artist: String): Bitmap? {
+        val downloadedDir = File(context.filesDir, "downloaded_art")
+        val hashKey = hashString("$artist-$album")
+        val origFile = File(downloadedDir, "art_original_$hashKey.jpg")
+        val targetFile = if (origFile.exists() && origFile.length() > 0L) origFile else File(downloadedDir, "art_downloaded_$hashKey.jpg")
+        if (!targetFile.exists() || targetFile.length() == 0L) return null
+        return try {
+            BitmapFactory.decodeFile(targetFile.absolutePath)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun applyNonDestructiveCropToAlbum(
+        album: String,
+        artist: String,
+        mode: ArtCropFillMode,
+        alignment: ArtAlignmentPosition,
+        songs: List<Song>
+    ): Uri? = withContext(Dispatchers.IO) {
+        val origBitmap = getOriginalArtworkBitmap(album, artist) ?: return@withContext null
+        val squareBitmap = ArtCropFillHelper.processNonDestructiveSquare(origBitmap, mode, alignment)
+
+        val downloadedDir = File(context.filesDir, "downloaded_art").apply { mkdirs() }
+        val hashKey = hashString("$artist-$album")
+        val artFile = File(downloadedDir, "art_downloaded_$hashKey.jpg")
+
+        try {
+            FileOutputStream(artFile).use { fos ->
+                squareBitmap.compress(Bitmap.CompressFormat.JPEG, 92, fos)
+            }
+            if (!artFile.exists() || artFile.length() == 0L) return@withContext null
+
+            val artworkUri = Uri.fromFile(artFile)
+            musicDatabase.updateAlbumArtwork(album, artist, artworkUri)
+
+            val imageBitmap = squareBitmap.asImageBitmap()
+            for (song in songs) {
+                AlbumArtCache.instance.put(song.id, imageBitmap)
+            }
+            artworkUri
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     suspend fun saveCustomArtworkForAlbum(
         album: String,
         artist: String,
@@ -843,12 +890,31 @@ class AlbumArtDownloader(
         if (imageBytes.isEmpty()) return@withContext null
         val downloadedDir = File(context.filesDir, "downloaded_art").apply { mkdirs() }
         val hashKey = hashString("$artist-$album")
+        val origFile = File(downloadedDir, "art_original_$hashKey.jpg")
         val artFile = File(downloadedDir, "art_downloaded_$hashKey.jpg")
 
         try {
-            FileOutputStream(artFile).use { fos ->
+            FileOutputStream(origFile).use { fos ->
                 fos.write(imageBytes)
             }
+
+            val origBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+            val squareBitmap = if (origBitmap != null && origBitmap.width != origBitmap.height) {
+                ArtCropFillHelper.processNonDestructiveSquare(origBitmap, ArtCropFillMode.CROP, ArtAlignmentPosition.CENTER)
+            } else {
+                origBitmap
+            }
+
+            if (squareBitmap != null) {
+                FileOutputStream(artFile).use { fos ->
+                    squareBitmap.compress(Bitmap.CompressFormat.JPEG, 92, fos)
+                }
+            } else {
+                FileOutputStream(artFile).use { fos ->
+                    fos.write(imageBytes)
+                }
+            }
+
             if (!artFile.exists() || artFile.length() == 0L) return@withContext null
 
             val artworkUri = Uri.fromFile(artFile)

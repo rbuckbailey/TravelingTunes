@@ -93,6 +93,14 @@ data class ConfigOption(
             ConfigOption("LIBRARY_pickerAlphabetBarOnLeft", "Music Library", "Alphabet Bar on Left Side", isBooleanToggle = true),
 
             // Playback
+            ConfigOption("DENOISE_FILTER_OFF", "Playback", "Denoise Filter: Off", isBooleanToggle = false, targetValue = "OFF"),
+            ConfigOption("DENOISE_FILTER_LIBSPECBLEACH", "Playback", "Denoise Filter: libspecbleach", isBooleanToggle = false, targetValue = "LIBSPECBLEACH"),
+            ConfigOption("DENOISE_FILTER_AUDIO_DENOISE", "Playback", "Denoise Filter: @audio/denoise", isBooleanToggle = false, targetValue = "AUDIO_DENOISE"),
+            ConfigOption("DENOISE_FILTER_WEBRTC", "Playback", "Denoise Filter: WebRtc_noise_suppression", isBooleanToggle = false, targetValue = "WEBRTC"),
+            ConfigOption("DENOISE_DAMPENING_INTENSITY", "Playback", "Denoise Dampening Intensity", isBooleanToggle = false),
+            ConfigOption("NORMALIZATION_MODE_OFF", "Playback", "Volume Normalization: Off", isBooleanToggle = false, targetValue = "OFF"),
+            ConfigOption("NORMALIZATION_MODE_ALBUM", "Playback", "Volume Normalization: Album Gain", isBooleanToggle = false, targetValue = "ALBUM"),
+            ConfigOption("NORMALIZATION_MODE_TRACK", "Playback", "Volume Normalization: Track Gain", isBooleanToggle = false, targetValue = "TRACK"),
             ConfigOption("ACTION_TOGGLE_REPEAT", "Playback", "Toggle Repeat Mode", isBooleanToggle = true),
             ConfigOption("ACTION_TOGGLE_SHUFFLE", "Playback", "Toggle Shuffle Mode", isBooleanToggle = true),
             ConfigOption("ACTION_SHUFFLE_ALL_SONGS", "Playback", "Shuffle All Songs", isBooleanToggle = false),

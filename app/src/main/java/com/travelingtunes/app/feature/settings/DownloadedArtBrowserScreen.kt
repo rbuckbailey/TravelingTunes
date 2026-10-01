@@ -39,8 +39,12 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
+import com.travelingtunes.app.core.media.ArtAlignmentPosition
+import com.travelingtunes.app.core.media.ArtCropFillHelper
+import com.travelingtunes.app.core.media.ArtCropFillMode
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Save
@@ -234,6 +238,12 @@ fun DownloadedArtBrowserScreen(
     val genresListState = rememberLazyListState()
     val foldersListState = rememberLazyListState()
 
+    // Non-destructive Crop & Fill Dialog States for Picked Image
+    var showCropDialog by remember { mutableStateOf(false) }
+    var pendingCropOriginalBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var cropTargetAlbum by remember { mutableStateOf<String?>(null) }
+    var cropTargetArtist by remember { mutableStateOf<String?>(null) }
+
     // Photo & File Pickers for Replace Art
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -244,10 +254,18 @@ fun DownloadedArtBrowserScreen(
                 try {
                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     if (bytes != null && bytes.isNotEmpty()) {
-                        val songs = musicDatabase.getSongsByAlbumAndArtist(target.album, target.artist)
-                        albumArtDownloader.saveCustomArtworkForAlbum(target.album, target.artist, bytes, songs)
-                        playbackManager.refreshCurrentSongArtwork()
-                        refreshList()
+                        val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        if (bitmap != null && ArtCropFillHelper.isNonSquare(bitmap)) {
+                            cropTargetAlbum = target.album
+                            cropTargetArtist = target.artist
+                            pendingCropOriginalBitmap = bitmap
+                            showCropDialog = true
+                        } else {
+                            val songs = musicDatabase.getSongsByAlbumAndArtist(target.album, target.artist)
+                            albumArtDownloader.saveCustomArtworkForAlbum(target.album, target.artist, bytes, songs)
+                            playbackManager.refreshCurrentSongArtwork()
+                            refreshList()
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -267,10 +285,18 @@ fun DownloadedArtBrowserScreen(
                 try {
                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     if (bytes != null && bytes.isNotEmpty()) {
-                        val songs = musicDatabase.getSongsByAlbumAndArtist(target.album, target.artist)
-                        albumArtDownloader.saveCustomArtworkForAlbum(target.album, target.artist, bytes, songs)
-                        playbackManager.refreshCurrentSongArtwork()
-                        refreshList()
+                        val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        if (bitmap != null && ArtCropFillHelper.isNonSquare(bitmap)) {
+                            cropTargetAlbum = target.album
+                            cropTargetArtist = target.artist
+                            pendingCropOriginalBitmap = bitmap
+                            showCropDialog = true
+                        } else {
+                            val songs = musicDatabase.getSongsByAlbumAndArtist(target.album, target.artist)
+                            albumArtDownloader.saveCustomArtworkForAlbum(target.album, target.artist, bytes, songs)
+                            playbackManager.refreshCurrentSongArtwork()
+                            refreshList()
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -776,6 +802,33 @@ fun DownloadedArtBrowserScreen(
             }
         )
     }
+
+    // Non-destructive Crop & Fill Dialog for Replace Art
+    if (showCropDialog && pendingCropOriginalBitmap != null) {
+        ArtCropFillDialog(
+            originalBitmap = pendingCropOriginalBitmap!!,
+            onDismiss = {
+                showCropDialog = false
+                pendingCropOriginalBitmap = null
+            },
+            onConfirm = { mode, alignment, processedBitmap ->
+                coroutineScope.launch {
+                    val album = cropTargetAlbum ?: ""
+                    val artist = cropTargetArtist ?: ""
+                    val songs = musicDatabase.getSongsByAlbumAndArtist(album, artist)
+                    val stream = java.io.ByteArrayOutputStream()
+                    pendingCropOriginalBitmap!!.compress(android.graphics.Bitmap.CompressFormat.JPEG, 95, stream)
+                    val origBytes = stream.toByteArray()
+                    albumArtDownloader.saveCustomArtworkForAlbum(album, artist, origBytes, songs)
+                    albumArtDownloader.applyNonDestructiveCropToAlbum(album, artist, mode, alignment, songs)
+                    playbackManager.refreshCurrentSongArtwork()
+                    showCropDialog = false
+                    pendingCropOriginalBitmap = null
+                    refreshList()
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -879,6 +932,151 @@ private fun EditTagsAndArtworkDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
+                // --- ALBUM ARTWORK & ALIGNMENT SECTION ---
+                var origBitmap by remember(sampleTrack) {
+                    mutableStateOf(albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist))
+                }
+                var currentSquareBitmap by remember(sampleTrack) {
+                    mutableStateOf<android.graphics.Bitmap?>(
+                        sampleTrack.artworkUri?.path?.let { p ->
+                            if (java.io.File(p).exists()) android.graphics.BitmapFactory.decodeFile(p) else null
+                        } ?: origBitmap
+                    )
+                }
+                val isNonSquare = remember(origBitmap) {
+                    ArtCropFillHelper.isNonSquare(origBitmap)
+                }
+
+                var showTagEditorCropDialog by remember { mutableStateOf(false) }
+
+                val tagEditorPhotoPicker = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.PickVisualMedia(),
+                ) { uri ->
+                    if (uri != null) {
+                        coroutineScope.launch {
+                            try {
+                                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                                if (bytes != null && bytes.isNotEmpty()) {
+                                    val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                    val songs = musicDatabase.getSongsByAlbumAndArtist(sampleTrack.album, sampleTrack.artist)
+                                    albumArtDownloader.saveCustomArtworkForAlbum(sampleTrack.album, sampleTrack.artist, bytes, songs)
+                                    origBitmap = bitmap
+                                    currentSquareBitmap = albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist)
+                                    playbackManager.refreshCurrentSongArtwork()
+                                    if (bitmap != null && ArtCropFillHelper.isNonSquare(bitmap)) {
+                                        showTagEditorCropDialog = true
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (currentSquareBitmap != null) {
+                                Image(
+                                    bitmap = currentSquareBitmap!!.asImageBitmap(),
+                                    contentDescription = "Album Art",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Image,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Album Artwork",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                            Text(
+                                text = if (origBitmap != null) {
+                                    "${origBitmap!!.width} x ${origBitmap!!.height} ${if (isNonSquare) "(Non-square)" else "(Square)"}"
+                                } else "No artwork",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(
+                                    onClick = {
+                                        tagEditorPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                    },
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Text("Change Art", fontSize = 11.sp)
+                                }
+
+                                if (isNonSquare && origBitmap != null) {
+                                    // 3x3 Alignment Grid Button (VISIBLE WHEN NON-SQUARE / HIDDEN WHEN SQUARE)
+                                    Button(
+                                        onClick = { showTagEditorCropDialog = true },
+                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.height(30.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.GridOn,
+                                            contentDescription = "3x3 Alignment Grid",
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Crop (3x3)", fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (showTagEditorCropDialog && origBitmap != null) {
+                    ArtCropFillDialog(
+                        originalBitmap = origBitmap!!,
+                        onDismiss = { showTagEditorCropDialog = false },
+                        onConfirm = { mode, alignment, processedBitmap ->
+                            coroutineScope.launch {
+                                albumArtDownloader.applyNonDestructiveCropToAlbum(
+                                    sampleTrack.album,
+                                    sampleTrack.artist,
+                                    mode,
+                                    alignment,
+                                    targetTracks
+                                )
+                                currentSquareBitmap = processedBitmap
+                                playbackManager.refreshCurrentSongArtwork()
+                                showTagEditorCropDialog = false
+                            }
+                        }
+                    )
+                }
+
                 if (isMultiTrack) {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),

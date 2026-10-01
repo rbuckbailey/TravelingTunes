@@ -70,6 +70,13 @@ class SettingsDataStore(private val context: Context) {
         val KEY_MAX_GAIN_BOOST = floatPreferencesKey("maxGainBoost")
         val KEY_FULL_SCAN_ENABLED = booleanPreferencesKey("fullScanEnabled")
 
+        val KEY_DENOISE_FILTER_MODE = stringPreferencesKey("denoiseFilterMode")
+        val KEY_DENOISE_INTENSITY = floatPreferencesKey("denoiseDampeningIntensity")
+
+        val KEY_EQUALIZER_ENABLED = booleanPreferencesKey("equalizerEnabled")
+        val KEY_EQUALIZER_PRESET_ID = stringPreferencesKey("equalizerPresetId")
+        val KEY_EQUALIZER_CUSTOM_GAINS = stringPreferencesKey("equalizerCustomGains")
+
         val KEY_GPS_SENSITIVITY = floatPreferencesKey("gpsSensitivity")
         val KEY_GPS_VOLUME = booleanPreferencesKey("gpsVolume")
         val KEY_DISABLE_AUTOLOCK = booleanPreferencesKey("disableAutolock")
@@ -409,6 +416,8 @@ class SettingsDataStore(private val context: Context) {
             drivingModeEnabled = getBool(KEY_DRIVING_MODE_ENABLED, "AUTO_drivingMode", false),
             autoEnableDrivingMode = getBool(KEY_AUTO_ENABLE_DRIVING_MODE, "AUTO_autoEnableDrivingMode", false),
             pickerAlphabetBarOnLeft = getBool(KEY_PICKER_ALPHABET_BAR_ON_LEFT, "LIBRARY_pickerAlphabetBarOnLeft", false),
+            denoiseFilterMode = getString(KEY_DENOISE_FILTER_MODE, "DENOISE_FILTER_MODE", "OFF"),
+            denoiseDampeningIntensity = getFloat(KEY_DENOISE_INTENSITY, "DENOISE_INTENSITY", 0.7f),
             miniPlayerActionButtonOrder = miniPlayerActionButtonOrder,
             autoActionButtonOrder = autoActionButtonOrder
         )
@@ -825,6 +834,50 @@ class SettingsDataStore(private val context: Context) {
                 }
                 prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
             }
+        }
+    }
+
+    suspend fun setDenoiseFilterMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_DENOISE_FILTER_MODE] = mode
+        }
+    }
+
+    suspend fun setDenoiseDampeningIntensity(intensity: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_DENOISE_INTENSITY] = intensity.coerceIn(0.0f, 1.0f)
+        }
+    }
+
+    val equalizerSettingsFlow: Flow<com.travelingtunes.app.core.model.EqualizerSettings> = context.dataStore.data.map { prefs ->
+        val enabled = prefs[KEY_EQUALIZER_ENABLED] ?: false
+        val presetId = prefs[KEY_EQUALIZER_PRESET_ID] ?: "FLAT"
+        val customStr = prefs[KEY_EQUALIZER_CUSTOM_GAINS] ?: "0.0,0.0,0.0,0.0,0.0"
+        val customGains = customStr.split(",").mapNotNull { it.trim().toFloatOrNull() }.takeIf { it.size == 5 }
+            ?: listOf(0f, 0f, 0f, 0f, 0f)
+        com.travelingtunes.app.core.model.EqualizerSettings(
+            enabled = enabled,
+            presetId = presetId,
+            customGainsDb = customGains
+        )
+    }
+
+    suspend fun setEqualizerEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_EQUALIZER_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setEqualizerPreset(presetId: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_EQUALIZER_PRESET_ID] = presetId
+        }
+    }
+
+    suspend fun setEqualizerCustomGains(gainsDb: List<Float>) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_EQUALIZER_PRESET_ID] = "CUSTOM"
+            prefs[KEY_EQUALIZER_CUSTOM_GAINS] = gainsDb.joinToString(",") { "%.1f".format(it) }
         }
     }
 

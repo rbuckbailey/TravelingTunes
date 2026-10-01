@@ -115,6 +115,8 @@ data class DisplaySettings(
     val showStatusBar: Boolean = false,
     val showActions: Boolean = true,
     val hudLineThickness: Float = 16f,
+    val denoiseFilterMode: String = "OFF",
+    val denoiseDampeningIntensity: Float = 0.7f,
     val artistFontKey: String = "DEFAULT",
     val songFontKey: String = "DEFAULT",
     val albumFontKey: String = "DEFAULT",

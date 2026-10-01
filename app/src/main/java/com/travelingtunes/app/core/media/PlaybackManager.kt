@@ -96,6 +96,7 @@ class PlaybackManager(
             isInternalRepeatChange = true
             isInternalShuffleChange = true
             try {
+                // Enforce shuffleModeEnabled = false so ExoPlayer plays activeQueue sequentially
                 _player.shuffleModeEnabled = false
                 _player.repeatMode = when (_repeatMode.value) {
                     RepeatMode.SONG -> Player.REPEAT_MODE_ONE
@@ -401,6 +402,7 @@ class PlaybackManager(
             isInternalRepeatChange = true
             isInternalShuffleChange = true
             try {
+                // Enforce shuffleModeEnabled = false so ExoPlayer plays activeQueue sequentially
                 player.shuffleModeEnabled = false
                 player.repeatMode = when (repeatMode) {
                     RepeatMode.SONG -> Player.REPEAT_MODE_ONE
@@ -483,80 +485,66 @@ class PlaybackManager(
                 chosenSong = songs[safeIndex]
             }
 
-            // Fast-start: set Track 1 immediately, start playback, and prep artwork
-            _currentPlaylist.value = listOf(chosenSong)
+            val sortedSongs = sortLibrarySongs(songs)
+            unshuffledPlaylist = sortedSongs
+            if (masterPlaylist.isEmpty() || sortedSongs.size >= masterPlaylist.size) {
+                masterPlaylist = sortedSongs
+            }
+
+            val sourceList = if (songs.map { getAlbumKey(it) }.distinct().size > 1) songs else masterPlaylist.ifEmpty { songs }
+
+            val activeQueue: List<Song>
+            val playIndex: Int
+
+            when (currentMode) {
+                ShuffleMode.SONGS -> {
+                    val remainingSongs = songs.filter { it.id != chosenSong.id }.shuffled()
+                    activeQueue = listOf(chosenSong) + remainingSongs
+                    playIndex = 0
+                }
+                ShuffleMode.ALBUMS -> {
+                    val albumsMap = sourceList.groupBy { getAlbumKey(it) }
+                    val chosenAlbumKey = getAlbumKey(chosenSong)
+
+                    val activeAlbumSongs = sortAlbumSongs(albumsMap[chosenAlbumKey] ?: sourceList.filter { getAlbumKey(it) == chosenAlbumKey })
+                    val chosenIdx = activeAlbumSongs.indexOfFirst { it.id == chosenSong.id }
+
+                    val currentAlbumAfter = if (chosenIdx != -1) activeAlbumSongs.drop(chosenIdx + 1) else emptyList()
+                    val currentAlbumBefore = if (chosenIdx != -1) activeAlbumSongs.take(chosenIdx) else emptyList()
+
+                    val otherAlbumKeys = (albumsMap.keys - chosenAlbumKey).shuffled()
+
+                    val queue = mutableListOf<Song>()
+                    queue.add(chosenSong)
+                    queue.addAll(currentAlbumAfter)
+                    for (albumKey in otherAlbumKeys) {
+                        val albumSongs = albumsMap[albumKey] ?: emptyList()
+                        queue.addAll(sortAlbumSongs(albumSongs))
+                    }
+                    queue.addAll(currentAlbumBefore)
+
+                    activeQueue = queue
+                    playIndex = 0
+                }
+                ShuffleMode.OFF -> {
+                    val safeIndex = startIndex.coerceIn(0, songs.size - 1)
+                    activeQueue = songs
+                    playIndex = safeIndex
+                }
+            }
+
+            val fullMediaItems = activeQueue.map { songToMediaItem(it) }
+
+            _currentPlaylist.value = activeQueue
             _currentSong.value = chosenSong
 
             player.shuffleModeEnabled = false
-            player.setMediaItems(listOf(songToMediaItem(chosenSong)), 0, 0L)
+            player.setMediaItems(fullMediaItems, playIndex, 0L)
             player.prepare()
             player.play()
 
-            AlbumArtCache.instance.preCacheSurroundingSongs(context, listOf(chosenSong), 0)
-
-            // Asynchronously build, sort, and shuffle remaining queue in background
-            scope.launch(Dispatchers.Default) {
-                val sortedSongs = sortLibrarySongs(songs)
-                unshuffledPlaylist = sortedSongs
-                if (masterPlaylist.isEmpty() || sortedSongs.size >= masterPlaylist.size) {
-                    masterPlaylist = sortedSongs
-                }
-
-                val sourceList = if (songs.map { getAlbumKey(it) }.distinct().size > 1) songs else masterPlaylist.ifEmpty { songs }
-
-                val activeQueue: List<Song>
-                val playIndex: Int
-
-                when (currentMode) {
-                    ShuffleMode.SONGS -> {
-                        val remainingSongs = songs.filter { it.id != chosenSong.id }.shuffled()
-                        activeQueue = listOf(chosenSong) + remainingSongs
-                        playIndex = 0
-                    }
-                    ShuffleMode.ALBUMS -> {
-                        val albumsMap = sourceList.groupBy { getAlbumKey(it) }
-                        val chosenAlbumKey = getAlbumKey(chosenSong)
-
-                        val activeAlbumSongs = sortAlbumSongs(albumsMap[chosenAlbumKey] ?: sourceList.filter { getAlbumKey(it) == chosenAlbumKey })
-                        val chosenIdx = activeAlbumSongs.indexOfFirst { it.id == chosenSong.id }
-
-                        val currentAlbumAfter = if (chosenIdx != -1) activeAlbumSongs.drop(chosenIdx + 1) else emptyList()
-                        val currentAlbumBefore = if (chosenIdx != -1) activeAlbumSongs.take(chosenIdx) else emptyList()
-
-                        val otherAlbumKeys = (albumsMap.keys - chosenAlbumKey).shuffled()
-
-                        val queue = mutableListOf<Song>()
-                        queue.add(chosenSong)
-                        queue.addAll(currentAlbumAfter)
-                        for (albumKey in otherAlbumKeys) {
-                            val albumSongs = albumsMap[albumKey] ?: emptyList()
-                            queue.addAll(sortAlbumSongs(albumSongs))
-                        }
-                        queue.addAll(currentAlbumBefore)
-
-                        activeQueue = queue
-                        playIndex = 0
-                    }
-                    ShuffleMode.OFF -> {
-                        val safeIndex = startIndex.coerceIn(0, songs.size - 1)
-                        activeQueue = songs
-                        playIndex = safeIndex
-                    }
-                }
-
-                val remainingMediaItems = activeQueue.drop(1).map { songToMediaItem(it) }
-
-                withContext(Dispatchers.Main) {
-                    if (_currentSong.value?.id == chosenSong.id) {
-                        _currentPlaylist.value = activeQueue
-                        if (remainingMediaItems.isNotEmpty()) {
-                            player.addMediaItems(1, remainingMediaItems)
-                        }
-                        AlbumArtCache.instance.preCacheSurroundingSongs(context, activeQueue, playIndex)
-                        persistCurrentPlaybackState()
-                    }
-                }
-            }
+            AlbumArtCache.instance.preCacheSurroundingSongs(context, activeQueue, playIndex)
+            persistCurrentPlaybackState()
         } else {
             val sortedSongs = sortLibrarySongs(songs)
             unshuffledPlaylist = sortedSongs
@@ -579,6 +567,10 @@ class PlaybackManager(
     }
 
     fun setPlaylistFromAuto(songs: List<Song>, startIndex: Int) {
+        updateStateFromAuto(songs, startIndex)
+    }
+
+    fun updateStateFromAuto(songs: List<Song>, startIndex: Int) {
         if (songs.isEmpty()) return
         unshuffledPlaylist = songs
         if (masterPlaylist.isEmpty()) {
@@ -587,21 +579,12 @@ class PlaybackManager(
         val safeIndex = startIndex.coerceIn(0, songs.size - 1)
         val selectedSong = songs.getOrNull(safeIndex)
 
-        if (_shuffleMode.value != ShuffleMode.OFF && selectedSong != null) {
-            updateQueuePreservingCurrentSong(
-                clearPriorSongs = true,
-                resetPosition = true,
-                autoPlay = true,
-                overrideCurrentSong = selectedSong
-            )
-        } else {
-            _currentPlaylist.value = songs
-            _currentSong.value = selectedSong
-            persistCurrentPlaybackState()
+        _currentPlaylist.value = songs
+        _currentSong.value = selectedSong
+        persistCurrentPlaybackState()
 
-            if (player.playbackState == Player.STATE_IDLE) {
-                player.prepare()
-            }
+        if (player.playbackState == Player.STATE_IDLE) {
+            player.prepare()
         }
     }
 
@@ -615,35 +598,26 @@ class PlaybackManager(
         val cachedSongs = masterPlaylist.ifEmpty { unshuffledPlaylist.ifEmpty { _currentPlaylist.value } }
         if (cachedSongs.isNotEmpty()) {
             val firstSong = cachedSongs.random()
-            _currentPlaylist.value = listOf(firstSong)
+            val remainingSongs = cachedSongs.filter { it.id != firstSong.id }.shuffled()
+            val fullPlaylist = listOf(firstSong) + remainingSongs
+            val fullMediaItems = fullPlaylist.map { songToMediaItem(it) }
+
+            _currentPlaylist.value = fullPlaylist
             _currentSong.value = firstSong
 
             player.shuffleModeEnabled = false
-            player.setMediaItems(listOf(songToMediaItem(firstSong)), 0, 0L)
+            player.setMediaItems(fullMediaItems, 0, 0L)
             player.prepare()
             player.play()
 
-            AlbumArtCache.instance.preCacheSurroundingSongs(context, listOf(firstSong), 0)
+            AlbumArtCache.instance.preCacheSurroundingSongs(context, fullPlaylist, 0)
+            persistCurrentPlaybackState()
 
             scope.launch(Dispatchers.IO) {
                 val dbSongs = musicDatabase?.getAllSongs() ?: emptyList()
-                val allSongs = if (dbSongs.isNotEmpty()) dbSongs else cachedSongs
-                masterPlaylist = allSongs
-                unshuffledPlaylist = allSongs
-
-                val remainingSongs = allSongs.filter { it.id != firstSong.id }.shuffled()
-                val remainingMediaItems = remainingSongs.map { songToMediaItem(it) }
-                val fullPlaylist = listOf(firstSong) + remainingSongs
-
-                withContext(Dispatchers.Main) {
-                    if (_currentSong.value?.id == firstSong.id) {
-                        _currentPlaylist.value = fullPlaylist
-                        if (remainingMediaItems.isNotEmpty()) {
-                            player.addMediaItems(1, remainingMediaItems)
-                        }
-                        AlbumArtCache.instance.preCacheSurroundingSongs(context, fullPlaylist, 0)
-                        persistCurrentPlaybackState()
-                    }
+                if (dbSongs.isNotEmpty()) {
+                    masterPlaylist = dbSongs
+                    unshuffledPlaylist = dbSongs
                 }
             }
         } else {
@@ -658,24 +632,18 @@ class PlaybackManager(
 
                 val firstSong = allSongs.random()
                 val remainingSongs = allSongs.filter { it.id != firstSong.id }.shuffled()
-                val remainingMediaItems = remainingSongs.map { songToMediaItem(it) }
                 val fullPlaylist = listOf(firstSong) + remainingSongs
+                val fullMediaItems = fullPlaylist.map { songToMediaItem(it) }
 
                 withContext(Dispatchers.Main) {
-                    _currentPlaylist.value = listOf(firstSong)
+                    _currentPlaylist.value = fullPlaylist
                     _currentSong.value = firstSong
 
                     player.shuffleModeEnabled = false
-                    player.setMediaItems(listOf(songToMediaItem(firstSong)), 0, 0L)
+                    player.setMediaItems(fullMediaItems, 0, 0L)
                     player.prepare()
                     player.play()
 
-                    AlbumArtCache.instance.preCacheSurroundingSongs(context, listOf(firstSong), 0)
-
-                    _currentPlaylist.value = fullPlaylist
-                    if (remainingMediaItems.isNotEmpty()) {
-                        player.addMediaItems(1, remainingMediaItems)
-                    }
                     AlbumArtCache.instance.preCacheSurroundingSongs(context, fullPlaylist, 0)
                     persistCurrentPlaybackState()
                 }
@@ -699,7 +667,9 @@ class PlaybackManager(
             val pos = positionMs ?: try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
 
             val mediaCount = try { player.mediaItemCount } catch (_: Exception) { 0 }
-            if (mediaCount == 0 || mediaCount != playlist.size) {
+            val isPlayingOrBuffering = try { player.isPlaying || player.playbackState == Player.STATE_BUFFERING } catch (_: Exception) { false }
+
+            if (mediaCount == 0 || (!isPlayingOrBuffering && mediaCount != playlist.size)) {
                 android.util.Log.i("PlaybackManager", "ensurePlayerReadyForPlayback: Reloading queue (playlist size ${playlist.size}, player media count $mediaCount, index $currentIndex, pos ${pos}ms)")
                 player.setMediaItems(playlist.map { songToMediaItem(it) }, currentIndex, pos)
                 player.prepare()
@@ -966,6 +936,9 @@ class PlaybackManager(
 
     fun setShuffleMode(mode: ShuffleMode) {
         _shuffleMode.value = mode
+        if (mode != ShuffleMode.OFF && (_repeatMode.value == RepeatMode.ALBUM || _repeatMode.value == RepeatMode.ARTIST || _repeatMode.value == RepeatMode.GENRE || _repeatMode.value == RepeatMode.FOLDER)) {
+            _repeatMode.value = RepeatMode.OFF
+        }
         updateQueuePreservingCurrentSong()
         persistCurrentPlaybackState()
     }
@@ -1003,6 +976,107 @@ class PlaybackManager(
         }
     }
 
+    fun buildActiveQueue(
+        targetSong: Song,
+        repeatMode: RepeatMode = _repeatMode.value,
+        shuffleMode: ShuffleMode = _shuffleMode.value,
+        baseList: List<Song> = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { _currentPlaylist.value } },
+        priorSongs: List<Song> = emptyList()
+    ): Pair<List<Song>, Int> {
+        if (baseList.isEmpty()) {
+            return Pair(listOf(targetSong), 0)
+        }
+        val sortedBase = sortLibrarySongs(baseList)
+        var targetSongs = sortedBase
+        when (repeatMode) {
+            RepeatMode.ALBUM -> {
+                val currentKey = getAlbumKey(targetSong)
+                val matching = sortedBase.filter { getAlbumKey(it) == currentKey }
+                if (matching.isNotEmpty()) targetSongs = matching
+            }
+            RepeatMode.ARTIST -> {
+                val artistName = targetSong.artist
+                if (artistName.isNotBlank()) {
+                    val matching = sortedBase.filter { it.artist.equals(artistName, ignoreCase = true) }
+                    if (matching.isNotEmpty()) targetSongs = matching
+                }
+            }
+            RepeatMode.GENRE -> {
+                val genreName = targetSong.genre
+                if (genreName.isNotBlank()) {
+                    val matching = sortedBase.filter { it.genre.equals(genreName, ignoreCase = true) }
+                    if (matching.isNotEmpty()) targetSongs = matching
+                }
+            }
+            RepeatMode.FOLDER -> {
+                val folderPath = targetSong.folderPath
+                if (folderPath.isNotBlank()) {
+                    val matching = sortedBase.filter {
+                        it.folderPath.equals(folderPath, ignoreCase = true) ||
+                        it.folderPath.startsWith(folderPath, ignoreCase = true)
+                    }
+                    if (matching.isNotEmpty()) targetSongs = matching
+                }
+            }
+            RepeatMode.SONG, RepeatMode.OFF -> {}
+        }
+
+        val priorIds = priorSongs.map { it.id }.toSet()
+        val candidateSongs = targetSongs.filter { !priorIds.contains(it.id) }
+
+        val activeQueue: List<Song>
+        val newCurrentIndex: Int
+
+        when (shuffleMode) {
+            ShuffleMode.OFF -> {
+                val currentIdxInCandidates = candidateSongs.indexOfFirst { it.id == targetSong.id }
+                val upcoming = if (currentIdxInCandidates != -1) {
+                    val after = candidateSongs.drop(currentIdxInCandidates + 1)
+                    val before = candidateSongs.take(currentIdxInCandidates)
+                    after + before
+                } else {
+                    candidateSongs.filter { it.id != targetSong.id }
+                }
+                activeQueue = priorSongs + listOf(targetSong) + upcoming
+                newCurrentIndex = priorSongs.size
+            }
+            ShuffleMode.SONGS -> {
+                val upcoming = candidateSongs.filter { it.id != targetSong.id }.shuffled()
+                activeQueue = priorSongs + listOf(targetSong) + upcoming
+                newCurrentIndex = priorSongs.size
+            }
+            ShuffleMode.ALBUMS -> {
+                val currentAlbumKey = getAlbumKey(targetSong)
+                val currentAlbumAllSongs = sortAlbumSongs(targetSongs.filter { getAlbumKey(it) == currentAlbumKey })
+                val currentIdx = currentAlbumAllSongs.indexOfFirst { it.id == targetSong.id }
+
+                val currentAlbumAfter = if (currentIdx != -1) currentAlbumAllSongs.drop(currentIdx + 1) else emptyList()
+                val currentAlbumBeforeUnplayed = if (currentIdx != -1) {
+                    currentAlbumAllSongs.take(currentIdx).filter { song -> priorSongs.none { it.id == song.id } }
+                } else emptyList()
+
+                val otherAlbumsMap = candidateSongs
+                    .filter { getAlbumKey(it) != currentAlbumKey }
+                    .groupBy { getAlbumKey(it) }
+
+                val shuffledAlbumKeys = otherAlbumsMap.keys.shuffled()
+
+                val upcoming = mutableListOf<Song>()
+                upcoming.addAll(currentAlbumAfter)
+
+                for (albumKey in shuffledAlbumKeys) {
+                    val songsInAlbum = otherAlbumsMap[albumKey] ?: emptyList()
+                    upcoming.addAll(sortAlbumSongs(songsInAlbum))
+                }
+
+                activeQueue = priorSongs + currentAlbumBeforeUnplayed + listOf(targetSong) + upcoming
+                newCurrentIndex = priorSongs.size + currentAlbumBeforeUnplayed.size
+            }
+        }
+
+        return Pair(activeQueue, newCurrentIndex)
+    }
+
     private fun updateQueuePreservingCurrentSong(
         clearPriorSongs: Boolean = false,
         resetPosition: Boolean = false,
@@ -1022,130 +1096,59 @@ class PlaybackManager(
             return
         }
 
-        scope.launch(Dispatchers.Default) {
-            if (masterPlaylist.isEmpty()) {
+        if (masterPlaylist.isEmpty()) {
+            scope.launch(Dispatchers.IO) {
                 ensureMasterPlaylistLoaded()
-            }
-            val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { playlist } }
-            if (rawBase.isEmpty()) return@launch
-
-            val baseList = sortLibrarySongs(rawBase)
-            val currentIndex = if (clearPriorSongs) -1 else try { player.currentMediaItemIndex } catch (_: Exception) { -1 }
-            val priorSongs = if (!clearPriorSongs && playlist.isNotEmpty() && currentIndex in playlist.indices) {
-                playlist.take(currentIndex)
-            } else emptyList()
-
-            var targetSongs = baseList
-            when (_repeatMode.value) {
-                RepeatMode.ALBUM -> {
-                    val currentKey = getAlbumKey(current)
-                    val matching = baseList.filter { getAlbumKey(it) == currentKey }
-                    if (matching.isNotEmpty()) targetSongs = matching
-                }
-                RepeatMode.ARTIST -> {
-                    val artistName = current.artist
-                    if (artistName.isNotBlank()) {
-                        val matching = baseList.filter { it.artist.equals(artistName, ignoreCase = true) }
-                        if (matching.isNotEmpty()) targetSongs = matching
-                    }
-                }
-                RepeatMode.GENRE -> {
-                    val genreName = current.genre
-                    if (genreName.isNotBlank()) {
-                        val matching = baseList.filter { it.genre.equals(genreName, ignoreCase = true) }
-                        if (matching.isNotEmpty()) targetSongs = matching
-                    }
-                }
-                RepeatMode.FOLDER -> {
-                    val folderPath = current.folderPath
-                    if (folderPath.isNotBlank()) {
-                        val matching = baseList.filter {
-                            it.folderPath.equals(folderPath, ignoreCase = true) ||
-                            it.folderPath.startsWith(folderPath, ignoreCase = true)
-                        }
-                        if (matching.isNotEmpty()) targetSongs = matching
-                    }
-                }
-                RepeatMode.SONG, RepeatMode.OFF -> {}
-            }
-
-            val priorIds = priorSongs.map { it.id }.toSet()
-            val candidateSongs = targetSongs.filter { !priorIds.contains(it.id) }
-
-            val activeQueue: List<Song>
-            val newCurrentIndex: Int
-
-            when (_shuffleMode.value) {
-                ShuffleMode.OFF -> {
-                    val currentIdxInCandidates = candidateSongs.indexOfFirst { it.id == current.id }
-                    val upcoming = if (currentIdxInCandidates != -1) {
-                        val after = candidateSongs.drop(currentIdxInCandidates + 1)
-                        val before = candidateSongs.take(currentIdxInCandidates)
-                        after + before
-                    } else {
-                        candidateSongs.filter { it.id != current.id }
-                    }
-                    activeQueue = priorSongs + listOf(current) + upcoming
-                    newCurrentIndex = priorSongs.size
-                }
-                ShuffleMode.SONGS -> {
-                    val upcoming = candidateSongs.filter { it.id != current.id }.shuffled()
-                    activeQueue = priorSongs + listOf(current) + upcoming
-                    newCurrentIndex = priorSongs.size
-                }
-                ShuffleMode.ALBUMS -> {
-                    val currentAlbumKey = getAlbumKey(current)
-                    val currentAlbumAllSongs = sortAlbumSongs(targetSongs.filter { getAlbumKey(it) == currentAlbumKey })
-                    val currentIdx = currentAlbumAllSongs.indexOfFirst { it.id == current.id }
-
-                    val currentAlbumAfter = if (currentIdx != -1) currentAlbumAllSongs.drop(currentIdx + 1) else emptyList()
-                    val currentAlbumBeforeUnplayed = if (currentIdx != -1) {
-                        currentAlbumAllSongs.take(currentIdx).filter { song -> priorSongs.none { it.id == song.id } }
-                    } else emptyList()
-
-                    val otherAlbumsMap = candidateSongs
-                        .filter { getAlbumKey(it) != currentAlbumKey }
-                        .groupBy { getAlbumKey(it) }
-
-                    val shuffledAlbumKeys = otherAlbumsMap.keys.shuffled()
-
-                    val upcoming = mutableListOf<Song>()
-                    upcoming.addAll(currentAlbumAfter)
-
-                    for (albumKey in shuffledAlbumKeys) {
-                        val songsInAlbum = otherAlbumsMap[albumKey] ?: emptyList()
-                        upcoming.addAll(sortAlbumSongs(songsInAlbum))
-                    }
-
-                    activeQueue = priorSongs + currentAlbumBeforeUnplayed + listOf(current) + upcoming
-                    newCurrentIndex = priorSongs.size + currentAlbumBeforeUnplayed.size
+                withContext(Dispatchers.Main) {
+                    updateQueuePreservingCurrentSong(clearPriorSongs, resetPosition, autoPlay, overrideCurrentSong)
                 }
             }
+            return
+        }
+        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { playlist } }
+        if (rawBase.isEmpty()) return
 
-            val mediaItems = activeQueue.map { songToMediaItem(it) }
+        val baseList = sortLibrarySongs(rawBase)
+        val currentIndex = if (clearPriorSongs) -1 else try { player.currentMediaItemIndex } catch (_: Exception) { -1 }
+        val priorSongs = if (!clearPriorSongs && playlist.isNotEmpty() && currentIndex in playlist.indices) {
+            playlist.take(currentIndex)
+        } else emptyList()
 
-            withContext(Dispatchers.Main) {
-                _currentSong.value = activeQueue.getOrNull(newCurrentIndex) ?: current
-                _currentPlaylist.value = activeQueue
+        val (activeQueue, newCurrentIndex) = buildActiveQueue(
+            targetSong = current,
+            repeatMode = _repeatMode.value,
+            shuffleMode = _shuffleMode.value,
+            baseList = baseList,
+            priorSongs = priorSongs
+        )
 
-                isInternalRepeatChange = true
-                isInternalShuffleChange = true
-                try {
-                    player.repeatMode = playerRepeatMode
-                    player.shuffleModeEnabled = false
+        val mediaItems = activeQueue.map { songToMediaItem(it) }
 
-                    val currentPos = if (clearPriorSongs || resetPosition) 0L else try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
-                    val wasPlaying = try { player.playWhenReady && player.playbackState != Player.STATE_IDLE } catch (_: Exception) { false }
-                    player.setMediaItems(mediaItems, newCurrentIndex, currentPos)
-                    player.prepare()
-                    if (clearPriorSongs || autoPlay || wasPlaying) {
-                        player.play()
-                    }
-                } finally {
-                    isInternalRepeatChange = false
-                    isInternalShuffleChange = false
-                }
+        _currentSong.value = activeQueue.getOrNull(newCurrentIndex) ?: current
+        _currentPlaylist.value = activeQueue
+
+        isInternalRepeatChange = true
+        isInternalShuffleChange = true
+        try {
+            player.repeatMode = playerRepeatMode
+            // CRITICAL: player.shuffleModeEnabled MUST ALWAYS BE FALSE.
+            // TravelingTunes explicitly builds and pre-shuffles the active queue (`activeQueue` / `_currentPlaylist.value`)
+            // according to the app's `_shuffleMode` (e.g. Shuffle Songs or Shuffle Albums).
+            // If ExoPlayer's `shuffleModeEnabled` is set to `true`, ExoPlayer applies a secondary random ShuffleOrder
+            // on top of `activeQueue`. This breaks sequential track playback in Shuffle Albums (`ShuffleMode.ALBUMS`)
+            // and causes Android Auto / MediaController "Next" commands to jump to random indices.
+            player.shuffleModeEnabled = false
+
+            val currentPos = if (clearPriorSongs || resetPosition) 0L else try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
+            val wasPlaying = try { player.playWhenReady && player.playbackState != Player.STATE_IDLE } catch (_: Exception) { false }
+            player.setMediaItems(mediaItems, newCurrentIndex, currentPos)
+            player.prepare()
+            if (clearPriorSongs || autoPlay || wasPlaying) {
+                player.play()
             }
+        } finally {
+            isInternalRepeatChange = false
+            isInternalShuffleChange = false
         }
     }
 

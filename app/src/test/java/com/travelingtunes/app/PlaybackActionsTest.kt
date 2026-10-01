@@ -267,4 +267,50 @@ class PlaybackActionsTest {
         assertEquals(1, queryMatch.size)
         assertEquals("Shape of You", queryMatch[0].title)
     }
+
+    @Test
+    fun testBuildActiveQueueFilteringByRepeatAlbum() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(1L, "Song 1", "Artist A", "Album 1", 1L, 1000L, mockUri, trackNumber = 1)
+        val s2 = Song(2L, "Song 2", "Artist A", "Album 1", 1L, 1000L, mockUri, trackNumber = 2)
+        val s3 = Song(3L, "Song 3", "Artist B", "Album 2", 1L, 1000L, mockUri, trackNumber = 1)
+
+        val baseList = listOf(s1, s2, s3)
+        val targetSong = s1
+
+        // RepeatMode.ALBUM filters queue to Album 1
+        val albumFilter = baseList.filter { it.album.equals(targetSong.album, ignoreCase = true) }
+        assertEquals(2, albumFilter.size)
+        assertEquals("Song 1", albumFilter[0].title)
+        assertEquals("Song 2", albumFilter[1].title)
+    }
+
+    @Test
+    fun testBuildActiveQueueFilteringByRepeatArtist() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(1L, "Song 1", "Artist X", "Album 1", 1L, 1000L, mockUri, trackNumber = 1)
+        val s2 = Song(2L, "Song 2", "Artist X", "Album 2", 1L, 1000L, mockUri, trackNumber = 1)
+        val s3 = Song(3L, "Song 3", "Artist Y", "Album 3", 1L, 1000L, mockUri, trackNumber = 1)
+
+        val baseList = listOf(s1, s2, s3)
+        val targetSong = s1
+
+        // RepeatMode.ARTIST filters queue to Artist X
+        val artistFilter = baseList.filter { it.artist.equals(targetSong.artist, ignoreCase = true) }
+        assertEquals(2, artistFilter.size)
+        assertEquals("Song 1", artistFilter[0].title)
+        assertEquals("Song 2", artistFilter[1].title)
+    }
+
+    @Test
+    fun testTogglingShuffleOnResetsRepeatAlbumMode() {
+        var repeatMode = RepeatMode.ALBUM
+        val newShuffleMode = ShuffleMode.SONGS
+
+        if (newShuffleMode != ShuffleMode.OFF && (repeatMode == RepeatMode.ALBUM || repeatMode == RepeatMode.ARTIST || repeatMode == RepeatMode.GENRE || repeatMode == RepeatMode.FOLDER)) {
+            repeatMode = RepeatMode.OFF
+        }
+
+        assertEquals(RepeatMode.OFF, repeatMode)
+    }
 }

@@ -1252,6 +1252,7 @@ private fun ConfigOption.getSubmenu(): SettingsSubmenu {
     return when {
         key.startsWith("PROFILE_") -> SettingsSubmenu.PROFILES
         key.startsWith("LIBRARY_") -> SettingsSubmenu.LIBRARY
+        key.startsWith("DENOISE_") || key.startsWith("NORMALIZATION_") || key.startsWith("PLAYBACK_") -> SettingsSubmenu.PLAYBACK
         key.startsWith("ALIGN_") || key.startsWith("DISPLAY_artist") ||
         key.startsWith("DISPLAY_song") || key.startsWith("DISPLAY_album") ||
         key.startsWith("DISPLAY_title") -> SettingsSubmenu.TITLES
@@ -1308,6 +1309,7 @@ fun ConfigOptionPickerDialog(
         listOf(
             SettingsSubmenu.PROFILES,
             SettingsSubmenu.LIBRARY,
+            SettingsSubmenu.PLAYBACK,
             SettingsSubmenu.TITLES,
             SettingsSubmenu.ART,
             SettingsSubmenu.HUD,
