@@ -17,6 +17,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +26,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(UnstableApi::class)
 class PlaybackManager(
     context: Context,
     private val settingsDataStore: SettingsDataStore? = null,
@@ -92,7 +95,7 @@ class PlaybackManager(
             val songIndex = playlist.indexOfFirst { it.id == songId }.coerceAtLeast(0)
             val posMs = _currentPositionMs.value.coerceAtLeast(0L)
 
-            val mediaItems = playlist.map { songToMediaItem(it) }
+            val mediaItems = playlist.map { songToMediaItem(it, context) }
             isInternalRepeatChange = true
             isInternalShuffleChange = true
             try {
@@ -391,7 +394,7 @@ class PlaybackManager(
         }
         _currentPlaylist.value = songs
 
-        val mediaItems = songs.map { songToMediaItem(it) }
+        val mediaItems = songs.map { songToMediaItem(it, context) }
         val safeIndex = startIndex.coerceIn(0, songs.size - 1)
         val safePos = positionMs.coerceAtLeast(0L)
 
@@ -533,7 +536,7 @@ class PlaybackManager(
                 }
             }
 
-            val fullMediaItems = activeQueue.map { songToMediaItem(it) }
+            val fullMediaItems = activeQueue.map { songToMediaItem(it, context) }
 
             _currentPlaylist.value = activeQueue
             _currentSong.value = chosenSong
@@ -557,7 +560,7 @@ class PlaybackManager(
             _currentSong.value = sortedSongs.getOrNull(safeIndex)
 
             player.shuffleModeEnabled = false
-            player.setMediaItems(sortedSongs.map { songToMediaItem(it) }, safeIndex, 0L)
+            player.setMediaItems(sortedSongs.map { songToMediaItem(it, context) }, safeIndex, 0L)
             player.prepare()
             player.play()
 
@@ -600,7 +603,7 @@ class PlaybackManager(
             val firstSong = cachedSongs.random()
             val remainingSongs = cachedSongs.filter { it.id != firstSong.id }.shuffled()
             val fullPlaylist = listOf(firstSong) + remainingSongs
-            val fullMediaItems = fullPlaylist.map { songToMediaItem(it) }
+            val fullMediaItems = fullPlaylist.map { songToMediaItem(it, context) }
 
             _currentPlaylist.value = fullPlaylist
             _currentSong.value = firstSong
@@ -633,7 +636,7 @@ class PlaybackManager(
                 val firstSong = allSongs.random()
                 val remainingSongs = allSongs.filter { it.id != firstSong.id }.shuffled()
                 val fullPlaylist = listOf(firstSong) + remainingSongs
-                val fullMediaItems = fullPlaylist.map { songToMediaItem(it) }
+                val fullMediaItems = fullPlaylist.map { songToMediaItem(it, context) }
 
                 withContext(Dispatchers.Main) {
                     _currentPlaylist.value = fullPlaylist
@@ -671,7 +674,7 @@ class PlaybackManager(
 
             if (mediaCount == 0 || (!isPlayingOrBuffering && mediaCount != playlist.size)) {
                 android.util.Log.i("PlaybackManager", "ensurePlayerReadyForPlayback: Reloading queue (playlist size ${playlist.size}, player media count $mediaCount, index $currentIndex, pos ${pos}ms)")
-                player.setMediaItems(playlist.map { songToMediaItem(it) }, currentIndex, pos)
+                player.setMediaItems(playlist.map { songToMediaItem(it, context) }, currentIndex, pos)
                 player.prepare()
             } else if (player.playbackState == Player.STATE_IDLE) {
                 android.util.Log.i("PlaybackManager", "ensurePlayerReadyForPlayback: Player in STATE_IDLE, calling prepare()")
@@ -1122,7 +1125,7 @@ class PlaybackManager(
             priorSongs = priorSongs
         )
 
-        val mediaItems = activeQueue.map { songToMediaItem(it) }
+        val mediaItems = activeQueue.map { songToMediaItem(it, context) }
 
         _currentSong.value = activeQueue.getOrNull(newCurrentIndex) ?: current
         _currentPlaylist.value = activeQueue
@@ -1441,7 +1444,7 @@ class PlaybackManager(
         val wasEmpty = _currentPlaylist.value.isEmpty()
         val updated = _currentPlaylist.value + songs
         _currentPlaylist.value = updated
-        player.addMediaItems(songs.map { songToMediaItem(it) })
+        player.addMediaItems(songs.map { songToMediaItem(it, context) })
         if (wasEmpty) {
             player.prepare()
             _currentSong.value = songs.firstOrNull()
@@ -1465,7 +1468,7 @@ class PlaybackManager(
         val updated = _currentPlaylist.value.toMutableList()
         updated.addAll(insertIndex, songs)
         _currentPlaylist.value = updated
-        player.addMediaItems(insertIndex, songs.map { songToMediaItem(it) })
+        player.addMediaItems(insertIndex, songs.map { songToMediaItem(it, context) })
         persistCurrentPlaybackState()
     }
 

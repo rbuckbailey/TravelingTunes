@@ -29,7 +29,18 @@ class ArtCropFillTest {
 
     @Test
     fun testCropAndFillModeEnumNames() {
+        assertEquals(3, ArtCropFillMode.entries.size)
         assertEquals("Crop to Fit", ArtCropFillMode.CROP.displayName)
         assertEquals("Fill / Letterbox", ArtCropFillMode.FILL.displayName)
+        assertEquals("Stretch Edges", ArtCropFillMode.STRETCH.displayName)
+    }
+
+    @Test
+    fun testProcessNonDestructiveSquareStretch() {
+        val mockBitmap = org.mockito.Mockito.mock(android.graphics.Bitmap::class.java)
+        org.mockito.Mockito.`when`(mockBitmap.width).thenReturn(800)
+        org.mockito.Mockito.`when`(mockBitmap.height).thenReturn(600)
+
+        assertTrue("800x600 is non-square", ArtCropFillHelper.isNonSquare(mockBitmap))
     }
 }

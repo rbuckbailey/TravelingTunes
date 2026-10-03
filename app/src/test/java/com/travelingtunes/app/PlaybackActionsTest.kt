@@ -269,6 +269,31 @@ class PlaybackActionsTest {
     }
 
     @Test
+    fun testSongToMediaItemArtworkMetadata() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        Mockito.`when`(mockUri.toString()).thenReturn("file:///cache/album_art/art_test.jpg")
+        Mockito.`when`(mockUri.scheme).thenReturn("file")
+        Mockito.`when`(mockUri.path).thenReturn("/cache/album_art/art_test.jpg")
+
+        val song = Song(
+            id = 42L,
+            title = "Test Song",
+            artist = "Test Artist",
+            album = "Test Album",
+            albumId = 1L,
+            durationMs = 180000L,
+            contentUri = mockUri,
+            artworkUri = mockUri
+        )
+
+        val mediaItem = com.travelingtunes.app.core.media.songToMediaItem(song)
+        assertEquals("42", mediaItem.mediaId)
+        assertEquals("Test Song", mediaItem.mediaMetadata.title.toString())
+        assertEquals("Test Artist", mediaItem.mediaMetadata.artist.toString())
+        assertEquals(mockUri, mediaItem.mediaMetadata.artworkUri)
+    }
+
+    @Test
     fun testBuildActiveQueueFilteringByRepeatAlbum() {
         val mockUri = Mockito.mock(android.net.Uri::class.java)
         val s1 = Song(1L, "Song 1", "Artist A", "Album 1", 1L, 1000L, mockUri, trackNumber = 1)

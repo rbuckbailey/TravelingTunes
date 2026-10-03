@@ -340,6 +340,8 @@ fun PlayerScreen(
     var activeRadialSelectedAction by remember { mutableStateOf<GestureAction?>(null) }
     var activeRadialSelectedIndex by remember { mutableStateOf<Int?>(null) }
 
+    val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier || showProfilePicker || showRadialMenu
+
     val activeRadialActionsFlow = remember(activeRadialTrigger) {
         val trigKey = activeRadialTrigger?.key
         if (trigKey != null && settingsDataStore != null) {
@@ -480,36 +482,40 @@ fun PlayerScreen(
     var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     // Sync pagerState -> PlaybackManager when user swipes pager to a settled page
-    LaunchedEffect(pagerState) {
-        androidx.compose.runtime.snapshotFlow { Pair(pagerState.settledPage, pagerState.isScrollInProgress) }
-            .collect { (settledPage, isScrolling) ->
-                if (!isScrolling && !isProgrammaticScroll && currentPlaylist.isNotEmpty() && settledPage in currentPlaylist.indices) {
-                    val selectedSong = currentPlaylist[settledPage]
-                    if (selectedSong.id != currentSong?.id) {
-                        playbackManager.playSongAtIndex(settledPage)
-                    }
+    LaunchedEffect(pagerState, isAnyOverlayOpen) {
+        androidx.compose.runtime.snapshotFlow {
+            Triple(pagerState.settledPage, pagerState.isScrollInProgress, isAnyOverlayOpen)
+        }.collect { (settledPage, isScrolling, overlayOpen) ->
+            if (!isScrolling && !isProgrammaticScroll && !overlayOpen && currentPlaylist.isNotEmpty() && settledPage in currentPlaylist.indices) {
+                val selectedSong = currentPlaylist[settledPage]
+                if (selectedSong.id != currentSong?.id) {
+                    playbackManager.playSongAtIndex(settledPage)
                 }
             }
+        }
     }
 
     // Sync PlaybackManager -> pagerState when song or playlist changes
-    LaunchedEffect(currentSong?.id, currentPlaylist, songIndex, lastTransitionReason) {
-        if (songIndex in 0 until pageCount && pagerState.currentPage != songIndex) {
-            isProgrammaticScroll = true
-            try {
-                val isNextTrackAuto = lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
-                        lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT ||
-                        songIndex == pagerState.currentPage + 1
-                if (isNextTrackAuto) {
-                    pagerState.animateScrollToPage(
-                        page = songIndex,
-                        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
-                    )
-                } else {
-                    pagerState.scrollToPage(songIndex)
+    LaunchedEffect(currentSong?.id, currentPlaylist, songIndex, lastTransitionReason, isAnyOverlayOpen) {
+        if (songIndex in 0 until pageCount) {
+            if (pagerState.currentPage != songIndex) {
+                isProgrammaticScroll = true
+                try {
+                    val isNextTrackAuto = (lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                            lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT ||
+                            songIndex == pagerState.currentPage + 1) && !isAnyOverlayOpen
+                    if (isNextTrackAuto) {
+                        pagerState.animateScrollToPage(
+                            page = songIndex,
+                            animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                        )
+                    } else {
+                        pagerState.scrollToPage(songIndex)
+                    }
+                } finally {
+                    delay(50L)
+                    isProgrammaticScroll = false
                 }
-            } finally {
-                isProgrammaticScroll = false
             }
         }
     }
@@ -645,8 +651,6 @@ fun PlayerScreen(
 
             var action = resolvedAction
             activeContinuousAction = action
-
-            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier || showRadialMenu
 
             if (isAnyOverlayOpen) {
                 val activeSlideDirection = when {
@@ -824,7 +828,6 @@ fun PlayerScreen(
             totalDx: Float,
             totalDy: Float
         ) {
-            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier
             if (isAnyOverlayOpen) return
 
             if (activePageAction != null) {
@@ -951,7 +954,6 @@ fun PlayerScreen(
                 }
             }
 
-            val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier
             if (!isAnyOverlayOpen) {
                 playbackManager.persistCurrentPlaybackState()
             }

@@ -157,6 +157,7 @@ fun DownloadedArtBrowserScreen(
     // Zoom Preview state
     var zoomPreviewCandidate by remember { mutableStateOf<ArtworkCandidate?>(null) }
     var zoomPreviewUri by remember { mutableStateOf<Uri?>(null) }
+    var zoomPreviewSong by remember { mutableStateOf<Song?>(null) }
     var zoomPreviewTitle by remember { mutableStateOf("") }
 
     // Background Embedding States
@@ -568,6 +569,7 @@ fun DownloadedArtBrowserScreen(
                                     AlbumArtBrowserItemRow(
                                         albumInfo = albumInfo,
                                         isSelected = isSelected,
+                                        musicDatabase = musicDatabase,
                                         onToggleSelect = {
                                             if (isSelected) selectedAlbums.remove(albumInfo) else selectedAlbums.add(albumInfo)
                                         },
@@ -575,6 +577,9 @@ fun DownloadedArtBrowserScreen(
                                             zoomPreviewUri = albumInfo.artworkUri
                                             zoomPreviewTitle = "${albumInfo.artist} - ${albumInfo.album}"
                                             zoomPreviewCandidate = null
+                                            coroutineScope.launch {
+                                                zoomPreviewSong = musicDatabase.getSongsByAlbumAndArtist(albumInfo.album, albumInfo.artist).firstOrNull()
+                                            }
                                         },
                                         onDelete = {
                                             coroutineScope.launch {
@@ -790,15 +795,17 @@ fun DownloadedArtBrowserScreen(
     }
 
     // Zoomable Artwork Preview Dialog
-    if (zoomPreviewCandidate != null || zoomPreviewUri != null) {
+    if (zoomPreviewCandidate != null || zoomPreviewUri != null || zoomPreviewSong != null) {
         ZoomableArtPreviewDialog(
             candidate = zoomPreviewCandidate,
             artworkUri = zoomPreviewUri,
+            song = zoomPreviewSong,
             title = zoomPreviewTitle,
             albumArtDownloader = albumArtDownloader,
             onDismiss = {
                 zoomPreviewCandidate = null
                 zoomPreviewUri = null
+                zoomPreviewSong = null
             }
         )
     }
@@ -937,12 +944,28 @@ private fun EditTagsAndArtworkDialog(
                     mutableStateOf(albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist))
                 }
                 var currentSquareBitmap by remember(sampleTrack) {
-                    mutableStateOf<android.graphics.Bitmap?>(
-                        sampleTrack.artworkUri?.path?.let { p ->
-                            if (java.io.File(p).exists()) android.graphics.BitmapFactory.decodeFile(p) else null
-                        } ?: origBitmap
-                    )
+                    mutableStateOf<android.graphics.Bitmap?>(null)
                 }
+                var isEmbeddedArt by remember(sampleTrack) { mutableStateOf(false) }
+
+                LaunchedEffect(sampleTrack) {
+                    val downloadedOrig = albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist)
+                    if (downloadedOrig != null) {
+                        origBitmap = downloadedOrig
+                        currentSquareBitmap = downloadedOrig
+                        isEmbeddedArt = false
+                    } else {
+                        val loaded = withContext(Dispatchers.IO) {
+                            com.travelingtunes.app.feature.player.loadSongArtwork(context, sampleTrack, reqSize = 800)
+                        }
+                        if (loaded != null) {
+                            origBitmap = loaded
+                            currentSquareBitmap = loaded
+                            isEmbeddedArt = true
+                        }
+                    }
+                }
+
                 val isNonSquare = remember(origBitmap) {
                     ArtCropFillHelper.isNonSquare(origBitmap)
                 }
@@ -961,7 +984,8 @@ private fun EditTagsAndArtworkDialog(
                                     val songs = musicDatabase.getSongsByAlbumAndArtist(sampleTrack.album, sampleTrack.artist)
                                     albumArtDownloader.saveCustomArtworkForAlbum(sampleTrack.album, sampleTrack.artist, bytes, songs)
                                     origBitmap = bitmap
-                                    currentSquareBitmap = albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist)
+                                    currentSquareBitmap = albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist) ?: bitmap
+                                    isEmbeddedArt = false
                                     playbackManager.refreshCurrentSongArtwork()
                                     if (bitmap != null && ArtCropFillHelper.isNonSquare(bitmap)) {
                                         showTagEditorCropDialog = true
@@ -1016,7 +1040,7 @@ private fun EditTagsAndArtworkDialog(
                             )
                             Text(
                                 text = if (origBitmap != null) {
-                                    "${origBitmap!!.width} x ${origBitmap!!.height} ${if (isNonSquare) "(Non-square)" else "(Square)"}"
+                                    "${origBitmap!!.width} x ${origBitmap!!.height} ${if (isEmbeddedArt) "(Embedded Art)" else if (isNonSquare) "(Non-square)" else "(Square)"}"
                                 } else "No artwork",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1272,6 +1296,10 @@ private fun TrackItemRow(
 
             Spacer(modifier = Modifier.width(6.dp))
 
+            AlbumArtThumbnail(artworkUri = song.artworkUri, song = song, size = 38.dp)
+
+            Spacer(modifier = Modifier.width(10.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = song.title,
@@ -1333,6 +1361,7 @@ private fun GroupItemRow(
 private fun AlbumArtBrowserItemRow(
     albumInfo: AlbumArtBrowserInfo,
     isSelected: Boolean,
+    musicDatabase: MusicDatabase? = null,
     onToggleSelect: () -> Unit,
     onZoomArt: () -> Unit,
     onDelete: () -> Unit,
@@ -1344,20 +1373,33 @@ private fun AlbumArtBrowserItemRow(
     val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
 
-    val bitmap = remember(albumInfo.artworkUri) {
-        val uri = albumInfo.artworkUri ?: return@remember null
-        try {
-            if (uri.scheme == "file" && uri.path != null) {
-                com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(uri.path!!, 400, 400)
-            } else {
-                com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
-                    inputStreamSupplier = { context.contentResolver.openInputStream(uri) },
-                    reqWidth = 400,
-                    reqHeight = 400
-                )
+    var bitmap by remember(albumInfo) { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(albumInfo) {
+        withContext(Dispatchers.IO) {
+            if (albumInfo.artworkUri != null) {
+                val uri = albumInfo.artworkUri
+                try {
+                    bitmap = if (uri.scheme == "file" && uri.path != null) {
+                        com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(uri.path!!, 400, 400)
+                    } else {
+                        com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
+                            inputStreamSupplier = { context.contentResolver.openInputStream(uri) },
+                            reqWidth = 400,
+                            reqHeight = 400
+                        )
+                    }
+                } catch (e: Exception) {
+                    bitmap = null
+                }
             }
-        } catch (e: Exception) {
-            null
+            if (bitmap == null && musicDatabase != null) {
+                val songs = musicDatabase.getSongsByAlbumAndArtist(albumInfo.album, albumInfo.artist)
+                val sample = songs.firstOrNull()
+                if (sample != null) {
+                    bitmap = com.travelingtunes.app.feature.player.loadSongArtwork(context, sample, reqSize = 400)
+                }
+            }
         }
     }
 
@@ -1389,12 +1431,13 @@ private fun AlbumArtBrowserItemRow(
                     .size(46.dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(enabled = albumInfo.artworkUri != null) { onZoomArt() },
+                    .clickable(enabled = bitmap != null) { onZoomArt() },
                 contentAlignment = Alignment.Center
             ) {
-                if (bitmap != null) {
+                val bmp = bitmap
+                if (bmp != null) {
                     Image(
-                        bitmap = bitmap.asImageBitmap(),
+                        bitmap = bmp.asImageBitmap(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -1631,24 +1674,31 @@ fun filterSourceAlbums(
 @Composable
 private fun AlbumArtThumbnail(
     artworkUri: Uri?,
+    song: Song? = null,
     modifier: Modifier = Modifier,
     size: Dp = 40.dp
 ) {
     val context = LocalContext.current
-    val bitmap = remember(artworkUri) {
-        val uri = artworkUri ?: return@remember null
-        try {
-            if (uri.scheme == "file" && uri.path != null) {
-                com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(uri.path!!, 200, 200)
-            } else {
-                com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
-                    inputStreamSupplier = { context.contentResolver.openInputStream(uri) },
-                    reqWidth = 200,
-                    reqHeight = 200
-                )
+    var bitmap by remember(artworkUri, song?.id) { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(artworkUri, song?.id) {
+        withContext(Dispatchers.IO) {
+            if (artworkUri != null) {
+                try {
+                    bitmap = if (artworkUri.scheme == "file" && artworkUri.path != null) {
+                        com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(artworkUri.path!!, 200, 200)
+                    } else {
+                        com.travelingtunes.app.feature.player.decodeSampledBitmapFromStream(
+                            inputStreamSupplier = { context.contentResolver.openInputStream(artworkUri) },
+                            reqWidth = 200,
+                            reqHeight = 200
+                        )
+                    }
+                } catch (_: Exception) {}
             }
-        } catch (e: Exception) {
-            null
+            if (bitmap == null && song != null) {
+                bitmap = com.travelingtunes.app.feature.player.loadSongArtwork(context, song, reqSize = 200)
+            }
         }
     }
 
@@ -1659,9 +1709,10 @@ private fun AlbumArtThumbnail(
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
-        if (bitmap != null) {
+        val bmp = bitmap
+        if (bmp != null) {
             Image(
-                bitmap = bitmap.asImageBitmap(),
+                bitmap = bmp.asImageBitmap(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -2282,6 +2333,7 @@ private fun CopyArtworkDialog(
 private fun ZoomableArtPreviewDialog(
     candidate: ArtworkCandidate? = null,
     artworkUri: Uri? = null,
+    song: Song? = null,
     title: String,
     albumArtDownloader: AlbumArtDownloader? = null,
     onDismiss: () -> Unit
@@ -2290,7 +2342,7 @@ private fun ZoomableArtPreviewDialog(
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(candidate, artworkUri) {
+    LaunchedEffect(candidate, artworkUri, song?.id) {
         withContext(Dispatchers.IO) {
             isLoading = true
             if (candidate != null && albumArtDownloader != null) {
@@ -2309,6 +2361,9 @@ private fun ZoomableArtPreviewDialog(
                 } catch (e: Exception) {
                     bitmap = null
                 }
+            }
+            if (bitmap == null && song != null) {
+                bitmap = com.travelingtunes.app.feature.player.loadSongArtwork(context, song, reqSize = 600)
             }
             isLoading = false
         }

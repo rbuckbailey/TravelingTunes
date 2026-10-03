@@ -51,7 +51,7 @@ data class CddbOverrideRecord(
     val cddbId: String,
 )
 
-class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_NAME = "traveling_tunes_music.db"
@@ -491,9 +491,30 @@ class MusicDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                 val artist = c.getString(1)
                 val count = c.getInt(2)
                 val artStr = c.getString(3)
-                val artUri = artStr?.toUri()
+                var artUri = artStr?.toUri()
 
-                val type = classifyArtworkType(artUri)
+                var type = classifyArtworkType(artUri)
+                if (type == ArtworkType.MISSING) {
+                    val songs = getSongsByAlbumAndArtist(album, artist)
+                    val sample = songs.firstOrNull()
+                    if (sample != null) {
+                        if (sample.artworkUri != null) {
+                            artUri = sample.artworkUri
+                            type = classifyArtworkType(artUri)
+                        } else {
+                            val mmr = android.media.MediaMetadataRetriever()
+                            try {
+                                mmr.setDataSource(context, sample.contentUri)
+                                if (mmr.embeddedPicture != null) {
+                                    type = ArtworkType.EMBEDDED
+                                }
+                            } catch (_: Exception) {
+                            } finally {
+                                try { mmr.release() } catch (_: Exception) {}
+                            }
+                        }
+                    }
+                }
                 albums.add(AlbumArtBrowserInfo(album, artist, count, artUri, type))
             }
         }

@@ -5,12 +5,17 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import androidx.annotation.OptIn
+import androidx.core.app.NotificationCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
@@ -20,6 +25,7 @@ import androidx.media3.session.MediaConstants
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaStyleNotificationHelper
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
@@ -28,9 +34,13 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import com.travelingtunes.app.MainActivity
+import java.io.File
 import com.travelingtunes.app.R
 import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.datastore.SettingsDataStore
+import com.travelingtunes.app.core.media.DeviceConnectionReceiver
+import com.travelingtunes.app.core.media.MediaStoreRepository
+import com.travelingtunes.app.core.media.PlaybackManager
 import com.travelingtunes.app.core.model.AutoCategory
 import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.GestureAction
@@ -50,6 +60,9 @@ class MusicPlaybackService : MediaLibraryService() {
 
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "traveling_tunes_playback_channel"
+        const val ACTION_PREVIOUS = "com.travelingtunes.app.ACTION_PREVIOUS"
+        const val ACTION_TOGGLE_PLAY_PAUSE = "com.travelingtunes.app.ACTION_TOGGLE_PLAY_PAUSE"
+        const val ACTION_NEXT = "com.travelingtunes.app.ACTION_NEXT"
 
         @Volatile
         private var sharedPlayer: ExoPlayer? = null
@@ -154,9 +167,50 @@ class MusicPlaybackService : MediaLibraryService() {
     private var autoDisplaySettings = DisplaySettings()
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
+
+
+    private fun loadArtworkBitmapForMediaItem(context: Context, mediaItem: MediaItem?): Bitmap? {
+        if (mediaItem == null) return null
+        val metadata = mediaItem.mediaMetadata
+        val uri = metadata.artworkUri
+        if (uri != null) {
+            try {
+                if (uri.scheme == "file" && uri.path != null) {
+                    val file = File(uri.path!!)
+                    if (file.exists() && file.length() > 0L) {
+                        return BitmapFactory.decodeFile(file.absolutePath)
+                    }
+                } else {
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        return BitmapFactory.decodeStream(stream)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        val data = metadata.artworkData
+        if (data != null && data.isNotEmpty()) {
+            try {
+                return BitmapFactory.decodeByteArray(data, 0, data.size)
+            } catch (_: Exception) {}
+        }
+        return null
+    }
+
+    @OptIn(UnstableApi::class)
     private fun startForegroundIfNeeded(): Boolean {
         return try {
             val player = sharedPlayer
+            val currentMediaItem = player?.currentMediaItem
+            val title = currentMediaItem?.mediaMetadata?.title?.toString()
+                ?.ifEmpty { getString(R.string.app_name) } ?: getString(R.string.app_name)
+            val artist = currentMediaItem?.mediaMetadata?.artist?.toString().orEmpty()
+            val album = currentMediaItem?.mediaMetadata?.albumTitle?.toString().orEmpty()
+            val subtitle = if (album.isNotBlank()) "$artist — $album" else artist
+
+            val isPlaying = player?.isPlaying == true
+
+            val artBitmap = loadArtworkBitmapForMediaItem(applicationContext, currentMediaItem)
+
             val openAppIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
@@ -167,20 +221,72 @@ class MusicPlaybackService : MediaLibraryService() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            val currentMediaItem = player?.currentMediaItem
-            val title = currentMediaItem?.mediaMetadata?.title?.toString()
-                ?.ifEmpty { getString(R.string.app_name) } ?: getString(R.string.app_name)
-            val artist = currentMediaItem?.mediaMetadata?.artist?.toString().orEmpty()
+            val prevPendingIntent = PendingIntent.getService(
+                this,
+                1,
+                Intent(this, MusicPlaybackService::class.java).apply { action = ACTION_PREVIOUS },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
 
-            val notification = androidx.core.app.NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            val playPausePendingIntent = PendingIntent.getService(
+                this,
+                2,
+                Intent(this, MusicPlaybackService::class.java).apply { action = ACTION_TOGGLE_PLAY_PAUSE },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val nextPendingIntent = PendingIntent.getService(
+                this,
+                3,
+                Intent(this, MusicPlaybackService::class.java).apply { action = ACTION_NEXT },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val prevAction = NotificationCompat.Action.Builder(
+                android.R.drawable.ic_media_previous,
+                "Previous",
+                prevPendingIntent
+            ).build()
+
+            val playPauseAction = NotificationCompat.Action.Builder(
+                if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
+                if (isPlaying) "Pause" else "Play",
+                playPausePendingIntent
+            ).build()
+
+            val nextAction = NotificationCompat.Action.Builder(
+                android.R.drawable.ic_media_next,
+                "Next",
+                nextPendingIntent
+            ).build()
+
+            val session = sharedSession
+            val mediaStyle = if (session != null) {
+                MediaStyleNotificationHelper.MediaStyle(session)
+                    .setShowActionsInCompactView(0, 1, 2)
+            } else {
+                androidx.media.app.NotificationCompat.MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 2)
+            }
+
+            val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(title)
-                .setContentText(artist)
+                .setContentText(subtitle)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(pendingIntent)
-                .setOngoing(true)
-                .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
-                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
-                .build()
+                .addAction(prevAction)
+                .addAction(playPauseAction)
+                .addAction(nextAction)
+                .setStyle(mediaStyle)
+                .setOngoing(isPlaying)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+
+            if (artBitmap != null) {
+                builder.setLargeIcon(artBitmap)
+            }
+
+            val notification = builder.build()
 
             val fgsType = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
@@ -243,6 +349,15 @@ class MusicPlaybackService : MediaLibraryService() {
         })
 
         val player = getOrCreatePlayer(applicationContext)
+        player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                startForegroundIfNeeded()
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                startForegroundIfNeeded()
+            }
+        })
 
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -316,11 +431,23 @@ class MusicPlaybackService : MediaLibraryService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
+        when (intent?.action) {
+            ACTION_PREVIOUS -> {
+                PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase).previous()
+            }
+            ACTION_TOGGLE_PLAY_PAUSE -> {
+                PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase).togglePlayPause()
+            }
+            ACTION_NEXT -> {
+                PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase).next()
+            }
+        }
+
         val isForegroundStart = intent?.getBooleanExtra("is_foreground_start", false) == true
         val player = sharedPlayer
         val isPlayingOrReady = player != null && player.playWhenReady && player.playbackState != ExoPlayer.STATE_IDLE
 
-        if (isForegroundStart || isPlayingOrReady) {
+        if (isForegroundStart || isPlayingOrReady || intent?.action != null) {
             val foregroundStarted = startForegroundIfNeeded()
             if (isForegroundStart && !foregroundStarted) {
                 android.util.Log.w("MusicPlaybackService", "startForeground failed on foreground start request; stopping service to prevent crash")
@@ -362,7 +489,7 @@ class MusicPlaybackService : MediaLibraryService() {
         }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibraryService.MediaLibrarySession? {
         return sharedSession
     }
 
@@ -920,8 +1047,6 @@ class MusicPlaybackService : MediaLibraryService() {
             )
         }
 
-
-
         override fun onCustomCommand(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -1052,11 +1177,11 @@ class MusicPlaybackService : MediaLibraryService() {
                         val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
                         val currentQueue = playbackManager.currentPlaylist.value
                         if (currentQueue.isNotEmpty()) {
-                            items.addAll(currentQueue.map { songToMediaItem(it, showArt) })
+                            items.addAll(currentQueue.map { songToMediaItem(it, applicationContext, showArt) })
                         } else {
                             items.add(shuffleAllItem)
                             val songs = getAllSongsHelper()
-                            items.addAll(songs.map { songToMediaItem(it, showArt) })
+                            items.addAll(songs.map { songToMediaItem(it, applicationContext, showArt) })
                         }
                     }
                     "category_picker" -> {
@@ -1070,7 +1195,7 @@ class MusicPlaybackService : MediaLibraryService() {
                     "category_songs" -> {
                         items.add(shuffleAllItem)
                         val songs = getAllSongsHelper()
-                        items.addAll(songs.map { songToMediaItem(it, showArt) })
+                        items.addAll(songs.map { songToMediaItem(it, applicationContext, showArt) })
                     }
                     "category_albums" -> {
                         val dbAlbums = musicDatabase.getAlbums()
@@ -1213,7 +1338,7 @@ class MusicPlaybackService : MediaLibraryService() {
                             }
                             else -> emptyList()
                         }
-                        items.addAll(songs.map { songToMediaItem(it) })
+                        items.addAll(songs.map { songToMediaItem(it, applicationContext) })
                     }
                 }
 
@@ -1258,7 +1383,7 @@ class MusicPlaybackService : MediaLibraryService() {
                     val allSongs = getAllSongsHelper()
                     val song = allSongs.find { it.id == songId }
                     if (song != null) {
-                        future.set(LibraryResult.ofItem(songToMediaItem(song), null))
+                        future.set(LibraryResult.ofItem(songToMediaItem(song, applicationContext), null))
                         return@launch
                     }
                 }
@@ -1310,7 +1435,7 @@ class MusicPlaybackService : MediaLibraryService() {
                     }
                 }
 
-                val mediaItems = results.map { songToMediaItem(it) }
+                val mediaItems = results.map { songToMediaItem(it, applicationContext) }
                 val fromIndex = (page * pageSize).coerceIn(0, mediaItems.size)
                 val toIndex = (fromIndex + pageSize).coerceIn(fromIndex, mediaItems.size)
                 val pagedList = mediaItems.subList(fromIndex, toIndex)
@@ -1446,7 +1571,7 @@ class MusicPlaybackService : MediaLibraryService() {
                 }
 
                 val safeStartIndex = playStartIndex.coerceIn(0, (resolvedSongs.size - 1).coerceAtLeast(0))
-                val finalMediaItems = resolvedSongs.map { songToMediaItem(it) }
+                val finalMediaItems = resolvedSongs.map { songToMediaItem(it, applicationContext) }
 
                 if (resolvedSongs.isNotEmpty()) {
                     withContext(Dispatchers.Main) {
@@ -1478,30 +1603,30 @@ class MusicPlaybackService : MediaLibraryService() {
                         val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
                         val playlist = playbackManager.currentPlaylist.value
                         if (playlist.isNotEmpty()) {
-                            resolvedItems.addAll(playlist.map { songToMediaItem(it) })
+                            resolvedItems.addAll(playlist.map { songToMediaItem(it, applicationContext) })
                         }
                     } else if (item.mediaId == "shuffle_all") {
                         val allSongs = getAllSongsHelper()
                         val shuffled = allSongs.shuffled()
-                        resolvedItems.addAll(shuffled.map { songToMediaItem(it) })
+                        resolvedItems.addAll(shuffled.map { songToMediaItem(it, applicationContext) })
                     } else if (song != null) {
-                        resolvedItems.add(songToMediaItem(song))
+                        resolvedItems.add(songToMediaItem(song, applicationContext))
                     } else if (item.mediaId.startsWith("album_")) {
                         val albumName = item.mediaId.removePrefix("album_")
                         val albumSongs = allSongs.filter { it.album.equals(albumName, ignoreCase = true) }
-                        resolvedItems.addAll(albumSongs.map { songToMediaItem(it) })
+                        resolvedItems.addAll(albumSongs.map { songToMediaItem(it, applicationContext) })
                     } else if (item.mediaId.startsWith("artist_")) {
                         val artistName = item.mediaId.removePrefix("artist_")
                         val artistSongs = allSongs.filter { it.artist.equals(artistName, ignoreCase = true) }
-                        resolvedItems.addAll(artistSongs.map { songToMediaItem(it) })
+                        resolvedItems.addAll(artistSongs.map { songToMediaItem(it, applicationContext) })
                     } else if (item.mediaId.startsWith("genre_")) {
                         val genreName = item.mediaId.removePrefix("genre_")
                         val genreSongs = allSongs.filter { it.genre.equals(genreName, ignoreCase = true) }
-                        resolvedItems.addAll(genreSongs.map { songToMediaItem(it) })
+                        resolvedItems.addAll(genreSongs.map { songToMediaItem(it, applicationContext) })
                     } else if (item.mediaId.startsWith("folder_")) {
                         val folderPath = item.mediaId.removePrefix("folder_")
                         val folderSongs = allSongs.filter { it.folderPath.equals(folderPath, ignoreCase = true) }
-                        resolvedItems.addAll(folderSongs.map { songToMediaItem(it) })
+                        resolvedItems.addAll(folderSongs.map { songToMediaItem(it, applicationContext) })
                     } else {
                         resolvedItems.add(item)
                     }
@@ -1515,8 +1640,85 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 }
 
+fun getArtworkBytesForSong(context: Context, song: Song): ByteArray? {
+    try {
+        if (song.artworkUri != null) {
+            val uri = song.artworkUri
+            val bytes = if (uri.scheme == "file" && uri.path != null) {
+                val file = File(uri.path!!)
+                if (file.exists() && file.length() > 0L) file.readBytes() else null
+            } else {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            }
+            if (bytes != null && bytes.isNotEmpty()) {
+                if (bytes.size <= 300 * 1024) {
+                    return bytes
+                }
+                val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromByteArray(bytes, 500, 500)
+                if (bmp != null) {
+                    val stream = java.io.ByteArrayOutputStream()
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+                    return stream.toByteArray()
+                }
+            }
+        }
+
+        val md = java.security.MessageDigest.getInstance("MD5")
+        val digest = md.digest("${song.artist}-${song.album}".toByteArray())
+        val hashKey = digest.joinToString("") { "%02x".format(it) }
+
+        val cacheArtFile = File(context.cacheDir, "album_art/art_$hashKey.jpg")
+        val embeddedArtFile = File(context.cacheDir, "embedded_art/art_embedded_$hashKey.jpg")
+        val downloadedArtFile = File(context.filesDir, "downloaded_art/art_downloaded_$hashKey.jpg")
+
+        val targetFile = when {
+            downloadedArtFile.exists() && downloadedArtFile.length() > 0L -> downloadedArtFile
+            embeddedArtFile.exists() && embeddedArtFile.length() > 0L -> embeddedArtFile
+            cacheArtFile.exists() && cacheArtFile.length() > 0L -> cacheArtFile
+            else -> null
+        }
+
+        if (targetFile != null) {
+            val bytes = targetFile.readBytes()
+            if (bytes.size <= 300 * 1024) {
+                return bytes
+            }
+            val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(targetFile.absolutePath, 500, 500)
+            if (bmp != null) {
+                val stream = java.io.ByteArrayOutputStream()
+                bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+                return stream.toByteArray()
+            }
+        }
+
+        val mmr = android.media.MediaMetadataRetriever()
+        return try {
+            mmr.setDataSource(context, song.contentUri)
+            val rawBytes = mmr.embeddedPicture
+            if (rawBytes != null && rawBytes.isNotEmpty()) {
+                if (rawBytes.size <= 300 * 1024) {
+                    rawBytes
+                } else {
+                    val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromByteArray(rawBytes, 500, 500)
+                    if (bmp != null) {
+                        val stream = java.io.ByteArrayOutputStream()
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+                        stream.toByteArray()
+                    } else rawBytes
+                }
+            } else null
+        } catch (_: Exception) {
+            null
+        } finally {
+            try { mmr.release() } catch (_: Exception) {}
+        }
+    } catch (_: Exception) {
+        return null
+    }
+}
+
 @OptIn(UnstableApi::class)
-fun songToMediaItem(song: Song, showAlbumArt: Boolean = true): MediaItem {
+fun songToMediaItem(song: Song, context: Context? = null, showAlbumArt: Boolean = true): MediaItem {
     val artUri = if (showAlbumArt) song.artworkUri else null
     val metadata = MediaMetadata.Builder()
         .setTitle(song.title)
@@ -1532,7 +1734,33 @@ fun songToMediaItem(song: Song, showAlbumArt: Boolean = true): MediaItem {
         .setIsPlayable(true)
         .setIsBrowsable(false)
         .apply {
-            if (artUri != null) setArtworkUri(artUri)
+            if (artUri != null) {
+                setArtworkUri(artUri)
+            } else if (showAlbumArt && context != null) {
+                val md = java.security.MessageDigest.getInstance("MD5")
+                val digest = md.digest("${song.artist}-${song.album}".toByteArray())
+                val hashKey = digest.joinToString("") { "%02x".format(it) }
+
+                val cacheArtFile = File(context.cacheDir, "album_art/art_$hashKey.jpg")
+                val embeddedArtFile = File(context.cacheDir, "embedded_art/art_embedded_$hashKey.jpg")
+                val downloadedArtFile = File(context.filesDir, "downloaded_art/art_downloaded_$hashKey.jpg")
+                val targetFile = when {
+                    downloadedArtFile.exists() && downloadedArtFile.length() > 0L -> downloadedArtFile
+                    embeddedArtFile.exists() && embeddedArtFile.length() > 0L -> embeddedArtFile
+                    cacheArtFile.exists() && cacheArtFile.length() > 0L -> cacheArtFile
+                    else -> null
+                }
+                if (targetFile != null) {
+                    setArtworkUri(Uri.fromFile(targetFile))
+                }
+            }
+
+            if (showAlbumArt && context != null) {
+                val bytes = getArtworkBytesForSong(context, song)
+                if (bytes != null && bytes.isNotEmpty()) {
+                    setArtworkData(bytes, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+                }
+            }
         }
         .setExtras(Bundle().apply {
             putString("folder_path", song.folderPath)
