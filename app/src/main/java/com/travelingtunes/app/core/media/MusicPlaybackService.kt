@@ -1754,13 +1754,6 @@ fun songToMediaItem(song: Song, context: Context? = null, showAlbumArt: Boolean 
                     setArtworkUri(Uri.fromFile(targetFile))
                 }
             }
-
-            if (showAlbumArt && context != null) {
-                val bytes = getArtworkBytesForSong(context, song)
-                if (bytes != null && bytes.isNotEmpty()) {
-                    setArtworkData(bytes, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
-                }
-            }
         }
         .setExtras(Bundle().apply {
             putString("folder_path", song.folderPath)

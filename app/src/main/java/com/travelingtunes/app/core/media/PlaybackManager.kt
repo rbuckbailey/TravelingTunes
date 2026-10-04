@@ -347,7 +347,9 @@ class PlaybackManager(
         }
     }
 
-    fun persistCurrentPlaybackState() {
+    private var persistStateJob: Job? = null
+
+    fun persistCurrentPlaybackState(debounceMs: Long = 150L) {
         val store = settingsDataStore ?: return
         val playlist = _currentPlaylist.value
         if (playlist.isEmpty()) return
@@ -364,9 +366,15 @@ class PlaybackManager(
         val currRepeat = _repeatMode.value
         val currShuffle = _shuffleMode.value
 
-        scope.launch {
+        persistStateJob?.cancel()
+        // OPTIMIZATION: Debounce persistence calls and offload state formatting / DataStore disk writes to Dispatchers.IO
+        persistStateJob = scope.launch(Dispatchers.IO) {
+            if (debounceMs > 0L) {
+                delay(debounceMs)
+            }
+            val queueIds = playlist.map { it.id }
             store.savePlaybackState(
-                queueIds = playlist.map { it.id },
+                queueIds = queueIds,
                 activeSongId = songId,
                 activeSongIndex = songIndex,
                 positionMs = posMs,
@@ -889,9 +897,16 @@ class PlaybackManager(
         updateVolumeRatio()
     }
 
+    private var cachedMaxVolume = -1
+    private var lastSetVolume = -1
+    private var setVolumeJob: Job? = null
+
     fun adjustVolumeByDelta(deltaY: Float, heightPx: Float = 1000f) {
         lastManualVolumeAdjustMs = System.currentTimeMillis()
-        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        if (cachedMaxVolume <= 0) {
+            cachedMaxVolume = try { audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) } catch (_: Exception) { 15 }
+        }
+        val maxVol = cachedMaxVolume
         if (maxVol <= 0) return
 
         val sensitivity = 1.8f
@@ -902,11 +917,15 @@ class PlaybackManager(
         _currentVolumeRatio.value = newRatio
 
         val targetVol = (newRatio * maxVol).toInt().coerceIn(0, maxVol)
-        val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        if (targetVol != currentVol) {
-            try {
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVol, 0)
-            } catch (ignored: Exception) {}
+        if (targetVol != lastSetVolume) {
+            lastSetVolume = targetVol
+            setVolumeJob?.cancel()
+            // OPTIMIZATION: Dispatch audioManager.setStreamVolume asynchronously to Dispatchers.IO to prevent synchronous binder IPC blocking on the UI thread
+            setVolumeJob = scope.launch(Dispatchers.IO) {
+                try {
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVol, 0)
+                } catch (_: Exception) {}
+            }
         }
     }
 
@@ -947,6 +966,7 @@ class PlaybackManager(
     }
 
     fun sortAlbumSongs(songs: List<Song>): List<Song> {
+        if (songs.size <= 1) return songs
         return songs.sortedWith(
             compareBy<Song> { if (it.discNumber > 0) it.discNumber else 1 }
                 .thenBy { if (it.trackNumber > 0) it.trackNumber else Int.MAX_VALUE }
@@ -955,6 +975,7 @@ class PlaybackManager(
     }
 
     fun sortLibrarySongs(songs: List<Song>): List<Song> {
+        if (songs.size <= 1) return songs
         return songs.sortedWith(
             compareBy(
                 String.CASE_INSENSITIVE_ORDER

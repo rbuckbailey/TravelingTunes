@@ -96,17 +96,15 @@ fun RadialMenuOverlay(
             screenHeightPx / 2f
         }
 
-        var currentTouchPx by remember { mutableStateOf<Offset?>(null) }
         var selectedIndex by remember { mutableStateOf<Int?>(null) }
 
         fun updateSelection(touchPx: Offset) {
-            currentTouchPx = touchPx
             val dx = touchPx.x - menuCenterX
             val dy = touchPx.y - menuCenterY
             val dist = hypot(dx, dy)
             val deadZonePx = with(density) { 18.dp.toPx() }
 
-            if (dist > deadZonePx) {
+            val newIndex = if (dist > deadZonePx) {
                 val touchAngle = atan2(dy, dx)
                 var minDiff = Float.MAX_VALUE
                 var bestIndex = 0
@@ -119,9 +117,14 @@ fun RadialMenuOverlay(
                         bestIndex = i
                     }
                 }
-                selectedIndex = bestIndex
+                bestIndex
             } else {
-                selectedIndex = null
+                null
+            }
+
+            // OPTIMIZATION: Only update selectedIndex state when the selected radial item sector actually changes
+            if (selectedIndex != newIndex) {
+                selectedIndex = newIndex
             }
         }
 

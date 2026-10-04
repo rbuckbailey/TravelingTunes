@@ -149,7 +149,7 @@ fun Modifier.overlayGestureDismiss(
     val minTranslationPx = 14f * density
 
     awaitEachGesture {
-        val firstDown = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        val firstDown = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Main)
         val startPosition = firstDown.position
 
         val seenPointerIds = mutableSetOf(firstDown.id)
@@ -162,7 +162,7 @@ fun Modifier.overlayGestureDismiss(
         var trackedPointerId = firstDown.id
 
         while (true) {
-            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val event = awaitPointerEvent(PointerEventPass.Main)
             val activePointers = event.changes.filter { it.pressed }
 
             activePointers.forEach { seenPointerIds.add(it.id) }

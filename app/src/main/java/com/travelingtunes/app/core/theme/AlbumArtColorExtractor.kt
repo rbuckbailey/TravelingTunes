@@ -20,6 +20,7 @@ object AlbumArtColorExtractor {
         innerEdge: InnerEdge? = null,
         priority: ArtColorPriority = ArtColorPriority.CENTER
     ): ColorTheme = withContext(Dispatchers.Default) {
+        val startTime = System.currentTimeMillis()
         val safeBmp = if (bitmap.config == Bitmap.Config.HARDWARE) {
             bitmap.copy(Bitmap.Config.ARGB_8888, false)
         } else {
@@ -100,6 +101,9 @@ object AlbumArtColorExtractor {
 
         val secondaryTextInt = findSecondaryTextColor(bgInt, primaryTextInt, textCandidates)
 
+        val elapsed = System.currentTimeMillis() - startTime
+        android.util.Log.d("AlbumArtColorExtractor", "Theme extraction took ${elapsed}ms for ${targetBmp.width}x${targetBmp.height} bitmap")
+
         ColorTheme(
             name = "Album Art Dynamic",
             backgroundColor = Color(bgInt),
@@ -172,12 +176,28 @@ object AlbumArtColorExtractor {
             val stepX = (width / 100).coerceAtLeast(1)
             val stepY = (height / 100).coerceAtLeast(1)
 
+            // OPTIMIZATION: Bulk fetch pixel array in 1 native call instead of thousands of individual getPixel JNI calls
+            val pixelsArray: IntArray? = try {
+                val array = IntArray(width * height)
+                bitmap.getPixels(array, 0, width, 0, 0, width, height)
+                array
+            } catch (_: Throwable) {
+                null
+            }
+
             // Collect edge pixels classified into primary (prioritized) vs secondary regions based on normalized position t
             val primaryPixels = mutableListOf<Int>()
             val secondaryPixels = mutableListOf<Int>()
 
             fun addPixel(x: Int, y: Int, isVerticalEdge: Boolean) {
-                val pixel = bitmap.getPixel(x, y) or 0xFF000000.toInt()
+                // Use bulk pixel array lookup if available, falling back gracefully to getPixel for test mocks
+                val pixelVal = if (pixelsArray != null) {
+                    val idx = y * width + x
+                    if (idx in pixelsArray.indices) pixelsArray[idx] else bitmap.getPixel(x, y)
+                } else {
+                    bitmap.getPixel(x, y)
+                }
+                val pixel = (if (pixelVal == 0 && pixelsArray != null) bitmap.getPixel(x, y) else pixelVal) or 0xFF000000.toInt()
                 val t = if (isVerticalEdge) y.toFloat() / height.coerceAtLeast(1) else x.toFloat() / width.coerceAtLeast(1)
                 val isCenter = t in 0.25f..0.75f
 

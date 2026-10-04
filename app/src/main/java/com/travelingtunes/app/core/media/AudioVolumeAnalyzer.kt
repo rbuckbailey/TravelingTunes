@@ -113,6 +113,7 @@ object AudioVolumeAnalyzer {
         song: Song,
         settings: NormalizationSettings
     ): VolumeAnalysisResult {
+        val startTime = System.currentTimeMillis()
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         var pfd: android.os.ParcelFileDescriptor? = null
@@ -213,15 +214,21 @@ object AudioVolumeAnalyzer {
                                 outputBuf.order(ByteOrder.LITTLE_ENDIAN)
 
                                 val shortBuf = outputBuf.asShortBuffer()
-                                while (shortBuf.hasRemaining()) {
-                                    val sample = shortBuf.get()
-                                    val norm = sample.toFloat() / 32768.0f
-                                    val absNorm = abs(norm)
-                                    sumSquares += (norm * norm)
-                                    totalSamples++
-                                    if (absNorm > maxPeakVal) {
-                                        maxPeakVal = absNorm
+                                val remainingShorts = shortBuf.remaining()
+                                if (remainingShorts > 0) {
+                                    // OPTIMIZATION: Bulk read samples into a primitive ShortArray chunk instead of method-call get() loop
+                                    val sampleChunk = ShortArray(remainingShorts)
+                                    shortBuf.get(sampleChunk)
+                                    for (sIdx in 0 until remainingShorts) {
+                                        val sample = sampleChunk[sIdx]
+                                        val norm = sample.toFloat() / 32768.0f
+                                        val absNorm = abs(norm)
+                                        sumSquares += (norm * norm)
+                                        if (absNorm > maxPeakVal) {
+                                            maxPeakVal = absNorm
+                                        }
                                     }
+                                    totalSamples += remainingShorts
                                 }
                                 decodedFrames++
                                 processedSomething = true
@@ -252,6 +259,11 @@ object AudioVolumeAnalyzer {
             try {
                 pfd?.close()
             } catch (_: Exception) {}
+        }
+
+        val elapsed = System.currentTimeMillis() - startTime
+        if (elapsed > 0) {
+            android.util.Log.d("AudioVolumeAnalyzer", "Analyzed volume for '${song.title}' (${totalSamples} samples in ${elapsed}ms: ${totalSamples / elapsed} samples/ms)")
         }
 
         val avgVolume = if (totalSamples > 0) sqrt(sumSquares / totalSamples).toFloat() else 0.15f

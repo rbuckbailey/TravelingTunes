@@ -99,6 +99,7 @@ object DuplicateTrackFinder {
     ): List<DuplicateMatchPair> = BackgroundTaskGate.runAsBackgroundTask {
         if (songs.size < 2) return@runAsBackgroundTask emptyList()
 
+        val startTime = System.currentTimeMillis()
         withContext(Dispatchers.Main) { onProgress(0, songs.size) }
 
         var lastProgressTime = System.currentTimeMillis()
@@ -126,6 +127,9 @@ object DuplicateTrackFinder {
             }
 
             val infoA = songInfos[i]
+            val lenNameA = infoA.cleanName.length
+            val lenTitleA = infoA.cleanTitle.length
+
             for (j in i + 1 until songInfos.size) {
                 val infoB = songInfos[j]
 
@@ -141,17 +145,15 @@ object DuplicateTrackFinder {
 
                 val durDiff = abs(durA - durB)
 
-                val prefixLenA = min(4, infoA.cleanName.length)
-                val prefixLenB = min(4, infoB.cleanName.length)
-                val sameNamePrefix = prefixLenA >= 3 && prefixLenB >= 3 &&
-                        (infoA.cleanName.startsWith(infoB.cleanName.substring(0, prefixLenB)) ||
-                         infoB.cleanName.startsWith(infoA.cleanName.substring(0, prefixLenA)))
+                val lenNameB = infoB.cleanName.length
+                val minNamePrefix = minOf(4, lenNameA, lenNameB)
+                val sameNamePrefix = lenNameA >= 3 && lenNameB >= 3 &&
+                        infoA.cleanName.regionMatches(0, infoB.cleanName, 0, minNamePrefix)
 
-                val titlePrefixLenA = min(4, infoA.cleanTitle.length)
-                val titlePrefixLenB = min(4, infoB.cleanTitle.length)
-                val sameTitlePrefix = titlePrefixLenA >= 3 && titlePrefixLenB >= 3 &&
-                        (infoA.cleanTitle.startsWith(infoB.cleanTitle.substring(0, titlePrefixLenB)) ||
-                         infoB.cleanTitle.startsWith(infoA.cleanTitle.substring(0, titlePrefixLenA)))
+                val lenTitleB = infoB.cleanTitle.length
+                val minTitlePrefix = minOf(4, lenTitleA, lenTitleB)
+                val sameTitlePrefix = lenTitleA >= 3 && lenTitleB >= 3 &&
+                        infoA.cleanTitle.regionMatches(0, infoB.cleanTitle, 0, minTitlePrefix)
 
                 if (sizeDiffRatio > 0.20 && durDiff > 10000L && !sameNamePrefix && !sameTitlePrefix) {
                     continue
@@ -166,10 +168,15 @@ object DuplicateTrackFinder {
 
         withContext(Dispatchers.Main) { onProgress(songs.size, songs.size) }
 
-        pairs.sortedWith(
+        val result = pairs.sortedWith(
             compareByDescending<DuplicateMatchPair> { it.likelihoodPercentage }
                 .thenBy { it.trackA.song.title }
         )
+
+        val elapsed = System.currentTimeMillis() - startTime
+        android.util.Log.d("DuplicateTrackFinder", "Duplicate scan analyzed ${songs.size} tracks (${result.size} matches found) in ${elapsed}ms")
+
+        result
     }
 
     fun calculateMatch(infoA: DuplicateTrackInfo, infoB: DuplicateTrackInfo): DuplicateMatchPair {
@@ -281,12 +288,17 @@ object DuplicateTrackFinder {
         )
     }
 
+    private val REGEX_TRACK_NUM = Regex("^[0-9]+[\\s._-]+")
+    private val REGEX_TRAILING_NUM = Regex("\\([0-9]+\\)$")
+    private val REGEX_TRAILING_UNDERSCORE = Regex("_[0-9]+$")
+    private val REGEX_NON_ALPHANUMERIC = Regex("[^a-z0-9]")
+
     fun cleanFileName(fileName: String): String {
         var name = fileName.substringBeforeLast('.').lowercase().trim()
-        name = name.replace(Regex("^[0-9]+[\\s._-]+"), "") // remove leading track numbers like "01 - "
-        name = name.replace(Regex("\\([0-9]+\\)$"), "") // remove trailing "(1)"
-        name = name.replace(Regex("_[0-9]+$"), "")
-        return name.replace(Regex("[^a-z0-9]"), "")
+        name = name.replace(REGEX_TRACK_NUM, "") // remove leading track numbers like "01 - "
+        name = name.replace(REGEX_TRAILING_NUM, "") // remove trailing "(1)"
+        name = name.replace(REGEX_TRAILING_UNDERSCORE, "")
+        return name.replace(REGEX_NON_ALPHANUMERIC, "")
     }
 
     fun cleanMetadata(str: String): String {
@@ -294,7 +306,7 @@ object DuplicateTrackFinder {
         if (s == "unknown" || s == "<unknown>" || s == "unknown title" || s == "unknown artist" || s == "unknown album") {
             return ""
         }
-        return s.replace(Regex("[^a-z0-9]"), "")
+        return s.replace(REGEX_NON_ALPHANUMERIC, "")
     }
 
     fun stringSimilarity(s1: String, s2: String): Float {
@@ -311,19 +323,30 @@ object DuplicateTrackFinder {
     }
 
     private fun levenshteinDistance(s1: String, s2: String): Int {
-        val dp = Array(s1.length + 1) { IntArray(s2.length + 1) }
-        for (i in 0..s1.length) dp[i][0] = i
-        for (j in 0..s2.length) dp[0][j] = j
+        if (s1 == s2) return 0
+        if (s1.isEmpty()) return s2.length
+        if (s2.isEmpty()) return s1.length
+
+        // OPTIMIZATION: Use 2 single-dimensional IntArray buffers instead of allocating a 2D Array<IntArray> matrix on every call
+        var p = IntArray(s2.length + 1) { it }
+        var d = IntArray(s2.length + 1)
+
         for (i in 1..s1.length) {
+            d[0] = i
+            val s1Char = s1[i - 1]
             for (j in 1..s2.length) {
-                val cost = if (s1[i - 1] == s2[j - 1]) 0 else 1
-                dp[i][j] = min(
-                    min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
-                    dp[i - 1][j - 1] + cost
+                val cost = if (s1Char == s2[j - 1]) 0 else 1
+                d[j] = minOf(
+                    p[j] + 1,
+                    d[j - 1] + 1,
+                    p[j - 1] + cost
                 )
             }
+            val tmp = p
+            p = d
+            d = tmp
         }
-        return dp[s1.length][s2.length]
+        return p[s2.length]
     }
 
     fun formatFileSize(bytes: Long): String {

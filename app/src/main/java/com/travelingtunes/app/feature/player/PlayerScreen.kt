@@ -300,13 +300,11 @@ fun PlayerScreen(
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
     val actionHudText by playbackManager.actionHudText.collectAsState()
 
-    val currentPositionMs by playbackManager.currentPositionMs.collectAsState()
-    val durationMs by playbackManager.durationMs.collectAsState()
-    val currentVolumeRatio by playbackManager.currentVolumeRatio.collectAsState()
-
-    val currentPositionMsProvider = remember(currentPositionMs) { { currentPositionMs } }
-    val durationMsProvider = remember(durationMs) { { durationMs } }
-    val currentVolumeRatioProvider = remember(currentVolumeRatio) { { currentVolumeRatio } }
+    // OPTIMIZATION: Do not collect rapidly changing position/volume tick states at PlayerScreen root level.
+    // Use stable provider lambdas so PlayerScreen root composable tree never recomposes on position ticks.
+    val currentPositionMsProvider = remember(playbackManager) { { playbackManager.currentPositionMs.value } }
+    val durationMsProvider = remember(playbackManager) { { playbackManager.durationMs.value } }
+    val currentVolumeRatioProvider = remember(playbackManager) { { playbackManager.currentVolumeRatio.value } }
 
     val isPlaying by playbackManager.isPlaying.collectAsState()
     val repeatMode by playbackManager.repeatMode.collectAsState()
@@ -495,10 +493,15 @@ fun PlayerScreen(
         }
     }
 
-    // Sync PlaybackManager -> pagerState when song or playlist changes
+    // Sync PlaybackManager -> pagerState when song or playlist changes programmatically
     LaunchedEffect(currentSong?.id, currentPlaylist, songIndex, lastTransitionReason, isAnyOverlayOpen) {
         if (songIndex in 0 until pageCount) {
-            if (pagerState.currentPage != songIndex) {
+            val isCurrentPageMatchingSong = pagerState.currentPage in currentPlaylist.indices &&
+                    currentPlaylist[pagerState.currentPage].id == currentSong?.id
+            val isSettledPageMatchingSong = pagerState.settledPage in currentPlaylist.indices &&
+                    currentPlaylist[pagerState.settledPage].id == currentSong?.id
+
+            if (!isCurrentPageMatchingSong && !isSettledPageMatchingSong) {
                 isProgrammaticScroll = true
                 try {
                     val isNextTrackAuto = (lastTransitionReason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
@@ -520,10 +523,12 @@ fun PlayerScreen(
         }
     }
 
-    // Pre-cache surrounding album art
-    LaunchedEffect(songIndex, pagerState.currentPage, currentPlaylist) {
-        val activeIndex = if (pagerState.currentPage in currentPlaylist.indices) pagerState.currentPage else songIndex
-        AlbumArtCache.instance.preCacheSurroundingSongs(context, currentPlaylist, activeIndex, radius = 4)
+    // Pre-cache surrounding album art (deferred during scroll to keep animations at 60-120 fps)
+    LaunchedEffect(songIndex, pagerState.currentPage, pagerState.isScrollInProgress, currentPlaylist) {
+        if (!pagerState.isScrollInProgress) {
+            val activeIndex = if (pagerState.currentPage in currentPlaylist.indices) pagerState.currentPage else songIndex
+            AlbumArtCache.instance.preCacheSurroundingSongs(context, currentPlaylist, activeIndex, radius = 4)
+        }
     }
 
     // Auto-clear action HUD text after 2 seconds
@@ -580,20 +585,6 @@ fun PlayerScreen(
     var activePageTrigger by remember { mutableStateOf<GestureTrigger?>(null) }
     var activePageOtherKey by remember { mutableStateOf<String?>(null) }
     var dragStartTimeMs by remember { mutableStateOf(0L) }
-
-    // Safety re-sync: guarantee pagerState always matches songIndex when idle
-    LaunchedEffect(pagerState.currentPage, songIndex, activePageAction) {
-        if (!pagerState.isScrollInProgress && activePageAction == null && pageDragOffsetX == 0f && pagerState.currentPage != songIndex) {
-            if (songIndex in 0 until pageCount) {
-                isProgrammaticScroll = true
-                try {
-                    pagerState.scrollToPage(songIndex)
-                } finally {
-                    isProgrammaticScroll = false
-                }
-            }
-        }
-    }
 
     val isForegroundBusy = pagerState.isScrollInProgress ||
             activePageAction != null ||
@@ -1112,6 +1103,7 @@ fun PlayerScreen(
         // 1. Sliding Page Transition (Album Art + Song Titles & Labels)
         HorizontalPager(
             state = pagerState,
+            key = { page -> currentPlaylist.getOrNull(page)?.id ?: page },
             beyondViewportPageCount = 2,
             modifier = Modifier
                 .fillMaxSize()
@@ -1139,9 +1131,9 @@ fun PlayerScreen(
                 pageSong = pageSong,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
-                currentPositionMs = currentPositionMs,
-                durationMs = durationMs,
-                volumeRatio = currentVolumeRatio,
+                currentPositionMsProvider = currentPositionMsProvider,
+                durationMsProvider = durationMsProvider,
+                volumeRatioProvider = currentVolumeRatioProvider,
                 hasTopButtons = hasTopButtons,
                 hasBottomButtons = hasBottomButtons,
                 gestureBindings = gestureBindings,
@@ -1194,9 +1186,9 @@ fun PlayerScreen(
                     pageSong = adjacentSong,
                     displaySettings = displaySettings,
                     themeSettings = themeSettings,
-                    currentPositionMs = 0L,
-                    durationMs = adjacentSong.durationMs,
-                    volumeRatio = currentVolumeRatio,
+                    currentPositionMsProvider = currentPositionMsProvider,
+                    durationMsProvider = durationMsProvider,
+                    volumeRatioProvider = currentVolumeRatioProvider,
                     hasTopButtons = hasTopBtns,
                     hasBottomButtons = hasBottomBtns,
                     gestureBindings = gestureBindings,
@@ -1288,7 +1280,6 @@ fun PlayerScreen(
         Box(modifier = hudBoundsModifier) {
             // 3. Geometric Volume HUD Overlay (Bar / Line / Edge)
             VolumeHudOverlay(
-                volumeRatio = currentVolumeRatio,
                 volumeRatioProvider = currentVolumeRatioProvider,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
@@ -1297,8 +1288,6 @@ fun PlayerScreen(
 
             // 4. Geometric Progress / Playback Bar Overlay (Edge Bar / Line)
             ProgressHudOverlay(
-                currentPositionMs = currentPositionMs,
-                durationMs = durationMs,
                 currentPositionMsProvider = currentPositionMsProvider,
                 durationMsProvider = durationMsProvider,
                 displaySettings = displaySettings,
@@ -1684,6 +1673,9 @@ private fun TitleAndButtonsContainer(
     currentPositionMs: Long = 0L,
     durationMs: Long = 0L,
     volumeRatio: Float = 0.5f,
+    currentPositionMsProvider: (() -> Long)? = null,
+    durationMsProvider: (() -> Long)? = null,
+    volumeRatioProvider: (() -> Float)? = null,
     hasTopButtons: Boolean,
     hasBottomButtons: Boolean,
     gestureBindings: Map<GestureTrigger, GestureBinding>,
@@ -1712,6 +1704,9 @@ private fun TitleAndButtonsContainer(
         currentPositionMs = currentPositionMs,
         durationMs = durationMs,
         volumeRatio = volumeRatio,
+        currentPositionMsProvider = currentPositionMsProvider,
+        durationMsProvider = durationMsProvider,
+        volumeRatioProvider = volumeRatioProvider,
         modifier = modifier
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -1827,6 +1822,9 @@ fun PlayerPageContent(
     currentPositionMs: Long = 0L,
     durationMs: Long = 0L,
     volumeRatio: Float = 0.5f,
+    currentPositionMsProvider: (() -> Long)? = null,
+    durationMsProvider: (() -> Long)? = null,
+    volumeRatioProvider: (() -> Float)? = null,
     hasTopButtons: Boolean,
     hasBottomButtons: Boolean,
     gestureBindings: Map<GestureTrigger, GestureBinding>,
@@ -1872,6 +1870,9 @@ fun PlayerPageContent(
                     currentPositionMs = currentPositionMs,
                     durationMs = durationMs,
                     volumeRatio = volumeRatio,
+                    currentPositionMsProvider = currentPositionMsProvider,
+                    durationMsProvider = durationMsProvider,
+                    volumeRatioProvider = volumeRatioProvider,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -1904,9 +1905,9 @@ fun PlayerPageContent(
                 pageSong = pageSong,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
-                currentPositionMs = currentPositionMs,
-                durationMs = durationMs,
-                volumeRatio = volumeRatio,
+                currentPositionMsProvider = currentPositionMsProvider,
+                durationMsProvider = durationMsProvider,
+                volumeRatioProvider = volumeRatioProvider,
                 hasTopButtons = hasTopButtons,
                 hasBottomButtons = hasBottomButtons,
                 gestureBindings = gestureBindings,
@@ -2058,9 +2059,9 @@ fun PlayerPageContent(
                 pageSong = pageSong,
                 displaySettings = displaySettings,
                 themeSettings = themeSettings,
-                currentPositionMs = currentPositionMs,
-                durationMs = durationMs,
-                volumeRatio = volumeRatio,
+                currentPositionMsProvider = currentPositionMsProvider,
+                durationMsProvider = durationMsProvider,
+                volumeRatioProvider = volumeRatioProvider,
                 hasTopButtons = hasTopButtons,
                 hasBottomButtons = hasBottomButtons,
                 gestureBindings = gestureBindings,
@@ -3740,7 +3741,7 @@ private fun StretchedEdgeBackground(
     }
 
     val imgBitmap = remember(bitmap) {
-        bitmap?.takeIf { !it.isRecycled }?.cropToSquare()
+        bitmap?.takeIf { !it.isRecycled }
     } ?: return
 
     val edgeBitmap = remember(imgBitmap, dockEdge) {

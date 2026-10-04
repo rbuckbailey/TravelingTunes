@@ -109,23 +109,20 @@ fun BalancedTitleText(
 
                 // Step 1: Ensure no individual word is wider than available line width.
                 if (words.isNotEmpty()) {
-                    var maxWordWidthPx = 0f
-                    for (word in words) {
+                    val longestWord = words.maxByOrNull { it.length }
+                    if (longestWord != null) {
                         val wordStyle = effectiveTextStyle.copy(fontSize = currentSp.sp)
                         val measuredWord = textMeasurer.measure(
-                            text = word,
+                            text = longestWord,
                             style = wordStyle,
                             maxLines = 1,
                             softWrap = false,
                         )
-                        if (measuredWord.size.width > maxWordWidthPx) {
-                            maxWordWidthPx = measuredWord.size.width.toFloat()
+                        val maxWordWidthPx = measuredWord.size.width.toFloat()
+                        if (maxWordWidthPx > availableWidthPx) {
+                            val scale = availableWidthPx / maxWordWidthPx
+                            currentSp = (currentSp * scale).coerceAtLeast(minFontSp)
                         }
-                    }
-
-                    if (maxWordWidthPx > availableWidthPx) {
-                        val scale = availableWidthPx / maxWordWidthPx
-                        currentSp = (currentSp * scale).coerceAtLeast(minFontSp)
                     }
                 }
 
