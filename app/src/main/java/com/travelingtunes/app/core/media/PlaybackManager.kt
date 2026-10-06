@@ -95,7 +95,9 @@ class PlaybackManager(
             val songIndex = playlist.indexOfFirst { it.id == songId }.coerceAtLeast(0)
             val posMs = _currentPositionMs.value.coerceAtLeast(0L)
 
-            val mediaItems = playlist.map { songToMediaItem(it, context) }
+            val mediaItems = playlist.mapIndexed { idx, item ->
+                songToMediaItem(item, context, includeArtworkData = (idx == songIndex))
+            }
             isInternalRepeatChange = true
             isInternalShuffleChange = true
             try {
@@ -402,9 +404,12 @@ class PlaybackManager(
         }
         _currentPlaylist.value = songs
 
-        val mediaItems = songs.map { songToMediaItem(it, context) }
         val safeIndex = startIndex.coerceIn(0, songs.size - 1)
         val safePos = positionMs.coerceAtLeast(0L)
+
+        val mediaItems = songs.mapIndexed { idx, item ->
+            songToMediaItem(item, context, includeArtworkData = (idx == safeIndex))
+        }
 
         _repeatMode.value = repeatMode
         _shuffleMode.value = shuffleMode
@@ -475,26 +480,8 @@ class PlaybackManager(
 
         if (isShuffle) {
             val currentMode = _shuffleMode.value
-            val chosenSong: Song
-
-            if (currentMode == ShuffleMode.ALBUMS) {
-                val albumsMap = songs.groupBy { getAlbumKey(it) }
-                if (shuffle && startIndex == 0 && albumsMap.size > 1) {
-                    val chosenKey = albumsMap.keys.random()
-                    val albumSongs = sortAlbumSongs(albumsMap[chosenKey] ?: emptyList())
-                    chosenSong = albumSongs.firstOrNull() ?: songs.first()
-                } else {
-                    val safeIndex = startIndex.coerceIn(0, songs.size - 1)
-                    chosenSong = songs[safeIndex]
-                }
-            } else {
-                val safeIndex = if (shuffle && startIndex == 0 && songs.size > 1) {
-                    songs.indices.random()
-                } else {
-                    startIndex.coerceIn(0, songs.size - 1)
-                }
-                chosenSong = songs[safeIndex]
-            }
+            val safeIndex = startIndex.coerceIn(0, songs.size - 1)
+            val chosenSong = songs[safeIndex]
 
             val sortedSongs = sortLibrarySongs(songs)
             unshuffledPlaylist = sortedSongs
@@ -509,7 +496,7 @@ class PlaybackManager(
 
             when (currentMode) {
                 ShuffleMode.SONGS -> {
-                    val remainingSongs = songs.filter { it.id != chosenSong.id }.shuffled()
+                    val remainingSongs = songs.toMutableList().apply { removeAt(safeIndex) }.shuffled()
                     activeQueue = listOf(chosenSong) + remainingSongs
                     playIndex = 0
                 }
@@ -544,7 +531,9 @@ class PlaybackManager(
                 }
             }
 
-            val fullMediaItems = activeQueue.map { songToMediaItem(it, context) }
+            val fullMediaItems = activeQueue.mapIndexed { idx, item ->
+                songToMediaItem(item, context, includeArtworkData = (idx == playIndex))
+            }
 
             _currentPlaylist.value = activeQueue
             _currentSong.value = chosenSong
@@ -568,7 +557,7 @@ class PlaybackManager(
             _currentSong.value = sortedSongs.getOrNull(safeIndex)
 
             player.shuffleModeEnabled = false
-            player.setMediaItems(sortedSongs.map { songToMediaItem(it, context) }, safeIndex, 0L)
+            player.setMediaItems(sortedSongs.mapIndexed { idx, item -> songToMediaItem(item, context, includeArtworkData = (idx == safeIndex)) }, safeIndex, 0L)
             player.prepare()
             player.play()
 
@@ -611,7 +600,7 @@ class PlaybackManager(
             val firstSong = cachedSongs.random()
             val remainingSongs = cachedSongs.filter { it.id != firstSong.id }.shuffled()
             val fullPlaylist = listOf(firstSong) + remainingSongs
-            val fullMediaItems = fullPlaylist.map { songToMediaItem(it, context) }
+            val fullMediaItems = fullPlaylist.mapIndexed { idx, item -> songToMediaItem(item, context, includeArtworkData = (idx == 0)) }
 
             _currentPlaylist.value = fullPlaylist
             _currentSong.value = firstSong
@@ -644,7 +633,7 @@ class PlaybackManager(
                 val firstSong = allSongs.random()
                 val remainingSongs = allSongs.filter { it.id != firstSong.id }.shuffled()
                 val fullPlaylist = listOf(firstSong) + remainingSongs
-                val fullMediaItems = fullPlaylist.map { songToMediaItem(it, context) }
+                val fullMediaItems = fullPlaylist.mapIndexed { idx, item -> songToMediaItem(item, context, includeArtworkData = (idx == 0)) }
 
                 withContext(Dispatchers.Main) {
                     _currentPlaylist.value = fullPlaylist
@@ -682,7 +671,11 @@ class PlaybackManager(
 
             if (mediaCount == 0 || (!isPlayingOrBuffering && mediaCount != playlist.size)) {
                 android.util.Log.i("PlaybackManager", "ensurePlayerReadyForPlayback: Reloading queue (playlist size ${playlist.size}, player media count $mediaCount, index $currentIndex, pos ${pos}ms)")
-                player.setMediaItems(playlist.map { songToMediaItem(it, context) }, currentIndex, pos)
+                player.setMediaItems(
+                    playlist.mapIndexed { idx, item -> songToMediaItem(item, context, includeArtworkData = (idx == currentIndex)) },
+                    currentIndex,
+                    pos
+                )
                 player.prepare()
             } else if (player.playbackState == Player.STATE_IDLE) {
                 android.util.Log.i("PlaybackManager", "ensurePlayerReadyForPlayback: Player in STATE_IDLE, calling prepare()")
@@ -1146,7 +1139,9 @@ class PlaybackManager(
             priorSongs = priorSongs
         )
 
-        val mediaItems = activeQueue.map { songToMediaItem(it, context) }
+        val mediaItems = activeQueue.mapIndexed { idx, item ->
+            songToMediaItem(item, context, includeArtworkData = (idx == newCurrentIndex))
+        }
 
         _currentSong.value = activeQueue.getOrNull(newCurrentIndex) ?: current
         _currentPlaylist.value = activeQueue

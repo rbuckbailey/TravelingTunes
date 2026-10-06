@@ -300,11 +300,13 @@ fun PlayerScreen(
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
     val actionHudText by playbackManager.actionHudText.collectAsState()
 
-    // OPTIMIZATION: Do not collect rapidly changing position/volume tick states at PlayerScreen root level.
-    // Use stable provider lambdas so PlayerScreen root composable tree never recomposes on position ticks.
-    val currentPositionMsProvider = remember(playbackManager) { { playbackManager.currentPositionMs.value } }
-    val durationMsProvider = remember(playbackManager) { { playbackManager.durationMs.value } }
-    val currentVolumeRatioProvider = remember(playbackManager) { { playbackManager.currentVolumeRatio.value } }
+    val currentPositionState = playbackManager.currentPositionMs.collectAsState()
+    val durationState = playbackManager.durationMs.collectAsState()
+    val currentVolumeRatioState = playbackManager.currentVolumeRatio.collectAsState()
+
+    val currentPositionMsProvider = remember { { currentPositionState.value } }
+    val durationMsProvider = remember { { durationState.value } }
+    val currentVolumeRatioProvider = remember { { currentVolumeRatioState.value } }
 
     val isPlaying by playbackManager.isPlaying.collectAsState()
     val repeatMode by playbackManager.repeatMode.collectAsState()
@@ -340,40 +342,22 @@ fun PlayerScreen(
 
     val isAnyOverlayOpen = showSongPicker || showQueue || showMenu || showDownloadedArtBrowser || showGestureAssignments || showDuplicateTrackIdentifier || showProfilePicker || showRadialMenu
 
-    val activeRadialActionsFlow = remember(activeRadialTrigger) {
-        val trigKey = activeRadialTrigger?.key
-        if (trigKey != null && settingsDataStore != null) {
-            settingsDataStore.getRadialMenuActionsFlow(trigKey)
-        } else null
+    val allRadialConfigsFlow = remember(settingsDataStore) {
+        settingsDataStore?.getAllRadialMenuConfigsFlow()
     }
-    val activeRadialActions by (activeRadialActionsFlow?.collectAsState(initial = SettingsDataStore.DEFAULT_RADIAL_ACTIONS)
-        ?: remember { mutableStateOf(SettingsDataStore.DEFAULT_RADIAL_ACTIONS) })
+    val allRadialConfigsMap by (allRadialConfigsFlow?.collectAsState(initial = emptyMap())
+        ?: remember { mutableStateOf(emptyMap()) })
 
-    val activeRadialOtherOptionKeys by produceState<List<String?>>(initialValue = emptyList(), key1 = activeRadialTrigger, key2 = activeRadialActions) {
-        val trigKey = activeRadialTrigger?.key
-        if (trigKey != null && settingsDataStore != null) {
-            val list = mutableListOf<String?>()
-            for (i in activeRadialActions.indices) {
-                val key = settingsDataStore.getRadialOtherOptionFlow(trigKey, i).first()
-                list.add(key)
-            }
-            value = list
-        } else {
-            value = emptyList()
-        }
-    }
+    val activeRadialConfig = activeRadialTrigger?.let { allRadialConfigsMap[it.key] }
+        ?: com.travelingtunes.app.core.model.RadialMenuConfig(
+            actions = SettingsDataStore.DEFAULT_RADIAL_ACTIONS,
+            optionKeys = emptyList(),
+            style = com.travelingtunes.app.core.model.RadialMenuStyle.FAN
+        )
 
-    val activeRadialStyle by produceState<com.travelingtunes.app.core.model.RadialMenuStyle>(
-        initialValue = com.travelingtunes.app.core.model.RadialMenuStyle.FAN,
-        key1 = activeRadialTrigger
-    ) {
-        val trigKey = activeRadialTrigger?.key
-        if (trigKey != null && settingsDataStore != null) {
-            settingsDataStore.getRadialMenuStyleFlow(trigKey).collect { value = it }
-        } else {
-            value = com.travelingtunes.app.core.model.RadialMenuStyle.FAN
-        }
-    }
+    val activeRadialActions = activeRadialConfig.actions
+    val activeRadialOtherOptionKeys = activeRadialConfig.optionKeys
+    val activeRadialStyle = activeRadialConfig.style
 
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
@@ -523,12 +507,10 @@ fun PlayerScreen(
         }
     }
 
-    // Pre-cache surrounding album art (deferred during scroll to keep animations at 60-120 fps)
-    LaunchedEffect(songIndex, pagerState.currentPage, pagerState.isScrollInProgress, currentPlaylist) {
-        if (!pagerState.isScrollInProgress) {
-            val activeIndex = if (pagerState.currentPage in currentPlaylist.indices) pagerState.currentPage else songIndex
-            AlbumArtCache.instance.preCacheSurroundingSongs(context, currentPlaylist, activeIndex, radius = 4)
-        }
+    // Pre-cache surrounding album art and color themes for next/previous tracks in background
+    LaunchedEffect(songIndex, pagerState.currentPage, currentPlaylist) {
+        val activeIndex = if (pagerState.currentPage in currentPlaylist.indices) pagerState.currentPage else songIndex
+        AlbumArtCache.instance.preCacheSurroundingSongs(context, currentPlaylist, activeIndex, radius = 4)
     }
 
     // Auto-clear action HUD text after 2 seconds
@@ -1103,7 +1085,7 @@ fun PlayerScreen(
         // 1. Sliding Page Transition (Album Art + Song Titles & Labels)
         HorizontalPager(
             state = pagerState,
-            key = { page -> currentPlaylist.getOrNull(page)?.id ?: page },
+            key = { page -> "${currentPlaylist.getOrNull(page)?.id ?: "null"}_$page" },
             beyondViewportPageCount = 2,
             modifier = Modifier
                 .fillMaxSize()

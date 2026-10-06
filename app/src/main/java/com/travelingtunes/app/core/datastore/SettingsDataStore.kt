@@ -1037,6 +1037,46 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
+    fun getAllRadialMenuConfigsFlow(): Flow<Map<String, com.travelingtunes.app.core.model.RadialMenuConfig>> {
+        return context.dataStore.data.map { prefs ->
+            val activeProfileId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            val rawStackStr = prefs[KEY_ACTIVE_PROFILE_STACK] ?: activeProfileId
+            val stackIds = rawStackStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+            val activeStack = stackIds.mapNotNull { id -> profiles.find { it.id == id } }.ifEmpty {
+                listOf(profiles.find { it.id == activeProfileId } ?: Profile.DEFAULT)
+            }
+
+            val result = mutableMapOf<String, com.travelingtunes.app.core.model.RadialMenuConfig>()
+            for (trigger in com.travelingtunes.app.core.model.GestureTrigger.entries) {
+                val triggerKey = trigger.key
+                val rawStr = Profile.resolveEffectiveOverride("radial_actions_$triggerKey", activeStack, profiles)
+                    ?: prefs[stringPreferencesKey("radial_actions_$triggerKey")]
+
+                val actions = if (rawStr.isNullOrEmpty()) {
+                    DEFAULT_RADIAL_ACTIONS
+                } else {
+                    rawStr.split(",").map { GestureAction.fromKey(it) }
+                }
+
+                val optionKeys = actions.indices.map { i ->
+                    prefs[stringPreferencesKey("radial_target_${triggerKey}_$i")]
+                }
+
+                val rawStyle = prefs[stringPreferencesKey("radial_style_$triggerKey")]
+                val style = when (rawStyle) {
+                    "FAN" -> RadialMenuStyle.FAN
+                    "LIST" -> RadialMenuStyle.LIST
+                    "RADIAL" -> RadialMenuStyle.RADIAL
+                    else -> RadialMenuStyle.FAN
+                }
+
+                result[triggerKey] = com.travelingtunes.app.core.model.RadialMenuConfig(actions, optionKeys, style)
+            }
+            result
+        }
+    }
+
     suspend fun updateRadialMenuStyle(triggerKey: String, style: RadialMenuStyle) {
         context.dataStore.edit { prefs ->
             prefs[stringPreferencesKey("radial_style_$triggerKey")] = style.name

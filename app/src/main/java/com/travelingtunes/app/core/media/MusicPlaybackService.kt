@@ -1383,7 +1383,7 @@ class MusicPlaybackService : MediaLibraryService() {
                     val allSongs = getAllSongsHelper()
                     val song = allSongs.find { it.id == songId }
                     if (song != null) {
-                        future.set(LibraryResult.ofItem(songToMediaItem(song, applicationContext), null))
+                        future.set(LibraryResult.ofItem(songToMediaItem(song, applicationContext, includeArtworkData = true), null))
                         return@launch
                     }
                 }
@@ -1718,8 +1718,14 @@ fun getArtworkBytesForSong(context: Context, song: Song): ByteArray? {
 }
 
 @OptIn(UnstableApi::class)
-fun songToMediaItem(song: Song, context: Context? = null, showAlbumArt: Boolean = true): MediaItem {
+fun songToMediaItem(
+    song: Song,
+    context: Context? = null,
+    showAlbumArt: Boolean = true,
+    includeArtworkData: Boolean = false
+): MediaItem {
     val artUri = if (showAlbumArt) song.artworkUri else null
+    val artBytes = if (showAlbumArt && includeArtworkData && context != null) getArtworkBytesForSong(context, song) else null
     val metadata = MediaMetadata.Builder()
         .setTitle(song.title)
         .setDisplayTitle(song.title)
@@ -1734,6 +1740,9 @@ fun songToMediaItem(song: Song, context: Context? = null, showAlbumArt: Boolean 
         .setIsPlayable(true)
         .setIsBrowsable(false)
         .apply {
+            if (artBytes != null && artBytes.isNotEmpty()) {
+                setArtworkData(artBytes, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+            }
             if (artUri != null) {
                 setArtworkUri(artUri)
             } else if (showAlbumArt && context != null) {

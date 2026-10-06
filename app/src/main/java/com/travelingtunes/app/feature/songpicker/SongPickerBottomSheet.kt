@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.input.pointer.pointerInput
@@ -731,7 +732,7 @@ fun SongPickerBottomSheet(
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(songsList.size, key = { index -> songsList[index].id }) { index ->
+                                items(songsList.size, key = { index -> "${songsList[index].id}_$index" }) { index ->
                                     val song = songsList[index]
                                     SongItemRow(
                                         song = song,
@@ -809,7 +810,7 @@ fun SongPickerBottomSheet(
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(albumsList, key = { album -> "${album.name}_${album.artist}" }) { album ->
+                                itemsIndexed(albumsList, key = { index, album -> "${album.name}_${album.artist}_$index" }) { _, album ->
                                     AlbumItemRow(
                                         album = album,
                                         artVersion = artVersion,
@@ -884,7 +885,7 @@ fun SongPickerBottomSheet(
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(artistsList, key = { artist -> artist }) { artist ->
+                                itemsIndexed(artistsList, key = { index, artist -> "${artist}_$index" }) { _, artist ->
                                     ArtistItemRow(
                                         artist = artist,
                                         onPlay = {
@@ -949,7 +950,7 @@ fun SongPickerBottomSheet(
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(genresList, key = { genre -> genre }) { genre ->
+                                itemsIndexed(genresList, key = { index, genre -> "${genre}_$index" }) { _, genre ->
                                     GenreItemRow(
                                         genre = genre,
                                         onPlay = {
@@ -1002,7 +1003,7 @@ fun SongPickerBottomSheet(
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(foldersList, key = { folder -> folder }) { folder ->
+                                itemsIndexed(foldersList, key = { index, folder -> "${folder}_$index" }) { _, folder ->
                                     FolderItemRow(
                                         folder = folder,
                                         onPlay = {
@@ -1240,7 +1241,7 @@ fun StreamingPlatformView(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.fillMaxWidth().weight(1f)
             ) {
-                items(filteredTracks.size, key = { index -> filteredTracks[index].id }) { index ->
+                items(filteredTracks.size, key = { index -> "${filteredTracks[index].id}_$index" }) { index ->
                     val track = filteredTracks[index]
                     StreamingTrackRow(
                         track = track,

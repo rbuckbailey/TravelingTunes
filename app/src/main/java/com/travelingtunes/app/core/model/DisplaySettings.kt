@@ -27,6 +27,12 @@ enum class RadialMenuStyle(val displayName: String) {
     RADIAL("Radial Circle")
 }
 
+data class RadialMenuConfig(
+    val actions: List<GestureAction> = emptyList(),
+    val optionKeys: List<String?> = emptyList(),
+    val style: RadialMenuStyle = RadialMenuStyle.FAN
+)
+
 enum class ArtScaleOption(val displayName: String) {
     FILL_SCREEN("Fill Screen"),
     ASPECT_FIT("Fit Screen")
