@@ -74,15 +74,20 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.SmartButton
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.travelingtunes.app.core.model.ConnectedDevice
 import com.travelingtunes.app.core.model.ConnectedDeviceType
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -108,6 +113,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -116,6 +122,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -261,6 +270,12 @@ enum class SettingsSubmenu(
         title = "Android Auto",
         description = "Root category browse order & Android Auto preferences",
         icon = Icons.Default.DirectionsCar,
+        categoryGroup = "Reconfigure"
+    ),
+    ADVANCED_TUNING(
+        title = "Advanced Tuning",
+        description = "Fine-tune verification delays, slop thresholds, button spacing & gesture responsiveness",
+        icon = Icons.Default.Speed,
         categoryGroup = "Reconfigure"
     ),
     ABOUT(
@@ -1233,6 +1248,14 @@ private fun SubmenuContent(
     onBackupSettings: () -> Unit = {},
     onRestoreSettings: () -> Unit = {}
 ) {
+    val isLazySubmenu = submenu in listOf(
+        SettingsSubmenu.SWIPE,
+        SettingsSubmenu.TAP,
+        SettingsSubmenu.BUTTON_ACTIONS,
+        SettingsSubmenu.KEYBOARD,
+        SettingsSubmenu.RADIAL_MENU
+    )
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -1240,7 +1263,7 @@ private fun SubmenuContent(
     ) {
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
+                .fillMaxSize()
                 .padding(16.dp)
         ) {
             Text(
@@ -1256,146 +1279,161 @@ private fun SubmenuContent(
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-            when (submenu) {
-                SettingsSubmenu.LIBRARY -> LibrarySettingsContent(
-                    displaySettings = displaySettings,
-                    onUpdateDisplaySettings = onUpdateDisplaySettings,
-                    musicFolderName = musicFolderName,
-                    isScanning = isScanning,
-                    lastScanTime = lastScanTime,
-                    scanStatusMessage = scanStatusMessage,
-                    isDownloadingArt = isDownloadingArt,
-                    artDownloadStatusMessage = artDownloadStatusMessage,
-                    artDownloadDownloadedCount = artDownloadDownloadedCount,
-                    artDownloadFailedCount = artDownloadFailedCount,
-                    artDownloadTotalCount = artDownloadTotalCount,
-                    lastAuditReport = lastAuditReport,
-                    autoRescanEnabled = autoRescanEnabled,
-                    autoRescanStatusMessage = autoRescanStatusMessage,
-                    isAutoRescanWaiting = isAutoRescanWaiting,
-                    cddbOverridesCount = cddbOverridesCount,
-                    isEmbeddingCddb = isEmbeddingCddb,
-                    cddbEmbeddingStatus = cddbEmbeddingStatus,
-                    onToggleAutoRescan = onToggleAutoRescan,
-                    libraryStats = libraryStats,
-                    onPickMusicFolder = onPickMusicFolder,
-                    onRescanMusicFolder = onRescanMusicFolder,
-                    onDownloadMissingArt = onDownloadMissingArt,
-                    onCancelDownloadArt = onCancelDownloadArt,
-                    onEmbedCddbOverrides = onEmbedCddbOverrides,
-                    onViewAudit = onViewAudit,
-                    onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
-                    onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
-                    onBackupMetadata = onBackupMetadata,
-                    onRestoreMetadata = onRestoreMetadata,
-                    onBackupSettings = onBackupSettings,
-                    onRestoreSettings = onRestoreSettings
-                )
+            Box(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .then(
+                        if (isLazySubmenu) Modifier
+                        else Modifier.verticalScroll(rememberScrollState())
+                    )
+            ) {
+                when (submenu) {
+                    SettingsSubmenu.LIBRARY -> LibrarySettingsContent(
+                        displaySettings = displaySettings,
+                        onUpdateDisplaySettings = onUpdateDisplaySettings,
+                        musicFolderName = musicFolderName,
+                        isScanning = isScanning,
+                        lastScanTime = lastScanTime,
+                        scanStatusMessage = scanStatusMessage,
+                        isDownloadingArt = isDownloadingArt,
+                        artDownloadStatusMessage = artDownloadStatusMessage,
+                        artDownloadDownloadedCount = artDownloadDownloadedCount,
+                        artDownloadFailedCount = artDownloadFailedCount,
+                        artDownloadTotalCount = artDownloadTotalCount,
+                        lastAuditReport = lastAuditReport,
+                        autoRescanEnabled = autoRescanEnabled,
+                        autoRescanStatusMessage = autoRescanStatusMessage,
+                        isAutoRescanWaiting = isAutoRescanWaiting,
+                        cddbOverridesCount = cddbOverridesCount,
+                        isEmbeddingCddb = isEmbeddingCddb,
+                        cddbEmbeddingStatus = cddbEmbeddingStatus,
+                        onToggleAutoRescan = onToggleAutoRescan,
+                        libraryStats = libraryStats,
+                        onPickMusicFolder = onPickMusicFolder,
+                        onRescanMusicFolder = onRescanMusicFolder,
+                        onDownloadMissingArt = onDownloadMissingArt,
+                        onCancelDownloadArt = onCancelDownloadArt,
+                        onEmbedCddbOverrides = onEmbedCddbOverrides,
+                        onViewAudit = onViewAudit,
+                        onOpenDownloadedArtBrowser = onOpenDownloadedArtBrowser,
+                        onOpenDuplicateTrackIdentifier = onOpenDuplicateTrackIdentifier,
+                        onBackupMetadata = onBackupMetadata,
+                        onRestoreMetadata = onRestoreMetadata,
+                        onBackupSettings = onBackupSettings,
+                        onRestoreSettings = onRestoreSettings
+                    )
 
-                SettingsSubmenu.PLAYBACK -> PlaybackSettingsContent(
-                    displaySettings = displaySettings,
-                    settingsDataStore = settingsDataStore,
-                    coroutineScope = rememberCoroutineScope(),
-                    normalizationMode = normalizationMode,
-                    normalizationSettings = normalizationSettings,
-                    normalizationSummary = normalizationSummary,
-                    isAnalyzingVolume = isAnalyzingVolume,
-                    volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
-                    volumeAnalysisProgressCurrent = volumeAnalysisProgressCurrent,
-                    volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
-                    onSelectNormalizationMode = onSelectNormalizationMode,
-                    onUpdateNormalizationSettings = onUpdateNormalizationSettings,
-                    onOpenNormalizationReport = onOpenNormalizationReport,
-                    onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
-                    onCancelAnalyzeVolumeLevels = onCancelAnalyzeVolumeLevels
-                )
+                    SettingsSubmenu.PLAYBACK -> PlaybackSettingsContent(
+                        displaySettings = displaySettings,
+                        settingsDataStore = settingsDataStore,
+                        coroutineScope = rememberCoroutineScope(),
+                        normalizationMode = normalizationMode,
+                        normalizationSettings = normalizationSettings,
+                        normalizationSummary = normalizationSummary,
+                        isAnalyzingVolume = isAnalyzingVolume,
+                        volumeAnalysisStatusMessage = volumeAnalysisStatusMessage,
+                        volumeAnalysisProgressCurrent = volumeAnalysisProgressCurrent,
+                        volumeAnalysisProgressTotal = volumeAnalysisProgressTotal,
+                        onSelectNormalizationMode = onSelectNormalizationMode,
+                        onUpdateNormalizationSettings = onUpdateNormalizationSettings,
+                        onOpenNormalizationReport = onOpenNormalizationReport,
+                        onAnalyzeVolumeLevels = onAnalyzeVolumeLevels,
+                        onCancelAnalyzeVolumeLevels = onCancelAnalyzeVolumeLevels
+                    )
 
-                SettingsSubmenu.TITLES -> TitlesSettingsContent(
-                    displaySettings = displaySettings,
-                    availableFonts = availableFonts,
-                    onAddFont = onAddFont,
-                    onUpdateDisplaySettings = onUpdateDisplaySettings
-                )
+                    SettingsSubmenu.TITLES -> TitlesSettingsContent(
+                        displaySettings = displaySettings,
+                        availableFonts = availableFonts,
+                        onAddFont = onAddFont,
+                        onUpdateDisplaySettings = onUpdateDisplaySettings
+                    )
 
-                SettingsSubmenu.ART -> ArtSettingsContent(
-                    displaySettings = displaySettings,
-                    onUpdateDisplaySettings = onUpdateDisplaySettings
-                )
+                    SettingsSubmenu.ART -> ArtSettingsContent(
+                        displaySettings = displaySettings,
+                        onUpdateDisplaySettings = onUpdateDisplaySettings
+                    )
 
-                SettingsSubmenu.HUD -> HudSettingsContent(
-                    displaySettings = displaySettings,
-                    themeSettings = themeSettings,
-                    onUpdateDisplaySettings = onUpdateDisplaySettings,
-                    onUpdateThemeSettings = onUpdateThemeSettings
-                )
+                    SettingsSubmenu.HUD -> HudSettingsContent(
+                        displaySettings = displaySettings,
+                        themeSettings = themeSettings,
+                        onUpdateDisplaySettings = onUpdateDisplaySettings,
+                        onUpdateThemeSettings = onUpdateThemeSettings
+                    )
 
-                SettingsSubmenu.THEMES -> ThemesSettingsContent(
-                    themeSettings = themeSettings,
-                    displaySettings = displaySettings,
-                    onUpdateDisplaySettings = onUpdateDisplaySettings,
-                    onSelectPreset = onSelectPreset,
-                    onOpenBgPicker = onOpenBgPicker,
-                    onOpenSongPicker = onOpenSongPicker,
-                    onOpenArtistPicker = onOpenArtistPicker,
-                    onOpenAlbumPicker = onOpenAlbumPicker
-                )
+                    SettingsSubmenu.THEMES -> ThemesSettingsContent(
+                        themeSettings = themeSettings,
+                        displaySettings = displaySettings,
+                        onUpdateDisplaySettings = onUpdateDisplaySettings,
+                        onSelectPreset = onSelectPreset,
+                        onOpenBgPicker = onOpenBgPicker,
+                        onOpenSongPicker = onOpenSongPicker,
+                        onOpenArtistPicker = onOpenArtistPicker,
+                        onOpenAlbumPicker = onOpenAlbumPicker
+                    )
 
-                SettingsSubmenu.ANDROID_AUTO -> AndroidAutoSettingsContent(
-                    displaySettings = displaySettings,
-                    onUpdateDisplaySettings = onUpdateDisplaySettings
-                )
+                    SettingsSubmenu.ANDROID_AUTO -> AndroidAutoSettingsContent(
+                        displaySettings = displaySettings,
+                        onUpdateDisplaySettings = onUpdateDisplaySettings
+                    )
 
-                SettingsSubmenu.SWIPE -> GestureSubmenuContent(
-                    submenu = GestureSubmenu.SWIPE,
-                    settingsDataStore = settingsDataStore,
-                    displaySettings = displaySettings,
-                    onResetGestureAssignments = onResetGestureAssignments
-                )
+                    SettingsSubmenu.SWIPE -> GestureSubmenuContent(
+                        submenu = GestureSubmenu.SWIPE,
+                        settingsDataStore = settingsDataStore,
+                        displaySettings = displaySettings,
+                        onResetGestureAssignments = onResetGestureAssignments
+                    )
 
-                SettingsSubmenu.TAP -> GestureSubmenuContent(
-                    submenu = GestureSubmenu.TAP,
-                    settingsDataStore = settingsDataStore,
-                    displaySettings = displaySettings,
-                    onResetGestureAssignments = onResetGestureAssignments
-                )
+                    SettingsSubmenu.TAP -> GestureSubmenuContent(
+                        submenu = GestureSubmenu.TAP,
+                        settingsDataStore = settingsDataStore,
+                        displaySettings = displaySettings,
+                        onResetGestureAssignments = onResetGestureAssignments
+                    )
 
-                SettingsSubmenu.BUTTON_ACTIONS -> GestureSubmenuContent(
-                    submenu = GestureSubmenu.BUTTON,
-                    settingsDataStore = settingsDataStore,
-                    displaySettings = displaySettings,
-                    onResetGestureAssignments = onResetGestureAssignments
-                )
+                    SettingsSubmenu.BUTTON_ACTIONS -> GestureSubmenuContent(
+                        submenu = GestureSubmenu.BUTTON,
+                        settingsDataStore = settingsDataStore,
+                        displaySettings = displaySettings,
+                        onResetGestureAssignments = onResetGestureAssignments
+                    )
 
-                SettingsSubmenu.KEYBOARD -> GestureSubmenuContent(
-                    submenu = GestureSubmenu.KEYBOARD,
-                    settingsDataStore = settingsDataStore,
-                    displaySettings = displaySettings,
-                    onResetGestureAssignments = onResetGestureAssignments
-                )
+                    SettingsSubmenu.KEYBOARD -> GestureSubmenuContent(
+                        submenu = GestureSubmenu.KEYBOARD,
+                        settingsDataStore = settingsDataStore,
+                        displaySettings = displaySettings,
+                        onResetGestureAssignments = onResetGestureAssignments
+                    )
 
-                SettingsSubmenu.RADIAL_MENU -> GestureSubmenuContent(
-                    submenu = GestureSubmenu.RADIAL_MENU,
-                    settingsDataStore = settingsDataStore,
-                    displaySettings = displaySettings,
-                    onResetGestureAssignments = onResetGestureAssignments
-                )
+                    SettingsSubmenu.RADIAL_MENU -> GestureSubmenuContent(
+                        submenu = GestureSubmenu.RADIAL_MENU,
+                        settingsDataStore = settingsDataStore,
+                        displaySettings = displaySettings,
+                        onResetGestureAssignments = onResetGestureAssignments
+                    )
 
-                SettingsSubmenu.BUTTONS -> ButtonsSettingsContent(
-                    displaySettings = displaySettings,
-                    onUpdateDisplaySettings = onUpdateDisplaySettings
-                )
+                    SettingsSubmenu.BUTTONS -> ButtonsSettingsContent(
+                        displaySettings = displaySettings,
+                        onUpdateDisplaySettings = onUpdateDisplaySettings
+                    )
 
-                SettingsSubmenu.CONNECTED_TO -> ConnectedToSettingsContent(
-                    settingsDataStore = settingsDataStore
-                )
+                    SettingsSubmenu.CONNECTED_TO -> ConnectedToSettingsContent(
+                        settingsDataStore = settingsDataStore
+                    )
 
-                SettingsSubmenu.PROFILES -> ProfilesSettingsContent(
-                    settingsDataStore = settingsDataStore
-                )
+                    SettingsSubmenu.PROFILES -> ProfilesSettingsContent(
+                        settingsDataStore = settingsDataStore
+                    )
 
-                SettingsSubmenu.ABOUT -> AboutSettingsContent(
-                    onOpenQuickStart = onOpenQuickStart
-                )
+                    SettingsSubmenu.ADVANCED_TUNING -> AdvancedTuningSettingsContent(
+                        settingsDataStore = settingsDataStore,
+                        displaySettings = displaySettings
+                    )
+
+                    SettingsSubmenu.ABOUT -> AboutSettingsContent(
+                        onOpenQuickStart = onOpenQuickStart
+                    )
+                }
             }
         }
     }
@@ -3023,13 +3061,25 @@ private fun AboutSettingsContent(
     onOpenQuickStart: () -> Unit
 ) {
     val context = LocalContext.current
-    var isUnrestricted by remember {
-        mutableStateOf(
-            run {
-                val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-                pm?.isIgnoringBatteryOptimizations(context.packageName) == true
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    fun checkIsUnrestricted(): Boolean {
+        val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        return pm?.isIgnoringBatteryOptimizations(context.packageName) == true
+    }
+
+    var isUnrestricted by remember { mutableStateOf(checkIsUnrestricted()) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isUnrestricted = checkIsUnrestricted()
             }
-        )
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -5713,6 +5763,192 @@ private fun CustomColorPickerDialog(
             }
         }
     )
+}
+
+@Composable
+private fun AdvancedTuningSettingsContent(
+    settingsDataStore: SettingsDataStore,
+    displaySettings: DisplaySettings
+) {
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Advanced Tuning & Gesture Sensitivity",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Fine-tune verification delays, slop thresholds, and edge button reserved space. Adjust sliders or enter exact numeric values in text boxes to optimize responsiveness for your device.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // 1. Multi-Finger Touch Window
+        TimingSliderCard(
+            title = "Multi-Finger Touch Window",
+            subtitle = "Delay window (30ms – 250ms) to detect multi-finger taps/swipes before confirming a 1-finger gesture.",
+            currentValue = displaySettings.multiTouchWindowMs.toFloat(),
+            range = 30f..250f,
+            unit = "ms",
+            onValueChange = { newVal ->
+                coroutineScope.launch {
+                    settingsDataStore.updateGestureTiming(multiTouchWindowMs = newVal.toInt())
+                }
+            }
+        )
+
+        // 2. Touch Slop Threshold
+        TimingSliderCard(
+            title = "Touch Slop Threshold",
+            subtitle = "Minimum finger travel distance (2dp – 20dp) required before dragging engages. Lower values respond faster.",
+            currentValue = displaySettings.touchSlopDp,
+            range = 2f..20f,
+            unit = "dp",
+            onValueChange = { newVal ->
+                coroutineScope.launch {
+                    settingsDataStore.updateGestureTiming(touchSlopDp = newVal)
+                }
+            }
+        )
+
+        // 3. Long-Press & Radial Menu Delay
+        TimingSliderCard(
+            title = "Long-Press & Radial Menu Delay",
+            subtitle = "Hold duration (150ms – 500ms) before long-press actions or Radial menus pop up.",
+            currentValue = displaySettings.longPressThresholdMs.toFloat(),
+            range = 150f..500f,
+            unit = "ms",
+            onValueChange = { newVal ->
+                coroutineScope.launch {
+                    settingsDataStore.updateGestureTiming(longPressThresholdMs = newVal.toLong())
+                }
+            }
+        )
+
+        // 4. Double-Tap Timeout
+        TimingSliderCard(
+            title = "Double-Tap Timeout",
+            subtitle = "Max delay (100ms – 400ms) between consecutive taps to register a double-tap.",
+            currentValue = displaySettings.doubleTapTimeoutMs.toFloat(),
+            range = 100f..400f,
+            unit = "ms",
+            onValueChange = { newVal ->
+                coroutineScope.launch {
+                    settingsDataStore.updateGestureTiming(doubleTapTimeoutMs = newVal.toLong())
+                }
+            }
+        )
+
+        // 5. Bottom Button Reserved Space
+        TimingSliderCard(
+            title = "Bottom Button Reserved Space",
+            subtitle = "Vertical reserved space (16dp – 80dp) for bottom edge buttons/HUD controls. Lower values give more room to title text.",
+            currentValue = displaySettings.bottomButtonSpaceDp,
+            range = 16f..80f,
+            unit = "dp",
+            onValueChange = { newVal ->
+                coroutineScope.launch {
+                    settingsDataStore.updateGestureTiming(bottomButtonSpaceDp = newVal)
+                }
+            }
+        )
+
+        // Reset Button
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    settingsDataStore.resetGestureTimingToDefaults()
+                }
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Reset Advanced Tuning to Optimized Defaults")
+        }
+    }
+}
+
+@Composable
+private fun TimingSliderCard(
+    title: String,
+    subtitle: String,
+    currentValue: Float,
+    range: ClosedFloatingPointRange<Float>,
+    unit: String,
+    onValueChange: (Float) -> Unit
+) {
+    var textValue by remember(currentValue) {
+        mutableStateOf(
+            if (unit == "dp") "%.1f".format(currentValue) else currentValue.toInt().toString()
+        )
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                OutlinedTextField(
+                    value = textValue,
+                    onValueChange = { input ->
+                        textValue = input
+                        val parsed = input.toFloatOrNull()
+                        if (parsed != null && parsed in range) {
+                            onValueChange(parsed)
+                        }
+                    },
+                    modifier = Modifier.width(95.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    suffix = { Text(unit, style = MaterialTheme.typography.labelSmall) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Slider(
+                value = currentValue.coerceIn(range.start, range.endInclusive),
+                valueRange = range,
+                onValueChange = { newVal ->
+                    textValue = if (unit == "dp") "%.1f".format(newVal) else newVal.toInt().toString()
+                    onValueChange(newVal)
+                }
+            )
+        }
+    }
 }
 
 

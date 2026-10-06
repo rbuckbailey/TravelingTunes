@@ -167,7 +167,7 @@ class GestureAndSettingsTest {
     @Test
     fun testSettingsCategoriesNaming() {
         val submenus = com.travelingtunes.app.feature.settings.SettingsSubmenu.entries
-        assertEquals(16, submenus.size)
+        assertEquals(17, submenus.size)
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.PROFILES, submenus[0])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.LIBRARY, submenus[1])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.PLAYBACK, submenus[2])
@@ -184,7 +184,9 @@ class GestureAndSettingsTest {
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTONS, submenus[13])
         assertEquals("Mini-Player", com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTONS.title)
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, submenus[14])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[15])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ADVANCED_TUNING, submenus[15])
+        assertEquals("Advanced Tuning", com.travelingtunes.app.feature.settings.SettingsSubmenu.ADVANCED_TUNING.title)
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, submenus[16])
 
         val standalone = submenus.filter { it.categoryGroup == null }
         assertEquals(3, standalone.size)
@@ -196,7 +198,7 @@ class GestureAndSettingsTest {
         assertEquals(4, appearanceGroup.size)
 
         val reconfigureGroup = submenus.filter { it.categoryGroup == "Reconfigure" }
-        assertEquals(9, reconfigureGroup.size)
+        assertEquals(10, reconfigureGroup.size)
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.SWIPE, reconfigureGroup[0])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.TAP, reconfigureGroup[1])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTON_ACTIONS, reconfigureGroup[2])
@@ -205,7 +207,8 @@ class GestureAndSettingsTest {
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.CONNECTED_TO, reconfigureGroup[5])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.BUTTONS, reconfigureGroup[6])
         assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ANDROID_AUTO, reconfigureGroup[7])
-        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, reconfigureGroup[8])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ADVANCED_TUNING, reconfigureGroup[8])
+        assertEquals(com.travelingtunes.app.feature.settings.SettingsSubmenu.ABOUT, reconfigureGroup[9])
     }
 
     @Test

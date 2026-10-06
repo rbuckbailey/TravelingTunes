@@ -428,6 +428,13 @@ fun PlayerScreen(
     val songIndex = currentPlaylist.indexOfFirst { it.id == currentSong?.id }.coerceAtLeast(0)
 
     val pagerState = rememberPagerState(initialPage = songIndex) { pageCount }
+
+    // Reset queue position immediately when a new playlist is set so the first track renders instantly
+    val lastPlaylistRef = remember { mutableStateOf(currentPlaylist) }
+    if (lastPlaylistRef.value !== currentPlaylist) {
+        lastPlaylistRef.value = currentPlaylist
+        pagerState.requestScrollToPage(songIndex)
+    }
     val coroutineScope = rememberCoroutineScope()
 
     val effectiveOnRescanMusicFolder: () -> Unit = remember(onRescanMusicFolder, activeMusicFolderUri, musicScanner, settingsDataStore, playbackManager, musicDatabase) {
@@ -903,7 +910,20 @@ fun PlayerScreen(
                             pageCount = pageCount
                         )
 
-                        delay(16L)
+                        val newSong = playbackManager.currentSong.value
+                        val newPlaylist = playbackManager.currentPlaylist.value
+                        if (newSong != null && newPlaylist.isNotEmpty()) {
+                            val newIdx = newPlaylist.indexOfFirst { it.id == newSong.id }
+                            if (newIdx in 0 until pageCount) {
+                                isProgrammaticScroll = true
+                                try {
+                                    pagerState.scrollToPage(newIdx)
+                                } catch (_: Exception) {}
+                                finally {
+                                    isProgrammaticScroll = false
+                                }
+                            }
+                        }
 
                         pageDragOffsetX = 0f
                         pageDragOffsetY = 0f
@@ -1010,7 +1030,7 @@ fun PlayerScreen(
                     priority = displaySettings.matchArtColorPriority
                 )
             }
-        } else {
+        } else if (pageDragOffsetX == 0f && pageDragOffsetY == 0f) {
             frozenAdjacentSong = null
         }
     }
@@ -1243,7 +1263,11 @@ fun PlayerScreen(
                     numArtEdgeRegions = displaySettings.numArtEdgeRegions,
                     artRegionBounds = artRegionBoundsNormalized,
                     isSeparateTouchZones = isSeparateTouchZones,
-                    isOverlayOpen = false
+                    isOverlayOpen = false,
+                    multiTouchWindowMs = displaySettings.multiTouchWindowMs.toLong(),
+                    touchSlopDp = displaySettings.touchSlopDp,
+                    longPressThresholdMs = displaySettings.longPressThresholdMs,
+                    doubleTapTimeoutMs = displaySettings.doubleTapTimeoutMs
                 )
         )
 
@@ -2081,13 +2105,27 @@ fun SongLabelsLayout(
     val songFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.songFontKey)
     val albumFont = com.travelingtunes.app.core.theme.FontHelper.getFontFamily(displaySettings.albumFontKey)
 
-    val baseTopPadding = if (hasTopButtons) 96.dp else 24.dp
-    val baseBottomPadding = if (hasBottomButtons) 96.dp else 24.dp
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
-    val topPadding = if (dockAdjacentEdge == DockAdjacentEdge.TOP) 16.dp else baseTopPadding
-    val bottomPadding = if (dockAdjacentEdge == DockAdjacentEdge.BOTTOM) 16.dp else baseBottomPadding
-    val startPadding = if (dockAdjacentEdge == DockAdjacentEdge.LEFT) 16.dp else 24.dp
-    val endPadding = if (dockAdjacentEdge == DockAdjacentEdge.RIGHT) 16.dp else 24.dp
+    val configuredBottomSpace = displaySettings.bottomButtonSpaceDp.dp
+
+    val baseTopPadding = if (isLandscape) {
+        if (hasTopButtons) 36.dp else 12.dp
+    } else {
+        if (hasTopButtons) 64.dp else 20.dp
+    }
+
+    val baseBottomPadding = if (isLandscape) {
+        if (hasBottomButtons) configuredBottomSpace.coerceAtMost(36.dp) else 12.dp
+    } else {
+        if (hasBottomButtons) configuredBottomSpace else 20.dp
+    }
+
+    val topPadding = if (dockAdjacentEdge == DockAdjacentEdge.TOP) 12.dp else baseTopPadding
+    val bottomPadding = if (dockAdjacentEdge == DockAdjacentEdge.BOTTOM) 12.dp else baseBottomPadding
+    val startPadding = if (dockAdjacentEdge == DockAdjacentEdge.LEFT) 12.dp else 20.dp
+    val endPadding = if (dockAdjacentEdge == DockAdjacentEdge.RIGHT) 12.dp else 20.dp
 
     val minFontSize = displaySettings.minimumFontSize.coerceAtLeast(12f)
     var scaleFactor by remember(currentSong?.id, displaySettings) {
@@ -2186,39 +2224,39 @@ private fun PriorityTitlesLayout(
         val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
         val measurablesList = listOf(firstMeasurables, secondMeasurables, thirdMeasurables)
 
-        // 1. Measure top title (index 0 in titleOrder) first with loose height constraint
+        // 1. Measure top title (index 0 in titleOrder) first
         val topMeasurable = measurablesList.getOrNull(0)?.firstOrNull()
         val topPlaceable = topMeasurable?.measure(looseConstraints.copy(maxHeight = (constraints.maxHeight * 0.45f).toInt()))
         val topHeight = topPlaceable?.height ?: 0
 
         val remainingHeight = (constraints.maxHeight - topHeight).coerceAtLeast(0)
 
-        // 2. Measure middle title (index 1) with fair remaining height allocation
+        // 2. Measure middle title (index 1)
         val middleMeasurable = measurablesList.getOrNull(1)?.firstOrNull()
         val middleMaxHeight = (remainingHeight * 0.55f).toInt()
         val middlePlaceable = middleMeasurable?.measure(looseConstraints.copy(maxHeight = middleMaxHeight))
         val middleHeight = middlePlaceable?.height ?: 0
 
-        // 3. Measure bottom title (index 2) with remaining height
+        // 3. Measure bottom title (index 2)
         val bottomMaxHeight = (remainingHeight - middleHeight).coerceAtLeast(0)
         val bottomMeasurable = measurablesList.getOrNull(2)?.firstOrNull()
         val bottomPlaceable = bottomMeasurable?.measure(looseConstraints.copy(maxHeight = bottomMaxHeight))
-        val bottomHeight = bottomPlaceable?.height ?: 0
 
-        val placeables = arrayOf(topPlaceable, middlePlaceable, bottomPlaceable)
+        val placeables = listOfNotNull(topPlaceable, middlePlaceable, bottomPlaceable)
 
         val totalHeight = constraints.maxHeight
-        val totalContentHeight = (topHeight + middleHeight + bottomHeight)
-        val slack = (totalHeight - totalContentHeight).coerceAtLeast(0)
-        val spacer = slack / 3
+        val totalContentHeight = placeables.sumOf { it.height }
+        val availableSlack = (totalHeight - totalContentHeight).coerceAtLeast(0)
+
+        val gap = (availableSlack / 4).coerceIn(0, (12 * density).toInt())
+        val totalBlockHeight = totalContentHeight + (placeables.size - 1).coerceAtLeast(0) * gap
+        val startY = ((totalHeight - totalBlockHeight) / 2).coerceAtLeast(0)
 
         layout(constraints.maxWidth, totalHeight) {
-            var currentY = spacer / 2
+            var currentY = startY
             for (p in placeables) {
-                if (p != null) {
-                    p.placeRelative(0, currentY)
-                    currentY += p.height + spacer
-                }
+                p.placeRelative(0, currentY)
+                currentY += p.height + gap
             }
         }
     }

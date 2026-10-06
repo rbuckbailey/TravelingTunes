@@ -125,6 +125,11 @@ class SettingsDataStore(private val context: Context) {
         val KEY_IMMERSIVE_MODE = booleanPreferencesKey("immersiveMode")
         val KEY_NUM_EDGE_REGIONS = intPreferencesKey("numEdgeRegions")
         val KEY_NUM_ART_EDGE_REGIONS = intPreferencesKey("numArtEdgeRegions")
+        val KEY_MULTI_TOUCH_WINDOW_MS = intPreferencesKey("multiTouchWindowMs")
+        val KEY_TOUCH_SLOP_DP = floatPreferencesKey("touchSlopDp")
+        val KEY_LONG_PRESS_THRESHOLD_MS = longPreferencesKey("longPressThresholdMs")
+        val KEY_DOUBLE_TAP_TIMEOUT_MS = longPreferencesKey("doubleTapTimeoutMs")
+        val KEY_BOTTOM_BUTTON_SPACE_DP = floatPreferencesKey("bottomButtonSpaceDp")
         val KEY_TITLE_ORDER = stringPreferencesKey("titleOrder")
 
         // Android Auto Preferences
@@ -233,6 +238,13 @@ class SettingsDataStore(private val context: Context) {
             val ov = Profile.resolveEffectiveOverride(overrideKey, activeStack, profiles)
                 ?: Profile.resolveEffectiveOverride(prefKey.name, activeStack, profiles)
             if (ov != null) return ov.toIntOrNull() ?: defaultVal
+            return prefs[prefKey] ?: defaultVal
+        }
+
+        fun getLong(prefKey: Preferences.Key<Long>, overrideKey: String, defaultVal: Long): Long {
+            val ov = Profile.resolveEffectiveOverride(overrideKey, activeStack, profiles)
+                ?: Profile.resolveEffectiveOverride(prefKey.name, activeStack, profiles)
+            if (ov != null) return ov.toLongOrNull() ?: defaultVal
             return prefs[prefKey] ?: defaultVal
         }
 
@@ -400,6 +412,11 @@ class SettingsDataStore(private val context: Context) {
             immersiveMode = getBool(KEY_IMMERSIVE_MODE, "DISPLAY_immersiveMode", true),
             numEdgeRegions = getInt(KEY_NUM_EDGE_REGIONS, "numEdgeRegions", 3),
             numArtEdgeRegions = getInt(KEY_NUM_ART_EDGE_REGIONS, "numArtEdgeRegions", 3),
+            multiTouchWindowMs = getInt(KEY_MULTI_TOUCH_WINDOW_MS, "multiTouchWindowMs", 70),
+            touchSlopDp = getFloat(KEY_TOUCH_SLOP_DP, "touchSlopDp", 5.0f),
+            longPressThresholdMs = getLong(KEY_LONG_PRESS_THRESHOLD_MS, "longPressThresholdMs", 280L),
+            doubleTapTimeoutMs = getLong(KEY_DOUBLE_TAP_TIMEOUT_MS, "doubleTapTimeoutMs", 220L),
+            bottomButtonSpaceDp = getFloat(KEY_BOTTOM_BUTTON_SPACE_DP, "bottomButtonSpaceDp", 36.0f),
             titleOrder = titleOrder,
             autoCategoryOrder = autoCategoryOrder,
             autoShowAlbumArt = getBool(KEY_AUTO_SHOW_ALBUM_ART, "AUTO_autoShowAlbumArt", true),
@@ -450,6 +467,13 @@ class SettingsDataStore(private val context: Context) {
             val ov = Profile.resolveEffectiveOverride(overrideKey, activeStack, profiles)
                 ?: Profile.resolveEffectiveOverride(prefKey.name, activeStack, profiles)
             if (ov != null) return ov.toIntOrNull() ?: defaultVal
+            return prefs[prefKey] ?: defaultVal
+        }
+
+        fun getLong(prefKey: Preferences.Key<Long>, overrideKey: String, defaultVal: Long): Long {
+            val ov = Profile.resolveEffectiveOverride(overrideKey, activeStack, profiles)
+                ?: Profile.resolveEffectiveOverride(prefKey.name, activeStack, profiles)
+            if (ov != null) return ov.toLongOrNull() ?: defaultVal
             return prefs[prefKey] ?: defaultVal
         }
 
@@ -1489,6 +1513,11 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_IMMERSIVE_MODE] = update.immersiveMode
             prefs[KEY_NUM_EDGE_REGIONS] = update.numEdgeRegions
             prefs[KEY_NUM_ART_EDGE_REGIONS] = update.numArtEdgeRegions
+            prefs[KEY_MULTI_TOUCH_WINDOW_MS] = update.multiTouchWindowMs
+            prefs[KEY_TOUCH_SLOP_DP] = update.touchSlopDp
+            prefs[KEY_LONG_PRESS_THRESHOLD_MS] = update.longPressThresholdMs
+            prefs[KEY_DOUBLE_TAP_TIMEOUT_MS] = update.doubleTapTimeoutMs
+            prefs[KEY_BOTTOM_BUTTON_SPACE_DP] = update.bottomButtonSpaceDp
             prefs[KEY_TITLE_ORDER] = update.titleOrder.joinToString(",") { it.name }
             prefs[KEY_AUTO_CATEGORY_ORDER] = update.autoCategoryOrder.joinToString(",") { it.name }
             prefs[KEY_AUTO_SHOW_ALBUM_ART] = update.autoShowAlbumArt
@@ -1507,6 +1536,32 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_PICKER_ALPHABET_BAR_ON_LEFT] = update.pickerAlphabetBarOnLeft
             prefs[KEY_MINI_PLAYER_ACTION_BUTTON_ORDER] = update.miniPlayerActionButtonOrder.joinToString(",") { it.name }
             prefs[KEY_AUTO_ACTION_BUTTON_ORDER] = update.autoActionButtonOrder.joinToString(",") { it.name }
+        }
+    }
+
+    suspend fun updateGestureTiming(
+        multiTouchWindowMs: Int? = null,
+        touchSlopDp: Float? = null,
+        longPressThresholdMs: Long? = null,
+        doubleTapTimeoutMs: Long? = null,
+        bottomButtonSpaceDp: Float? = null
+    ) {
+        context.dataStore.edit { prefs ->
+            multiTouchWindowMs?.let { prefs[KEY_MULTI_TOUCH_WINDOW_MS] = it }
+            touchSlopDp?.let { prefs[KEY_TOUCH_SLOP_DP] = it }
+            longPressThresholdMs?.let { prefs[KEY_LONG_PRESS_THRESHOLD_MS] = it }
+            doubleTapTimeoutMs?.let { prefs[KEY_DOUBLE_TAP_TIMEOUT_MS] = it }
+            bottomButtonSpaceDp?.let { prefs[KEY_BOTTOM_BUTTON_SPACE_DP] = it }
+        }
+    }
+
+    suspend fun resetGestureTimingToDefaults() {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_MULTI_TOUCH_WINDOW_MS] = 70
+            prefs[KEY_TOUCH_SLOP_DP] = 5.0f
+            prefs[KEY_LONG_PRESS_THRESHOLD_MS] = 280L
+            prefs[KEY_DOUBLE_TAP_TIMEOUT_MS] = 220L
+            prefs[KEY_BOTTOM_BUTTON_SPACE_DP] = 36.0f
         }
     }
 

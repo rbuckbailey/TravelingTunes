@@ -45,12 +45,19 @@ fun Modifier.travelingTunesGestures(
     numArtEdgeRegions: Int = 3,
     artRegionBounds: Rect = Rect(0f, 0f, 0f, 0f),
     isSeparateTouchZones: Boolean = false,
-    isOverlayOpen: Boolean = false
+    isOverlayOpen: Boolean = false,
+    multiTouchWindowMs: Long = 70L,
+    touchSlopDp: Float = 5.0f,
+    longPressThresholdMs: Long = 280L,
+    doubleTapTimeoutMs: Long = 220L
 ): Modifier {
     val currentListener by rememberUpdatedState(listener)
     val currentBindings by rememberUpdatedState(gestureBindings)
 
-    return this.pointerInput(isOverlayOpen, regionBounds, numEdgeRegions, artRegionBounds, numArtEdgeRegions, isSeparateTouchZones) {
+    return this.pointerInput(
+        isOverlayOpen, regionBounds, numEdgeRegions, artRegionBounds, numArtEdgeRegions,
+        isSeparateTouchZones, multiTouchWindowMs, touchSlopDp, longPressThresholdMs, doubleTapTimeoutMs
+    ) {
         detectTravelingTunesGestures(
             listener = currentListener,
             gestureBindings = currentBindings,
@@ -59,7 +66,11 @@ fun Modifier.travelingTunesGestures(
             numArtEdgeRegions = numArtEdgeRegions,
             artRegionBounds = artRegionBounds,
             isSeparateTouchZones = isSeparateTouchZones,
-            isOverlayOpen = isOverlayOpen
+            isOverlayOpen = isOverlayOpen,
+            multiTouchWindowMs = multiTouchWindowMs,
+            touchSlopDp = touchSlopDp,
+            longPressThresholdMs = longPressThresholdMs,
+            doubleTapTimeoutMs = doubleTapTimeoutMs
         )
     }
 }
@@ -72,15 +83,29 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
     numArtEdgeRegions: Int = 3,
     artRegionBounds: Rect = Rect(0f, 0f, 0f, 0f),
     isSeparateTouchZones: Boolean = false,
-    isOverlayOpen: Boolean = false
+    isOverlayOpen: Boolean = false,
+    multiTouchWindowMs: Long = 70L,
+    touchSlopDp: Float = 5.0f,
+    longPressThresholdMs: Long = 280L,
+    doubleTapTimeoutMs: Long = 220L
 ) {
-    val minTranslationPx = 12f * density
-    val slopPx = 40f * density
-    val doubleTapTimeoutMs = 300L
+    val minTranslationPx = touchSlopDp * density
+    val slopPx = maxOf(touchSlopDp * 3f, 20f) * density
 
     awaitEachGesture {
         val firstDown = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-        val tap1 = awaitPressResult(firstDown, minTranslationPx, listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
+        val tap1 = awaitPressResult(
+            firstDown = firstDown,
+            minTranslationPx = minTranslationPx,
+            listener = listener,
+            numEdgeRegions = numEdgeRegions,
+            regionBounds = regionBounds,
+            numArtEdgeRegions = numArtEdgeRegions,
+            artRegionBounds = artRegionBounds,
+            isSeparateTouchZones = isSeparateTouchZones,
+            multiTouchWindowMs = multiTouchWindowMs,
+            longPressThresholdMs = longPressThresholdMs
+        )
 
         if (tap1.isSwipe || tap1.isLongPress) {
             return@awaitEachGesture
@@ -122,7 +147,18 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
             return@awaitEachGesture
         }
 
-        val tap2 = awaitPressResult(secondDown, minTranslationPx, listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
+        val tap2 = awaitPressResult(
+            firstDown = secondDown,
+            minTranslationPx = minTranslationPx,
+            listener = listener,
+            numEdgeRegions = numEdgeRegions,
+            regionBounds = regionBounds,
+            numArtEdgeRegions = numArtEdgeRegions,
+            artRegionBounds = artRegionBounds,
+            isSeparateTouchZones = isSeparateTouchZones,
+            multiTouchWindowMs = multiTouchWindowMs,
+            longPressThresholdMs = longPressThresholdMs
+        )
         if (tap2.isSwipe || tap2.isLongPress) {
             emitSingleTap(tap1.fingers, tap1.startPosition, size.width.toFloat(), size.height.toFloat(), listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
             return@awaitEachGesture
@@ -155,7 +191,18 @@ suspend fun PointerInputScope.detectTravelingTunesGestures(
             return@awaitEachGesture
         }
 
-        val tap3 = awaitPressResult(thirdDown, minTranslationPx, listener, numEdgeRegions, regionBounds, numArtEdgeRegions, artRegionBounds, isSeparateTouchZones)
+        val tap3 = awaitPressResult(
+            firstDown = thirdDown,
+            minTranslationPx = minTranslationPx,
+            listener = listener,
+            numEdgeRegions = numEdgeRegions,
+            regionBounds = regionBounds,
+            numArtEdgeRegions = numArtEdgeRegions,
+            artRegionBounds = artRegionBounds,
+            isSeparateTouchZones = isSeparateTouchZones,
+            multiTouchWindowMs = multiTouchWindowMs,
+            longPressThresholdMs = longPressThresholdMs
+        )
         if (tap3.isSwipe || tap3.isLongPress) {
             emitDoubleTap(effectiveFingers2, listener)
             return@awaitEachGesture
@@ -184,12 +231,12 @@ private suspend fun AwaitPointerEventScope.awaitPressResult(
     regionBounds: Rect = Rect(0f, 0f, 1f, 1f),
     numArtEdgeRegions: Int = 3,
     artRegionBounds: Rect = Rect(0f, 0f, 0f, 0f),
-    isSeparateTouchZones: Boolean = false
+    isSeparateTouchZones: Boolean = false,
+    multiTouchWindowMs: Long = 70L,
+    longPressThresholdMs: Long = 280L
 ): TapPressResult {
     val startTime = System.currentTimeMillis()
     val startPosition = firstDown.position
-    val multiTouchWindowMs = 120L
-    val longPressThresholdMs = 380L
     val longPressSlopPx = 32f * density
 
     val systemTopInsetPx = maxOf(36f * density, size.height.toFloat() * 0.05f)
