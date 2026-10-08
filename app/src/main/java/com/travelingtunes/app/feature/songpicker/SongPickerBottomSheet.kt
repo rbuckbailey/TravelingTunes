@@ -46,11 +46,17 @@ import kotlinx.coroutines.flow.flowOf
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import com.travelingtunes.app.core.media.TrackSharingHelper
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -175,6 +181,8 @@ fun SongPickerBottomSheet(
     var selectedArtist by remember { mutableStateOf<String?>(initialArtist) }
     var selectedAlbum by remember { mutableStateOf<String?>(initialAlbum) }
     var selectedFolder by remember { mutableStateOf<String?>(null) }
+    var activeTagEditorTracks by remember { mutableStateOf<List<Song>?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(visible, initialCategory, initialArtist, initialAlbum) {
         if (visible) {
@@ -204,9 +212,9 @@ fun SongPickerBottomSheet(
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
 
     // Query database when search, category, drill-down selection, or scan state changes
-    LaunchedEffect(searchQuery, selectedCategory, selectedGenre, selectedArtist, selectedAlbum, selectedFolder, isScanning, scannedCount) {
+    LaunchedEffect(searchQuery, selectedCategory, selectedGenre, selectedArtist, selectedAlbum, selectedFolder, isScanning) {
         withContext(Dispatchers.IO) {
-            if (musicDatabase.getAllSongs().isEmpty() && currentPlaylist.isNotEmpty()) {
+            if (!musicDatabase.hasSongs() && currentPlaylist.isNotEmpty()) {
                 musicDatabase.insertOrReplaceSongs(currentPlaylist)
             }
 
@@ -239,11 +247,7 @@ fun SongPickerBottomSheet(
                 artistsList = if (searchQuery.isBlank()) artists else artists.filter { it.contains(searchQuery, ignoreCase = true) }
             } else if (selectedFolder != null) {
                 val targetFolder = selectedFolder!!
-                val dbSongs = musicDatabase.getAllSongs()
-                val folderSongs = dbSongs.filter {
-                    it.folderPath.equals(targetFolder, ignoreCase = true) ||
-                    it.folderPath.startsWith(targetFolder, ignoreCase = true)
-                }
+                val folderSongs = musicDatabase.getSongsByFolder(targetFolder)
                 songsList = if (searchQuery.isBlank()) folderSongs else folderSongs.filter { it.title.contains(searchQuery, ignoreCase = true) }
             } else {
                 when (selectedCategory) {
@@ -311,6 +315,17 @@ fun SongPickerBottomSheet(
                 }
             }
         }
+    }
+
+    if (!activeTagEditorTracks.isNullOrEmpty() && musicScanner != null) {
+        com.travelingtunes.app.feature.settings.EditTagsAndArtworkDialog(
+            targetTracks = activeTagEditorTracks!!,
+            musicDatabase = musicDatabase,
+            albumArtDownloader = musicScanner.albumArtDownloader,
+            playbackManager = playbackManager,
+            onDismiss = { activeTagEditorTracks = null },
+            onSaveComplete = { activeTagEditorTracks = null }
+        )
     }
 
     SlidingOverlay(
@@ -740,12 +755,7 @@ fun SongPickerBottomSheet(
                                         onPlay = {
                                             coroutineScope.launch {
                                                 val selectedSong = songsList[index]
-                                                val fullList = if (selectedCategory == PickerCategory.SONGS && !hasDrillDown) {
-                                                    songsList
-                                                } else {
-                                                    val dbSongs = musicDatabase.getAllSongs()
-                                                    dbSongs.ifEmpty { songsList }
-                                                }
+                                                val fullList = songsList
                                                 val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
                                                 playbackManager.setPlaylistAndPlay(fullList, indexInFull)
                                                 if (selectedAlbum != null) {
@@ -766,15 +776,19 @@ fun SongPickerBottomSheet(
                                         onAddToQueue = {
                                             playbackManager.addSongToQueue(song)
                                         },
+                                        onEditTags = {
+                                            activeTagEditorTracks = listOf(song)
+                                        },
+                                        onShareText = {
+                                            TrackSharingHelper.shareTrackText(context, song)
+                                        },
+                                        onShareFile = {
+                                            TrackSharingHelper.shareTrackFile(context, song)
+                                        },
                                         onClick = {
                                             coroutineScope.launch {
                                                 val selectedSong = songsList[index]
-                                                val fullList = if (selectedCategory == PickerCategory.SONGS && !hasDrillDown) {
-                                                    songsList
-                                                } else {
-                                                    val dbSongs = musicDatabase.getAllSongs()
-                                                    if (dbSongs.isNotEmpty()) dbSongs else songsList
-                                                }
+                                                val fullList = songsList
                                                 val indexInFull = fullList.indexOfFirst { it.id == selectedSong.id }.coerceAtLeast(index)
                                                 playbackManager.setPlaylistAndPlay(fullList, indexInFull)
                                                 if (selectedAlbum != null) {
@@ -816,7 +830,6 @@ fun SongPickerBottomSheet(
                                         artVersion = artVersion,
                                         onPlay = {
                                             coroutineScope.launch {
-                                                val fullLibrary = musicDatabase.getAllSongs()
                                                 val albumSongs = musicDatabase.getSongsByAlbum(album.name)
                                                 val filteredSongs = if (selectedGenre != null || selectedArtist != null) {
                                                     albumSongs.filter {
@@ -826,10 +839,7 @@ fun SongPickerBottomSheet(
                                                 } else albumSongs
                                                 val playSongs = if (filteredSongs.isNotEmpty()) filteredSongs else albumSongs
                                                 if (playSongs.isNotEmpty()) {
-                                                    val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else playSongs
-                                                    val targetSong = playSongs.first()
-                                                    val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
-                                                    playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
+                                                    playbackManager.setPlaylistAndPlay(playSongs, 0)
                                                     playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ALBUM)
                                                 }
                                                 onDismiss()
@@ -861,6 +871,30 @@ fun SongPickerBottomSheet(
                                                 playbackManager.addSongsToQueue(addSongs)
                                             }
                                         },
+                                        onEditTags = {
+                                            coroutineScope.launch(Dispatchers.IO) {
+                                                val songs = musicDatabase.getSongsByAlbumAndArtist(album.name, album.artist)
+                                                withContext(Dispatchers.Main) {
+                                                    activeTagEditorTracks = songs
+                                                }
+                                            }
+                                        },
+                                        onShareText = {
+                                            coroutineScope.launch(Dispatchers.IO) {
+                                                val songs = musicDatabase.getSongsByAlbumAndArtist(album.name, album.artist)
+                                                withContext(Dispatchers.Main) {
+                                                    TrackSharingHelper.shareAlbumText(context, album.name, album.artist, songs)
+                                                }
+                                            }
+                                        },
+                                        onShareZip = {
+                                            coroutineScope.launch(Dispatchers.IO) {
+                                                val songs = musicDatabase.getSongsByAlbumAndArtist(album.name, album.artist)
+                                                withContext(Dispatchers.Main) {
+                                                    TrackSharingHelper.shareAlbumFilesZip(context, album.name, album.artist, songs)
+                                                }
+                                            }
+                                        },
                                         onClick = {
                                             selectedAlbum = album.name
                                         }
@@ -890,17 +924,13 @@ fun SongPickerBottomSheet(
                                         artist = artist,
                                         onPlay = {
                                             coroutineScope.launch {
-                                                val fullLibrary = musicDatabase.getAllSongs()
                                                 val artistSongs = if (selectedGenre != null) {
                                                     musicDatabase.getSongsByGenre(selectedGenre!!).filter { it.artist.equals(artist, true) }
                                                 } else {
                                                     musicDatabase.getSongsByArtist(artist)
                                                 }
                                                 if (artistSongs.isNotEmpty()) {
-                                                    val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else artistSongs
-                                                    val targetSong = artistSongs.first()
-                                                    val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
-                                                    playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
+                                                    playbackManager.setPlaylistAndPlay(artistSongs, 0)
                                                     playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.ARTIST)
                                                 }
                                                 onDismiss()
@@ -955,13 +985,9 @@ fun SongPickerBottomSheet(
                                         genre = genre,
                                         onPlay = {
                                             coroutineScope.launch {
-                                                val fullLibrary = musicDatabase.getAllSongs()
                                                 val genreSongs = musicDatabase.getSongsByGenre(genre)
                                                 if (genreSongs.isNotEmpty()) {
-                                                    val masterList = if (fullLibrary.isNotEmpty()) fullLibrary else genreSongs
-                                                    val targetSong = genreSongs.first()
-                                                    val indexInMaster = masterList.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
-                                                    playbackManager.setPlaylistAndPlay(masterList, indexInMaster)
+                                                    playbackManager.setPlaylistAndPlay(genreSongs, 0)
                                                     playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.GENRE)
                                                 }
                                                 onDismiss()
@@ -1008,15 +1034,9 @@ fun SongPickerBottomSheet(
                                         folder = folder,
                                         onPlay = {
                                             coroutineScope.launch {
-                                                val dbSongs = musicDatabase.getAllSongs()
-                                                val folderSongs = dbSongs.filter {
-                                                    it.folderPath.equals(folder, ignoreCase = true) ||
-                                                    it.folderPath.startsWith(folder, ignoreCase = true)
-                                                }
+                                                val folderSongs = musicDatabase.getSongsByFolder(folder)
                                                 if (folderSongs.isNotEmpty()) {
-                                                    val targetSong = folderSongs.first()
-                                                    val indexInMaster = dbSongs.indexOfFirst { it.id == targetSong.id }.coerceAtLeast(0)
-                                                    playbackManager.setPlaylistAndPlay(dbSongs, indexInMaster)
+                                                    playbackManager.setPlaylistAndPlay(folderSongs, 0)
                                                     playbackManager.setRepeatMode(com.travelingtunes.app.core.model.RepeatMode.FOLDER)
                                                 }
                                                 onDismiss()
@@ -1024,21 +1044,13 @@ fun SongPickerBottomSheet(
                                         },
                                         onPlayNext = {
                                             coroutineScope.launch {
-                                                val dbSongs = musicDatabase.getAllSongs()
-                                                val folderSongs = dbSongs.filter {
-                                                    it.folderPath.equals(folder, ignoreCase = true) ||
-                                                    it.folderPath.startsWith(folder, ignoreCase = true)
-                                                }
+                                                val folderSongs = musicDatabase.getSongsByFolder(folder)
                                                 playbackManager.playNext(folderSongs)
                                             }
                                         },
                                         onAddToQueue = {
                                             coroutineScope.launch {
-                                                val dbSongs = musicDatabase.getAllSongs()
-                                                val folderSongs = dbSongs.filter {
-                                                    it.folderPath.equals(folder, ignoreCase = true) ||
-                                                    it.folderPath.startsWith(folder, ignoreCase = true)
-                                                }
+                                                val folderSongs = musicDatabase.getSongsByFolder(folder)
                                                 playbackManager.addSongsToQueue(folderSongs)
                                             }
                                         },
@@ -1457,8 +1469,13 @@ private fun AlbumItemRow(
     onPlay: () -> Unit,
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
+    onEditTags: (() -> Unit)? = null,
+    onShareText: (() -> Unit)? = null,
+    onShareZip: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     ListItem(
         headlineContent = {
             BalancedTitleText(
@@ -1510,6 +1527,67 @@ private fun AlbumItemRow(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
+                if (onEditTags != null || onShareText != null || onShareZip != null) {
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Album Options",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            if (onEditTags != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Edit Album Tags")
+                                        }
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onEditTags()
+                                    }
+                                )
+                            }
+                            if (onShareText != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Share Album Info (Text)")
+                                        }
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onShareText()
+                                    }
+                                )
+                            }
+                            if (onShareZip != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Share Album Files (Zip)")
+                                        }
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onShareZip()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         modifier = Modifier.clickable { onClick() }
@@ -1523,8 +1601,13 @@ private fun SongItemRow(
     onPlay: () -> Unit,
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
+    onEditTags: (() -> Unit)? = null,
+    onShareText: (() -> Unit)? = null,
+    onShareFile: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     ListItem(
         headlineContent = {
             BalancedTitleText(
@@ -1581,6 +1664,67 @@ private fun SongItemRow(
                         contentDescription = "Add Song to Queue",
                         tint = MaterialTheme.colorScheme.primary
                     )
+                }
+                if (onEditTags != null || onShareText != null || onShareFile != null) {
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Song Options",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            if (onEditTags != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Edit Tags")
+                                        }
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onEditTags()
+                                    }
+                                )
+                            }
+                            if (onShareText != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Share Track Info (Text)")
+                                        }
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onShareText()
+                                    }
+                                )
+                            }
+                            if (onShareFile != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Share Audio File")
+                                        }
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onShareFile()
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         },

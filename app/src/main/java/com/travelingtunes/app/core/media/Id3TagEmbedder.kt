@@ -50,16 +50,21 @@ object Id3TagEmbedder {
             }
 
             if (success && tempOutFile.exists() && tempOutFile.length() > 0) {
-                try {
-                    contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
-                        tempOutFile.inputStream().use { inStream ->
-                            inStream.copyTo(out)
+                if (song.contentUri.scheme == "file" && song.contentUri.path != null) {
+                    val destFile = File(song.contentUri.path!!)
+                    tempOutFile.copyTo(destFile, overwrite = true)
+                } else {
+                    try {
+                        contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
+                            tempOutFile.inputStream().use { inStream ->
+                                inStream.copyTo(out)
+                            }
                         }
-                    }
-                } catch (_: Exception) {
-                    contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
-                        tempOutFile.inputStream().use { inStream ->
-                            inStream.copyTo(out)
+                    } catch (_: Exception) {
+                        contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
+                            tempOutFile.inputStream().use { inStream ->
+                                inStream.copyTo(out)
+                            }
                         }
                     }
                 }
@@ -126,16 +131,21 @@ object Id3TagEmbedder {
             }
 
             if (success && tempOutFile.exists() && tempOutFile.length() > 0) {
-                try {
-                    contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
-                        tempOutFile.inputStream().use { inStream ->
-                            inStream.copyTo(out)
+                if (song.contentUri.scheme == "file" && song.contentUri.path != null) {
+                    val destFile = File(song.contentUri.path!!)
+                    tempOutFile.copyTo(destFile, overwrite = true)
+                } else {
+                    try {
+                        contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
+                            tempOutFile.inputStream().use { inStream ->
+                                inStream.copyTo(out)
+                            }
                         }
-                    }
-                } catch (_: Exception) {
-                    contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
-                        tempOutFile.inputStream().use { inStream ->
-                            inStream.copyTo(out)
+                    } catch (_: Exception) {
+                        contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
+                            tempOutFile.inputStream().use { inStream ->
+                                inStream.copyTo(out)
+                            }
                         }
                     }
                 }

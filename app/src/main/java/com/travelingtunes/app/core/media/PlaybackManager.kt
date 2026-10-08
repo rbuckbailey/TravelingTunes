@@ -214,7 +214,7 @@ class PlaybackManager(
 
             _durationMs.value = try { p.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
             applyNormalizationModifier(_currentSong.value)
-            persistCurrentPlaybackState()
+            persistCurrentPlaybackState(debounceMs = 0L)
             android.util.Log.d("PlaybackManager", "onMediaItemTransition: title='${_currentSong.value?.title}', reason=$reason, index=$currentIndex")
         }
 
@@ -359,32 +359,57 @@ class PlaybackManager(
         val song = _currentSong.value
         val songId = song?.id ?: -1L
         val playerIndex = try { player.currentMediaItemIndex } catch (_: Exception) { -1 }
-        val songIndex = if (playerIndex in playlist.indices) {
+        val songIndex = if (songId != -1L) {
+            val matchedIndex = playlist.indexOfFirst { it.id == songId }
+            if (matchedIndex != -1) {
+                matchedIndex
+            } else if (playerIndex in playlist.indices) {
+                playerIndex
+            } else {
+                0
+            }
+        } else if (playerIndex in playlist.indices) {
             playerIndex
         } else {
-            playlist.indexOfFirst { it.id == songId }.coerceAtLeast(0)
+            0
         }
         val posMs = try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
         val currRepeat = _repeatMode.value
         val currShuffle = _shuffleMode.value
 
-        persistStateJob?.cancel()
-        // OPTIMIZATION: Debounce persistence calls and offload state formatting / DataStore disk writes to Dispatchers.IO
-        persistStateJob = scope.launch(Dispatchers.IO) {
-            if (debounceMs > 0L) {
-                delay(debounceMs)
+        if (debounceMs == 0L) {
+            persistStateJob?.cancel()
+            persistStateJob = scope.launch(Dispatchers.IO) {
+                withContext(kotlinx.coroutines.NonCancellable) {
+                    val queueIds = playlist.map { it.id }
+                    store.savePlaybackState(
+                        queueIds = queueIds,
+                        activeSongId = songId,
+                        activeSongIndex = songIndex,
+                        positionMs = posMs,
+                        isShuffle = currShuffle != ShuffleMode.OFF,
+                        isRepeat = currRepeat != RepeatMode.OFF,
+                        repeatMode = currRepeat,
+                        shuffleMode = currShuffle
+                    )
+                }
             }
-            val queueIds = playlist.map { it.id }
-            store.savePlaybackState(
-                queueIds = queueIds,
-                activeSongId = songId,
-                activeSongIndex = songIndex,
-                positionMs = posMs,
-                isShuffle = currShuffle != ShuffleMode.OFF,
-                isRepeat = currRepeat != RepeatMode.OFF,
-                repeatMode = currRepeat,
-                shuffleMode = currShuffle
-            )
+        } else {
+            persistStateJob?.cancel()
+            persistStateJob = scope.launch(Dispatchers.IO) {
+                delay(debounceMs)
+                val queueIds = playlist.map { it.id }
+                store.savePlaybackState(
+                    queueIds = queueIds,
+                    activeSongId = songId,
+                    activeSongIndex = songIndex,
+                    positionMs = posMs,
+                    isShuffle = currShuffle != ShuffleMode.OFF,
+                    isRepeat = currRepeat != RepeatMode.OFF,
+                    repeatMode = currRepeat,
+                    shuffleMode = currShuffle
+                )
+            }
         }
     }
 
@@ -659,11 +684,26 @@ class PlaybackManager(
         }
 
         val action = {
+            val playerIndex = try { player.currentMediaItemIndex } catch (_: Exception) { -1 }
+            val songId = _currentSong.value?.id ?: -1L
+            val songIndexInPlaylist = if (songId != -1L) playlist.indexOfFirst { it.id == songId } else -1
+
             val currentIndex = targetIndex ?: run {
-                val songId = _currentSong.value?.id ?: -1L
-                val idx = playlist.indexOfFirst { it.id == songId }
-                if (idx != -1) idx else try { player.currentMediaItemIndex.coerceIn(0, playlist.size - 1) } catch (_: Exception) { 0 }
+                if (songIndexInPlaylist != -1) {
+                    songIndexInPlaylist
+                } else if (playerIndex in playlist.indices) {
+                    playerIndex
+                } else {
+                    0
+                }
             }
+
+            if (songIndexInPlaylist != -1 && playlist.getOrNull(songIndexInPlaylist) != _currentSong.value) {
+                _currentSong.value = playlist[songIndexInPlaylist]
+            } else if (targetIndex == null && playerIndex in playlist.indices && _currentSong.value == null) {
+                _currentSong.value = playlist[playerIndex]
+            }
+
             val pos = positionMs ?: try { player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
 
             val mediaCount = try { player.mediaItemCount } catch (_: Exception) { 0 }
@@ -1513,13 +1553,43 @@ class PlaybackManager(
         persistCurrentPlaybackState()
     }
 
+    fun updateSongMetadataInQueue(updatedSongs: List<Song>) {
+        if (updatedSongs.isEmpty()) return
+        val map = updatedSongs.associateBy { it.id }
+
+        var playlistChanged = false
+        val newPlaylist = _currentPlaylist.value.map { song ->
+            val updated = map[song.id]
+            if (updated != null) {
+                playlistChanged = true
+                updated
+            } else {
+                song
+            }
+        }
+
+        if (playlistChanged) {
+            _currentPlaylist.value = newPlaylist
+        }
+
+        val current = _currentSong.value
+        if (current != null && map.containsKey(current.id)) {
+            _currentSong.value = map[current.id]
+        }
+
+        masterPlaylist = masterPlaylist.map { song -> map[song.id] ?: song }
+        unshuffledPlaylist = unshuffledPlaylist.map { song -> map[song.id] ?: song }
+
+        persistCurrentPlaybackState(debounceMs = 0L)
+    }
+
     fun refreshCurrentSongArtwork() {
-        val current = _currentSong.value ?: return
         scope.launch(Dispatchers.IO) {
             val updatedSongs = musicDatabase?.getAllSongs() ?: emptyList()
-            val updatedSong = updatedSongs.find { it.id == current.id }
-            if (updatedSong != null) {
-                _currentSong.value = updatedSong
+            if (updatedSongs.isNotEmpty()) {
+                withContext(Dispatchers.Main) {
+                    updateSongMetadataInQueue(updatedSongs)
+                }
             }
         }
     }

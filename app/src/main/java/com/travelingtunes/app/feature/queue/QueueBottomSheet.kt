@@ -24,12 +24,20 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import com.travelingtunes.app.core.database.MusicDatabase
+import com.travelingtunes.app.core.media.MusicScanner
+import com.travelingtunes.app.core.media.TrackSharingHelper
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,16 +76,31 @@ fun QueueBottomSheet(
     slideDirection: SlideDirection = SlideDirection.BOTTOM,
     openingTrigger: GestureTrigger? = null,
     playbackManager: PlaybackManager,
+    musicDatabase: MusicDatabase? = null,
+    musicScanner: MusicScanner? = null,
     onOpenSongPicker: (SlideDirection) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     val currentPlaylist by playbackManager.currentPlaylist.collectAsState()
     val currentSong by playbackManager.currentSong.collectAsState()
     val isPlaying by playbackManager.isPlaying.collectAsState()
+    var activeTagEditorTracks by remember { mutableStateOf<List<Song>?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val currentIndex = remember(currentPlaylist, currentSong) {
         val idx = currentPlaylist.indexOfFirst { it.id == currentSong?.id }
         if (idx != -1) idx else 0
+    }
+
+    if (!activeTagEditorTracks.isNullOrEmpty() && musicDatabase != null && musicScanner != null) {
+        com.travelingtunes.app.feature.settings.EditTagsAndArtworkDialog(
+            targetTracks = activeTagEditorTracks!!,
+            musicDatabase = musicDatabase,
+            albumArtDownloader = musicScanner.albumArtDownloader,
+            playbackManager = playbackManager,
+            onDismiss = { activeTagEditorTracks = null },
+            onSaveComplete = { activeTagEditorTracks = null }
+        )
     }
 
     SlidingOverlay(
@@ -207,6 +230,15 @@ fun QueueBottomSheet(
                             onRemove = {
                                 playbackManager.removeQueueItem(index)
                             },
+                            onEditTags = {
+                                activeTagEditorTracks = listOf(song)
+                            },
+                            onShareText = {
+                                TrackSharingHelper.shareTrackText(context, song)
+                            },
+                            onShareFile = {
+                                TrackSharingHelper.shareTrackFile(context, song)
+                            },
                             onMoveUp = if (index > 0) {
                                 { playbackManager.moveQueueItem(index, index - 1) }
                             } else null,
@@ -253,6 +285,9 @@ private fun QueueItemRow(
     elevation: androidx.compose.ui.unit.Dp,
     onPlay: () -> Unit,
     onRemove: () -> Unit,
+    onEditTags: (() -> Unit)? = null,
+    onShareText: (() -> Unit)? = null,
+    onShareFile: (() -> Unit)? = null,
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?,
     onDrag: (Float) -> Unit,
@@ -414,6 +449,75 @@ private fun QueueItemRow(
                     tint = contentColor.copy(alpha = 0.7f),
                     modifier = Modifier.size(18.dp)
                 )
+            }
+
+            var menuExpanded by remember { mutableStateOf(false) }
+
+            if (onEditTags != null || onShareText != null || onShareFile != null) {
+                Box {
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Options",
+                            tint = contentColor.copy(alpha = 0.7f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        if (onEditTags != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Edit Tags")
+                                    }
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onEditTags()
+                                }
+                            )
+                        }
+                        if (onShareText != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Share Track Info (Text)")
+                                    }
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onShareText()
+                                }
+                            )
+                        }
+                        if (onShareFile != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Share Audio File")
+                                    }
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onShareFile()
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
     }

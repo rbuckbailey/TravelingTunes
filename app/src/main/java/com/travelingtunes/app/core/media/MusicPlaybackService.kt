@@ -535,6 +535,12 @@ class MusicPlaybackService : MediaLibraryService() {
             GestureAction.SHOW_QUEUE -> "com.travelingtunes.app.ACTION_SHOW_QUEUE"
             GestureAction.MENU -> "com.travelingtunes.app.ACTION_MENU"
             GestureAction.TOGGLE_DRIVING_MODE -> "com.travelingtunes.app.ACTION_TOGGLE_DRIVING_MODE"
+            GestureAction.EDIT_TRACK_TAGS -> "com.travelingtunes.app.ACTION_EDIT_TRACK_TAGS"
+            GestureAction.EDIT_ALBUM_TAGS -> "com.travelingtunes.app.ACTION_EDIT_ALBUM_TAGS"
+            GestureAction.SHARE_TRACK_TEXT -> "com.travelingtunes.app.ACTION_SHARE_TRACK_TEXT"
+            GestureAction.SHARE_TRACK_FILE -> "com.travelingtunes.app.ACTION_SHARE_TRACK_FILE"
+            GestureAction.SHARE_ALBUM_TEXT -> "com.travelingtunes.app.ACTION_SHARE_ALBUM_TEXT"
+            GestureAction.SHARE_ALBUM_FILES -> "com.travelingtunes.app.ACTION_SHARE_ALBUM_FILES"
             else -> return null
         }
         return SessionCommand(actionString, Bundle.EMPTY)
@@ -1150,14 +1156,26 @@ class MusicPlaybackService : MediaLibraryService() {
             serviceScope.launch {
                 val items = mutableListOf<MediaItem>()
                 val showArt = autoDisplaySettings.autoShowAlbumArt
-                if (parentId != "show_play_screen") {
+
+                val effectivePageSize = if (pageSize > 0) pageSize else 50
+                val effectivePage = if (page >= 0) page else 0
+
+                fun <T> paginateDomainList(list: List<T>): List<T> {
+                    val fromIndex = (effectivePage * effectivePageSize).coerceIn(0, list.size)
+                    val toIndex = ((effectivePage + 1) * effectivePageSize).coerceIn(fromIndex, list.size)
+                    return list.subList(fromIndex, toIndex)
+                }
+
+                if (parentId != "show_play_screen" && effectivePage == 0) {
                     items.add(showPlayScreenItem)
                 }
+
                 when (parentId) {
                     "show_play_screen", "root" -> {
-                        items.add(categoryQueue)
-                        items.add(songPickerItem)
-                        items.add(shuffleAllItem)
+                        val rootCategoryItems = mutableListOf<MediaItem>()
+                        rootCategoryItems.add(categoryQueue)
+                        rootCategoryItems.add(songPickerItem)
+                        rootCategoryItems.add(shuffleAllItem)
                         val categoryMap = mapOf(
                             AutoCategory.QUEUE to categoryQueue,
                             AutoCategory.SONGS to categorySongs,
@@ -1170,32 +1188,25 @@ class MusicPlaybackService : MediaLibraryService() {
                             listOf(AutoCategory.QUEUE, AutoCategory.SONGS, AutoCategory.ALBUMS, AutoCategory.ARTISTS, AutoCategory.GENRES, AutoCategory.FOLDERS)
                         }
                         catOrder.forEach { cat ->
-                            categoryMap[cat]?.let { if (!items.contains(it)) items.add(it) }
+                            categoryMap[cat]?.let { if (!rootCategoryItems.contains(it)) rootCategoryItems.add(it) }
                         }
+                        items.addAll(paginateDomainList(rootCategoryItems))
                     }
                     "category_queue", "queue" -> {
                         val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
                         val currentQueue = playbackManager.currentPlaylist.value
-                        if (currentQueue.isNotEmpty()) {
-                            items.addAll(currentQueue.map { songToMediaItem(it, applicationContext, showArt) })
-                        } else {
-                            items.add(shuffleAllItem)
-                            val songs = getAllSongsHelper()
-                            items.addAll(songs.map { songToMediaItem(it, applicationContext, showArt) })
-                        }
+                        val rawSongs = if (currentQueue.isNotEmpty()) currentQueue else getAllSongsHelper()
+                        val pagedSongs = paginateDomainList(rawSongs)
+                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext, showArt) })
                     }
                     "category_picker" -> {
-                        items.add(shuffleAllItem)
-                        items.add(categorySongs)
-                        items.add(categoryAlbums)
-                        items.add(categoryArtists)
-                        items.add(categoryGenres)
-                        items.add(categoryFolders)
+                        val pickerItems = listOf(shuffleAllItem, categorySongs, categoryAlbums, categoryArtists, categoryGenres, categoryFolders)
+                        items.addAll(paginateDomainList(pickerItems))
                     }
                     "category_songs" -> {
-                        items.add(shuffleAllItem)
                         val songs = getAllSongsHelper()
-                        items.addAll(songs.map { songToMediaItem(it, applicationContext, showArt) })
+                        val pagedSongs = paginateDomainList(songs)
+                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext, showArt) })
                     }
                     "category_albums" -> {
                         val dbAlbums = musicDatabase.getAlbums()
@@ -1214,7 +1225,8 @@ class MusicPlaybackService : MediaLibraryService() {
                         } else {
                             MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
                         }
-                        items.addAll(albums.map { album ->
+                        val pagedAlbums = paginateDomainList(albums)
+                        items.addAll(pagedAlbums.map { album ->
                             MediaItem.Builder()
                                 .setMediaId("album_${album.name}")
                                 .setMediaMetadata(
@@ -1247,7 +1259,8 @@ class MusicPlaybackService : MediaLibraryService() {
                         } else {
                             MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
                         }
-                        items.addAll(artists.map { artist ->
+                        val pagedArtists = paginateDomainList(artists)
+                        items.addAll(pagedArtists.map { artist ->
                             MediaItem.Builder()
                                 .setMediaId("artist_$artist")
                                 .setMediaMetadata(
@@ -1271,7 +1284,8 @@ class MusicPlaybackService : MediaLibraryService() {
                         val genres = dbGenres.ifEmpty {
                             getAllSongsHelper().map { it.genre }.distinct().sorted()
                         }
-                        items.addAll(genres.map { genre ->
+                        val pagedGenres = paginateDomainList(genres)
+                        items.addAll(pagedGenres.map { genre ->
                             MediaItem.Builder()
                                 .setMediaId("genre_$genre")
                                 .setMediaMetadata(
@@ -1295,7 +1309,8 @@ class MusicPlaybackService : MediaLibraryService() {
                         val folders = dbFolders.ifEmpty {
                             getAllSongsHelper().map { it.folderPath }.filter { it.isNotBlank() }.distinct().sorted()
                         }
-                        items.addAll(folders.map { folder ->
+                        val pagedFolders = paginateDomainList(folders)
+                        items.addAll(pagedFolders.map { folder ->
                             MediaItem.Builder()
                                 .setMediaId("folder_$folder")
                                 .setMediaMetadata(
@@ -1338,17 +1353,12 @@ class MusicPlaybackService : MediaLibraryService() {
                             }
                             else -> emptyList()
                         }
-                        items.addAll(songs.map { songToMediaItem(it, applicationContext) })
+                        val pagedSongs = paginateDomainList(songs)
+                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext) })
                     }
                 }
 
-                val effectivePageSize = if (pageSize > 0) pageSize else 50
-                val effectivePage = if (page >= 0) page else 0
-                val fromIndex = (effectivePage * effectivePageSize).coerceIn(0, items.size)
-                val toIndex = ((effectivePage + 1) * effectivePageSize).coerceIn(fromIndex, items.size)
-                val pagedList = items.subList(fromIndex, toIndex)
-
-                future.set(LibraryResult.ofItemList(ImmutableList.copyOf(pagedList), params))
+                future.set(LibraryResult.ofItemList(ImmutableList.copyOf(items), params))
             }
 
             return future
@@ -1642,6 +1652,22 @@ class MusicPlaybackService : MediaLibraryService() {
 
 fun getArtworkBytesForSong(context: Context, song: Song): ByteArray? {
     try {
+        val downloadedFile = AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
+        if (downloadedFile != null) {
+            val bytes = downloadedFile.readBytes()
+            if (bytes.isNotEmpty()) {
+                if (bytes.size <= 300 * 1024) {
+                    return bytes
+                }
+                val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(downloadedFile.absolutePath, 500, 500)
+                if (bmp != null) {
+                    val stream = java.io.ByteArrayOutputStream()
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+                    return stream.toByteArray()
+                }
+            }
+        }
+
         if (song.artworkUri != null) {
             val uri = song.artworkUri
             val bytes = if (uri.scheme == "file" && uri.path != null) {
@@ -1724,7 +1750,24 @@ fun songToMediaItem(
     showAlbumArt: Boolean = true,
     includeArtworkData: Boolean = false
 ): MediaItem {
-    val artUri = if (showAlbumArt) song.artworkUri else null
+    val downloadedFile = if (showAlbumArt && context != null) {
+        val songUri = song.artworkUri
+        val uriStr = songUri?.toString() ?: ""
+        if (uriStr.contains("downloaded_art") || uriStr.contains("art_downloaded") || uriStr.contains("art_custom")) {
+            if (songUri != null && songUri.scheme == "file" && songUri.path != null) {
+                File(songUri.path!!)
+            } else {
+                AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
+            }
+        } else {
+            AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
+        }
+    } else null
+    val artUri = when {
+        !showAlbumArt -> null
+        downloadedFile != null -> Uri.fromFile(downloadedFile)
+        else -> song.artworkUri
+    }
     val artBytes = if (showAlbumArt && includeArtworkData && context != null) getArtworkBytesForSong(context, song) else null
     val metadata = MediaMetadata.Builder()
         .setTitle(song.title)

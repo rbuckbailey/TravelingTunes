@@ -1250,26 +1250,23 @@ private fun GestureAssignmentItem(
 
 private fun ConfigOption.getSubmenu(): SettingsSubmenu {
     return when {
-        key.startsWith("PROFILE_") -> SettingsSubmenu.PROFILES
-        key.startsWith("LIBRARY_") -> SettingsSubmenu.LIBRARY
-        key.startsWith("DENOISE_") || key.startsWith("NORMALIZATION_") || key.startsWith("PLAYBACK_") -> SettingsSubmenu.PLAYBACK
-        key.startsWith("ALIGN_") || key.startsWith("DISPLAY_artist") ||
-        key.startsWith("DISPLAY_song") || key.startsWith("DISPLAY_album") ||
-        key.startsWith("DISPLAY_title") -> SettingsSubmenu.TITLES
-        key.startsWith("ART_") || key == "DISPLAY_showAlbumArt" ||
-        key == "DISPLAY_albumArtColors" -> SettingsSubmenu.ART
-        key.startsWith("HUD_TYPE_") || key.startsWith("SCRUB_HUD_TYPE_") ||
-        key == "DISPLAY_volumeAlwaysOn" || key == "DISPLAY_showStatusBar" ||
-        key == "DISPLAY_showActions" || key == "DISPLAY_keepScreenOn" ||
-        key == "DISPLAY_immersiveMode" -> SettingsSubmenu.HUD
-        key.startsWith("THEME_") -> SettingsSubmenu.THEMES
-        else -> SettingsSubmenu.THEMES
+        category.contains("Profiles", ignoreCase = true) || key.startsWith("PROFILE_") -> SettingsSubmenu.PROFILES
+        category.contains("Library", ignoreCase = true) || key.startsWith("ACTION_") || key.startsWith("LIBRARY_") -> SettingsSubmenu.LIBRARY
+        category.contains("Playback", ignoreCase = true) || key.startsWith("DENOISE_") || key.startsWith("NORMALIZATION_") -> SettingsSubmenu.PLAYBACK
+        category.contains("Font", ignoreCase = true) || category.contains("Layout", ignoreCase = true) || key.startsWith("ALIGN_") -> SettingsSubmenu.TITLES
+        category.contains("Art", ignoreCase = true) || key.startsWith("ART_") -> SettingsSubmenu.ART
+        category.contains("HUD", ignoreCase = true) || category.contains("Traveling", ignoreCase = true) || key.startsWith("HUD_") -> SettingsSubmenu.HUD
+        category.contains("Theme", ignoreCase = true) || category.contains("Colors", ignoreCase = true) || key.startsWith("THEME_") -> SettingsSubmenu.THEMES
+        else -> SettingsSubmenu.LIBRARY
     }
 }
 
 private fun ConfigOption.getSectionName(): String {
     return when {
         key.startsWith("PROFILE_") -> "Active Profile"
+        key.startsWith("ACTION_SHARE_") -> "Track & Album Sharing"
+        key.startsWith("ACTION_EDIT_") || key == "ACTION_OPEN_ART_TAGS_EDITOR" -> "Tag & Metadata Editing"
+        key.startsWith("ACTION_") -> "Library Actions"
         key.startsWith("ALIGN_ARTIST_") -> "Artist Alignment"
         key.startsWith("ALIGN_SONG_") -> "Song Alignment"
         key.startsWith("ALIGN_ALBUM_") -> "Album Alignment"
@@ -1287,7 +1284,7 @@ private fun ConfigOption.getSectionName(): String {
         key.startsWith("THEME_") && !key.startsWith("THEME_dim") && !key.startsWith("THEME_invert") && !key.startsWith("THEME_is") -> "Theme Presets"
         key.startsWith("THEME_") -> "Theme Effects"
         key.startsWith("LIBRARY_") -> "Library & Audio Preferences"
-        else -> "General Options"
+        else -> category.ifBlank { "General Options" }
     }
 }
 
@@ -1456,7 +1453,7 @@ fun ConfigOptionPickerDialog(
                     } else {
                         // Level 2: Submenu Options List
                         val submenuOptions = remember(targetSubmenu) {
-                            ConfigOption.ALL_OPTIONS.filter { it.getSubmenu() == targetSubmenu }
+                            ConfigOption.getAllOptions().filter { it.getSubmenu() == targetSubmenu }
                         }
                         val sections = remember(submenuOptions) {
                             submenuOptions.groupBy { it.getSectionName() }

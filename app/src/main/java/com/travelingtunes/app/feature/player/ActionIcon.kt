@@ -74,6 +74,7 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SignalCellular4Bar
 import androidx.compose.material.icons.filled.SkipNext
@@ -249,7 +250,7 @@ fun ActionIcon(
             GestureAction.SHUFFLE_ALL_SONGS -> Icon(
                 painter = painterResource(id = R.drawable.ic_shuffle_all),
                 contentDescription = action.displayName,
-                tint = Color.Unspecified,
+                tint = effectiveTint,
                 modifier = Modifier.size(iconSize)
             )
 
@@ -337,6 +338,25 @@ fun ActionIcon(
                 modifier = Modifier.size(iconSize)
             )
 
+            GestureAction.EDIT_TRACK_TAGS, GestureAction.EDIT_ALBUM_TAGS -> {
+                MonochromeEmojiIcon(
+                    emoji = "🏷️✏️",
+                    tint = effectiveTint,
+                    iconSize = iconSize,
+                    modifier = modifier
+                )
+            }
+
+            GestureAction.SHARE_TRACK_TEXT, GestureAction.SHARE_TRACK_FILE,
+            GestureAction.SHARE_ALBUM_TEXT, GestureAction.SHARE_ALBUM_FILES -> {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = action.displayName,
+                    tint = effectiveTint,
+                    modifier = Modifier.size(iconSize)
+                )
+            }
+
             GestureAction.SELECT_PROFILE -> {
                 val emoji = activeProfileEmoji.takeUnless { it.isNullOrBlank() } ?: "🏷️"
                 MonochromeEmojiIcon(
@@ -423,6 +443,18 @@ fun ConfigOptionIcon(
 ) {
     if (optionKey.equals("THEME_MONDRIAN", ignoreCase = true)) {
         MondrianIcon(modifier = modifier, iconSize = iconSize)
+        return
+    }
+
+    if (optionKey.equals("ACTION_EDIT_TRACK_TAGS", ignoreCase = true) ||
+        optionKey.equals("ACTION_EDIT_ALBUM_TAGS", ignoreCase = true) ||
+        optionKey.equals("ACTION_OPEN_ART_TAGS_EDITOR", ignoreCase = true)) {
+        MonochromeEmojiIcon(
+            emoji = "🏷️✏️",
+            tint = tint,
+            iconSize = iconSize,
+            modifier = modifier
+        )
         return
     }
 
@@ -603,6 +635,8 @@ private fun getConfigOptionIconVector(optionKey: String): Pair<ImageVector, Imag
         "DISPLAY_immersiveMode" -> Icons.Default.Tv to null
 
         // Library & Auto
+        "ACTION_SHARE_TRACK_TEXT", "ACTION_SHARE_TRACK_FILE",
+        "ACTION_SHARE_ALBUM_TEXT", "ACTION_SHARE_ALBUM_FILES" -> Icons.Default.Share to null
         "LIBRARY_autoRescan" -> Icons.Default.Sync to null
         "LIBRARY_gpsVolume" -> Icons.Default.Speed to null
         "AUTO_drivingMode" -> Icons.Default.DirectionsCar to null

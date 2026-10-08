@@ -376,36 +376,51 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
         )
     }
 
+    suspend fun hasSongs(): Boolean = withContext(Dispatchers.IO) {
+        val db = readableDatabase
+        db.rawQuery("SELECT 1 FROM $TABLE_SONGS LIMIT 1", null).use { c ->
+            c.moveToFirst()
+        }
+    }
+
+    suspend fun getSongCount(): Int = withContext(Dispatchers.IO) {
+        val db = readableDatabase
+        db.rawQuery("SELECT COUNT(*) FROM $TABLE_SONGS", null).use { c ->
+            if (c.moveToFirst()) c.getInt(0) else 0
+        }
+    }
+
     suspend fun getSongsByAlbumAndArtist(albumName: String, artistName: String): List<Song> = withContext(Dispatchers.IO) {
-        val songs = mutableListOf<Song>()
         val db = readableDatabase
         val cursor = db.rawQuery(
             "SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? AND $COL_ARTIST = ? ORDER BY CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC",
             arrayOf(albumName, artistName)
         )
         cursor.use { c ->
+            val songs = ArrayList<Song>(c.count.coerceAtLeast(0))
+            val idx = SongColumnIndices(c)
             while (c.moveToNext()) {
-                songs.add(cursorToSong(c))
+                songs.add(cursorToSong(c, idx))
             }
+            songs
         }
-        songs
     }
 
     suspend fun getAllSongs(): List<Song> = withContext(Dispatchers.IO) {
-        val songs = mutableListOf<Song>()
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", null)
         cursor.use { c ->
+            val songs = ArrayList<Song>(c.count.coerceAtLeast(0))
+            val idx = SongColumnIndices(c)
             while (c.moveToNext()) {
-                songs.add(cursorToSong(c))
+                songs.add(cursorToSong(c, idx))
             }
+            songs
         }
-        songs
     }
 
     suspend fun searchSongs(query: String): List<Song> = withContext(Dispatchers.IO) {
         if (query.isBlank()) return@withContext getAllSongs()
-        val songs = mutableListOf<Song>()
         val db = readableDatabase
         val pattern = "%${query.trim()}%"
         val sql = """
@@ -420,59 +435,66 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
         """.trimIndent()
         val cursor = db.rawQuery(sql, arrayOf(pattern, pattern, pattern, pattern, pattern, pattern))
         cursor.use { c ->
+            val songs = ArrayList<Song>(c.count.coerceAtLeast(0))
+            val idx = SongColumnIndices(c)
             while (c.moveToNext()) {
-                songs.add(cursorToSong(c))
+                songs.add(cursorToSong(c, idx))
             }
+            songs
         }
-        songs
     }
 
     suspend fun getSongsByArtist(artist: String): List<Song> = withContext(Dispatchers.IO) {
-        val songs = mutableListOf<Song>()
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ARTIST = ? ORDER BY $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(artist))
         cursor.use { c ->
+            val songs = ArrayList<Song>(c.count.coerceAtLeast(0))
+            val idx = SongColumnIndices(c)
             while (c.moveToNext()) {
-                songs.add(cursorToSong(c))
+                songs.add(cursorToSong(c, idx))
             }
+            songs
         }
-        songs
     }
 
     suspend fun getSongsByAlbum(album: String): List<Song> = withContext(Dispatchers.IO) {
-        val songs = mutableListOf<Song>()
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_ALBUM = ? ORDER BY CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(album))
         cursor.use { c ->
+            val songs = ArrayList<Song>(c.count.coerceAtLeast(0))
+            val idx = SongColumnIndices(c)
             while (c.moveToNext()) {
-                songs.add(cursorToSong(c))
+                songs.add(cursorToSong(c, idx))
             }
+            songs
         }
-        songs
     }
 
     suspend fun getSongsByGenre(genre: String): List<Song> = withContext(Dispatchers.IO) {
-        val songs = mutableListOf<Song>()
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_GENRE = ? ORDER BY $COL_ARTIST COLLATE NOCASE ASC, $COL_ALBUM COLLATE NOCASE ASC, CASE WHEN $COL_DISC_NUMBER > 0 THEN $COL_DISC_NUMBER ELSE 999999 END ASC, CASE WHEN $COL_TRACK_NUMBER > 0 THEN $COL_TRACK_NUMBER ELSE 999999 END ASC, $COL_TITLE COLLATE NOCASE ASC", arrayOf(genre))
         cursor.use { c ->
+            val songs = ArrayList<Song>(c.count.coerceAtLeast(0))
+            val idx = SongColumnIndices(c)
             while (c.moveToNext()) {
-                songs.add(cursorToSong(c))
+                songs.add(cursorToSong(c, idx))
             }
+            songs
         }
-        songs
     }
 
     suspend fun getSongsByFolder(folderPath: String): List<Song> = withContext(Dispatchers.IO) {
-        val songs = mutableListOf<Song>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_FOLDER_PATH = ? ORDER BY $COL_TITLE ASC", arrayOf(folderPath))
+        val prefix = if (folderPath.endsWith("/")) folderPath else "$folderPath/"
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_SONGS WHERE $COL_FOLDER_PATH = ? OR $COL_FOLDER_PATH LIKE ? ORDER BY $COL_TITLE COLLATE NOCASE ASC", arrayOf(folderPath, "$prefix%"))
         cursor.use { c ->
+            val songs = ArrayList<Song>(c.count.coerceAtLeast(0))
+            val idx = SongColumnIndices(c)
             while (c.moveToNext()) {
-                songs.add(cursorToSong(c))
+                songs.add(cursorToSong(c, idx))
             }
+            songs
         }
-        songs
     }
 
     suspend fun getAllAlbumsWithArtInfo(): List<AlbumArtBrowserInfo> = withContext(Dispatchers.IO) {
@@ -668,19 +690,42 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
         )
     }
 
-    private fun cursorToSong(c: android.database.Cursor): Song {
-        val id = c.getLong(c.getColumnIndexOrThrow(COL_ID))
-        val rawTitle = c.getString(c.getColumnIndexOrThrow(COL_TITLE))
-        val artist = c.getString(c.getColumnIndexOrThrow(COL_ARTIST))
-        val album = c.getString(c.getColumnIndexOrThrow(COL_ALBUM))
-        val albumId = c.getLong(c.getColumnIndexOrThrow(COL_ALBUM_ID))
-        val genre = c.getString(c.getColumnIndexOrThrow(COL_GENRE))
-        val durationMs = c.getLong(c.getColumnIndexOrThrow(COL_DURATION_MS))
-        val contentUriStr = c.getString(c.getColumnIndexOrThrow(COL_CONTENT_URI))
-        val artworkUriStr = c.getString(c.getColumnIndexOrThrow(COL_ARTWORK_URI))
-        val folderPath = c.getString(c.getColumnIndexOrThrow(COL_FOLDER_PATH))
-        val fileName = c.getString(c.getColumnIndexOrThrow(COL_FILE_NAME))
-        val rawTrackNumber = c.getInt(c.getColumnIndexOrThrow(COL_TRACK_NUMBER))
+    private class SongColumnIndices(c: android.database.Cursor) {
+        val id = c.getColumnIndex(COL_ID)
+        val title = c.getColumnIndex(COL_TITLE)
+        val artist = c.getColumnIndex(COL_ARTIST)
+        val album = c.getColumnIndex(COL_ALBUM)
+        val albumId = c.getColumnIndex(COL_ALBUM_ID)
+        val genre = c.getColumnIndex(COL_GENRE)
+        val durationMs = c.getColumnIndex(COL_DURATION_MS)
+        val contentUri = c.getColumnIndex(COL_CONTENT_URI)
+        val artworkUri = c.getColumnIndex(COL_ARTWORK_URI)
+        val folderPath = c.getColumnIndex(COL_FOLDER_PATH)
+        val fileName = c.getColumnIndex(COL_FILE_NAME)
+        val trackNumber = c.getColumnIndex(COL_TRACK_NUMBER)
+        val discNumber = c.getColumnIndex(COL_DISC_NUMBER)
+        val year = c.getColumnIndex(COL_YEAR)
+        val userRating = c.getColumnIndex(COL_USER_RATING)
+        val avgVolume = c.getColumnIndex(COL_AVG_VOLUME)
+        val peakVolume = c.getColumnIndex(COL_PEAK_VOLUME)
+        val trackGain = c.getColumnIndex(COL_TRACK_GAIN)
+        val albumGain = c.getColumnIndex(COL_ALBUM_GAIN)
+        val albumArtist = c.getColumnIndex(COL_ALBUM_ARTIST)
+    }
+
+    private fun cursorToSong(c: android.database.Cursor, idx: SongColumnIndices = SongColumnIndices(c)): Song {
+        val id = if (idx.id != -1) c.getLong(idx.id) else 0L
+        val rawTitle = if (idx.title != -1) c.getString(idx.title) ?: "" else ""
+        val artist = if (idx.artist != -1) c.getString(idx.artist) ?: "" else ""
+        val album = if (idx.album != -1) c.getString(idx.album) ?: "" else ""
+        val albumId = if (idx.albumId != -1) c.getLong(idx.albumId) else 0L
+        val genre = if (idx.genre != -1) c.getString(idx.genre) ?: "" else ""
+        val durationMs = if (idx.durationMs != -1) c.getLong(idx.durationMs) else 0L
+        val contentUriStr = if (idx.contentUri != -1) c.getString(idx.contentUri) ?: "" else ""
+        val artworkUriStr = if (idx.artworkUri != -1) c.getString(idx.artworkUri) else null
+        val folderPath = if (idx.folderPath != -1) c.getString(idx.folderPath) ?: "" else ""
+        val fileName = if (idx.fileName != -1) c.getString(idx.fileName) ?: "" else ""
+        val rawTrackNumber = if (idx.trackNumber != -1) c.getInt(idx.trackNumber) else 0
 
         val trackAndTitle = com.travelingtunes.app.core.media.TrackNumberExtractor.resolveTrackAndTitle(
             currentTrackNumber = rawTrackNumber,
@@ -689,21 +734,15 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
         )
         val trackNumber = trackAndTitle.trackNumber
         val title = trackAndTitle.cleanTitle
-        val discIdx = c.getColumnIndex(COL_DISC_NUMBER)
-        val discNumber = if (discIdx != -1) c.getInt(discIdx) else 0
-        val year = c.getInt(c.getColumnIndexOrThrow(COL_YEAR))
-        val userRating = c.getInt(c.getColumnIndexOrThrow(COL_USER_RATING))
+        val discNumber = if (idx.discNumber != -1) c.getInt(idx.discNumber) else 0
+        val year = if (idx.year != -1) c.getInt(idx.year) else 0
+        val userRating = if (idx.userRating != -1) c.getInt(idx.userRating) else 0
 
-        val avgVolIdx = c.getColumnIndex(COL_AVG_VOLUME)
-        val avgVolume = if (avgVolIdx != -1) c.getFloat(avgVolIdx) else 0f
-        val peakVolIdx = c.getColumnIndex(COL_PEAK_VOLUME)
-        val peakVolume = if (peakVolIdx != -1) c.getFloat(peakVolIdx) else 0f
-        val trackGainIdx = c.getColumnIndex(COL_TRACK_GAIN)
-        val trackGain = if (trackGainIdx != -1) c.getFloat(trackGainIdx) else 1f
-        val albumGainIdx = c.getColumnIndex(COL_ALBUM_GAIN)
-        val albumGain = if (albumGainIdx != -1) c.getFloat(albumGainIdx) else 1f
-        val albumArtistIdx = c.getColumnIndex(COL_ALBUM_ARTIST)
-        val albumArtist = if (albumArtistIdx != -1) c.getString(albumArtistIdx) ?: "" else ""
+        val avgVolume = if (idx.avgVolume != -1) c.getFloat(idx.avgVolume) else 0f
+        val peakVolume = if (idx.peakVolume != -1) c.getFloat(idx.peakVolume) else 0f
+        val trackGain = if (idx.trackGain != -1) c.getFloat(idx.trackGain) else 1f
+        val albumGain = if (idx.albumGain != -1) c.getFloat(idx.albumGain) else 1f
+        val albumArtist = if (idx.albumArtist != -1) c.getString(idx.albumArtist) ?: "" else ""
 
         return Song(
             id = id,

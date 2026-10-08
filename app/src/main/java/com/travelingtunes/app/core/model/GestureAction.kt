@@ -44,6 +44,12 @@ enum class GestureAction(val displayName: String) {
     TOGGLE_DRIVING_MODE("Toggle Traveling Mode"),
     TOGGLE_DOCKED_ART("Toggle Docked Art"),
     SELECT_PROFILE("Select Profile"),
+    EDIT_TRACK_TAGS("Edit Track Tags"),
+    EDIT_ALBUM_TAGS("Edit Album Tags"),
+    SHARE_TRACK_TEXT("Share Track Info"),
+    SHARE_TRACK_FILE("Share Track File"),
+    SHARE_ALBUM_TEXT("Share Album Info"),
+    SHARE_ALBUM_FILES("Share Album Files (Zip)"),
     RADIAL_MENU("Radial Menu"),
     OTHER_OPTION("Other Option");
 
@@ -70,42 +76,68 @@ enum class GestureAction(val displayName: String) {
             excludeRadialMenu: Boolean = false,
             excludeUnassigned: Boolean = false
         ): List<ActionCategoryGroup> {
-            val playback = listOf(
+            val playbackSet = setOf(
                 PLAY_PAUSE, PLAY, PAUSE, NEXT, PREVIOUS,
                 FAST_FORWARD, REWIND, RESTART, RESTART_PREVIOUS
             )
 
-            val library = listOf(
+            val librarySet = setOf(
                 SONG_PICKER, SHOW_QUEUE, SHUFFLE_ALL_SONGS,
                 PLAY_CURRENT_ARTIST, PLAY_CURRENT_ALBUM,
                 NEXT_ALBUM, PREVIOUS_ALBUM,
-                SELECT_ALBUM_VIEW, SELECT_ARTIST_VIEW
+                SELECT_ALBUM_VIEW, SELECT_ARTIST_VIEW,
+                EDIT_TRACK_TAGS, EDIT_ALBUM_TAGS,
+                SHARE_TRACK_TEXT, SHARE_TRACK_FILE,
+                SHARE_ALBUM_TEXT, SHARE_ALBUM_FILES
             )
 
-            val volumeAndModes = listOf(
+            val volumeAndModesSet = setOf(
                 VOLUME_UP, VOLUME_DOWN, TOGGLE_REPEAT, TOGGLE_SHUFFLE,
                 INCREASE_RATING, DECREASE_RATING
             )
 
-            val appAndDisplay = mutableListOf<GestureAction>().apply {
-                if (!excludeUnassigned) add(UNASSIGNED)
-                add(MENU)
-                add(SHOW_QUICK_START)
-                add(SELECT_PROFILE)
-                add(TOGGLE_DRIVING_MODE)
-                add(TOGGLE_DOCKED_ART)
-                add(DELETE_DOWNLOADED_ART)
-                if (!excludeRadialMenu) add(RADIAL_MENU)
+            val appAndDisplaySet = setOf(
+                MENU, SHOW_QUICK_START, SELECT_PROFILE,
+                TOGGLE_DRIVING_MODE, TOGGLE_DOCKED_ART,
+                DELETE_DOWNLOADED_ART
+            )
+
+            val playbackList = mutableListOf<GestureAction>()
+            val libraryList = mutableListOf<GestureAction>()
+            val volumeAndModesList = mutableListOf<GestureAction>()
+            val appAndDisplayList = mutableListOf<GestureAction>()
+
+            if (!excludeUnassigned) {
+                appAndDisplayList.add(UNASSIGNED)
+            }
+
+            for (action in entries) {
+                if (action == OTHER_OPTION) continue
+                if (action == UNASSIGNED) continue
+                if (action == RADIAL_MENU) {
+                    if (!excludeRadialMenu) {
+                        appAndDisplayList.add(RADIAL_MENU)
+                    }
+                    continue
+                }
+
+                when {
+                    action in playbackSet -> playbackList.add(action)
+                    action in librarySet -> libraryList.add(action)
+                    action in volumeAndModesSet -> volumeAndModesList.add(action)
+                    action in appAndDisplaySet -> appAndDisplayList.add(action)
+                    else -> libraryList.add(action)
+                }
             }
 
             // CRUCIAL: Custom Action OTHER_OPTION ("Other Option") is always at the top level at the end.
             val custom = listOf(OTHER_OPTION)
 
             return listOf(
-                ActionCategoryGroup(ActionCategory.PLAYBACK, playback),
-                ActionCategoryGroup(ActionCategory.LIBRARY, library),
-                ActionCategoryGroup(ActionCategory.VOLUME_AND_MODES, volumeAndModes),
-                ActionCategoryGroup(ActionCategory.APP_AND_DISPLAY, appAndDisplay),
+                ActionCategoryGroup(ActionCategory.PLAYBACK, playbackList),
+                ActionCategoryGroup(ActionCategory.LIBRARY, libraryList),
+                ActionCategoryGroup(ActionCategory.VOLUME_AND_MODES, volumeAndModesList),
+                ActionCategoryGroup(ActionCategory.APP_AND_DISPLAY, appAndDisplayList),
                 ActionCategoryGroup(ActionCategory.CUSTOM, custom)
             )
         }

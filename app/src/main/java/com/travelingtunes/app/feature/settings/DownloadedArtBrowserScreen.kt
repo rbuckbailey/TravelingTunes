@@ -49,7 +49,9 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ZoomIn
+import com.travelingtunes.app.core.media.TrackSharingHelper
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -839,7 +841,7 @@ fun DownloadedArtBrowserScreen(
 }
 
 @Composable
-private fun EditTagsAndArtworkDialog(
+fun EditTagsAndArtworkDialog(
     targetTracks: List<Song>,
     musicDatabase: MusicDatabase,
     albumArtDownloader: AlbumArtDownloader,
@@ -881,6 +883,7 @@ private fun EditTagsAndArtworkDialog(
                 val newTrackNum = trackNumberStr.toIntOrNull()
                 val newDiscNum = discNumberStr.toIntOrNull()
 
+                val updatedSongs = mutableListOf<Song>()
                 for (song in targetTracks) {
                     val finalTitle = if (!isMultiTrack) songTitle.ifBlank { song.title } else song.title
                     val finalTrackNum = if (!isMultiTrack) newTrackNum ?: song.trackNumber else song.trackNumber
@@ -916,6 +919,23 @@ private fun EditTagsAndArtworkDialog(
                     )
 
                     AlbumArtCache.instance.remove(song.id)
+
+                    val updated = song.copy(
+                        title = finalTitle,
+                        artist = finalArtist,
+                        album = finalAlbum,
+                        genre = finalGenre,
+                        year = finalYear,
+                        trackNumber = finalTrackNum,
+                        discNumber = finalDiscNum
+                    )
+                    updatedSongs.add(updated)
+                }
+
+                if (updatedSongs.isNotEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        playbackManager.updateSongMetadataInQueue(updatedSongs)
+                    }
                 }
             }
             playbackManager.refreshCurrentSongArtwork()
@@ -1317,8 +1337,60 @@ private fun TrackItemRow(
                 )
             }
 
-            IconButton(onClick = onEditTags) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit Tags", tint = MaterialTheme.colorScheme.primary)
+            var trackMenuExpanded by remember { mutableStateOf(false) }
+            val context = LocalContext.current
+
+            Box {
+                IconButton(onClick = { trackMenuExpanded = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Track Options")
+                }
+
+                DropdownMenu(
+                    expanded = trackMenuExpanded,
+                    onDismissRequest = { trackMenuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Edit Tags")
+                            }
+                        },
+                        onClick = {
+                            trackMenuExpanded = false
+                            onEditTags()
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Share Track Info (Text)")
+                            }
+                        },
+                        onClick = {
+                            trackMenuExpanded = false
+                            TrackSharingHelper.shareTrackText(context, song)
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Share Audio File")
+                            }
+                        },
+                        onClick = {
+                            trackMenuExpanded = false
+                            TrackSharingHelper.shareTrackFile(context, song)
+                        }
+                    )
+                }
             }
         }
     }
@@ -1371,6 +1443,7 @@ private fun AlbumArtBrowserItemRow(
     onEmbedId3: () -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var menuExpanded by remember { mutableStateOf(false) }
 
     var bitmap by remember(albumInfo) { mutableStateOf<android.graphics.Bitmap?>(null) }
@@ -1544,6 +1617,44 @@ private fun AlbumArtBrowserItemRow(
                         onClick = {
                             menuExpanded = false
                             onEditTags()
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Share Album Info (Text)")
+                            }
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            coroutineScope.launch(Dispatchers.IO) {
+                                val songs = musicDatabase?.getSongsByAlbumAndArtist(albumInfo.album, albumInfo.artist) ?: emptyList()
+                                withContext(Dispatchers.Main) {
+                                    TrackSharingHelper.shareAlbumText(context, albumInfo.album, albumInfo.artist, songs)
+                                }
+                            }
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Share Album Files (Zip)")
+                            }
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            coroutineScope.launch(Dispatchers.IO) {
+                                val songs = musicDatabase?.getSongsByAlbumAndArtist(albumInfo.album, albumInfo.artist) ?: emptyList()
+                                withContext(Dispatchers.Main) {
+                                    TrackSharingHelper.shareAlbumFilesZip(context, albumInfo.album, albumInfo.artist, songs)
+                                }
+                            }
                         }
                     )
 

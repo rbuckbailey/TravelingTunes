@@ -515,4 +515,50 @@ class DownloadedArtAndEmbeddingTest {
         assertTrue("TIT2 (Title) frame must be updated", frameIds.contains("TIT2"))
         assertTrue("TPE1 (Artist) frame must be updated", frameIds.contains("TPE1"))
     }
+
+    @Test
+    fun testMp3Id3v24EmbeddingPreservesExistingTextFrames() {
+        val tempOutputFile = File.createTempFile("test_v24_preserve", ".mp3").apply { deleteOnExit() }
+
+        val titleText = "Test Title"
+        val titlePayload = byteArrayOf(0x00) + titleText.toByteArray(Charsets.ISO_8859_1)
+        val titleSizeSynchsafe = byteArrayOf(0, 0, 0, titlePayload.size.toByte())
+        val titleFrame = "TIT2".toByteArray(Charsets.ISO_8859_1) + titleSizeSynchsafe + byteArrayOf(0, 0) + titlePayload
+
+        val artistText = "Test Artist"
+        val artistPayload = byteArrayOf(0x00) + artistText.toByteArray(Charsets.ISO_8859_1)
+        val artistSizeSynchsafe = byteArrayOf(0, 0, 0, artistPayload.size.toByte())
+        val artistFrame = "TPE1".toByteArray(Charsets.ISO_8859_1) + artistSizeSynchsafe + byteArrayOf(0, 0) + artistPayload
+
+        val v24TagBody = titleFrame + artistFrame
+        val tagSizeSynch = byteArrayOf(
+            ((v24TagBody.size shr 21) and 0x7F).toByte(),
+            ((v24TagBody.size shr 14) and 0x7F).toByte(),
+            ((v24TagBody.size shr 7) and 0x7F).toByte(),
+            (v24TagBody.size and 0x7F).toByte()
+        )
+        val id3v24Header = byteArrayOf('I'.code.toByte(), 'D'.code.toByte(), '3'.code.toByte(), 0x04, 0x00, 0x00) + tagSizeSynch
+        val dummyAudio = byteArrayOf(0xFF.toByte(), 0xFB.toByte(), 0x90.toByte(), 0x64.toByte())
+        val v24AudioFileBytes = id3v24Header + v24TagBody + dummyAudio
+
+        val dummyJpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+
+        val method = Id3ArtworkEmbedder::class.java.getDeclaredMethod(
+            "embedMp3Id3v2Apic",
+            ByteArray::class.java,
+            ByteArray::class.java,
+            File::class.java
+        )
+        method.isAccessible = true
+        val result = method.invoke(Id3ArtworkEmbedder, v24AudioFileBytes, dummyJpeg, tempOutputFile) as Boolean
+
+        assertTrue("Embedding artwork into ID3v2.4 audio file should succeed", result)
+
+        val (frames, _) = Id3TagParser.parseAndExtractAudioPayload(tempOutputFile.readBytes())
+        val frameIds = frames.map { it.id }
+
+        assertTrue("TIT2 (Title) frame must be preserved from ID3v2.4", frameIds.contains("TIT2"))
+        assertTrue("TPE1 (Artist) frame must be preserved from ID3v2.4", frameIds.contains("TPE1"))
+        assertTrue("APIC (Artwork) frame must be added", frameIds.contains("APIC"))
+    }
 }

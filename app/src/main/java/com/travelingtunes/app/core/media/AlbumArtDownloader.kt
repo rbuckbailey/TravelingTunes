@@ -731,7 +731,10 @@ class AlbumArtDownloader(
                     }
                 }
                 conn.disconnect()
-                if (artFile.exists() && artFile.length() > 0) artFile else null
+                if (artFile.exists() && artFile.length() > 0) {
+                    markDownloadedArtUpdated(context, artist, album, true)
+                    artFile
+                } else null
             } else {
                 conn.disconnect()
                 null
@@ -964,6 +967,7 @@ class AlbumArtDownloader(
 
             // Clear DB artwork URI for album
             musicDatabase.clearAlbumArtwork(album, artist)
+            markDownloadedArtUpdated(context, artist, album, false)
 
             // Evict songs from AlbumArtCache
             for (song in songs) {
@@ -981,21 +985,11 @@ class AlbumArtDownloader(
         val uri = song.artworkUri
         if (uri != null && uri.toString().isNotBlank()) {
             val uriStr = uri.toString()
-            if (uriStr.contains("downloaded_art") || uriStr.contains("art_downloaded") || uriStr.contains("art_custom") || uriStr.contains("art_embedded")) {
+            if (uriStr.contains("downloaded_art") || uriStr.contains("art_downloaded") || uriStr.contains("art_custom")) {
                 return true
             }
         }
-
-        // Check if song has embedded ID3 picture
-        val mmr = android.media.MediaMetadataRetriever()
-        return try {
-            mmr.setDataSource(context, song.contentUri)
-            mmr.embeddedPicture != null
-        } catch (_: Exception) {
-            uri != null
-        } finally {
-            try { mmr.release() } catch (_: Exception) {}
-        }
+        return getDownloadedArtworkFile(context, song.artist, song.album) != null
     }
 
     private fun loadSongArtworkFromUri(context: Context, uri: Uri): Bitmap? {
@@ -1014,9 +1008,62 @@ class AlbumArtDownloader(
         }
     }
 
-    private fun hashString(input: String): String {
-        val md = MessageDigest.getInstance("MD5")
-        val digest = md.digest(input.toByteArray())
-        return digest.joinToString("") { "%02x".format(it) }
+    companion object {
+        @Volatile
+        private var downloadedArtHashKeys: MutableSet<String>? = null
+
+        fun hashString(input: String): String {
+            val md = MessageDigest.getInstance("MD5")
+            val digest = md.digest(input.toByteArray())
+            return digest.joinToString("") { "%02x".format(it) }
+        }
+
+        private fun initDownloadedArtHashKeys(context: Context): MutableSet<String> {
+            val set = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+            try {
+                val downloadedDir = File(context.filesDir, "downloaded_art")
+                if (downloadedDir.exists()) {
+                    downloadedDir.listFiles()?.forEach { file ->
+                        if (file.length() > 0L) {
+                            val name = file.name
+                            val key = when {
+                                name.startsWith("art_custom_") -> name.removePrefix("art_custom_").removeSuffix(".jpg")
+                                name.startsWith("art_downloaded_") -> name.removePrefix("art_downloaded_").removeSuffix(".jpg")
+                                name.startsWith("art_original_") -> name.removePrefix("art_original_").removeSuffix(".jpg")
+                                else -> null
+                            }
+                            if (key != null) set.add(key)
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+            downloadedArtHashKeys = set
+            return set
+        }
+
+        fun markDownloadedArtUpdated(context: Context, artist: String, album: String, hasArt: Boolean = true) {
+            val hashKey = hashString("$artist-$album")
+            val keys = downloadedArtHashKeys ?: initDownloadedArtHashKeys(context)
+            if (hasArt) {
+                keys.add(hashKey)
+            } else {
+                keys.remove(hashKey)
+            }
+        }
+
+        fun getDownloadedArtworkFile(context: Context, artist: String, album: String): File? {
+            val hashKey = hashString("$artist-$album")
+            val keys = downloadedArtHashKeys ?: initDownloadedArtHashKeys(context)
+            if (!keys.contains(hashKey)) return null
+
+            val downloadedDir = File(context.filesDir, "downloaded_art")
+            val customFile = File(downloadedDir, "art_custom_$hashKey.jpg")
+            if (customFile.exists() && customFile.length() > 0L) return customFile
+            val downloadedFile = File(downloadedDir, "art_downloaded_$hashKey.jpg")
+            if (downloadedFile.exists() && downloadedFile.length() > 0L) return downloadedFile
+            val origFile = File(downloadedDir, "art_original_$hashKey.jpg")
+            if (origFile.exists() && origFile.length() > 0L) return origFile
+            return null
+        }
     }
 }

@@ -152,6 +152,7 @@ import com.travelingtunes.app.core.model.SlideDirection
 import com.travelingtunes.app.core.model.getSlideDirection
 import com.travelingtunes.app.core.model.getReverseTrigger
 import com.travelingtunes.app.core.ui.SlidingOverlay
+import com.travelingtunes.app.core.media.TrackSharingHelper
 import com.travelingtunes.app.feature.queue.QueueBottomSheet
 import com.travelingtunes.app.feature.settings.DownloadedArtBrowserScreen
 import com.travelingtunes.app.feature.settings.DuplicateTrackIdentifierScreen
@@ -361,6 +362,7 @@ fun PlayerScreen(
 
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
+    var activeTagEditorTracks by remember { mutableStateOf<List<Song>?>(null) }
 
     val activeIsScanning by musicScanner?.isScanning?.collectAsState()
         ?: remember(isScanning) { mutableStateOf(isScanning) }
@@ -752,6 +754,8 @@ fun PlayerScreen(
                         musicScanner = musicScanner,
                         musicDatabase = musicDatabase,
                         coroutineScope = coroutineScope,
+                        context = context,
+                        onEditTags = { tracks -> activeTagEditorTracks = tracks },
                         onOpenSongPicker = { dir -> openSongPicker(dir, trigger) },
                         onOpenSongPickerWithFilter = { dir, cat, art, alb -> openSongPicker(dir, trigger, cat, art, alb) },
                         onOpenQueue = { dir -> openQueue(dir, trigger) },
@@ -788,6 +792,8 @@ fun PlayerScreen(
                         musicScanner = musicScanner,
                         musicDatabase = musicDatabase,
                         coroutineScope = coroutineScope,
+                        context = context,
+                        onEditTags = { tracks -> activeTagEditorTracks = tracks },
                         onOpenSongPicker = { dir -> openSongPicker(dir, trig) },
                         onOpenQueue = { dir -> openQueue(dir, trig) },
                         onOpenSettings = { dir -> openMenu(dir, trig) },
@@ -897,6 +903,8 @@ fun PlayerScreen(
                             musicScanner = musicScanner,
                             musicDatabase = musicDatabase,
                             coroutineScope = coroutineScope,
+                            context = context,
+                            onEditTags = { tracks -> activeTagEditorTracks = tracks },
                             onOpenSongPicker = { dir -> openSongPicker(dir, currentSlideTrigger) },
                             onOpenSongPickerWithFilter = { dir, cat, art, alb -> openSongPicker(dir, currentSlideTrigger, cat, art, alb) },
                             onOpenQueue = { dir -> openQueue(dir, currentSlideTrigger) },
@@ -1074,6 +1082,8 @@ fun PlayerScreen(
                                 musicScanner = musicScanner,
                                 musicDatabase = musicDatabase,
                                 coroutineScope = coroutineScope,
+                                context = context,
+                                onEditTags = { tracks -> activeTagEditorTracks = tracks },
                                 onOpenSongPicker = { dir -> openSongPicker(dir, trigger) },
                                 onOpenSongPickerWithFilter = { dir, cat, art, alb -> openSongPicker(dir, trigger, cat, art, alb) },
                                 onOpenQueue = { dir -> openQueue(dir, trigger) },
@@ -1580,6 +1590,8 @@ fun PlayerScreen(
                         musicScanner = musicScanner,
                         musicDatabase = musicDatabase,
                         coroutineScope = coroutineScope,
+                        context = context,
+                        onEditTags = { tracks -> activeTagEditorTracks = tracks },
                         onOpenSongPicker = { dir -> openSongPicker(dir, trig) },
                         onOpenQueue = { dir -> openQueue(dir, trig) },
                         onOpenSettings = { dir -> openMenu(dir, trig) },
@@ -1614,6 +1626,17 @@ fun PlayerScreen(
                     playbackManager.setShuffleMode(mode)
                 },
                 onDismiss = { showShuffleOptionsDialog = false }
+            )
+        }
+
+        if (!activeTagEditorTracks.isNullOrEmpty() && musicDatabase != null && musicScanner != null) {
+            com.travelingtunes.app.feature.settings.EditTagsAndArtworkDialog(
+                targetTracks = activeTagEditorTracks!!,
+                musicDatabase = musicDatabase,
+                albumArtDownloader = musicScanner.albumArtDownloader,
+                playbackManager = playbackManager,
+                onDismiss = { activeTagEditorTracks = null },
+                onSaveComplete = { activeTagEditorTracks = null }
             )
         }
 
@@ -2904,6 +2927,8 @@ private fun handleGestureAction(
     musicScanner: MusicScanner? = null,
     musicDatabase: MusicDatabase? = null,
     coroutineScope: kotlinx.coroutines.CoroutineScope? = null,
+    context: android.content.Context? = null,
+    onEditTags: ((List<Song>) -> Unit)? = null,
     onOpenSongPicker: (SlideDirection) -> Unit,
     onOpenSongPickerWithFilter: ((SlideDirection, PickerCategory, String?, String?) -> Unit)? = null,
     onOpenQueue: (SlideDirection) -> Unit = {},
@@ -3004,6 +3029,58 @@ private fun handleGestureAction(
             }
         }
 
+        GestureAction.EDIT_TRACK_TAGS -> {
+            val song = playbackManager.currentSong.value
+            if (song != null && onEditTags != null) {
+                onEditTags(listOf(song))
+            }
+        }
+        GestureAction.EDIT_ALBUM_TAGS -> {
+            val song = playbackManager.currentSong.value
+            if (song != null && musicDatabase != null && coroutineScope != null && onEditTags != null) {
+                coroutineScope.launch(Dispatchers.IO) {
+                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                    withContext(Dispatchers.Main) {
+                        onEditTags(albumSongs.ifEmpty { listOf(song) })
+                    }
+                }
+            }
+        }
+        GestureAction.SHARE_TRACK_TEXT -> {
+            val song = playbackManager.currentSong.value
+            if (song != null && context != null) {
+                TrackSharingHelper.shareTrackText(context, song)
+            }
+        }
+        GestureAction.SHARE_TRACK_FILE -> {
+            val song = playbackManager.currentSong.value
+            if (song != null && context != null) {
+                TrackSharingHelper.shareTrackFile(context, song)
+            }
+        }
+        GestureAction.SHARE_ALBUM_TEXT -> {
+            val song = playbackManager.currentSong.value
+            if (song != null && musicDatabase != null && coroutineScope != null && context != null) {
+                coroutineScope.launch(Dispatchers.IO) {
+                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                    withContext(Dispatchers.Main) {
+                        TrackSharingHelper.shareAlbumText(context, song.album, song.artist, albumSongs)
+                    }
+                }
+            }
+        }
+        GestureAction.SHARE_ALBUM_FILES -> {
+            val song = playbackManager.currentSong.value
+            if (song != null && musicDatabase != null && coroutineScope != null && context != null) {
+                coroutineScope.launch(Dispatchers.IO) {
+                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                    withContext(Dispatchers.Main) {
+                        TrackSharingHelper.shareAlbumFilesZip(context, song.album, song.artist, albumSongs)
+                    }
+                }
+            }
+        }
+
         GestureAction.OTHER_OPTION -> {
             if (settingsDataStore != null && coroutineScope != null) {
                 val trig = trigger ?: GestureTrigger.TAP_1_1
@@ -3024,6 +3101,51 @@ private fun handleGestureAction(
                     when (effectiveKey) {
                         "ACTION_OPEN_ART_TAGS_EDITOR", "ACTION_REPLACE_ART" -> {
                             onOpenSettings(direction)
+                        }
+                        "ACTION_EDIT_TRACK_TAGS" -> {
+                            val song = playbackManager.currentSong.value
+                            if (song != null && onEditTags != null) onEditTags(listOf(song))
+                        }
+                        "ACTION_EDIT_ALBUM_TAGS" -> {
+                            val song = playbackManager.currentSong.value
+                            if (song != null && musicDatabase != null && onEditTags != null) {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                                    withContext(Dispatchers.Main) {
+                                        onEditTags(albumSongs.ifEmpty { listOf(song) })
+                                    }
+                                }
+                            }
+                        }
+                        "ACTION_SHARE_TRACK_TEXT" -> {
+                            val song = playbackManager.currentSong.value
+                            if (song != null && context != null) TrackSharingHelper.shareTrackText(context, song)
+                        }
+                        "ACTION_SHARE_TRACK_FILE" -> {
+                            val song = playbackManager.currentSong.value
+                            if (song != null && context != null) TrackSharingHelper.shareTrackFile(context, song)
+                        }
+                        "ACTION_SHARE_ALBUM_TEXT" -> {
+                            val song = playbackManager.currentSong.value
+                            if (song != null && musicDatabase != null && context != null) {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                                    withContext(Dispatchers.Main) {
+                                        TrackSharingHelper.shareAlbumText(context, song.album, song.artist, albumSongs)
+                                    }
+                                }
+                            }
+                        }
+                        "ACTION_SHARE_ALBUM_FILES" -> {
+                            val song = playbackManager.currentSong.value
+                            if (song != null && musicDatabase != null && context != null) {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                                    withContext(Dispatchers.Main) {
+                                        TrackSharingHelper.shareAlbumFilesZip(context, song.album, song.artist, albumSongs)
+                                    }
+                                }
+                            }
                         }
                         "ACTION_SONG_PICKER" -> onOpenSongPicker(direction)
                         "ACTION_SHOW_QUEUE" -> onOpenQueue(direction)
@@ -3170,6 +3292,13 @@ fun android.graphics.Bitmap.cropToSquare(): android.graphics.Bitmap {
 }
 
 suspend fun loadSongArtwork(context: android.content.Context, song: Song, reqSize: Int = 800): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
+    // 0. Prefer downloaded art if any to embedded
+    val downloadedFile = com.travelingtunes.app.core.media.AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
+    if (downloadedFile != null) {
+        val bmp = decodeSampledBitmapFromFile(downloadedFile.absolutePath, reqSize, reqSize)
+        if (bmp != null) return@withContext bmp.cropToSquare()
+    }
+
     // 1. Try explicit song.artworkUri if present (downloaded or scanned artwork)
     if (song.artworkUri != null) {
         if (song.artworkUri.scheme == "file" && song.artworkUri.path != null) {
@@ -3324,6 +3453,7 @@ fun ScreenRegionIconsOverlay(
     onShowRepeatOptions: () -> Unit,
     onShowShuffleOptions: () -> Unit,
     onOpenProfilePicker: () -> Unit = {},
+    onEditTags: ((List<Song>) -> Unit)? = null,
     numEdgeRegions: Int = 3,
     useArtBindings: Boolean = false,
     dockAdjacentEdge: DockAdjacentEdge? = null,
@@ -3429,6 +3559,8 @@ fun ScreenRegionIconsOverlay(
                                         musicScanner = musicScanner,
                                         musicDatabase = musicDatabase,
                                         coroutineScope = coroutineScope,
+                                        context = context,
+                                        onEditTags = onEditTags,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
@@ -3455,6 +3587,8 @@ fun ScreenRegionIconsOverlay(
                                         musicScanner = musicScanner,
                                         musicDatabase = musicDatabase,
                                         coroutineScope = coroutineScope,
+                                        context = context,
+                                        onEditTags = onEditTags,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
@@ -3560,6 +3694,8 @@ fun ScreenRegionIconsOverlay(
                                         musicScanner = musicScanner,
                                         musicDatabase = musicDatabase,
                                         coroutineScope = coroutineScope,
+                                        context = context,
+                                        onEditTags = onEditTags,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,
@@ -3586,6 +3722,8 @@ fun ScreenRegionIconsOverlay(
                                         musicScanner = musicScanner,
                                         musicDatabase = musicDatabase,
                                         coroutineScope = coroutineScope,
+                                        context = context,
+                                        onEditTags = onEditTags,
                                         onOpenSongPicker = onOpenSongPicker,
                                         onOpenQueue = onOpenQueue,
                                         onOpenSettings = onOpenSettings,

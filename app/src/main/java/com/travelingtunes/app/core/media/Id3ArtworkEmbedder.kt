@@ -48,16 +48,21 @@ object Id3ArtworkEmbedder {
             }
 
             if (success && tempOutFile.exists() && tempOutFile.length() > 0) {
-                try {
-                    contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
-                        tempOutFile.inputStream().use { inStream ->
-                            inStream.copyTo(out)
+                if (song.contentUri.scheme == "file" && song.contentUri.path != null) {
+                    val destFile = File(song.contentUri.path!!)
+                    tempOutFile.copyTo(destFile, overwrite = true)
+                } else {
+                    try {
+                        contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
+                            tempOutFile.inputStream().use { inStream ->
+                                inStream.copyTo(out)
+                            }
                         }
-                    }
-                } catch (_: Exception) {
-                    contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
-                        tempOutFile.inputStream().use { inStream ->
-                            inStream.copyTo(out)
+                    } catch (_: Exception) {
+                        contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
+                            tempOutFile.inputStream().use { inStream ->
+                                inStream.copyTo(out)
+                            }
                         }
                     }
                 }
@@ -143,16 +148,21 @@ object Id3ArtworkEmbedder {
             }
 
             if (success && tempOutFile.exists() && tempOutFile.length() > 0) {
-                try {
-                    contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
-                        tempOutFile.inputStream().use { inStream ->
-                            inStream.copyTo(out)
+                if (song.contentUri.scheme == "file" && song.contentUri.path != null) {
+                    val destFile = File(song.contentUri.path!!)
+                    tempOutFile.copyTo(destFile, overwrite = true)
+                } else {
+                    try {
+                        contentResolver.openOutputStream(song.contentUri, "rwt")?.use { out ->
+                            tempOutFile.inputStream().use { inStream ->
+                                inStream.copyTo(out)
+                            }
                         }
-                    }
-                } catch (_: Exception) {
-                    contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
-                        tempOutFile.inputStream().use { inStream ->
-                            inStream.copyTo(out)
+                    } catch (_: Exception) {
+                        contentResolver.openOutputStream(song.contentUri, "w")?.use { out ->
+                            tempOutFile.inputStream().use { inStream ->
+                                inStream.copyTo(out)
+                            }
                         }
                     }
                 }
@@ -449,7 +459,7 @@ object Id3ArtworkEmbedder {
 
                 for (i in retainedBlocks.indices) {
                     val block = retainedBlocks[i]
-                    val isLastBlock = (i == retainedBlocks.size - 1) && (audioPayload.isNotEmpty())
+                    val isLastBlock = (i == retainedBlocks.size - 1)
                     val headerByte0 = (if (isLastBlock) 0x80 else 0x00) or (block.blockType and 0x7F)
                     val len = block.blockData.size
 

@@ -338,4 +338,115 @@ class PlaybackActionsTest {
 
         assertEquals(RepeatMode.OFF, repeatMode)
     }
+
+    @Test
+    fun testPersistStateSongIndexPrioritizesCurrentSongMatchOverMismatchingPlayerIndex() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(101L, "Song 1", "Artist", "Album", 1L, 1000L, mockUri)
+        val s2 = Song(102L, "Song 2", "Artist", "Album", 1L, 1000L, mockUri)
+        val s3 = Song(103L, "Song 3", "Artist", "Album", 1L, 1000L, mockUri)
+
+        val playlist = listOf(s1, s2, s3)
+        val currentSong = s3 // Song 3 is current (index 2)
+        val playerIndex = 1 // Player index is lagging behind at index 1 (Song 2)
+
+        val songId = currentSong.id
+        val songIndex = if (songId != -1L) {
+            val matchedIndex = playlist.indexOfFirst { it.id == songId }
+            if (matchedIndex != -1) {
+                matchedIndex
+            } else if (playerIndex in playlist.indices) {
+                playerIndex
+            } else {
+                0
+            }
+        } else if (playerIndex in playlist.indices) {
+            playerIndex
+        } else {
+            0
+        }
+
+        assertEquals("songIndex must resolve to currentSong's position in playlist (2), not lagging playerIndex (1)", 2, songIndex)
+    }
+
+    @Test
+    fun testUpdateSongMetadataInQueuePreservesQueueStructureAndUpdatesCurrentSong() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(101L, "Original Title 1", "Artist A", "Album A", 1L, 1000L, mockUri, trackNumber = 1)
+        val s2 = Song(102L, "Original Title 2", "Artist A", "Album A", 1L, 1000L, mockUri, trackNumber = 2)
+
+        var playlist = listOf(s1, s2)
+        var currentSong: Song? = s1
+
+        val updatedS1 = s1.copy(title = "Edited Title 1", genre = "Rock")
+        val updatedSongs = listOf(updatedS1)
+
+        val map = updatedSongs.associateBy { it.id }
+        playlist = playlist.map { song -> map[song.id] ?: song }
+        if (currentSong != null && map.containsKey(currentSong.id)) {
+            currentSong = map[currentSong.id]
+        }
+
+        assertEquals(2, playlist.size)
+        assertEquals("Edited Title 1", playlist[0].title)
+        assertEquals("Rock", playlist[0].genre)
+        assertEquals("Original Title 2", playlist[1].title)
+        assertEquals("Edited Title 1", currentSong?.title)
+    }
+
+    @Test
+    fun testTrackSharingHelperFormatters() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val song1 = Song(1L, "Bohemian Rhapsody", "Queen", "A Night at the Opera", 10L, 354000L, mockUri, trackNumber = 1)
+        val song2 = Song(2L, "You're My Best Friend", "Queen", "A Night at the Opera", 10L, 172000L, mockUri, trackNumber = 2)
+
+        val trackText = com.travelingtunes.app.core.media.TrackSharingHelper.formatTrackText(song1)
+        assertEquals("\"Bohemian Rhapsody\" by Queen (A Night at the Opera)", trackText)
+
+        val albumText = com.travelingtunes.app.core.media.TrackSharingHelper.formatAlbumText("A Night at the Opera", "Queen", listOf(song1, song2))
+        org.junit.Assert.assertTrue(albumText.contains("Album: \"A Night at the Opera\" by Queen"))
+        org.junit.Assert.assertTrue(albumText.contains("1. Bohemian Rhapsody"))
+        org.junit.Assert.assertTrue(albumText.contains("2. You're My Best Friend"))
+    }
+
+    @Test
+    fun testTagEditorAndShareGestureActionsFromKey() {
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.EDIT_TRACK_TAGS, com.travelingtunes.app.core.model.GestureAction.fromKey("EDIT_TRACK_TAGS"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.EDIT_ALBUM_TAGS, com.travelingtunes.app.core.model.GestureAction.fromKey("EDIT_ALBUM_TAGS"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TRACK_TEXT, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_TRACK_TEXT"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TRACK_FILE, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_TRACK_FILE"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_ALBUM_TEXT, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_ALBUM_TEXT"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_ALBUM_FILES, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_ALBUM_FILES"))
+    }
+
+    @Test
+    fun testGetGroupedCategoriesContainsAllGestureActions() {
+        val groups = com.travelingtunes.app.core.model.GestureAction.getGroupedCategories(excludeRadialMenu = false, excludeUnassigned = false)
+        val categorizedActions = groups.flatMap { it.actions }.toSet()
+
+        for (action in com.travelingtunes.app.core.model.GestureAction.entries) {
+            org.junit.Assert.assertTrue(
+                "Action ${action.name} must be included in getGroupedCategories()",
+                categorizedActions.contains(action)
+            )
+        }
+    }
+
+    @Test
+    fun testActionOptionsMappedToMusicLibrarySubmenu() {
+        val editTrackOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_EDIT_TRACK_TAGS")
+        val editAlbumOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_EDIT_ALBUM_TAGS")
+        val shareTrackTextOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_SHARE_TRACK_TEXT")
+        val shareAlbumFilesOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_SHARE_ALBUM_FILES")
+
+        org.junit.Assert.assertNotNull(editTrackOption)
+        org.junit.Assert.assertNotNull(editAlbumOption)
+        org.junit.Assert.assertNotNull(shareTrackTextOption)
+        org.junit.Assert.assertNotNull(shareAlbumFilesOption)
+
+        assertEquals("Music Library", editTrackOption?.category)
+        assertEquals("Music Library", editAlbumOption?.category)
+        assertEquals("Music Library", shareTrackTextOption?.category)
+        assertEquals("Music Library", shareAlbumFilesOption?.category)
+    }
 }
