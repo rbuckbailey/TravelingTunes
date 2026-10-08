@@ -44,12 +44,8 @@ enum class GestureAction(val displayName: String) {
     TOGGLE_DRIVING_MODE("Toggle Traveling Mode"),
     TOGGLE_DOCKED_ART("Toggle Docked Art"),
     SELECT_PROFILE("Select Profile"),
-    EDIT_TRACK_TAGS("Edit Track Tags"),
-    EDIT_ALBUM_TAGS("Edit Album Tags"),
-    SHARE_TRACK_TEXT("Share Track Info"),
-    SHARE_TRACK_FILE("Share Track File"),
-    SHARE_ALBUM_TEXT("Share Album Info"),
-    SHARE_ALBUM_FILES("Share Album Files (Zip)"),
+    EDIT_TAGS("Edit Tags"),
+    SHARE_TUNES("Share Tunes"),
     RADIAL_MENU("Radial Menu"),
     OTHER_OPTION("Other Option");
 
@@ -58,6 +54,13 @@ enum class GestureAction(val displayName: String) {
             val sanitizedKey = key.filter { it.isLetterOrDigit() }
             if (sanitizedKey.equals("StartDefaultPlaylist", ignoreCase = true)) {
                 return SHUFFLE_ALL_SONGS
+            }
+            if (sanitizedKey.startsWith("EDIT", ignoreCase = true) && sanitizedKey.contains("TAG", ignoreCase = true)) {
+                return EDIT_TAGS
+            }
+            if (sanitizedKey.startsWith("SHARE", ignoreCase = true) &&
+                (sanitizedKey.contains("TRACK", ignoreCase = true) || sanitizedKey.contains("ALBUM", ignoreCase = true) || sanitizedKey.contains("TUNE", ignoreCase = true) || sanitizedKey.contains("SONG", ignoreCase = true))) {
+                return SHARE_TUNES
             }
             return entries.find {
                 it.name.equals(key, ignoreCase = true) ||
@@ -86,9 +89,7 @@ enum class GestureAction(val displayName: String) {
                 PLAY_CURRENT_ARTIST, PLAY_CURRENT_ALBUM,
                 NEXT_ALBUM, PREVIOUS_ALBUM,
                 SELECT_ALBUM_VIEW, SELECT_ARTIST_VIEW,
-                EDIT_TRACK_TAGS, EDIT_ALBUM_TAGS,
-                SHARE_TRACK_TEXT, SHARE_TRACK_FILE,
-                SHARE_ALBUM_TEXT, SHARE_ALBUM_FILES
+                EDIT_TAGS, SHARE_TUNES
             )
 
             val volumeAndModesSet = setOf(

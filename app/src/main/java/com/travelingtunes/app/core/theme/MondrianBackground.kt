@@ -143,6 +143,7 @@ object MondrianThemeHelper {
 fun MondrianBackground(
     song: Song?,
     modifier: Modifier = Modifier,
+    showAlbumArt: Boolean = false,
     currentPositionMs: Long = 0L,
     durationMs: Long = 0L,
     volumeRatio: Float = 0.5f,
@@ -182,7 +183,8 @@ fun MondrianBackground(
             blockWidth = splitX,
             blockHeight = splitY,
             spec = layout.topLeft,
-            subLinePx = subLinePx
+            subLinePx = subLinePx,
+            showAlbumArt = showAlbumArt
         )
 
         // 2. TOP-RIGHT REGION [splitX..w, 0..splitY]
@@ -192,7 +194,8 @@ fun MondrianBackground(
             blockWidth = w - splitX,
             blockHeight = splitY,
             spec = layout.topRight,
-            subLinePx = subLinePx
+            subLinePx = subLinePx,
+            showAlbumArt = showAlbumArt
         )
 
         // 3. BOTTOM-LEFT REGION [0..splitX, splitY..h]
@@ -202,7 +205,8 @@ fun MondrianBackground(
             blockWidth = splitX,
             blockHeight = h - splitY,
             spec = layout.bottomLeft,
-            subLinePx = subLinePx
+            subLinePx = subLinePx,
+            showAlbumArt = showAlbumArt
         )
 
         // 4. BOTTOM-RIGHT REGION [splitX..w, splitY..h]
@@ -212,7 +216,8 @@ fun MondrianBackground(
             blockWidth = w - splitX,
             blockHeight = h - splitY,
             spec = layout.bottomRight,
-            subLinePx = subLinePx
+            subLinePx = subLinePx,
+            showAlbumArt = showAlbumArt
         )
 
         // Vertical solid black progress bar line
@@ -298,29 +303,50 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRegionBlock(
     blockWidth: Float,
     blockHeight: Float,
     spec: MondrianRegionSpec,
-    subLinePx: Float
+    subLinePx: Float,
+    showAlbumArt: Boolean = false
 ) {
     if (blockWidth <= 0f || blockHeight <= 0f) return
 
+    val alpha = if (showAlbumArt) 0.30f else 1.0f
+
+    fun adjustColor(c: Color): Color {
+        return if (showAlbumArt) {
+            if (c == MondrianThemeHelper.COLOR_WHITE) Color.Transparent
+            else c.copy(alpha = alpha)
+        } else {
+            c
+        }
+    }
+
     if (!spec.isSubdivided || spec.color2 == null) {
-        drawRect(
-            color = spec.color1,
-            topLeft = Offset(left, top),
-            size = Size(blockWidth, blockHeight)
-        )
+        val c1 = adjustColor(spec.color1)
+        if (c1 != Color.Transparent) {
+            drawRect(
+                color = c1,
+                topLeft = Offset(left, top),
+                size = Size(blockWidth, blockHeight)
+            )
+        }
     } else {
         if (spec.isVerticalSplit) {
             val halfW = blockWidth / 2f
-            drawRect(
-                color = spec.color1,
-                topLeft = Offset(left, top),
-                size = Size(halfW, blockHeight)
-            )
-            drawRect(
-                color = spec.color2,
-                topLeft = Offset(left + halfW, top),
-                size = Size(blockWidth - halfW, blockHeight)
-            )
+            val c1 = adjustColor(spec.color1)
+            val c2 = adjustColor(spec.color2)
+            if (c1 != Color.Transparent) {
+                drawRect(
+                    color = c1,
+                    topLeft = Offset(left, top),
+                    size = Size(halfW, blockHeight)
+                )
+            }
+            if (c2 != Color.Transparent) {
+                drawRect(
+                    color = c2,
+                    topLeft = Offset(left + halfW, top),
+                    size = Size(blockWidth - halfW, blockHeight)
+                )
+            }
             drawLine(
                 color = Color.Black,
                 start = Offset(left + halfW, top),
@@ -329,16 +355,22 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRegionBlock(
             )
         } else {
             val halfH = blockHeight / 2f
-            drawRect(
-                color = spec.color1,
-                topLeft = Offset(left, top),
-                size = Size(blockWidth, halfH)
-            )
-            drawRect(
-                color = spec.color2,
-                topLeft = Offset(left, top + halfH),
-                size = Size(blockWidth, blockHeight - halfH)
-            )
+            val c1 = adjustColor(spec.color1)
+            val c2 = adjustColor(spec.color2)
+            if (c1 != Color.Transparent) {
+                drawRect(
+                    color = c1,
+                    topLeft = Offset(left, top),
+                    size = Size(blockWidth, halfH)
+                )
+            }
+            if (c2 != Color.Transparent) {
+                drawRect(
+                    color = c2,
+                    topLeft = Offset(left, top + halfH),
+                    size = Size(blockWidth, blockHeight - halfH)
+                )
+            }
             drawLine(
                 color = Color.Black,
                 start = Offset(left, top + halfH),

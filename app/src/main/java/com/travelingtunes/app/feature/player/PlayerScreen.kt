@@ -362,6 +362,8 @@ fun PlayerScreen(
 
     var showRepeatOptionsDialog by remember { mutableStateOf(false) }
     var showShuffleOptionsDialog by remember { mutableStateOf(false) }
+    var showShareTunesDialog by remember { mutableStateOf(false) }
+    var showEditTagsChoiceDialog by remember { mutableStateOf(false) }
     var activeTagEditorTracks by remember { mutableStateOf<List<Song>?>(null) }
 
     val activeIsScanning by musicScanner?.isScanning?.collectAsState()
@@ -762,6 +764,8 @@ fun PlayerScreen(
                         onOpenSettings = { dir -> openMenu(dir, trigger) },
                         onOpenQuickStart = onOpenQuickStart,
                         onOpenProfilePicker = { showProfilePicker = true },
+                        onOpenShareTunes = { showShareTunesDialog = true },
+                        onOpenEditTagsChoice = { showEditTagsChoiceDialog = true },
                         settingsDataStore = effectiveSettingsDataStore,
                         gestureBindings = gestureBindings,
                         overrideOtherOptionKey = resolvedOtherKey,
@@ -799,6 +803,8 @@ fun PlayerScreen(
                         onOpenSettings = { dir -> openMenu(dir, trig) },
                         onOpenQuickStart = onOpenQuickStart,
                         onOpenProfilePicker = { showProfilePicker = true },
+                        onOpenShareTunes = { showShareTunesDialog = true },
+                        onOpenEditTagsChoice = { showEditTagsChoiceDialog = true },
                         settingsDataStore = effectiveSettingsDataStore,
                         gestureBindings = gestureBindings
                     )
@@ -911,6 +917,8 @@ fun PlayerScreen(
                             onOpenSettings = { dir -> openMenu(dir, currentSlideTrigger) },
                             onOpenQuickStart = onOpenQuickStart,
                             onOpenProfilePicker = { showProfilePicker = true },
+                            onOpenShareTunes = { showShareTunesDialog = true },
+                            onOpenEditTagsChoice = { showEditTagsChoiceDialog = true },
                             settingsDataStore = effectiveSettingsDataStore,
                             gestureBindings = gestureBindings,
                             overrideOtherOptionKey = currentOtherKey,
@@ -1090,6 +1098,8 @@ fun PlayerScreen(
                                 onOpenSettings = { dir -> openMenu(dir, trigger) },
                                 onOpenQuickStart = onOpenQuickStart,
                                 onOpenProfilePicker = { showProfilePicker = true },
+                                onOpenShareTunes = { showShareTunesDialog = true },
+                                onOpenEditTagsChoice = { showEditTagsChoiceDialog = true },
                                 settingsDataStore = effectiveSettingsDataStore,
                                 gestureBindings = gestureBindings,
                                 pagerState = pagerState,
@@ -1105,6 +1115,7 @@ fun PlayerScreen(
         if (isMondrian) {
             MondrianBackground(
                 song = currentSong,
+                showAlbumArt = displaySettings.showAlbumArt,
                 currentPositionMsProvider = currentPositionMsProvider,
                 durationMsProvider = durationMsProvider,
                 volumeRatioProvider = currentVolumeRatioProvider,
@@ -1597,6 +1608,8 @@ fun PlayerScreen(
                         onOpenSettings = { dir -> openMenu(dir, trig) },
                         onOpenQuickStart = onOpenQuickStart,
                         onOpenProfilePicker = { showProfilePicker = true },
+                        onOpenShareTunes = { showShareTunesDialog = true },
+                        onOpenEditTagsChoice = { showEditTagsChoiceDialog = true },
                         settingsDataStore = effectiveSettingsDataStore,
                         gestureBindings = gestureBindings,
                         radialSlotIndex = activeRadialSelectedIndex
@@ -1626,6 +1639,72 @@ fun PlayerScreen(
                     playbackManager.setShuffleMode(mode)
                 },
                 onDismiss = { showShuffleOptionsDialog = false }
+            )
+        }
+
+        if (showShareTunesDialog) {
+            ShareTunesDialog(
+                song = currentSong,
+                onDismissRequest = { showShareTunesDialog = false },
+                onShare = { scope, format ->
+                    val song = currentSong
+                    if (song != null && context != null) {
+                        when {
+                            scope == ShareTunesScope.TRACK && format == ShareTunesFormat.INFO -> {
+                                TrackSharingHelper.shareTrackText(context, song)
+                            }
+                            scope == ShareTunesScope.TRACK && format == ShareTunesFormat.FILES -> {
+                                TrackSharingHelper.shareTrackFile(context, song)
+                            }
+                            scope == ShareTunesScope.ALBUM && format == ShareTunesFormat.INFO -> {
+                                if (musicDatabase != null && coroutineScope != null) {
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                                        withContext(Dispatchers.Main) {
+                                            TrackSharingHelper.shareAlbumText(context, song.album, song.artist, albumSongs)
+                                        }
+                                    }
+                                }
+                            }
+                            scope == ShareTunesScope.ALBUM && format == ShareTunesFormat.FILES -> {
+                                if (musicDatabase != null && coroutineScope != null) {
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                                        withContext(Dispatchers.Main) {
+                                            TrackSharingHelper.shareAlbumFilesZip(context, song.album, song.artist, albumSongs)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
+        if (showEditTagsChoiceDialog) {
+            EditTagsChoiceDialog(
+                song = currentSong,
+                onDismissRequest = { showEditTagsChoiceDialog = false },
+                onSelectScope = { scope ->
+                    val song = currentSong
+                    if (song != null) {
+                        if (scope == EditTagsScope.TRACK) {
+                            activeTagEditorTracks = listOf(song)
+                        } else {
+                            if (musicDatabase != null && coroutineScope != null) {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                                    withContext(Dispatchers.Main) {
+                                        activeTagEditorTracks = albumSongs.ifEmpty { listOf(song) }
+                                    }
+                                }
+                            } else {
+                                activeTagEditorTracks = listOf(song)
+                            }
+                        }
+                    }
+                }
             )
         }
 
@@ -1893,9 +1972,19 @@ fun PlayerPageContent(
                     else Modifier.background(pageTheme.backgroundColor)
                 )
         ) {
+            if (displaySettings.showAlbumArt) {
+                PlayerAlbumArtBackground(
+                    song = pageSong,
+                    displaySettings = displaySettings,
+                    themeSettings = themeSettings,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
             if (isMondrian) {
                 MondrianBackground(
                     song = pageSong,
+                    showAlbumArt = displaySettings.showAlbumArt,
                     currentPositionMs = currentPositionMs,
                     durationMs = durationMs,
                     volumeRatio = volumeRatio,
@@ -2292,8 +2381,7 @@ fun PlayerAlbumArtBackground(
     themeSettings: ThemeSettings = ThemeSettings(),
     modifier: Modifier = Modifier
 ) {
-    val isMondrian = themeSettings.currentThemeName.equals("Mondrian", ignoreCase = true)
-    if (!displaySettings.showAlbumArt || isMondrian) return
+    if (!displaySettings.showAlbumArt) return
 
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -2935,6 +3023,8 @@ private fun handleGestureAction(
     onOpenSettings: (SlideDirection) -> Unit,
     onOpenQuickStart: () -> Unit,
     onOpenProfilePicker: () -> Unit = {},
+    onOpenShareTunes: (() -> Unit)? = null,
+    onOpenEditTagsChoice: (() -> Unit)? = null,
     settingsDataStore: SettingsDataStore? = null,
     gestureBindings: Map<GestureTrigger, GestureBinding>? = null,
     radialSlotIndex: Int? = null,
@@ -3029,56 +3119,11 @@ private fun handleGestureAction(
             }
         }
 
-        GestureAction.EDIT_TRACK_TAGS -> {
-            val song = playbackManager.currentSong.value
-            if (song != null && onEditTags != null) {
-                onEditTags(listOf(song))
-            }
+        GestureAction.EDIT_TAGS -> {
+            onOpenEditTagsChoice?.invoke()
         }
-        GestureAction.EDIT_ALBUM_TAGS -> {
-            val song = playbackManager.currentSong.value
-            if (song != null && musicDatabase != null && coroutineScope != null && onEditTags != null) {
-                coroutineScope.launch(Dispatchers.IO) {
-                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
-                    withContext(Dispatchers.Main) {
-                        onEditTags(albumSongs.ifEmpty { listOf(song) })
-                    }
-                }
-            }
-        }
-        GestureAction.SHARE_TRACK_TEXT -> {
-            val song = playbackManager.currentSong.value
-            if (song != null && context != null) {
-                TrackSharingHelper.shareTrackText(context, song)
-            }
-        }
-        GestureAction.SHARE_TRACK_FILE -> {
-            val song = playbackManager.currentSong.value
-            if (song != null && context != null) {
-                TrackSharingHelper.shareTrackFile(context, song)
-            }
-        }
-        GestureAction.SHARE_ALBUM_TEXT -> {
-            val song = playbackManager.currentSong.value
-            if (song != null && musicDatabase != null && coroutineScope != null && context != null) {
-                coroutineScope.launch(Dispatchers.IO) {
-                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
-                    withContext(Dispatchers.Main) {
-                        TrackSharingHelper.shareAlbumText(context, song.album, song.artist, albumSongs)
-                    }
-                }
-            }
-        }
-        GestureAction.SHARE_ALBUM_FILES -> {
-            val song = playbackManager.currentSong.value
-            if (song != null && musicDatabase != null && coroutineScope != null && context != null) {
-                coroutineScope.launch(Dispatchers.IO) {
-                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
-                    withContext(Dispatchers.Main) {
-                        TrackSharingHelper.shareAlbumFilesZip(context, song.album, song.artist, albumSongs)
-                    }
-                }
-            }
+        GestureAction.SHARE_TUNES -> {
+            onOpenShareTunes?.invoke()
         }
 
         GestureAction.OTHER_OPTION -> {
@@ -3102,50 +3147,11 @@ private fun handleGestureAction(
                         "ACTION_OPEN_ART_TAGS_EDITOR", "ACTION_REPLACE_ART" -> {
                             onOpenSettings(direction)
                         }
-                        "ACTION_EDIT_TRACK_TAGS" -> {
-                            val song = playbackManager.currentSong.value
-                            if (song != null && onEditTags != null) onEditTags(listOf(song))
+                        "ACTION_EDIT_TAGS", "ACTION_EDIT_TRACK_TAGS", "ACTION_EDIT_ALBUM_TAGS" -> {
+                            onOpenEditTagsChoice?.invoke()
                         }
-                        "ACTION_EDIT_ALBUM_TAGS" -> {
-                            val song = playbackManager.currentSong.value
-                            if (song != null && musicDatabase != null && onEditTags != null) {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
-                                    withContext(Dispatchers.Main) {
-                                        onEditTags(albumSongs.ifEmpty { listOf(song) })
-                                    }
-                                }
-                            }
-                        }
-                        "ACTION_SHARE_TRACK_TEXT" -> {
-                            val song = playbackManager.currentSong.value
-                            if (song != null && context != null) TrackSharingHelper.shareTrackText(context, song)
-                        }
-                        "ACTION_SHARE_TRACK_FILE" -> {
-                            val song = playbackManager.currentSong.value
-                            if (song != null && context != null) TrackSharingHelper.shareTrackFile(context, song)
-                        }
-                        "ACTION_SHARE_ALBUM_TEXT" -> {
-                            val song = playbackManager.currentSong.value
-                            if (song != null && musicDatabase != null && context != null) {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
-                                    withContext(Dispatchers.Main) {
-                                        TrackSharingHelper.shareAlbumText(context, song.album, song.artist, albumSongs)
-                                    }
-                                }
-                            }
-                        }
-                        "ACTION_SHARE_ALBUM_FILES" -> {
-                            val song = playbackManager.currentSong.value
-                            if (song != null && musicDatabase != null && context != null) {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val albumSongs = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
-                                    withContext(Dispatchers.Main) {
-                                        TrackSharingHelper.shareAlbumFilesZip(context, song.album, song.artist, albumSongs)
-                                    }
-                                }
-                            }
+                        "ACTION_SHARE_TUNES", "ACTION_SHARE_TRACK_TEXT", "ACTION_SHARE_TRACK_FILE", "ACTION_SHARE_ALBUM_TEXT", "ACTION_SHARE_ALBUM_FILES" -> {
+                            onOpenShareTunes?.invoke()
                         }
                         "ACTION_SONG_PICKER" -> onOpenSongPicker(direction)
                         "ACTION_SHOW_QUEUE" -> onOpenQueue(direction)

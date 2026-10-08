@@ -87,12 +87,8 @@ data class ConfigOption(
             ConfigOption("ACTION_SELECT_ALBUM_VIEW", "Music Library", "Select Album View", isBooleanToggle = false),
             ConfigOption("ACTION_SELECT_ARTIST_VIEW", "Music Library", "Select Artist View", isBooleanToggle = false),
             ConfigOption("ACTION_SHOW_QUEUE", "Music Library", "Current Queue", isBooleanToggle = false),
-            ConfigOption("ACTION_EDIT_TRACK_TAGS", "Music Library", "Edit Track Tags", isBooleanToggle = false),
-            ConfigOption("ACTION_EDIT_ALBUM_TAGS", "Music Library", "Edit Album Tags", isBooleanToggle = false),
-            ConfigOption("ACTION_SHARE_TRACK_TEXT", "Music Library", "Share Track Info", isBooleanToggle = false),
-            ConfigOption("ACTION_SHARE_TRACK_FILE", "Music Library", "Share Track File", isBooleanToggle = false),
-            ConfigOption("ACTION_SHARE_ALBUM_TEXT", "Music Library", "Share Album Info", isBooleanToggle = false),
-            ConfigOption("ACTION_SHARE_ALBUM_FILES", "Music Library", "Share Album Files (Zip)", isBooleanToggle = false),
+            ConfigOption("ACTION_EDIT_TAGS", "Music Library", "Edit Tags", isBooleanToggle = false),
+            ConfigOption("ACTION_SHARE_TUNES", "Music Library", "Share Tunes", isBooleanToggle = false),
             ConfigOption("ACTION_DUPLICATE_TRACK_IDENTIFIER", "Music Library", "Duplicate Track Finder", isBooleanToggle = false),
             ConfigOption("LIBRARY_autoRescan", "Music Library", "Auto Rescan Library", isBooleanToggle = true),
             ConfigOption("LIBRARY_gpsVolume", "Music Library", "Speed-Dependent Volume", isBooleanToggle = true),
@@ -149,6 +145,16 @@ data class ConfigOption(
 
         fun findByKey(key: String?): ConfigOption? {
             if (key.isNullOrEmpty()) return null
+            if (key.equals("ACTION_EDIT_TRACK_TAGS", ignoreCase = true) ||
+                key.equals("ACTION_EDIT_ALBUM_TAGS", ignoreCase = true)) {
+                return findByKey("ACTION_EDIT_TAGS")
+            }
+            if (key.equals("ACTION_SHARE_TRACK_TEXT", ignoreCase = true) ||
+                key.equals("ACTION_SHARE_TRACK_FILE", ignoreCase = true) ||
+                key.equals("ACTION_SHARE_ALBUM_TEXT", ignoreCase = true) ||
+                key.equals("ACTION_SHARE_ALBUM_FILES", ignoreCase = true)) {
+                return findByKey("ACTION_SHARE_TUNES")
+            }
             val match = getAllOptions().find { it.key.equals(key, ignoreCase = true) }
             if (match != null) return match
 

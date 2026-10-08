@@ -1,5 +1,10 @@
 package com.travelingtunes.app.feature.songpicker
 
+import com.travelingtunes.app.feature.player.ShareTunesDialog
+import com.travelingtunes.app.feature.player.EditTagsChoiceDialog
+import com.travelingtunes.app.feature.player.ShareTunesScope
+import com.travelingtunes.app.feature.player.ShareTunesFormat
+import com.travelingtunes.app.feature.player.EditTagsScope
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -182,7 +187,63 @@ fun SongPickerBottomSheet(
     var selectedAlbum by remember { mutableStateOf<String?>(initialAlbum) }
     var selectedFolder by remember { mutableStateOf<String?>(null) }
     var activeTagEditorTracks by remember { mutableStateOf<List<Song>?>(null) }
+    var shareTunesSong by remember { mutableStateOf<Song?>(null) }
+    var editTagsChoiceSong by remember { mutableStateOf<Song?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    if (shareTunesSong != null) {
+        ShareTunesDialog(
+            song = shareTunesSong,
+            onDismissRequest = { shareTunesSong = null },
+            onShare = { scope, format ->
+                val targetSong = shareTunesSong ?: return@ShareTunesDialog
+                when {
+                    scope == ShareTunesScope.TRACK && format == ShareTunesFormat.INFO -> {
+                        TrackSharingHelper.shareTrackText(context, targetSong)
+                    }
+                    scope == ShareTunesScope.TRACK && format == ShareTunesFormat.FILES -> {
+                        TrackSharingHelper.shareTrackFile(context, targetSong)
+                    }
+                    scope == ShareTunesScope.ALBUM && format == ShareTunesFormat.INFO -> {
+                        coroutineScope.launch(Dispatchers.IO) {
+                            val albumSongs = musicDatabase.getSongsByAlbumAndArtist(targetSong.album, targetSong.artist)
+                            withContext(Dispatchers.Main) {
+                                TrackSharingHelper.shareAlbumText(context, targetSong.album, targetSong.artist, albumSongs)
+                            }
+                        }
+                    }
+                    scope == ShareTunesScope.ALBUM && format == ShareTunesFormat.FILES -> {
+                        coroutineScope.launch(Dispatchers.IO) {
+                            val albumSongs = musicDatabase.getSongsByAlbumAndArtist(targetSong.album, targetSong.artist)
+                            withContext(Dispatchers.Main) {
+                                TrackSharingHelper.shareAlbumFilesZip(context, targetSong.album, targetSong.artist, albumSongs)
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    if (editTagsChoiceSong != null) {
+        EditTagsChoiceDialog(
+            song = editTagsChoiceSong,
+            onDismissRequest = { editTagsChoiceSong = null },
+            onSelectScope = { scope ->
+                val targetSong = editTagsChoiceSong ?: return@EditTagsChoiceDialog
+                if (scope == EditTagsScope.TRACK) {
+                    activeTagEditorTracks = listOf(targetSong)
+                } else {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        val albumSongs = musicDatabase.getSongsByAlbumAndArtist(targetSong.album, targetSong.artist)
+                        withContext(Dispatchers.Main) {
+                            activeTagEditorTracks = albumSongs.ifEmpty { listOf(targetSong) }
+                        }
+                    }
+                }
+            }
+        )
+    }
 
     LaunchedEffect(visible, initialCategory, initialArtist, initialAlbum) {
         if (visible) {
@@ -777,13 +838,10 @@ fun SongPickerBottomSheet(
                                             playbackManager.addSongToQueue(song)
                                         },
                                         onEditTags = {
-                                            activeTagEditorTracks = listOf(song)
+                                            editTagsChoiceSong = song
                                         },
-                                        onShareText = {
-                                            TrackSharingHelper.shareTrackText(context, song)
-                                        },
-                                        onShareFile = {
-                                            TrackSharingHelper.shareTrackFile(context, song)
+                                        onShareTunes = {
+                                            shareTunesSong = song
                                         },
                                         onClick = {
                                             coroutineScope.launch {
@@ -875,23 +933,15 @@ fun SongPickerBottomSheet(
                                             coroutineScope.launch(Dispatchers.IO) {
                                                 val songs = musicDatabase.getSongsByAlbumAndArtist(album.name, album.artist)
                                                 withContext(Dispatchers.Main) {
-                                                    activeTagEditorTracks = songs
+                                                    editTagsChoiceSong = songs.firstOrNull()
                                                 }
                                             }
                                         },
-                                        onShareText = {
+                                        onShareTunes = {
                                             coroutineScope.launch(Dispatchers.IO) {
                                                 val songs = musicDatabase.getSongsByAlbumAndArtist(album.name, album.artist)
                                                 withContext(Dispatchers.Main) {
-                                                    TrackSharingHelper.shareAlbumText(context, album.name, album.artist, songs)
-                                                }
-                                            }
-                                        },
-                                        onShareZip = {
-                                            coroutineScope.launch(Dispatchers.IO) {
-                                                val songs = musicDatabase.getSongsByAlbumAndArtist(album.name, album.artist)
-                                                withContext(Dispatchers.Main) {
-                                                    TrackSharingHelper.shareAlbumFilesZip(context, album.name, album.artist, songs)
+                                                    shareTunesSong = songs.firstOrNull()
                                                 }
                                             }
                                         },
@@ -1470,8 +1520,7 @@ private fun AlbumItemRow(
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
     onEditTags: (() -> Unit)? = null,
-    onShareText: (() -> Unit)? = null,
-    onShareZip: (() -> Unit)? = null,
+    onShareTunes: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -1527,7 +1576,7 @@ private fun AlbumItemRow(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                if (onEditTags != null || onShareText != null || onShareZip != null) {
+                if (onEditTags != null || onShareTunes != null) {
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(
@@ -1546,7 +1595,7 @@ private fun AlbumItemRow(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Edit Album Tags")
+                                            Text("Edit Tags")
                                         }
                                     },
                                     onClick = {
@@ -1555,33 +1604,18 @@ private fun AlbumItemRow(
                                     }
                                 )
                             }
-                            if (onShareText != null) {
+                            if (onShareTunes != null) {
                                 DropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Share Album Info (Text)")
+                                            Text("Share Tunes")
                                         }
                                     },
                                     onClick = {
                                         menuExpanded = false
-                                        onShareText()
-                                    }
-                                )
-                            }
-                            if (onShareZip != null) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Share Album Files (Zip)")
-                                        }
-                                    },
-                                    onClick = {
-                                        menuExpanded = false
-                                        onShareZip()
+                                        onShareTunes()
                                     }
                                 )
                             }
@@ -1602,8 +1636,7 @@ private fun SongItemRow(
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
     onEditTags: (() -> Unit)? = null,
-    onShareText: (() -> Unit)? = null,
-    onShareFile: (() -> Unit)? = null,
+    onShareTunes: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -1665,7 +1698,7 @@ private fun SongItemRow(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                if (onEditTags != null || onShareText != null || onShareFile != null) {
+                if (onEditTags != null || onShareTunes != null) {
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(
@@ -1693,33 +1726,18 @@ private fun SongItemRow(
                                     }
                                 )
                             }
-                            if (onShareText != null) {
+                            if (onShareTunes != null) {
                                 DropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Share Track Info (Text)")
+                                            Text("Share Tunes")
                                         }
                                     },
                                     onClick = {
                                         menuExpanded = false
-                                        onShareText()
-                                    }
-                                )
-                            }
-                            if (onShareFile != null) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Share Audio File")
-                                        }
-                                    },
-                                    onClick = {
-                                        menuExpanded = false
-                                        onShareFile()
+                                        onShareTunes()
                                     }
                                 )
                             }

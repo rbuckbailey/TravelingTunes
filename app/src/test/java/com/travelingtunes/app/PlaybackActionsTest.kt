@@ -410,13 +410,113 @@ class PlaybackActionsTest {
     }
 
     @Test
+    fun testNextAndPreviousAlbumInShuffledQueue() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val a1 = Song(1L, "A1", "Artist A", "Album A", 1L, 1000L, mockUri, trackNumber = 1)
+        val a2 = Song(2L, "A2", "Artist A", "Album A", 1L, 1000L, mockUri, trackNumber = 2)
+        val b1 = Song(3L, "B1", "Artist B", "Album B", 2L, 1000L, mockUri, trackNumber = 1)
+        val b2 = Song(4L, "B2", "Artist B", "Album B", 2L, 1000L, mockUri, trackNumber = 2)
+        val c1 = Song(5L, "C1", "Artist C", "Album C", 3L, 1000L, mockUri, trackNumber = 1)
+
+        val shuffledQueue = listOf(a1, a2, c1, b1, b2)
+
+        fun findNextAlbumIndex(queue: List<Song>, currentIndex: Int): Int? {
+            if (queue.isEmpty() || currentIndex !in queue.indices) return null
+            val currentKey = queue[currentIndex].albumKey
+            for (i in (currentIndex + 1) until queue.size) {
+                if (queue[i].albumKey != currentKey) return i
+            }
+            for (i in 0 until currentIndex) {
+                if (queue[i].albumKey != currentKey) return i
+            }
+            return null
+        }
+
+        fun findPreviousAlbumIndex(queue: List<Song>, currentIndex: Int, posMs: Long): Int? {
+            if (queue.isEmpty() || currentIndex !in queue.indices) return null
+            val currentKey = queue[currentIndex].albumKey
+            var startIdx = currentIndex
+            while (startIdx > 0 && queue[startIdx - 1].albumKey == currentKey) {
+                startIdx--
+            }
+            if (posMs > 3000L && currentIndex != startIdx) return startIdx
+
+            var targetAlbumIdx: Int? = null
+            for (i in (startIdx - 1) downTo 0) {
+                if (queue[i].albumKey != currentKey) {
+                    targetAlbumIdx = i
+                    break
+                }
+            }
+            if (targetAlbumIdx == null) {
+                for (i in (queue.size - 1) downTo (currentIndex + 1)) {
+                    if (queue[i].albumKey != currentKey) {
+                        targetAlbumIdx = i
+                        break
+                    }
+                }
+            }
+            if (targetAlbumIdx == null) return startIdx
+
+            val targetKey = queue[targetAlbumIdx].albumKey
+            var targetStartIdx = targetAlbumIdx
+            while (targetStartIdx > 0 && queue[targetStartIdx - 1].albumKey == targetKey) {
+                targetStartIdx--
+            }
+            return targetStartIdx
+        }
+
+        // Test Next Album from A2 (index 1) -> C1 (index 2)
+        val nextIdxFromA2 = findNextAlbumIndex(shuffledQueue, 1)
+        assertEquals(2, nextIdxFromA2)
+        assertEquals("C1", shuffledQueue[nextIdxFromA2!!].title)
+
+        // Test Next Album from C1 (index 2) -> B1 (index 3)
+        val nextIdxFromC1 = findNextAlbumIndex(shuffledQueue, 2)
+        assertEquals(3, nextIdxFromC1)
+        assertEquals("B1", shuffledQueue[nextIdxFromC1!!].title)
+
+        // Test Next Album from B2 (index 4) -> wrap around to A1 (index 0)
+        val nextIdxFromB2 = findNextAlbumIndex(shuffledQueue, 4)
+        assertEquals(0, nextIdxFromB2)
+        assertEquals("A1", shuffledQueue[nextIdxFromB2!!].title)
+
+        // Test Previous Album from B2 (index 4) with pos > 3s -> restart Album B at B1 (index 3)
+        val prevIdxFromB2Past3s = findPreviousAlbumIndex(shuffledQueue, 4, 5000L)
+        assertEquals(3, prevIdxFromB2Past3s)
+        assertEquals("B1", shuffledQueue[prevIdxFromB2Past3s!!].title)
+
+        // Test Previous Album from B2 (index 4) with pos <= 3s -> previous album C1 (index 2)
+        val prevIdxFromB2Under3s = findPreviousAlbumIndex(shuffledQueue, 4, 1000L)
+        assertEquals(2, prevIdxFromB2Under3s)
+        assertEquals("C1", shuffledQueue[prevIdxFromB2Under3s!!].title)
+
+        // Test Previous Album from B1 (index 3) with pos <= 3s -> C1 (index 2)
+        val prevIdxFromB1 = findPreviousAlbumIndex(shuffledQueue, 3, 1000L)
+        assertEquals(2, prevIdxFromB1)
+        assertEquals("C1", shuffledQueue[prevIdxFromB1!!].title)
+
+        // Test Previous Album from C1 (index 2) -> A1 (index 0)
+        val prevIdxFromC1 = findPreviousAlbumIndex(shuffledQueue, 2, 1000L)
+        assertEquals(0, prevIdxFromC1)
+        assertEquals("A1", shuffledQueue[prevIdxFromC1!!].title)
+
+        // Test Previous Album from A1 (index 0) -> wrap around to B1 (index 3)
+        val prevIdxFromA1 = findPreviousAlbumIndex(shuffledQueue, 0, 1000L)
+        assertEquals(3, prevIdxFromA1)
+        assertEquals("B1", shuffledQueue[prevIdxFromA1!!].title)
+    }
+
+    @Test
     fun testTagEditorAndShareGestureActionsFromKey() {
-        assertEquals(com.travelingtunes.app.core.model.GestureAction.EDIT_TRACK_TAGS, com.travelingtunes.app.core.model.GestureAction.fromKey("EDIT_TRACK_TAGS"))
-        assertEquals(com.travelingtunes.app.core.model.GestureAction.EDIT_ALBUM_TAGS, com.travelingtunes.app.core.model.GestureAction.fromKey("EDIT_ALBUM_TAGS"))
-        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TRACK_TEXT, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_TRACK_TEXT"))
-        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TRACK_FILE, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_TRACK_FILE"))
-        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_ALBUM_TEXT, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_ALBUM_TEXT"))
-        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_ALBUM_FILES, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_ALBUM_FILES"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.EDIT_TAGS, com.travelingtunes.app.core.model.GestureAction.fromKey("EDIT_TAGS"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.EDIT_TAGS, com.travelingtunes.app.core.model.GestureAction.fromKey("EDIT_TRACK_TAGS"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.EDIT_TAGS, com.travelingtunes.app.core.model.GestureAction.fromKey("EDIT_ALBUM_TAGS"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TUNES, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_TUNES"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TUNES, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_TRACK_TEXT"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TUNES, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_TRACK_FILE"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TUNES, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_ALBUM_TEXT"))
+        assertEquals(com.travelingtunes.app.core.model.GestureAction.SHARE_TUNES, com.travelingtunes.app.core.model.GestureAction.fromKey("SHARE_ALBUM_FILES"))
     }
 
     @Test
@@ -434,13 +534,17 @@ class PlaybackActionsTest {
 
     @Test
     fun testActionOptionsMappedToMusicLibrarySubmenu() {
+        val editOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_EDIT_TAGS")
         val editTrackOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_EDIT_TRACK_TAGS")
         val editAlbumOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_EDIT_ALBUM_TAGS")
+        val shareTunesOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_SHARE_TUNES")
         val shareTrackTextOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_SHARE_TRACK_TEXT")
         val shareAlbumFilesOption = com.travelingtunes.app.core.model.ConfigOption.findByKey("ACTION_SHARE_ALBUM_FILES")
 
+        org.junit.Assert.assertNotNull(editOption)
         org.junit.Assert.assertNotNull(editTrackOption)
         org.junit.Assert.assertNotNull(editAlbumOption)
+        org.junit.Assert.assertNotNull(shareTunesOption)
         org.junit.Assert.assertNotNull(shareTrackTextOption)
         org.junit.Assert.assertNotNull(shareAlbumFilesOption)
 

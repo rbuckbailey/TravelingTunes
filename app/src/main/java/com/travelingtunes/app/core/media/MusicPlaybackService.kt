@@ -535,12 +535,8 @@ class MusicPlaybackService : MediaLibraryService() {
             GestureAction.SHOW_QUEUE -> "com.travelingtunes.app.ACTION_SHOW_QUEUE"
             GestureAction.MENU -> "com.travelingtunes.app.ACTION_MENU"
             GestureAction.TOGGLE_DRIVING_MODE -> "com.travelingtunes.app.ACTION_TOGGLE_DRIVING_MODE"
-            GestureAction.EDIT_TRACK_TAGS -> "com.travelingtunes.app.ACTION_EDIT_TRACK_TAGS"
-            GestureAction.EDIT_ALBUM_TAGS -> "com.travelingtunes.app.ACTION_EDIT_ALBUM_TAGS"
-            GestureAction.SHARE_TRACK_TEXT -> "com.travelingtunes.app.ACTION_SHARE_TRACK_TEXT"
-            GestureAction.SHARE_TRACK_FILE -> "com.travelingtunes.app.ACTION_SHARE_TRACK_FILE"
-            GestureAction.SHARE_ALBUM_TEXT -> "com.travelingtunes.app.ACTION_SHARE_ALBUM_TEXT"
-            GestureAction.SHARE_ALBUM_FILES -> "com.travelingtunes.app.ACTION_SHARE_ALBUM_FILES"
+            GestureAction.EDIT_TAGS -> "com.travelingtunes.app.ACTION_EDIT_TAGS"
+            GestureAction.SHARE_TUNES -> "com.travelingtunes.app.ACTION_SHARE_TUNES"
             else -> return null
         }
         return SessionCommand(actionString, Bundle.EMPTY)
@@ -1581,11 +1577,13 @@ class MusicPlaybackService : MediaLibraryService() {
                 }
 
                 val safeStartIndex = playStartIndex.coerceIn(0, (resolvedSongs.size - 1).coerceAtLeast(0))
-                val finalMediaItems = resolvedSongs.map { songToMediaItem(it, applicationContext) }
+                val finalMediaItems = resolvedSongs.mapIndexed { idx, song ->
+                    songToMediaItem(song, applicationContext, includeArtworkData = (Math.abs(idx - safeStartIndex) <= 1))
+                }
 
                 if (resolvedSongs.isNotEmpty()) {
                     withContext(Dispatchers.Main) {
-                        playbackManager.updateStateFromAuto(resolvedSongs, safeStartIndex)
+                        playbackManager.setPlaylistFromAuto(resolvedSongs, safeStartIndex)
                     }
                 }
 
@@ -1763,9 +1761,33 @@ fun songToMediaItem(
             AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
         }
     } else null
+    fun toContentUriIfNeeded(file: File): Uri {
+        return if (context != null) {
+            try {
+                androidx.core.content.FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file
+                )
+            } catch (_: Exception) {
+                Uri.fromFile(file)
+            }
+        } else {
+            Uri.fromFile(file)
+        }
+    }
+
     val artUri = when {
         !showAlbumArt -> null
-        downloadedFile != null -> Uri.fromFile(downloadedFile)
+        downloadedFile != null -> toContentUriIfNeeded(downloadedFile)
+        song.artworkUri != null && song.artworkUri.scheme == "file" && song.artworkUri.path != null && context != null -> {
+            try {
+                val file = File(song.artworkUri.path!!)
+                if (file.exists()) toContentUriIfNeeded(file) else song.artworkUri
+            } catch (_: Exception) {
+                song.artworkUri
+            }
+        }
         else -> song.artworkUri
     }
     val artBytes = if (showAlbumArt && includeArtworkData && context != null) getArtworkBytesForSong(context, song) else null
@@ -1803,7 +1825,16 @@ fun songToMediaItem(
                     else -> null
                 }
                 if (targetFile != null) {
-                    setArtworkUri(Uri.fromFile(targetFile))
+                    val targetUri = try {
+                        androidx.core.content.FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            targetFile
+                        )
+                    } catch (_: Exception) {
+                        Uri.fromFile(targetFile)
+                    }
+                    setArtworkUri(targetUri)
                 }
             }
         }

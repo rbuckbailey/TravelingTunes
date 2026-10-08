@@ -1,5 +1,7 @@
 package com.travelingtunes.app.feature.queue
 
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -85,11 +87,76 @@ fun QueueBottomSheet(
     val currentSong by playbackManager.currentSong.collectAsState()
     val isPlaying by playbackManager.isPlaying.collectAsState()
     var activeTagEditorTracks by remember { mutableStateOf<List<Song>?>(null) }
+    var shareTunesSong by remember { mutableStateOf<Song?>(null) }
+    var editTagsChoiceSong by remember { mutableStateOf<Song?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     val currentIndex = remember(currentPlaylist, currentSong) {
         val idx = currentPlaylist.indexOfFirst { it.id == currentSong?.id }
         if (idx != -1) idx else 0
+    }
+
+    if (shareTunesSong != null) {
+        com.travelingtunes.app.feature.player.ShareTunesDialog(
+            song = shareTunesSong,
+            onDismissRequest = { shareTunesSong = null },
+            onShare = { scope, format ->
+                val targetSong = shareTunesSong ?: return@ShareTunesDialog
+                when {
+                    scope == com.travelingtunes.app.feature.player.ShareTunesScope.TRACK && format == com.travelingtunes.app.feature.player.ShareTunesFormat.INFO -> {
+                        TrackSharingHelper.shareTrackText(context, targetSong)
+                    }
+                    scope == com.travelingtunes.app.feature.player.ShareTunesScope.TRACK && format == com.travelingtunes.app.feature.player.ShareTunesFormat.FILES -> {
+                        TrackSharingHelper.shareTrackFile(context, targetSong)
+                    }
+                    scope == com.travelingtunes.app.feature.player.ShareTunesScope.ALBUM && format == com.travelingtunes.app.feature.player.ShareTunesFormat.INFO -> {
+                        if (musicDatabase != null) {
+                            coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                val albumSongs = musicDatabase.getSongsByAlbumAndArtist(targetSong.album, targetSong.artist)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    TrackSharingHelper.shareAlbumText(context, targetSong.album, targetSong.artist, albumSongs)
+                                }
+                            }
+                        }
+                    }
+                    scope == com.travelingtunes.app.feature.player.ShareTunesScope.ALBUM && format == com.travelingtunes.app.feature.player.ShareTunesFormat.FILES -> {
+                        if (musicDatabase != null) {
+                            coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                val albumSongs = musicDatabase.getSongsByAlbumAndArtist(targetSong.album, targetSong.artist)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    TrackSharingHelper.shareAlbumFilesZip(context, targetSong.album, targetSong.artist, albumSongs)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    if (editTagsChoiceSong != null) {
+        com.travelingtunes.app.feature.player.EditTagsChoiceDialog(
+            song = editTagsChoiceSong,
+            onDismissRequest = { editTagsChoiceSong = null },
+            onSelectScope = { scope ->
+                val targetSong = editTagsChoiceSong ?: return@EditTagsChoiceDialog
+                if (scope == com.travelingtunes.app.feature.player.EditTagsScope.TRACK) {
+                    activeTagEditorTracks = listOf(targetSong)
+                } else {
+                    if (musicDatabase != null) {
+                        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val albumSongs = musicDatabase.getSongsByAlbumAndArtist(targetSong.album, targetSong.artist)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                activeTagEditorTracks = albumSongs.ifEmpty { listOf(targetSong) }
+                            }
+                        }
+                    } else {
+                        activeTagEditorTracks = listOf(targetSong)
+                    }
+                }
+            }
+        )
     }
 
     if (!activeTagEditorTracks.isNullOrEmpty() && musicDatabase != null && musicScanner != null) {
@@ -231,13 +298,10 @@ fun QueueBottomSheet(
                                 playbackManager.removeQueueItem(index)
                             },
                             onEditTags = {
-                                activeTagEditorTracks = listOf(song)
+                                editTagsChoiceSong = song
                             },
-                            onShareText = {
-                                TrackSharingHelper.shareTrackText(context, song)
-                            },
-                            onShareFile = {
-                                TrackSharingHelper.shareTrackFile(context, song)
+                            onShareTunes = {
+                                shareTunesSong = song
                             },
                             onMoveUp = if (index > 0) {
                                 { playbackManager.moveQueueItem(index, index - 1) }
@@ -286,8 +350,7 @@ private fun QueueItemRow(
     onPlay: () -> Unit,
     onRemove: () -> Unit,
     onEditTags: (() -> Unit)? = null,
-    onShareText: (() -> Unit)? = null,
-    onShareFile: (() -> Unit)? = null,
+    onShareTunes: (() -> Unit)? = null,
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?,
     onDrag: (Float) -> Unit,
@@ -453,7 +516,7 @@ private fun QueueItemRow(
 
             var menuExpanded by remember { mutableStateOf(false) }
 
-            if (onEditTags != null || onShareText != null || onShareFile != null) {
+            if (onEditTags != null || onShareTunes != null) {
                 Box {
                     IconButton(
                         onClick = { menuExpanded = true },
@@ -486,33 +549,18 @@ private fun QueueItemRow(
                                 }
                             )
                         }
-                        if (onShareText != null) {
+                        if (onShareTunes != null) {
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Share Track Info (Text)")
+                                        Text("Share Tunes")
                                     }
                                 },
                                 onClick = {
                                     menuExpanded = false
-                                    onShareText()
-                                }
-                            )
-                        }
-                        if (onShareFile != null) {
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Share Audio File")
-                                    }
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    onShareFile()
+                                    onShareTunes()
                                 }
                             )
                         }

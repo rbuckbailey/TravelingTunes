@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import com.travelingtunes.app.core.theme.AlbumArtColorCache
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -161,6 +162,41 @@ fun DownloadedArtBrowserScreen(
     var zoomPreviewUri by remember { mutableStateOf<Uri?>(null) }
     var zoomPreviewSong by remember { mutableStateOf<Song?>(null) }
     var zoomPreviewTitle by remember { mutableStateOf("") }
+    var shareTunesSong by remember { mutableStateOf<Song?>(null) }
+
+    if (shareTunesSong != null) {
+        com.travelingtunes.app.feature.player.ShareTunesDialog(
+            song = shareTunesSong,
+            onDismissRequest = { shareTunesSong = null },
+            onShare = { scope, format ->
+                val targetSong = shareTunesSong ?: return@ShareTunesDialog
+                when {
+                    scope == com.travelingtunes.app.feature.player.ShareTunesScope.TRACK && format == com.travelingtunes.app.feature.player.ShareTunesFormat.INFO -> {
+                        com.travelingtunes.app.core.media.TrackSharingHelper.shareTrackText(context, targetSong)
+                    }
+                    scope == com.travelingtunes.app.feature.player.ShareTunesScope.TRACK && format == com.travelingtunes.app.feature.player.ShareTunesFormat.FILES -> {
+                        com.travelingtunes.app.core.media.TrackSharingHelper.shareTrackFile(context, targetSong)
+                    }
+                    scope == com.travelingtunes.app.feature.player.ShareTunesScope.ALBUM && format == com.travelingtunes.app.feature.player.ShareTunesFormat.INFO -> {
+                        coroutineScope.launch(Dispatchers.IO) {
+                            val songs = musicDatabase.getSongsByAlbumAndArtist(targetSong.album, targetSong.artist)
+                            withContext(Dispatchers.Main) {
+                                com.travelingtunes.app.core.media.TrackSharingHelper.shareAlbumText(context, targetSong.album, targetSong.artist, songs)
+                            }
+                        }
+                    }
+                    scope == com.travelingtunes.app.feature.player.ShareTunesScope.ALBUM && format == com.travelingtunes.app.feature.player.ShareTunesFormat.FILES -> {
+                        coroutineScope.launch(Dispatchers.IO) {
+                            val songs = musicDatabase.getSongsByAlbumAndArtist(targetSong.album, targetSong.artist)
+                            withContext(Dispatchers.Main) {
+                                com.travelingtunes.app.core.media.TrackSharingHelper.shareAlbumFilesZip(context, targetSong.album, targetSong.artist, songs)
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
 
     // Background Embedding States
     val isEmbeddingArt by (musicScanner?.isEmbeddingArt?.collectAsState() ?: remember { mutableStateOf(false) })
@@ -619,6 +655,12 @@ fun DownloadedArtBrowserScreen(
                                                 )
                                                 refreshList()
                                             }
+                                        },
+                                        onShareTunes = {
+                                            coroutineScope.launch {
+                                                val songs = musicDatabase.getSongsByAlbumAndArtist(albumInfo.album, albumInfo.artist)
+                                                shareTunesSong = songs.firstOrNull()
+                                            }
                                         }
                                     )
                                 }
@@ -641,6 +683,9 @@ fun DownloadedArtBrowserScreen(
                                         onEditTags = {
                                             editingTargetTracks = listOf(song)
                                             showEditDialog = true
+                                        },
+                                        onShareTunes = {
+                                            shareTunesSong = song
                                         }
                                     )
                                 }
@@ -991,9 +1036,37 @@ fun EditTagsAndArtworkDialog(
                 }
 
                 var showTagEditorCropDialog by remember { mutableStateOf(false) }
+                var showReplaceArtFromTagEditor by remember { mutableStateOf(false) }
+                var allAlbumsForTagEditor by remember { mutableStateOf<List<AlbumArtBrowserInfo>>(emptyList()) }
 
                 val tagEditorPhotoPicker = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.PickVisualMedia(),
+                ) { uri ->
+                    if (uri != null) {
+                        coroutineScope.launch {
+                            try {
+                                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                                if (bytes != null && bytes.isNotEmpty()) {
+                                    val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                    val songs = musicDatabase.getSongsByAlbumAndArtist(sampleTrack.album, sampleTrack.artist)
+                                    albumArtDownloader.saveCustomArtworkForAlbum(sampleTrack.album, sampleTrack.artist, bytes, songs)
+                                    origBitmap = bitmap
+                                    currentSquareBitmap = albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist) ?: bitmap
+                                    isEmbeddedArt = false
+                                    playbackManager.refreshCurrentSongArtwork()
+                                    if (bitmap != null && ArtCropFillHelper.isNonSquare(bitmap)) {
+                                        showTagEditorCropDialog = true
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+
+                val tagEditorFilePicker = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument(),
                 ) { uri ->
                     if (uri != null) {
                         coroutineScope.launch {
@@ -1070,9 +1143,7 @@ fun EditTagsAndArtworkDialog(
 
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Button(
-                                    onClick = {
-                                        tagEditorPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                    },
+                                    onClick = { showReplaceArtFromTagEditor = true },
                                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                     modifier = Modifier.height(30.dp)
                                 ) {
@@ -1116,6 +1187,68 @@ fun EditTagsAndArtworkDialog(
                                 currentSquareBitmap = processedBitmap
                                 playbackManager.refreshCurrentSongArtwork()
                                 showTagEditorCropDialog = false
+                            }
+                        }
+                    )
+                }
+
+                if (showReplaceArtFromTagEditor) {
+                    LaunchedEffect(Unit) {
+                        if (allAlbumsForTagEditor.isEmpty()) {
+                            withContext(Dispatchers.IO) {
+                                allAlbumsForTagEditor = musicDatabase.getAllAlbumsWithArtInfo()
+                            }
+                        }
+                    }
+                    val target = AlbumArtBrowserInfo(
+                        album = sampleTrack.album,
+                        artist = sampleTrack.artist,
+                        songCount = targetTracks.size,
+                        artworkUri = sampleTrack.artworkUri,
+                        artType = if (isEmbeddedArt) ArtworkType.EMBEDDED else if (origBitmap != null) ArtworkType.DOWNLOADED else ArtworkType.MISSING
+                    )
+                    ReplaceArtworkDialog(
+                        targetAlbum = target,
+                        allAlbums = allAlbumsForTagEditor,
+                        albumArtDownloader = albumArtDownloader,
+                        onDismiss = { showReplaceArtFromTagEditor = false },
+                        onSelectFromPhotos = {
+                            tagEditorPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            showReplaceArtFromTagEditor = false
+                        },
+                        onSelectFromFiles = {
+                            tagEditorFilePicker.launch(arrayOf("image/*"))
+                            showReplaceArtFromTagEditor = false
+                        },
+                        onCopyFromOtherAlbum = { sourceAlbum ->
+                            coroutineScope.launch {
+                                val sourceUri = sourceAlbum.artworkUri
+                                if (sourceUri != null) {
+                                    albumArtDownloader.copyArtworkToAlbums(sourceUri, listOf(Pair(sampleTrack.album, sampleTrack.artist)))
+                                    playbackManager.refreshCurrentSongArtwork()
+                                    val newOrig = albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist)
+                                    if (newOrig != null) {
+                                        origBitmap = newOrig
+                                        currentSquareBitmap = newOrig
+                                        isEmbeddedArt = false
+                                    }
+                                    showReplaceArtFromTagEditor = false
+                                }
+                            }
+                        },
+                        onZoomCandidate = {},
+                        onCustomSearchResult = { candidate ->
+                            coroutineScope.launch {
+                                val songs = musicDatabase.getSongsByAlbumAndArtist(sampleTrack.album, sampleTrack.artist)
+                                albumArtDownloader.applyCandidateToAlbum(candidate, sampleTrack.artist, sampleTrack.album, songs)
+                                playbackManager.refreshCurrentSongArtwork()
+                                val newOrig = albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist)
+                                if (newOrig != null) {
+                                    origBitmap = newOrig
+                                    currentSquareBitmap = newOrig
+                                    isEmbeddedArt = false
+                                }
+                                showReplaceArtFromTagEditor = false
                             }
                         }
                     )
@@ -1291,7 +1424,8 @@ private fun TrackItemRow(
     song: Song,
     isSelected: Boolean,
     onToggleSelect: () -> Unit,
-    onEditTags: () -> Unit
+    onEditTags: () -> Unit,
+    onShareTunes: (() -> Unit)? = null
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -1338,7 +1472,6 @@ private fun TrackItemRow(
             }
 
             var trackMenuExpanded by remember { mutableStateOf(false) }
-            val context = LocalContext.current
 
             Box {
                 IconButton(onClick = { trackMenuExpanded = true }) {
@@ -1363,33 +1496,21 @@ private fun TrackItemRow(
                         }
                     )
 
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Share Track Info (Text)")
+                    if (onShareTunes != null) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Share Tunes")
+                                }
+                            },
+                            onClick = {
+                                trackMenuExpanded = false
+                                onShareTunes()
                             }
-                        },
-                        onClick = {
-                            trackMenuExpanded = false
-                            TrackSharingHelper.shareTrackText(context, song)
-                        }
-                    )
-
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Share Audio File")
-                            }
-                        },
-                        onClick = {
-                            trackMenuExpanded = false
-                            TrackSharingHelper.shareTrackFile(context, song)
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -1440,7 +1561,8 @@ private fun AlbumArtBrowserItemRow(
     onReplace: () -> Unit,
     onCopy: () -> Unit,
     onEditTags: () -> Unit,
-    onEmbedId3: () -> Unit
+    onEmbedId3: () -> Unit,
+    onShareTunes: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -1620,43 +1742,21 @@ private fun AlbumArtBrowserItemRow(
                         }
                     )
 
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Share Album Info (Text)")
-                            }
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            coroutineScope.launch(Dispatchers.IO) {
-                                val songs = musicDatabase?.getSongsByAlbumAndArtist(albumInfo.album, albumInfo.artist) ?: emptyList()
-                                withContext(Dispatchers.Main) {
-                                    TrackSharingHelper.shareAlbumText(context, albumInfo.album, albumInfo.artist, songs)
+                    if (onShareTunes != null) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Share Tunes")
                                 }
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onShareTunes()
                             }
-                        }
-                    )
-
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Share Album Files (Zip)")
-                            }
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            coroutineScope.launch(Dispatchers.IO) {
-                                val songs = musicDatabase?.getSongsByAlbumAndArtist(albumInfo.album, albumInfo.artist) ?: emptyList()
-                                withContext(Dispatchers.Main) {
-                                    TrackSharingHelper.shareAlbumFilesZip(context, albumInfo.album, albumInfo.artist, songs)
-                                }
-                            }
-                        }
-                    )
+                        )
+                    }
 
                     DropdownMenuItem(
                         text = {
@@ -1919,9 +2019,17 @@ private fun ReplaceArtworkDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .fillMaxWidth(0.92f)
+            .padding(vertical = 12.dp),
         title = { Text("Replace Artwork for \"${targetAlbum.album}\"", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 Text("Select replacement artwork source:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -2021,12 +2129,14 @@ private fun ReplaceArtworkDialog(
                     if (filteredSources.isEmpty()) {
                         Text("No matching source albums found.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
-                        LazyColumn(
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 150.dp)
+                                .heightIn(max = 180.dp)
+                                .verticalScroll(rememberScrollState())
                         ) {
-                            items(filteredSources, key = { "${it.artist}_${it.album}" }) { source ->
+                            filteredSources.forEach { source ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
@@ -2150,27 +2260,33 @@ private fun ReplaceArtworkDialog(
                     Text("Tap an image to select artwork:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 280.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(searchCandidates) { candidate ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(135.dp)
-                                    .clickable { onCustomSearchResult(candidate) },
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        searchCandidates.chunked(2).forEach { pair ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                CandidateImageThumbnail(
-                                    candidate = candidate,
-                                    albumArtDownloader = albumArtDownloader,
-                                    onZoom = { onZoomCandidate(candidate) }
-                                )
+                                pair.forEach { candidate ->
+                                    Card(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(135.dp)
+                                            .clickable { onCustomSearchResult(candidate) },
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        CandidateImageThumbnail(
+                                            candidate = candidate,
+                                            albumArtDownloader = albumArtDownloader,
+                                            onZoom = { onZoomCandidate(candidate) }
+                                        )
+                                    }
+                                }
+                                if (pair.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
                     }
@@ -2203,6 +2319,10 @@ private fun CopyArtworkDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .fillMaxWidth(0.92f)
+            .padding(vertical = 12.dp),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -2216,7 +2336,11 @@ private fun CopyArtworkDialog(
             }
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 // Source Album Banner Card
                 Card(
                     colors = CardDefaults.cardColors(

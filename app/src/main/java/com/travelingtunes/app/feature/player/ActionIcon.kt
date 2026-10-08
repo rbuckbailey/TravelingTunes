@@ -58,6 +58,12 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -103,8 +109,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
@@ -338,17 +346,15 @@ fun ActionIcon(
                 modifier = Modifier.size(iconSize)
             )
 
-            GestureAction.EDIT_TRACK_TAGS, GestureAction.EDIT_ALBUM_TAGS -> {
-                MonochromeEmojiIcon(
-                    emoji = "🏷️✏️",
+            GestureAction.EDIT_TAGS -> {
+                EditTagsCutoutIcon(
                     tint = effectiveTint,
                     iconSize = iconSize,
                     modifier = modifier
                 )
             }
 
-            GestureAction.SHARE_TRACK_TEXT, GestureAction.SHARE_TRACK_FILE,
-            GestureAction.SHARE_ALBUM_TEXT, GestureAction.SHARE_ALBUM_FILES -> {
+            GestureAction.SHARE_TUNES -> {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = action.displayName,
@@ -433,6 +439,41 @@ fun MonochromeEmojiIcon(
 }
 
 @Composable
+fun EditTagsCutoutIcon(
+    tint: Color,
+    iconSize: Dp,
+    modifier: Modifier = Modifier
+) {
+    val tagPainter = rememberVectorPainter(Icons.Default.LocalOffer)
+    val pencilPainter = rememberVectorPainter(Icons.Default.Edit)
+
+    Box(
+        modifier = modifier
+            .size(iconSize)
+            .graphicsLayer { alpha = 0.99f },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            tagPainter.apply { draw(size, colorFilter = ColorFilter.tint(tint)) }
+
+            val pencilWidth = size.width * 0.55f
+            val pencilHeight = size.height * 0.55f
+            val pencilSize = Size(pencilWidth, pencilHeight)
+            val pencilOffset = Offset(size.width * 0.45f, size.height * 0.45f)
+
+            translate(left = pencilOffset.x, top = pencilOffset.y) {
+                val cutoutPaint = Paint().apply {
+                    blendMode = BlendMode.Clear
+                }
+                drawContext.canvas.saveLayer(Rect(Offset.Zero, pencilSize), cutoutPaint)
+                pencilPainter.apply { draw(pencilSize, colorFilter = ColorFilter.tint(Color.Black)) }
+                drawContext.canvas.restore()
+            }
+        }
+    }
+}
+
+@Composable
 fun ConfigOptionIcon(
     optionKey: String,
     modifier: Modifier = Modifier,
@@ -446,11 +487,11 @@ fun ConfigOptionIcon(
         return
     }
 
-    if (optionKey.equals("ACTION_EDIT_TRACK_TAGS", ignoreCase = true) ||
+    if (optionKey.equals("ACTION_EDIT_TAGS", ignoreCase = true) ||
+        optionKey.equals("ACTION_EDIT_TRACK_TAGS", ignoreCase = true) ||
         optionKey.equals("ACTION_EDIT_ALBUM_TAGS", ignoreCase = true) ||
         optionKey.equals("ACTION_OPEN_ART_TAGS_EDITOR", ignoreCase = true)) {
-        MonochromeEmojiIcon(
-            emoji = "🏷️✏️",
+        EditTagsCutoutIcon(
             tint = tint,
             iconSize = iconSize,
             modifier = modifier
@@ -635,7 +676,7 @@ private fun getConfigOptionIconVector(optionKey: String): Pair<ImageVector, Imag
         "DISPLAY_immersiveMode" -> Icons.Default.Tv to null
 
         // Library & Auto
-        "ACTION_SHARE_TRACK_TEXT", "ACTION_SHARE_TRACK_FILE",
+        "ACTION_SHARE_TUNES", "ACTION_SHARE_TRACK_TEXT", "ACTION_SHARE_TRACK_FILE",
         "ACTION_SHARE_ALBUM_TEXT", "ACTION_SHARE_ALBUM_FILES" -> Icons.Default.Share to null
         "LIBRARY_autoRescan" -> Icons.Default.Sync to null
         "LIBRARY_gpsVolume" -> Icons.Default.Speed to null
