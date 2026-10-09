@@ -165,6 +165,7 @@ class MusicPlaybackService : MediaLibraryService() {
     private lateinit var mediaStoreRepository: MediaStoreRepository
     private lateinit var settingsDataStore: SettingsDataStore
     private var autoDisplaySettings = DisplaySettings()
+    private var cachedGestureBindings: Map<GestureTrigger, GestureBinding> = emptyMap()
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
 
@@ -172,6 +173,12 @@ class MusicPlaybackService : MediaLibraryService() {
     private fun loadArtworkBitmapForMediaItem(context: Context, mediaItem: MediaItem?): Bitmap? {
         if (mediaItem == null) return null
         val metadata = mediaItem.mediaMetadata
+        val data = metadata.artworkData
+        if (data != null && data.isNotEmpty()) {
+            try {
+                return BitmapFactory.decodeByteArray(data, 0, data.size)
+            } catch (_: Exception) {}
+        }
         val uri = metadata.artworkUri
         if (uri != null) {
             try {
@@ -180,17 +187,23 @@ class MusicPlaybackService : MediaLibraryService() {
                     if (file.exists() && file.length() > 0L) {
                         return BitmapFactory.decodeFile(file.absolutePath)
                     }
+                } else if (uri.scheme == "content" && uri.authority == "${context.packageName}.fileprovider") {
+                    val pathSegment = uri.path
+                    if (pathSegment != null) {
+                        val targetFile = if (pathSegment.startsWith("/cache/")) {
+                            File(context.cacheDir, pathSegment.removePrefix("/cache/"))
+                        } else if (pathSegment.startsWith("/files/")) {
+                            File(context.filesDir, pathSegment.removePrefix("/files/"))
+                        } else null
+                        if (targetFile != null && targetFile.exists() && targetFile.length() > 0L) {
+                            return BitmapFactory.decodeFile(targetFile.absolutePath)
+                        }
+                    }
                 } else {
                     context.contentResolver.openInputStream(uri)?.use { stream ->
                         return BitmapFactory.decodeStream(stream)
                     }
                 }
-            } catch (_: Exception) {}
-        }
-        val data = metadata.artworkData
-        if (data != null && data.isNotEmpty()) {
-            try {
-                return BitmapFactory.decodeByteArray(data, 0, data.size)
             } catch (_: Exception) {}
         }
         return null
@@ -215,7 +228,7 @@ class MusicPlaybackService : MediaLibraryService() {
 
             val artBitmap = loadArtworkBitmapForMediaItem(applicationContext, currentMediaItem)
                 ?: currentSong?.let { song ->
-                    val bytes = getArtworkBytesForSong(applicationContext, song)
+                    val bytes = getArtworkBytesForSong(applicationContext, song, autoDisplaySettings.stretchArt)
                     if (bytes != null && bytes.isNotEmpty()) {
                         BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     } else null
@@ -394,6 +407,7 @@ class MusicPlaybackService : MediaLibraryService() {
                 settingsDataStore.gestureBindingsFlow,
                 settingsDataStore.displaySettingsFlow
             ) { repeatMode, shuffleMode, bindings, settings ->
+                cachedGestureBindings = bindings
                 autoDisplaySettings = settings
                 sharedSession?.let { session ->
                     updateCustomLayout(session, bindings, settings, repeatMode, shuffleMode)
@@ -402,14 +416,21 @@ class MusicPlaybackService : MediaLibraryService() {
             }.collect {}
         }
 
+        var lastNotifiedPlaylistIds: List<Long> = emptyList()
+
         serviceScope.launch {
             val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
             combine(
                 playbackManager.currentSong,
                 playbackManager.currentPlaylist
-            ) { _, _ ->
+            ) { _, playlist ->
+                val newPlaylistIds = playlist.map { it.id }
+                val playlistChanged = newPlaylistIds != lastNotifiedPlaylistIds
+                if (playlistChanged) {
+                    lastNotifiedPlaylistIds = newPlaylistIds
+                }
                 sharedSession?.let { session ->
-                    notifyAutoChildrenChanged(session)
+                    notifyAutoChildrenChanged(session, notifyQueueOnlyOnChanged = true, playlistChanged = playlistChanged)
                 }
             }.collect {}
         }
@@ -428,8 +449,17 @@ class MusicPlaybackService : MediaLibraryService() {
         manager?.createNotificationChannel(channel)
     }
 
-    private fun notifyAutoChildrenChanged(session: MediaLibrarySession) {
-        listOf("root", "show_play_screen", "category_queue", "queue").forEach { parentId ->
+    private fun notifyAutoChildrenChanged(
+        session: MediaLibrarySession,
+        notifyQueueOnlyOnChanged: Boolean = false,
+        playlistChanged: Boolean = true
+    ) {
+        val parentIds = mutableListOf("root", "show_play_screen")
+        if (!notifyQueueOnlyOnChanged || playlistChanged) {
+            parentIds.add("category_queue")
+            parentIds.add("queue")
+        }
+        parentIds.forEach { parentId ->
             try {
                 session.notifyChildrenChanged(parentId, 0, null)
             } catch (e: Exception) {
@@ -936,7 +966,28 @@ class MusicPlaybackService : MediaLibraryService() {
             }
 
             val isAutoController = isAndroidAutoController(controller)
-            val bindings = kotlinx.coroutines.runBlocking { settingsDataStore.gestureBindingsFlow.first() }
+            android.util.Log.d(
+                "AutoArtworkDiag",
+                "onConnect: controllerPkg=${controller.packageName}, uid=${controller.uid}, isAutoController=$isAutoController"
+            )
+
+            serviceScope.launch(Dispatchers.IO) {
+                try {
+                    val currentSong = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase).currentSong.value
+                    if (currentSong != null) {
+                        val activeItem = songToMediaItem(currentSong, applicationContext, includeArtworkData = true)
+                        val activeUri = activeItem.mediaMetadata.artworkUri
+                        if (activeUri != null && activeUri.scheme == "content") {
+                            applicationContext.grantUriPermission(controller.packageName, activeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            android.util.Log.d("AutoArtworkDiag", "Granted URI permission onConnect to ${controller.packageName} for $activeUri")
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("AutoArtworkDiag", "Error granting URI permission onConnect to ${controller.packageName}", e)
+                }
+            }
+
+            val bindings = cachedGestureBindings
             val customLayout = buildCustomLayoutButtons(
                 bindings = bindings,
                 autoSettings = autoDisplaySettings,
@@ -963,7 +1014,7 @@ class MusicPlaybackService : MediaLibraryService() {
                                 if (savedState.queueIds.isNotEmpty()) {
                                     val songMap = allSongs.associateBy { it.id }
                                     val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
-                                    val finalQueue = restoredQueue.ifEmpty { allSongs }
+                                    val finalQueue = restoredQueue.ifEmpty { allSongs.take(50) }
 
                                     playbackManager.restorePlaybackState(
                                         songs = finalQueue,
@@ -976,7 +1027,7 @@ class MusicPlaybackService : MediaLibraryService() {
                                     )
                                 } else {
                                     playbackManager.restorePlaybackState(
-                                        songs = allSongs,
+                                        songs = allSongs.take(50),
                                         startIndex = 0,
                                         positionMs = 0L,
                                         shuffle = false,
@@ -1009,7 +1060,7 @@ class MusicPlaybackService : MediaLibraryService() {
                                 if (savedState.queueIds.isNotEmpty()) {
                                     val songMap = allSongs.associateBy { it.id }
                                     val restoredQueue = savedState.queueIds.mapNotNull { songMap[it] }
-                                    val finalQueue = restoredQueue.ifEmpty { allSongs }
+                                    val finalQueue = restoredQueue.ifEmpty { allSongs.take(50) }
 
                                     playbackManager.restorePlaybackState(
                                         songs = finalQueue,
@@ -1022,7 +1073,7 @@ class MusicPlaybackService : MediaLibraryService() {
                                     )
                                 } else {
                                     playbackManager.restorePlaybackState(
-                                        songs = allSongs,
+                                        songs = allSongs.take(50),
                                         startIndex = 0,
                                         positionMs = 0L,
                                         shuffle = false,
@@ -1163,7 +1214,7 @@ class MusicPlaybackService : MediaLibraryService() {
                 val items = mutableListOf<MediaItem>()
                 val showArt = autoDisplaySettings.autoShowAlbumArt
 
-                val effectivePageSize = if (pageSize > 0) pageSize else 50
+                val effectivePageSize = if (pageSize > 0) pageSize.coerceAtMost(100) else 50
                 val effectivePage = if (page >= 0) page else 0
 
                 fun <T> paginateDomainList(list: List<T>): List<T> {
@@ -1172,7 +1223,7 @@ class MusicPlaybackService : MediaLibraryService() {
                     return list.subList(fromIndex, toIndex)
                 }
 
-                if (parentId != "show_play_screen" && effectivePage == 0) {
+                if ((parentId == "root" || parentId == "show_play_screen" || parentId == "category_picker") && effectivePage == 0) {
                     items.add(showPlayScreenItem)
                 }
 
@@ -1527,9 +1578,17 @@ class MusicPlaybackService : MediaLibraryService() {
                             playStartIndex = 0
                         }
                     } else if (matchedSong != null) {
-                        val (activeQueue, activeIndex) = playbackManager.buildActiveQueue(targetSong = matchedSong)
-                        resolvedSongs.addAll(activeQueue)
-                        playStartIndex = activeIndex
+                        val currentQueue = playbackManager.currentPlaylist.value
+                        val songInQueueIdx = if (currentQueue.isNotEmpty()) currentQueue.indexOfFirst { it.id == matchedSong.id } else -1
+
+                        if (songInQueueIdx != -1) {
+                            resolvedSongs.addAll(currentQueue)
+                            playStartIndex = songInQueueIdx
+                        } else {
+                            val (activeQueue, activeIndex) = playbackManager.buildActiveQueue(targetSong = matchedSong)
+                            resolvedSongs.addAll(activeQueue)
+                            playStartIndex = activeIndex
+                        }
                     } else if (requestedId.startsWith("album_")) {
                         val albumName = requestedId.removePrefix("album_")
                         val songs = allSongs.filter { it.album.equals(albumName, ignoreCase = true) }
@@ -1658,21 +1717,35 @@ class MusicPlaybackService : MediaLibraryService() {
     }
 }
 
-fun getArtworkBytesForSong(context: Context, song: Song): ByteArray? {
+private val artworkBytesCache = android.util.LruCache<Long, ByteArray>(30)
+
+fun processAutoArtworkBytes(bytes: ByteArray, stretchArt: Boolean): ByteArray {
+    if (bytes.isEmpty()) return bytes
+    val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromByteArray(bytes, 800, 800) ?: return bytes
+    val mode = if (stretchArt) ArtCropFillMode.STRETCH else ArtCropFillMode.FILL
+    val canvasBmp = ArtCropFillHelper.processAutoDashboardCanvas(
+        original = bmp,
+        mode = mode,
+        canvasDim = 800
+    )
+    val stream = java.io.ByteArrayOutputStream()
+    canvasBmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+    return stream.toByteArray()
+}
+
+fun getArtworkBytesForSong(context: Context, song: Song, stretchArt: Boolean = false): ByteArray? {
+    val cachedBytes = artworkBytesCache[song.id]
+    if (cachedBytes != null && cachedBytes.isNotEmpty()) {
+        return cachedBytes
+    }
     try {
         val downloadedFile = AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
         if (downloadedFile != null) {
             val bytes = downloadedFile.readBytes()
             if (bytes.isNotEmpty()) {
-                if (bytes.size <= 300 * 1024) {
-                    return bytes
-                }
-                val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(downloadedFile.absolutePath, 500, 500)
-                if (bmp != null) {
-                    val stream = java.io.ByteArrayOutputStream()
-                    bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-                    return stream.toByteArray()
-                }
+                val resultBytes = processAutoArtworkBytes(bytes, stretchArt)
+                if (resultBytes.isNotEmpty()) artworkBytesCache.put(song.id, resultBytes)
+                return resultBytes
             }
         }
 
@@ -1685,15 +1758,9 @@ fun getArtworkBytesForSong(context: Context, song: Song): ByteArray? {
                 context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             }
             if (bytes != null && bytes.isNotEmpty()) {
-                if (bytes.size <= 300 * 1024) {
-                    return bytes
-                }
-                val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromByteArray(bytes, 500, 500)
-                if (bmp != null) {
-                    val stream = java.io.ByteArrayOutputStream()
-                    bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-                    return stream.toByteArray()
-                }
+                val resultBytes = processAutoArtworkBytes(bytes, stretchArt)
+                if (resultBytes.isNotEmpty()) artworkBytesCache.put(song.id, resultBytes)
+                return resultBytes
             }
         }
 
@@ -1714,15 +1781,9 @@ fun getArtworkBytesForSong(context: Context, song: Song): ByteArray? {
 
         if (targetFile != null) {
             val bytes = targetFile.readBytes()
-            if (bytes.size <= 300 * 1024) {
-                return bytes
-            }
-            val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromFile(targetFile.absolutePath, 500, 500)
-            if (bmp != null) {
-                val stream = java.io.ByteArrayOutputStream()
-                bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-                return stream.toByteArray()
-            }
+            val resultBytes = processAutoArtworkBytes(bytes, stretchArt)
+            if (resultBytes.isNotEmpty()) artworkBytesCache.put(song.id, resultBytes)
+            return resultBytes
         }
 
         val mmr = android.media.MediaMetadataRetriever()
@@ -1730,16 +1791,9 @@ fun getArtworkBytesForSong(context: Context, song: Song): ByteArray? {
             mmr.setDataSource(context, song.contentUri)
             val rawBytes = mmr.embeddedPicture
             if (rawBytes != null && rawBytes.isNotEmpty()) {
-                if (rawBytes.size <= 300 * 1024) {
-                    rawBytes
-                } else {
-                    val bmp = com.travelingtunes.app.feature.player.decodeSampledBitmapFromByteArray(rawBytes, 500, 500)
-                    if (bmp != null) {
-                        val stream = java.io.ByteArrayOutputStream()
-                        bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-                        stream.toByteArray()
-                    } else rawBytes
-                }
+                val resultBytes = processAutoArtworkBytes(rawBytes, stretchArt)
+                if (resultBytes.isNotEmpty()) artworkBytesCache.put(song.id, resultBytes)
+                resultBytes
             } else null
         } catch (_: Exception) {
             null
@@ -1751,22 +1805,46 @@ fun getArtworkBytesForSong(context: Context, song: Song): ByteArray? {
     }
 }
 
+private val grantedUrisSet = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+fun grantAutoUriPermissions(context: Context, uri: Uri?) {
+    if (uri == null || uri.scheme != "content") return
+    val uriStr = uri.toString()
+    if (grantedUrisSet.contains(uriStr)) return
+    grantedUrisSet.add(uriStr)
+
+    val autoPackages = listOf(
+        "com.google.android.projection.gearhead",
+        "com.google.android.car.messenger",
+        "com.google.android.autoservice"
+    )
+    for (pkg in autoPackages) {
+        try {
+            context.grantUriPermission(pkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            android.util.Log.d("AutoArtworkDiag", "Granted URI permission to $pkg for $uri")
+        } catch (e: Exception) {
+            android.util.Log.w("AutoArtworkDiag", "Failed to grant URI permission to $pkg for $uri", e)
+        }
+    }
+}
+
 @OptIn(UnstableApi::class)
 fun songToMediaItem(
     song: Song,
     context: Context? = null,
     showAlbumArt: Boolean = true,
-    includeArtworkData: Boolean = false
+    includeArtworkData: Boolean = false,
+    stretchArt: Boolean = false
 ): MediaItem {
-    val downloadedFile = if (showAlbumArt && context != null) {
-        val songUri = song.artworkUri
-        val uriStr = songUri?.toString() ?: ""
-        if (uriStr.contains("downloaded_art") || uriStr.contains("art_downloaded") || uriStr.contains("art_custom")) {
-            if (songUri != null && songUri.scheme == "file" && songUri.path != null) {
-                File(songUri.path!!)
-            } else {
-                AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
-            }
+    val songUriStr = song.artworkUri?.toString() ?: ""
+    val isDownloadedOrCustomRef = songUriStr.contains("downloaded_art") ||
+            songUriStr.contains("art_downloaded") ||
+            songUriStr.contains("art_custom")
+
+    val downloadedFile = if (showAlbumArt && context != null && (song.artworkUri == null || isDownloadedOrCustomRef)) {
+        if (song.artworkUri != null && song.artworkUri.scheme == "file" && song.artworkUri.path != null) {
+            val f = File(song.artworkUri.path!!)
+            if (f.exists()) f else AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
         } else {
             AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
         }
@@ -1800,7 +1878,20 @@ fun songToMediaItem(
         }
         else -> song.artworkUri
     }
-    val artBytes = if (showAlbumArt && includeArtworkData && context != null) getArtworkBytesForSong(context, song) else null
+
+    if (artUri != null && context != null) {
+        grantAutoUriPermissions(context, artUri)
+    }
+
+    val artBytes = if (showAlbumArt && includeArtworkData && context != null) getArtworkBytesForSong(context, song, stretchArt) else null
+
+    if (includeArtworkData) {
+        android.util.Log.d(
+            "AutoArtworkDiag",
+            "songToMediaItem active song '${song.title}': artUri=$artUri, artBytesSize=${artBytes?.size ?: 0}"
+        )
+    }
+
     val metadata = MediaMetadata.Builder()
         .setTitle(song.title)
         .setDisplayTitle(song.title)
@@ -1845,6 +1936,7 @@ fun songToMediaItem(
                         Uri.fromFile(targetFile)
                     }
                     setArtworkUri(targetUri)
+                    grantAutoUriPermissions(context, targetUri)
                 }
             }
         }

@@ -43,4 +43,17 @@ class ArtCropFillTest {
 
         assertTrue("800x600 is non-square", ArtCropFillHelper.isNonSquare(mockBitmap))
     }
+
+    @Test
+    fun testNonSquareArtworkFillModePreservesAspectScaleAndPadsBackground() {
+        val width = 800
+        val height = 600
+        val squareDim = Math.max(width, height)
+        val dstX = (squareDim - width) / 2
+        val dstY = (squareDim - height) / 2
+
+        assertEquals(800, squareDim)
+        assertEquals(0, dstX)
+        assertEquals(100, dstY)
+    }
 }

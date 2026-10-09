@@ -903,7 +903,7 @@ class AlbumArtDownloader(
 
             val origBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
             val squareBitmap = if (origBitmap != null && origBitmap.width != origBitmap.height) {
-                ArtCropFillHelper.processNonDestructiveSquare(origBitmap, ArtCropFillMode.CROP, ArtAlignmentPosition.CENTER)
+                ArtCropFillHelper.processNonDestructiveSquare(origBitmap, ArtCropFillMode.FILL, ArtAlignmentPosition.CENTER)
             } else {
                 origBitmap
             }

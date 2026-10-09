@@ -381,11 +381,15 @@ class PlaybackManager(
             persistStateJob?.cancel()
             persistStateJob = scope.launch(Dispatchers.IO) {
                 withContext(kotlinx.coroutines.NonCancellable) {
-                    val queueIds = playlist.map { it.id }
+                    val queueWindowStart = (songIndex - 20).coerceAtLeast(0)
+                    val queueWindowEnd = (songIndex + 80).coerceAtMost(playlist.size)
+                    val queueIds = playlist.subList(queueWindowStart, queueWindowEnd).map { it.id }
+                    val relativeSongIndex = (songIndex - queueWindowStart).coerceAtLeast(0)
+
                     store.savePlaybackState(
                         queueIds = queueIds,
                         activeSongId = songId,
-                        activeSongIndex = songIndex,
+                        activeSongIndex = relativeSongIndex,
                         positionMs = posMs,
                         isShuffle = currShuffle != ShuffleMode.OFF,
                         isRepeat = currRepeat != RepeatMode.OFF,
@@ -398,11 +402,15 @@ class PlaybackManager(
             persistStateJob?.cancel()
             persistStateJob = scope.launch(Dispatchers.IO) {
                 delay(debounceMs)
-                val queueIds = playlist.map { it.id }
+                val queueWindowStart = (songIndex - 20).coerceAtLeast(0)
+                val queueWindowEnd = (songIndex + 80).coerceAtMost(playlist.size)
+                val queueIds = playlist.subList(queueWindowStart, queueWindowEnd).map { it.id }
+                val relativeSongIndex = (songIndex - queueWindowStart).coerceAtLeast(0)
+
                 store.savePlaybackState(
                     queueIds = queueIds,
                     activeSongId = songId,
-                    activeSongIndex = songIndex,
+                    activeSongIndex = relativeSongIndex,
                     positionMs = posMs,
                     isShuffle = currShuffle != ShuffleMode.OFF,
                     isRepeat = currRepeat != RepeatMode.OFF,
@@ -604,16 +612,25 @@ class PlaybackManager(
         val safeIndex = startIndex.coerceIn(0, songs.size - 1)
         val selectedSong = songs.getOrNull(safeIndex)
 
+        val samePlaylist = _currentPlaylist.value.size == songs.size &&
+                _currentPlaylist.value.zip(songs).all { (a, b) -> a.id == b.id }
+
         _currentPlaylist.value = songs
         _currentSong.value = selectedSong
         persistCurrentPlaybackState()
 
-        val mediaItems = songs.mapIndexed { idx, item ->
-            songToMediaItem(item, context, includeArtworkData = (idx == safeIndex))
+        if (samePlaylist && player.mediaItemCount == songs.size) {
+            player.seekTo(safeIndex, 0L)
+            player.playWhenReady = true
+        } else {
+            val mediaItems = songs.mapIndexed { idx, item ->
+                songToMediaItem(item, context, includeArtworkData = (idx == safeIndex))
+            }
+            player.shuffleModeEnabled = false
+            player.setMediaItems(mediaItems, safeIndex, 0L)
+            player.prepare()
+            player.playWhenReady = true
         }
-        player.shuffleModeEnabled = false
-        player.setMediaItems(mediaItems, safeIndex, 0L)
-        player.prepare()
     }
 
     fun shuffleAllSongs() {
@@ -1165,7 +1182,11 @@ class PlaybackManager(
             }
             return
         }
-        val rawBase = unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { playlist } }
+        val rawBase = if (_shuffleMode.value == ShuffleMode.SONGS) {
+            masterPlaylist.ifEmpty { unshuffledPlaylist.ifEmpty { playlist } }
+        } else {
+            unshuffledPlaylist.ifEmpty { masterPlaylist.ifEmpty { playlist } }
+        }
         if (rawBase.isEmpty()) return
 
         val baseList = sortLibrarySongs(rawBase)

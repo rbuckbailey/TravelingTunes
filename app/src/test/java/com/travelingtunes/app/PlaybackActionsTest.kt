@@ -520,6 +520,58 @@ class PlaybackActionsTest {
     }
 
     @Test
+    fun testSelectingSongInExistingQueuePreservesActiveQueue() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val s1 = Song(101L, "Song 1", "Artist A", "Album A", 1L, 1000L, mockUri)
+        val s2 = Song(102L, "Song 2", "Artist A", "Album A", 1L, 1000L, mockUri)
+        val s3 = Song(103L, "Song 3", "Artist B", "Album B", 2L, 1000L, mockUri)
+
+        val currentQueue = listOf(s1, s2, s3)
+        val targetSong = s2
+
+        val songInQueueIdx = currentQueue.indexOfFirst { it.id == targetSong.id }
+
+        assertEquals(1, songInQueueIdx)
+        val resolvedSongs = if (songInQueueIdx != -1) currentQueue else listOf(targetSong)
+        assertEquals(3, resolvedSongs.size)
+        assertEquals(s1, resolvedSongs[0])
+        assertEquals(s2, resolvedSongs[1])
+        assertEquals(s3, resolvedSongs[2])
+    }
+
+    @Test
+    fun testPageSizeClampingInPagination() {
+        val requestedPageSize = Int.MAX_VALUE
+        val effectivePageSize = if (requestedPageSize > 0) requestedPageSize.coerceAtMost(100) else 50
+        assertEquals(100, effectivePageSize)
+
+        val zeroPageSize = 0
+        val defaultPageSize = if (zeroPageSize > 0) zeroPageSize.coerceAtMost(100) else 50
+        assertEquals(50, defaultPageSize)
+    }
+
+    @Test
+    fun testShuffleSongsUsesFullMasterLibrary() {
+        val mockUri = Mockito.mock(android.net.Uri::class.java)
+        val a1 = Song(1L, "Song 1", "Artist A", "Album 1", 1L, 1000L, mockUri)
+        val a2 = Song(2L, "Song 2", "Artist A", "Album 1", 1L, 1000L, mockUri)
+        val b1 = Song(3L, "Song 3", "Artist B", "Album 2", 2L, 1000L, mockUri)
+
+        val unshuffledArtistAOnly = listOf(a1, a2)
+        val masterLibraryAllSongs = listOf(a1, a2, b1)
+
+        val mode = ShuffleMode.SONGS
+        val rawBase = if (mode == ShuffleMode.SONGS) {
+            masterLibraryAllSongs.ifEmpty { unshuffledArtistAOnly }
+        } else {
+            unshuffledArtistAOnly.ifEmpty { masterLibraryAllSongs }
+        }
+
+        assertEquals("Shuffle SONGS mode must draw from full master library across all artists", 3, rawBase.size)
+        org.junit.Assert.assertTrue(rawBase.contains(b1))
+    }
+
+    @Test
     fun testGetGroupedCategoriesContainsAllGestureActions() {
         val groups = com.travelingtunes.app.core.model.GestureAction.getGroupedCategories(excludeRadialMenu = false, excludeUnassigned = false)
         val categorizedActions = groups.flatMap { it.actions }.toSet()

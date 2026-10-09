@@ -520,10 +520,11 @@ fun PlayerScreen(
         }
     }
 
-    // Pre-cache surrounding album art and color themes for next/previous tracks in background
+    // Pre-cache surrounding album art and color themes for next/previous tracks in background after UI startup
     LaunchedEffect(songIndex, pagerState.currentPage, currentPlaylist) {
+        delay(2500L) // Defer background tracks pre-caching until after UI becomes interactive
         val activeIndex = if (pagerState.currentPage in currentPlaylist.indices) pagerState.currentPage else songIndex
-        AlbumArtCache.instance.preCacheSurroundingSongs(context, currentPlaylist, activeIndex, radius = 4)
+        AlbumArtCache.instance.preCacheSurroundingSongs(context, currentPlaylist, activeIndex, radius = 2)
     }
 
     // Auto-clear action HUD text after 2 seconds
@@ -998,18 +999,10 @@ fun PlayerScreen(
 
     LaunchedEffect(currentSong?.id, currentPlaylist, pagerState.currentPage, displaySettings.matchArtColorPriority, displaySettings.albumArtColors, innerEdgeForCache) {
         if (displaySettings.albumArtColors && currentSong != null) {
+            delay(3000L) // Defer adjacent theme pre-caching until after UI startup
             val candidateSongs = listOfNotNull(
-                currentSong,
                 playbackManager.getNextSong(),
-                playbackManager.getPreviousSong(),
-                currentPlaylist.getOrNull(pagerState.currentPage + 1),
-                currentPlaylist.getOrNull(pagerState.currentPage - 1),
-                currentPlaylist.getOrNull(pagerState.currentPage + 2),
-                currentPlaylist.getOrNull(pagerState.currentPage - 2),
-                playbackManager.getNextAlbumFirstTrack(),
-                playbackManager.getPreviousAlbumFirstTrack(),
-                playbackManager.getArtistFirstTrack(),
-                playbackManager.getAlbumFirstTrack()
+                playbackManager.getPreviousSong()
             )
             com.travelingtunes.app.core.theme.AlbumArtColorCache.instance.preCacheSongs(
                 context = contextForArt,
@@ -3553,63 +3546,65 @@ private fun handleGestureAction(
                     else if (binding?.titleAction == GestureAction.OTHER_OPTION) binding.titleOtherOptionKey
                     else binding?.otherOptionKey
 
-                val effectiveKey = targetKey ?: run {
-                    val slotIndex = radialSlotIndex ?: 0
-                    kotlinx.coroutines.runBlocking {
+                coroutineScope.launch {
+                    val effectiveKey = targetKey ?: run {
+                        val slotIndex = radialSlotIndex ?: 0
                         settingsDataStore.getRadialOtherOptionFlow(trig.key, slotIndex).first()
                     }
-                }
 
-                if (effectiveKey != null) {
-                    when (effectiveKey) {
-                        "ACTION_OPEN_ART_TAGS_EDITOR", "ACTION_REPLACE_ART" -> {
-                            onOpenSettings(direction)
-                        }
-                        "ACTION_EDIT_TAGS", "ACTION_EDIT_TRACK_TAGS", "ACTION_EDIT_ALBUM_TAGS" -> {
-                            onOpenEditTagsChoice?.invoke()
-                        }
-                        "ACTION_SHARE_TUNES", "ACTION_SHARE_TRACK_TEXT", "ACTION_SHARE_TRACK_FILE", "ACTION_SHARE_ALBUM_TEXT", "ACTION_SHARE_ALBUM_FILES" -> {
-                            onOpenShareTunes?.invoke()
-                        }
-                        "ACTION_SONG_PICKER" -> onOpenSongPicker(direction)
-                        "ACTION_SHOW_QUEUE" -> onOpenQueue(direction)
-                        "ACTION_SELECT_ALBUM_VIEW" -> {
-                            val song = playbackManager.currentSong.value
-                            if (onOpenSongPickerWithFilter != null) {
-                                onOpenSongPickerWithFilter(direction, PickerCategory.ALBUMS, song?.artist, song?.album)
-                            } else {
-                                onOpenSongPicker(direction)
-                            }
-                        }
-                        "ACTION_SELECT_ARTIST_VIEW" -> {
-                            val song = playbackManager.currentSong.value
-                            if (onOpenSongPickerWithFilter != null) {
-                                onOpenSongPickerWithFilter(direction, PickerCategory.ARTISTS, song?.artist, null)
-                            } else {
-                                onOpenSongPicker(direction)
-                            }
-                        }
-                        "ACTION_SHOW_QUICK_START" -> onOpenQuickStart()
-                        "ACTION_MENU" -> onOpenSettings(direction)
-                        "ACTION_SELECT_PROFILE" -> onOpenProfilePicker()
-                        "ACTION_DELETE_DOWNLOADED_ART" -> {
-                            val song = playbackManager.currentSong.value
-                            if (song != null && musicScanner != null && musicDatabase != null) {
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    val songsInAlbum = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
-                                    musicScanner.albumArtDownloader.deleteDownloadedArtworkForAlbum(song.album, song.artist, songsInAlbum)
-                                    playbackManager.refreshCurrentSongArtwork()
+                    if (effectiveKey != null) {
+                        withContext(Dispatchers.Main) {
+                            when (effectiveKey) {
+                                "ACTION_OPEN_ART_TAGS_EDITOR", "ACTION_REPLACE_ART" -> {
+                                    onOpenSettings(direction)
                                 }
-                            }
-                        }
-                        "ACTION_TOGGLE_REPEAT" -> playbackManager.toggleRepeat()
-                        "ACTION_TOGGLE_SHUFFLE" -> playbackManager.toggleShuffle()
-                        "ACTION_SHUFFLE_ALL_SONGS" -> playbackManager.shuffleAllSongs()
-                        "ACTION_PLAY_CURRENT_ARTIST" -> playbackManager.playCurrentArtist()
-                        "ACTION_PLAY_CURRENT_ALBUM" -> playbackManager.playCurrentAlbum()
-                        else -> {
-                            coroutineScope.launch {
-                                settingsDataStore.toggleOtherOption(trig.key, effectiveKey)
+                                "ACTION_EDIT_TAGS", "ACTION_EDIT_TRACK_TAGS", "ACTION_EDIT_ALBUM_TAGS" -> {
+                                    onOpenEditTagsChoice?.invoke()
+                                }
+                                "ACTION_SHARE_TUNES", "ACTION_SHARE_TRACK_TEXT", "ACTION_SHARE_TRACK_FILE", "ACTION_SHARE_ALBUM_TEXT", "ACTION_SHARE_ALBUM_FILES" -> {
+                                    onOpenShareTunes?.invoke()
+                                }
+                                "ACTION_SONG_PICKER" -> onOpenSongPicker(direction)
+                                "ACTION_SHOW_QUEUE" -> onOpenQueue(direction)
+                                "ACTION_SELECT_ALBUM_VIEW" -> {
+                                    val song = playbackManager.currentSong.value
+                                    if (onOpenSongPickerWithFilter != null) {
+                                        onOpenSongPickerWithFilter(direction, PickerCategory.ALBUMS, song?.artist, song?.album)
+                                    } else {
+                                        onOpenSongPicker(direction)
+                                    }
+                                }
+                                "ACTION_SELECT_ARTIST_VIEW" -> {
+                                    val song = playbackManager.currentSong.value
+                                    if (onOpenSongPickerWithFilter != null) {
+                                        onOpenSongPickerWithFilter(direction, PickerCategory.ARTISTS, song?.artist, null)
+                                    } else {
+                                        onOpenSongPicker(direction)
+                                    }
+                                }
+                                "ACTION_SHOW_QUICK_START" -> onOpenQuickStart()
+                                "ACTION_MENU" -> onOpenSettings(direction)
+                                "ACTION_SELECT_PROFILE" -> onOpenProfilePicker()
+                                "ACTION_DELETE_DOWNLOADED_ART" -> {
+                                    val song = playbackManager.currentSong.value
+                                    if (song != null && musicScanner != null && musicDatabase != null) {
+                                        coroutineScope.launch(Dispatchers.IO) {
+                                            val songsInAlbum = musicDatabase.getSongsByAlbumAndArtist(song.album, song.artist)
+                                            musicScanner.albumArtDownloader.deleteDownloadedArtworkForAlbum(song.album, song.artist, songsInAlbum)
+                                            playbackManager.refreshCurrentSongArtwork()
+                                        }
+                                    }
+                                }
+                                "ACTION_TOGGLE_REPEAT" -> playbackManager.toggleRepeat()
+                                "ACTION_TOGGLE_SHUFFLE" -> playbackManager.toggleShuffle()
+                                "ACTION_SHUFFLE_ALL_SONGS" -> playbackManager.shuffleAllSongs()
+                                "ACTION_PLAY_CURRENT_ARTIST" -> playbackManager.playCurrentArtist()
+                                "ACTION_PLAY_CURRENT_ALBUM" -> playbackManager.playCurrentAlbum()
+                                else -> {
+                                    coroutineScope.launch {
+                                        settingsDataStore.toggleOtherOption(trig.key, effectiveKey)
+                                    }
+                                }
                             }
                         }
                     }
@@ -3720,21 +3715,21 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song, reqSiz
     val downloadedFile = com.travelingtunes.app.core.media.AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
     if (downloadedFile != null) {
         val bmp = decodeSampledBitmapFromFile(downloadedFile.absolutePath, reqSize, reqSize)
-        if (bmp != null) return@withContext bmp.cropToSquare()
+        if (bmp != null) return@withContext bmp
     }
 
     // 1. Try explicit song.artworkUri if present (downloaded or scanned artwork)
     if (song.artworkUri != null) {
         if (song.artworkUri.scheme == "file" && song.artworkUri.path != null) {
             val bmp = decodeSampledBitmapFromFile(song.artworkUri.path!!, reqSize, reqSize)
-            if (bmp != null) return@withContext bmp.cropToSquare()
+            if (bmp != null) return@withContext bmp
         }
         val bmp = decodeSampledBitmapFromStream(
             inputStreamSupplier = { context.contentResolver.openInputStream(song.artworkUri) },
             reqWidth = reqSize,
             reqHeight = reqSize
         )
-        if (bmp != null) return@withContext bmp.cropToSquare()
+        if (bmp != null) return@withContext bmp
     }
 
     // 2. Try MediaStore album art URI from song.albumId
@@ -3745,7 +3740,7 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song, reqSiz
             reqWidth = reqSize,
             reqHeight = reqSize
         )
-        if (bmp != null) return@withContext bmp.cropToSquare()
+        if (bmp != null) return@withContext bmp
     }
 
     // 3. Try MediaMetadataRetriever on song.contentUri (embedded ID3 artwork)
@@ -3755,7 +3750,7 @@ suspend fun loadSongArtwork(context: android.content.Context, song: Song, reqSiz
         val bytes = mmr.embeddedPicture
         if (bytes != null) {
             val bmp = decodeSampledBitmapFromByteArray(bytes, reqSize, reqSize)
-            if (bmp != null) return@withContext bmp.cropToSquare()
+            if (bmp != null) return@withContext bmp
         }
     } catch (ignored: Exception) {
     } finally {

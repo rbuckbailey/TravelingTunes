@@ -26,7 +26,12 @@ object AlbumArtColorExtractor {
         } else {
             bitmap
         }
-        val targetBmp = safeBmp ?: bitmap
+        val rawBmp = safeBmp ?: bitmap
+        val targetBmp = if (rawBmp.width > 128 || rawBmp.height > 128) {
+            Bitmap.createScaledBitmap(rawBmp, 128, 128, true)
+        } else {
+            rawBmp
+        }
         val palette = Palette.from(targetBmp).generate()
 
         // Favor edge colors for letterboxing / background extraction according to priority

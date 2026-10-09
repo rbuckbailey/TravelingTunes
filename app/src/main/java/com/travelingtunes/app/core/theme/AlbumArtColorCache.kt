@@ -10,6 +10,7 @@ import com.travelingtunes.app.feature.player.loadSongArtwork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -69,28 +70,42 @@ class AlbumArtColorCache private constructor() {
         }
     }
 
+    private val inFlightJobs = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Deferred<ColorTheme>>()
+
     suspend fun getOrExtract(
         context: Context,
         song: Song,
         innerEdge: InnerEdge?,
         priority: ArtColorPriority
-    ): ColorTheme = withContext(Dispatchers.IO) {
+    ): ColorTheme = kotlinx.coroutines.coroutineScope {
         val key = makeKey(song.id, innerEdge, priority)
         val cached = themeCache.get(key)
-        if (cached != null) return@withContext cached
+        if (cached != null) return@coroutineScope cached
 
-        val cachedBitmap = AlbumArtCache.instance.get(song.id)?.asAndroidBitmap()?.takeIf { !it.isRecycled }
-        val bitmap = cachedBitmap ?: loadSongArtwork(context, song)
-        if (bitmap != null) {
-            val extracted = AlbumArtColorExtractor.extractThemeFromBitmap(
-                bitmap = bitmap,
-                innerEdge = innerEdge,
-                priority = priority
-            )
-            themeCache.put(key, extracted)
-            return@withContext extracted
+        val existingJob = inFlightJobs[key]
+        if (existingJob != null) {
+            return@coroutineScope existingJob.await()
         }
-        return@withContext ColorTheme.MATCH_ALBUM_ART
+
+        val deferred = async(Dispatchers.IO) {
+            val cachedBitmap = AlbumArtCache.instance.get(song.id)?.asAndroidBitmap()?.takeIf { !it.isRecycled }
+            val bitmap = cachedBitmap ?: loadSongArtwork(context, song, reqSize = 400)
+            val extracted = if (bitmap != null) {
+                AlbumArtColorExtractor.extractThemeFromBitmap(
+                    bitmap = bitmap,
+                    innerEdge = innerEdge,
+                    priority = priority
+                )
+            } else {
+                ColorTheme.MATCH_ALBUM_ART
+            }
+            themeCache.put(key, extracted)
+            inFlightJobs.remove(key)
+            extracted
+        }
+
+        inFlightJobs[key] = deferred
+        deferred.await()
     }
 
     fun preCacheSongTheme(

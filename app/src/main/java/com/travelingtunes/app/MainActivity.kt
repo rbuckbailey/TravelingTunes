@@ -26,6 +26,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -154,7 +156,7 @@ class MainActivity : ComponentActivity() {
         CrashLogManager.cleanupOldLogs(applicationContext)
 
         if (CrashLogManager.hasPriorCrash(applicationContext) || CrashLogManager.shouldResetSettingsSubmenu(applicationContext)) {
-            kotlinx.coroutines.runBlocking {
+            lifecycleScope.launch(Dispatchers.IO) {
                 settingsDataStore.setLastSettingsSubmenu(null)
             }
             CrashLogManager.clearResetSettingsSubmenuFlag(applicationContext)

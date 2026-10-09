@@ -40,9 +40,9 @@ class AlbumArtCache private constructor() {
         cache.remove(songId)
     }
 
-    fun preCacheSurroundingSongs(context: Context, playlist: List<Song>, currentIndex: Int, radius: Int = 4) {
+    fun preCacheSurroundingSongs(context: Context, playlist: List<Song>, currentIndex: Int, radius: Int = 2) {
         if (playlist.isEmpty()) return
-        scope.launch {
+        scope.launch(Dispatchers.IO) {
             val safeIndex = currentIndex.coerceIn(0, playlist.size - 1)
             val startIndex = (safeIndex - radius).coerceAtLeast(0)
             val endIndex = (safeIndex + radius).coerceAtMost(playlist.size - 1)
@@ -50,7 +50,7 @@ class AlbumArtCache private constructor() {
             for (i in startIndex..endIndex) {
                 val song = playlist[i]
                 if (cache.get(song.id) == null) {
-                    val bmp = loadSongArtwork(context, song)
+                    val bmp = loadSongArtwork(context, song, reqSize = 256)
                     if (bmp != null) {
                         cache.put(song.id, bmp.asImageBitmap())
                     }
@@ -61,6 +61,7 @@ class AlbumArtCache private constructor() {
                     innerEdge = null,
                     priority = com.travelingtunes.app.core.model.ArtColorPriority.CENTER
                 )
+                kotlinx.coroutines.yield()
             }
         }
     }
