@@ -80,6 +80,7 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
         private const val COL_TRACK_GAIN = "track_gain"
         private const val COL_ALBUM_GAIN = "album_gain"
         private const val COL_ALBUM_ARTIST = "album_artist"
+        private const val COL_LAST_MODIFIED = "last_modified"
 
         private const val COL_SONG_ID = "song_id"
         private const val COL_CDDB_ID = "cddb_id"
@@ -107,7 +108,8 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
                 $COL_PEAK_VOLUME REAL NOT NULL DEFAULT 0.0,
                 $COL_TRACK_GAIN REAL NOT NULL DEFAULT 1.0,
                 $COL_ALBUM_GAIN REAL NOT NULL DEFAULT 1.0,
-                $COL_ALBUM_ARTIST TEXT NOT NULL DEFAULT ''
+                $COL_ALBUM_ARTIST TEXT NOT NULL DEFAULT '',
+                $COL_LAST_MODIFIED INTEGER NOT NULL DEFAULT 0
             )
         """.trimIndent()
         db.execSQL(createSongsTable)
@@ -135,6 +137,7 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
         ensureColumnExists(db, TABLE_SONGS, COL_PEAK_VOLUME, "REAL NOT NULL DEFAULT 0.0")
         ensureColumnExists(db, TABLE_SONGS, COL_TRACK_GAIN, "REAL NOT NULL DEFAULT 1.0")
         ensureColumnExists(db, TABLE_SONGS, COL_ALBUM_GAIN, "REAL NOT NULL DEFAULT 1.0")
+        ensureColumnExists(db, TABLE_SONGS, COL_LAST_MODIFIED, "INTEGER NOT NULL DEFAULT 0")
     }
 
     private fun ensureColumnExists(db: SQLiteDatabase, table: String, column: String, columnDef: String) {
@@ -200,6 +203,7 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
                     put(COL_TRACK_GAIN, song.trackGain)
                     put(COL_ALBUM_GAIN, song.albumGain)
                     put(COL_ALBUM_ARTIST, song.albumArtist)
+                    put(COL_LAST_MODIFIED, song.lastModified)
                 }
                 db.insertWithOnConflict(TABLE_SONGS, null, cv, SQLiteDatabase.CONFLICT_REPLACE)
             }
@@ -711,6 +715,7 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
         val trackGain = c.getColumnIndex(COL_TRACK_GAIN)
         val albumGain = c.getColumnIndex(COL_ALBUM_GAIN)
         val albumArtist = c.getColumnIndex(COL_ALBUM_ARTIST)
+        val lastModified = c.getColumnIndex(COL_LAST_MODIFIED)
     }
 
     private fun cursorToSong(c: android.database.Cursor, idx: SongColumnIndices = SongColumnIndices(c)): Song {
@@ -743,6 +748,7 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
         val trackGain = if (idx.trackGain != -1) c.getFloat(idx.trackGain) else 1f
         val albumGain = if (idx.albumGain != -1) c.getFloat(idx.albumGain) else 1f
         val albumArtist = if (idx.albumArtist != -1) c.getString(idx.albumArtist) ?: "" else ""
+        val lastModified = if (idx.lastModified != -1) c.getLong(idx.lastModified) else 0L
 
         return Song(
             id = id,
@@ -764,7 +770,8 @@ class MusicDatabase(private val context: Context) : SQLiteOpenHelper(context, DA
             peakVolume = peakVolume,
             trackGain = trackGain,
             albumGain = albumGain,
-            albumArtist = albumArtist
+            albumArtist = albumArtist,
+            lastModified = lastModified
         )
     }
 }

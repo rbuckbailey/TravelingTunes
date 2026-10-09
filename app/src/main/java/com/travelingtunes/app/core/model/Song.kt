@@ -22,7 +22,8 @@ data class Song(
     val peakVolume: Float = 0f,
     val trackGain: Float = 1f,
     val albumGain: Float = 1f,
-    val albumArtist: String = ""
+    val albumArtist: String = "",
+    val lastModified: Long = 0L
 ) {
     val effectiveArtist: String
         get() = albumArtist.ifBlank { artist }

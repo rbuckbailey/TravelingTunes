@@ -412,14 +412,24 @@ class MusicScanner(
         if (foundSongs.isNotEmpty()) {
             musicDatabase.insertOrReplaceSongs(foundSongs)
             val addedCount = foundSongs.count { it.contentUri.toString() !in existingMap }
+            val updatedCount = foundSongs.count { song ->
+                val existing = existingMap[song.contentUri.toString()]
+                existing != null && song.lastModified > existing.lastModified && existing.lastModified > 0L
+            }
             val removedCount = removedSongs.size
             val totalCount = foundSongs.size
 
-            if (addedCount > 0) {
-                _statusMessage.value = "Library updated: $addedCount added, $removedCount removed ($totalCount total). Analyzing volume..."
-                analyzeLibraryVolumeLevels(forceRescan = false)
+            if (addedCount > 0 || updatedCount > 0 || removedCount > 0) {
+                val summary = "Library updated: $addedCount added, $updatedCount updated, $removedCount removed ($totalCount total)"
+                if (addedCount > 0) {
+                    _statusMessage.value = "$summary. Analyzing volume..."
+                    analyzeLibraryVolumeLevels(forceRescan = false)
+                } else {
+                    _statusMessage.value = summary
+                }
+            } else {
+                _statusMessage.value = "Library up to date ($totalCount songs scanned)"
             }
-            _statusMessage.value = "Library updated: $addedCount added, $removedCount removed ($totalCount total)"
         } else if (removedSongs.isNotEmpty()) {
             _statusMessage.value = "Library updated: ${removedSongs.size} removed (0 songs total)"
         } else {
@@ -470,9 +480,24 @@ class MusicScanner(
                 if (supportedExtensions.contains(ext)) {
                     val uriStr = file.uri.toString()
                     val existing = existingMap[uriStr]
-                    val song = if (existing != null) {
+                    val fileMtime = file.lastModified()
+
+                    val song = if (existing != null && fileMtime > 0L && existing.lastModified > 0L && fileMtime <= existing.lastModified) {
+                        // Unchanged file: fast path reusing existing song without re-reading media tags
                         existing
+                    } else if (existing != null) {
+                        // File was modified on disk: re-read file tags but preserve user rating and volume levels
+                        processAudioFile(
+                            file = file,
+                            currentDir = currentDir,
+                            relativePath = relativePath,
+                            artworkCacheDir = artworkCacheDir,
+                            folderArtUri = folderArtUri,
+                            idSeed = existing.id,
+                            existingSong = existing
+                        )
                     } else {
+                        // New file added to folder
                         processAudioFile(
                             file = file,
                             currentDir = currentDir,
@@ -482,6 +507,7 @@ class MusicScanner(
                             idSeed = foundSongs.size + 1L
                         )
                     }
+
                     if (song != null) {
                         foundSongs.add(song)
                         _scannedCount.value = foundSongs.size
@@ -498,7 +524,8 @@ class MusicScanner(
         relativePath: String,
         artworkCacheDir: File,
         folderArtUri: Uri? = null,
-        idSeed: Long
+        idSeed: Long,
+        existingSong: Song? = null
     ): Song? {
         val contentUri = file.uri
         val fileName = file.name ?: "Unknown"
@@ -508,6 +535,8 @@ class MusicScanner(
             !currentDir.name.isNullOrBlank() -> currentDir.name!!
             else -> "Music"
         }
+        val fileLastModified = file.lastModified()
+        val songLastModified = if (fileLastModified > 0L) fileLastModified else System.currentTimeMillis()
         val mmr = MediaMetadataRetriever()
 
         return try {
@@ -560,10 +589,11 @@ class MusicScanner(
             val yearStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)
             val year = yearStr?.trim()?.toIntOrNull() ?: 0
 
-            val artworkUri = folderArtUri ?: extractAndSaveArtwork(mmr, album, artist, artworkCacheDir)
+            val extractedArtUri = folderArtUri ?: extractAndSaveArtwork(mmr, album, artist, artworkCacheDir)
+            val finalArtworkUri = existingSong?.artworkUri ?: extractedArtUri
 
             // Generate stable numeric ID from Uri string
-            val songId = kotlin.math.abs(contentUri.toString().hashCode().toLong())
+            val songId = existingSong?.id ?: kotlin.math.abs(contentUri.toString().hashCode().toLong())
 
             Song(
                 id = if (songId != 0L) songId else idSeed,
@@ -573,31 +603,43 @@ class MusicScanner(
                 albumId = album.hashCode().toLong(),
                 durationMs = durationMs,
                 contentUri = contentUri,
-                artworkUri = artworkUri,
-                userRating = 0,
+                artworkUri = finalArtworkUri,
+                userRating = existingSong?.userRating ?: 0,
                 genre = genre,
                 folderPath = relativePath,
                 fileName = fileName,
                 trackNumber = trackNumber,
                 discNumber = discNumber,
                 year = year,
-                albumArtist = albumArtist
+                avgVolume = existingSong?.avgVolume ?: 0f,
+                peakVolume = existingSong?.peakVolume ?: 0f,
+                trackGain = existingSong?.trackGain ?: 1f,
+                albumGain = existingSong?.albumGain ?: 1f,
+                albumArtist = albumArtist,
+                lastModified = songLastModified
             )
         } catch (e: Exception) {
             e.printStackTrace()
             // Fallback Song
+            val songId = existingSong?.id ?: kotlin.math.abs(contentUri.toString().hashCode().toLong())
             Song(
-                id = kotlin.math.abs(contentUri.toString().hashCode().toLong()),
+                id = if (songId != 0L) songId else idSeed,
                 title = cleanFileName,
                 artist = folderName,
                 album = folderName,
                 albumId = folderName.hashCode().toLong(),
                 durationMs = 0L,
                 contentUri = contentUri,
-                artworkUri = null,
+                artworkUri = existingSong?.artworkUri,
+                userRating = existingSong?.userRating ?: 0,
                 genre = "Unknown Genre",
                 folderPath = relativePath,
-                fileName = fileName
+                fileName = fileName,
+                avgVolume = existingSong?.avgVolume ?: 0f,
+                peakVolume = existingSong?.peakVolume ?: 0f,
+                trackGain = existingSong?.trackGain ?: 1f,
+                albumGain = existingSong?.albumGain ?: 1f,
+                lastModified = songLastModified
             )
         } finally {
             try {

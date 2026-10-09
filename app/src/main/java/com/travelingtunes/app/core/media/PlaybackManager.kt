@@ -96,7 +96,7 @@ class PlaybackManager(
             val posMs = _currentPositionMs.value.coerceAtLeast(0L)
 
             val mediaItems = playlist.mapIndexed { idx, item ->
-                songToMediaItem(item, context, includeArtworkData = (Math.abs(idx - songIndex) <= 1))
+                songToMediaItem(item, context, includeArtworkData = (idx == songIndex))
             }
             isInternalRepeatChange = true
             isInternalShuffleChange = true
@@ -215,34 +215,6 @@ class PlaybackManager(
             _durationMs.value = try { p.duration.coerceAtLeast(0L) } catch (_: Exception) { 0L }
             applyNormalizationModifier(_currentSong.value)
             persistCurrentPlaybackState(debounceMs = 0L)
-
-            val activeSong = _currentSong.value
-            if (activeSong != null && currentIndex in 0 until p.mediaItemCount) {
-                val currentItem = try { p.getMediaItemAt(currentIndex) } catch (_: Exception) { null }
-                val currentArtworkData = currentItem?.mediaMetadata?.artworkData
-                if (currentArtworkData == null || currentArtworkData.isEmpty()) {
-                    val updatedItem = songToMediaItem(activeSong, context, includeArtworkData = true)
-                    try {
-                        p.replaceMediaItem(currentIndex, updatedItem)
-                    } catch (e: Exception) {
-                        android.util.Log.w("PlaybackManager", "Failed to update MediaItem artwork at index $currentIndex", e)
-                    }
-                }
-                val nextIndex = currentIndex + 1
-                if (nextIndex in 0 until p.mediaItemCount && nextIndex in playlist.indices) {
-                    val nextItem = try { p.getMediaItemAt(nextIndex) } catch (_: Exception) { null }
-                    if (nextItem?.mediaMetadata?.artworkData == null || nextItem.mediaMetadata.artworkData!!.isEmpty()) {
-                        val nextSong = playlist[nextIndex]
-                        val updatedNextItem = songToMediaItem(nextSong, context, includeArtworkData = true)
-                        try {
-                            p.replaceMediaItem(nextIndex, updatedNextItem)
-                        } catch (e: Exception) {
-                            android.util.Log.w("PlaybackManager", "Failed to pre-populate next MediaItem artwork at index $nextIndex", e)
-                        }
-                    }
-                }
-            }
-
             android.util.Log.d("PlaybackManager", "onMediaItemTransition: title='${_currentSong.value?.title}', reason=$reason, index=$currentIndex")
         }
 
@@ -461,7 +433,7 @@ class PlaybackManager(
         val safePos = positionMs.coerceAtLeast(0L)
 
         val mediaItems = songs.mapIndexed { idx, item ->
-            songToMediaItem(item, context, includeArtworkData = (Math.abs(idx - safeIndex) <= 1))
+            songToMediaItem(item, context, includeArtworkData = (idx == safeIndex))
         }
 
         _repeatMode.value = repeatMode
@@ -585,7 +557,7 @@ class PlaybackManager(
             }
 
             val fullMediaItems = activeQueue.mapIndexed { idx, item ->
-                songToMediaItem(item, context, includeArtworkData = (Math.abs(idx - playIndex) <= 1))
+                songToMediaItem(item, context, includeArtworkData = (idx == playIndex))
             }
 
             _currentPlaylist.value = activeQueue
@@ -610,7 +582,7 @@ class PlaybackManager(
             _currentSong.value = sortedSongs.getOrNull(safeIndex)
 
             player.shuffleModeEnabled = false
-            player.setMediaItems(sortedSongs.mapIndexed { idx, item -> songToMediaItem(item, context, includeArtworkData = (Math.abs(idx - safeIndex) <= 1)) }, safeIndex, 0L)
+            player.setMediaItems(sortedSongs.mapIndexed { idx, item -> songToMediaItem(item, context, includeArtworkData = (idx == safeIndex)) }, safeIndex, 0L)
             player.prepare()
             player.play()
 
@@ -637,7 +609,7 @@ class PlaybackManager(
         persistCurrentPlaybackState()
 
         val mediaItems = songs.mapIndexed { idx, item ->
-            songToMediaItem(item, context, includeArtworkData = (Math.abs(idx - safeIndex) <= 1))
+            songToMediaItem(item, context, includeArtworkData = (idx == safeIndex))
         }
         player.shuffleModeEnabled = false
         player.setMediaItems(mediaItems, safeIndex, 0L)
@@ -743,7 +715,7 @@ class PlaybackManager(
             if (mediaCount == 0 || (!isPlayingOrBuffering && mediaCount != playlist.size)) {
                 android.util.Log.i("PlaybackManager", "ensurePlayerReadyForPlayback: Reloading queue (playlist size ${playlist.size}, player media count $mediaCount, index $currentIndex, pos ${pos}ms)")
                 player.setMediaItems(
-                    playlist.mapIndexed { idx, item -> songToMediaItem(item, context, includeArtworkData = (Math.abs(idx - currentIndex) <= 1)) },
+                    playlist.mapIndexed { idx, item -> songToMediaItem(item, context, includeArtworkData = (idx == currentIndex)) },
                     currentIndex,
                     pos
                 )
@@ -1211,7 +1183,7 @@ class PlaybackManager(
         )
 
         val mediaItems = activeQueue.mapIndexed { idx, item ->
-            songToMediaItem(item, context, includeArtworkData = (Math.abs(idx - newCurrentIndex) <= 1))
+            songToMediaItem(item, context, includeArtworkData = (idx == newCurrentIndex))
         }
 
         _currentSong.value = activeQueue.getOrNull(newCurrentIndex) ?: current

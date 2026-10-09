@@ -1959,6 +1959,12 @@ fun PlayerPageContent(
 
     val pageTheme = rememberPageTheme(pageSong, themeSettings, displaySettings)
 
+    val contextLayout = LocalContext.current
+    val isMultiWindowLayout = (contextLayout as? android.app.Activity)?.isInMultiWindowMode == true ||
+            (if (isLandscape) configuration.screenHeightDp < 420 else configuration.screenHeightDp < 500)
+    val isAdaptiveDockedActiveLayout = displaySettings.adaptiveDockedArt && isMultiWindowLayout
+    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian && !isAdaptiveDockedActiveLayout
+
     TravelingTunesTheme(
         themeSettings = themeSettings,
         dynamicAlbumArtTheme = pageTheme,
@@ -1972,7 +1978,7 @@ fun PlayerPageContent(
                     else Modifier.background(pageTheme.backgroundColor)
                 )
         ) {
-            if (displaySettings.showAlbumArt) {
+            if (displaySettings.showAlbumArt && !isDocked) {
                 PlayerAlbumArtBackground(
                     song = pageSong,
                     displaySettings = displaySettings,
@@ -1994,12 +2000,6 @@ fun PlayerPageContent(
                     modifier = Modifier.fillMaxSize()
                 )
             }
-
-    val contextLayout = LocalContext.current
-    val isMultiWindowLayout = (contextLayout as? android.app.Activity)?.isInMultiWindowMode == true ||
-            (if (isLandscape) configuration.screenHeightDp < 420 else configuration.screenHeightDp < 500)
-    val isAdaptiveDockedActiveLayout = displaySettings.adaptiveDockedArt && isMultiWindowLayout
-    val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED && displaySettings.showAlbumArt && !isMondrian && !isAdaptiveDockedActiveLayout
 
     if (isDocked) {
         val (dockEdge, isRow) = if (isLandscape) {
@@ -2113,6 +2113,17 @@ fun PlayerPageContent(
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
+                        if (displaySettings.echoArtEnabled) {
+                            DockedEchoArtBackground(
+                                song = pageSong,
+                                dockEdge = dockEdge,
+                                echoCount = displaySettings.echoArtCount.coerceIn(1, 5),
+                                albumArtFade = displaySettings.albumArtFade,
+                                echoFadeSpread = displaySettings.echoFadeSpread,
+                                echoBaseAlpha = displaySettings.echoBaseAlpha,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                         titlesContainer(Modifier.fillMaxSize())
                     }
                 } else {
@@ -2122,6 +2133,17 @@ fun PlayerPageContent(
                                 song = pageSong,
                                 dockEdge = dockEdge,
                                 albumArtFade = displaySettings.albumArtFade,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        if (displaySettings.echoArtEnabled) {
+                            DockedEchoArtBackground(
+                                song = pageSong,
+                                dockEdge = dockEdge,
+                                echoCount = displaySettings.echoArtCount.coerceIn(1, 5),
+                                albumArtFade = displaySettings.albumArtFade,
+                                echoFadeSpread = displaySettings.echoFadeSpread,
+                                echoBaseAlpha = displaySettings.echoBaseAlpha,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2147,6 +2169,17 @@ fun PlayerPageContent(
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
+                        if (displaySettings.echoArtEnabled) {
+                            DockedEchoArtBackground(
+                                song = pageSong,
+                                dockEdge = dockEdge,
+                                echoCount = displaySettings.echoArtCount.coerceIn(1, 5),
+                                albumArtFade = displaySettings.albumArtFade,
+                                echoFadeSpread = displaySettings.echoFadeSpread,
+                                echoBaseAlpha = displaySettings.echoBaseAlpha,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                         titlesContainer(Modifier.fillMaxSize())
                     }
                 } else {
@@ -2156,6 +2189,17 @@ fun PlayerPageContent(
                                 song = pageSong,
                                 dockEdge = dockEdge,
                                 albumArtFade = displaySettings.albumArtFade,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        if (displaySettings.echoArtEnabled) {
+                            DockedEchoArtBackground(
+                                song = pageSong,
+                                dockEdge = dockEdge,
+                                echoCount = displaySettings.echoArtCount.coerceIn(1, 5),
+                                albumArtFade = displaySettings.albumArtFade,
+                                echoFadeSpread = displaySettings.echoFadeSpread,
+                                echoBaseAlpha = displaySettings.echoBaseAlpha,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2478,7 +2522,7 @@ fun PlayerAlbumArtBackground(
             }
         }
 
-        val artAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
+        val artAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.0f, 1.0f)
         val letterboxBgColor = MaterialTheme.colorScheme.background
 
         BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -2492,23 +2536,76 @@ fun PlayerAlbumArtBackground(
                     imageAlignment = imageAlignment,
                     containerWidthPx = containerWidthPx,
                     containerHeightPx = containerHeightPx,
-                    artAlpha = artAlpha
+                    artAlpha = artAlpha,
+                    stretchBlendSpan = displaySettings.stretchBlendSpan
                 )
             } else if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
-                val bgAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.1f, 1.0f)
+                val bgAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.0f, 1.0f)
                 Box(modifier = Modifier.fillMaxSize().background(letterboxBgColor.copy(alpha = bgAlpha)))
             }
 
-            Image(
-                bitmap = imgBitmap,
-                contentDescription = "Album Art Background",
-                contentScale = contentScale,
-                alignment = imageAlignment,
-                colorFilter = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(artAlpha)
-            )
+            if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT && displaySettings.echoArtEnabled && containerWidthPx > 0f && containerHeightPx > 0f) {
+                EchoFittedArtBackground(
+                    imgBitmap = imgBitmap,
+                    imageAlignment = imageAlignment,
+                    containerWidthPx = containerWidthPx,
+                    containerHeightPx = containerHeightPx,
+                    echoCount = displaySettings.echoArtCount.coerceIn(1, 5),
+                    artAlpha = artAlpha,
+                    echoFadeSpread = displaySettings.echoFadeSpread,
+                    echoBaseAlpha = displaySettings.echoBaseAlpha
+                )
+            }
+
+            if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT && containerWidthPx > 0f && containerHeightPx > 0f) {
+                val androidBmp = imgBitmap.asAndroidBitmap()
+                val bmpWidth = androidBmp.width.coerceAtLeast(1)
+                val bmpHeight = androidBmp.height.coerceAtLeast(1)
+                val bmpAspect = bmpWidth.toFloat() / bmpHeight.toFloat()
+                val containerAspect = containerWidthPx / containerHeightPx
+
+                val fittedWidthPx: Float
+                val fittedHeightPx: Float
+                if (containerAspect > bmpAspect) {
+                    fittedHeightPx = containerHeightPx
+                    fittedWidthPx = containerHeightPx * bmpAspect
+                } else {
+                    fittedWidthPx = containerWidthPx
+                    fittedHeightPx = containerWidthPx / bmpAspect
+                }
+
+                val fittedWidthDp = with(density) { fittedWidthPx.toDp() }
+                val fittedHeightDp = with(density) { fittedHeightPx.toDp() }
+
+                Box(
+                    modifier = Modifier
+                        .size(width = fittedWidthDp, height = fittedHeightDp)
+                        .align(imageAlignment)
+                        .background(letterboxBgColor)
+                ) {
+                    Image(
+                        bitmap = imgBitmap,
+                        contentDescription = "Album Art Background",
+                        contentScale = ContentScale.Fit,
+                        alignment = Alignment.Center,
+                        colorFilter = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .alpha(artAlpha)
+                    )
+                }
+            } else {
+                Image(
+                    bitmap = imgBitmap,
+                    contentDescription = "Album Art Background",
+                    contentScale = contentScale,
+                    alignment = imageAlignment,
+                    colorFilter = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(artAlpha)
+                )
+            }
         }
     } else if (isDocked) {
         Box(
@@ -2533,7 +2630,8 @@ private fun StretchedFittedArtBackground(
     imageAlignment: Alignment,
     containerWidthPx: Float,
     containerHeightPx: Float,
-    artAlpha: Float
+    artAlpha: Float,
+    stretchBlendSpan: Float = 0.50f
 ) {
     val androidBmp = remember(imgBitmap) { imgBitmap.asAndroidBitmap() }
     if (androidBmp.isRecycled) return
@@ -2567,6 +2665,7 @@ private fun StretchedFittedArtBackground(
     }
 
     val density = LocalDensity.current
+    val span = stretchBlendSpan.coerceIn(0.10f, 1.0f)
 
     Box(modifier = Modifier.fillMaxSize().alpha(artAlpha)) {
         if (containerAspect > bmpAspect) {
@@ -2599,13 +2698,17 @@ private fun StretchedFittedArtBackground(
                         .align(Alignment.CenterStart)
                         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                         .drawWithContent {
-                            val quarterInchPx = 40f * density.density
-                            val quarterFraction = (quarterInchPx / leftMarginPx).coerceIn(0.02f, 0.40f)
-                            val stop = (1.0f - quarterFraction).coerceAtLeast(0.0f)
+                            val stop1 = (1.0f - span).coerceIn(0.0f, 0.85f)
+                            val stop2 = stop1 + span * 0.25f
+                            val stop3 = stop1 + span * 0.50f
+                            val stop4 = stop1 + span * 0.75f
                             val brush = Brush.horizontalGradient(
                                 colorStops = arrayOf(
                                     0.0f to Color.Black.copy(alpha = 0.0f),
-                                    stop to Color.Black.copy(alpha = 1.0f),
+                                    stop1 to Color.Black.copy(alpha = 0.0f),
+                                    stop2 to Color.Black.copy(alpha = 0.25f),
+                                    stop3 to Color.Black.copy(alpha = 0.60f),
+                                    stop4 to Color.Black.copy(alpha = 0.88f),
                                     1.0f to Color.Black.copy(alpha = 1.0f)
                                 )
                             )
@@ -2630,13 +2733,17 @@ private fun StretchedFittedArtBackground(
                         .align(Alignment.CenterEnd)
                         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                         .drawWithContent {
-                            val quarterInchPx = 40f * density.density
-                            val quarterFraction = (quarterInchPx / rightMarginPx).coerceIn(0.02f, 0.40f)
-                            val stop = quarterFraction.coerceAtMost(1.0f)
+                            val stop5 = span.coerceIn(0.15f, 1.0f)
+                            val stop4 = stop5 * 0.75f
+                            val stop3 = stop5 * 0.50f
+                            val stop2 = stop5 * 0.25f
                             val brush = Brush.horizontalGradient(
                                 colorStops = arrayOf(
                                     0.0f to Color.Black.copy(alpha = 1.0f),
-                                    stop to Color.Black.copy(alpha = 1.0f),
+                                    stop2 to Color.Black.copy(alpha = 0.88f),
+                                    stop3 to Color.Black.copy(alpha = 0.60f),
+                                    stop4 to Color.Black.copy(alpha = 0.25f),
+                                    stop5 to Color.Black.copy(alpha = 0.0f),
                                     1.0f to Color.Black.copy(alpha = 0.0f)
                                 )
                             )
@@ -2682,13 +2789,17 @@ private fun StretchedFittedArtBackground(
                         .align(Alignment.TopCenter)
                         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                         .drawWithContent {
-                            val quarterInchPx = 40f * density.density
-                            val quarterFraction = (quarterInchPx / topMarginPx).coerceIn(0.02f, 0.40f)
-                            val stop = (1.0f - quarterFraction).coerceAtLeast(0.0f)
+                            val stop1 = (1.0f - span).coerceIn(0.0f, 0.85f)
+                            val stop2 = stop1 + span * 0.25f
+                            val stop3 = stop1 + span * 0.50f
+                            val stop4 = stop1 + span * 0.75f
                             val brush = Brush.verticalGradient(
                                 colorStops = arrayOf(
                                     0.0f to Color.Black.copy(alpha = 0.0f),
-                                    stop to Color.Black.copy(alpha = 1.0f),
+                                    stop1 to Color.Black.copy(alpha = 0.0f),
+                                    stop2 to Color.Black.copy(alpha = 0.25f),
+                                    stop3 to Color.Black.copy(alpha = 0.60f),
+                                    stop4 to Color.Black.copy(alpha = 0.88f),
                                     1.0f to Color.Black.copy(alpha = 1.0f)
                                 )
                             )
@@ -2713,13 +2824,17 @@ private fun StretchedFittedArtBackground(
                         .align(Alignment.BottomCenter)
                         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                         .drawWithContent {
-                            val quarterInchPx = 40f * density.density
-                            val quarterFraction = (quarterInchPx / bottomMarginPx).coerceIn(0.02f, 0.40f)
-                            val stop = quarterFraction.coerceAtMost(1.0f)
+                            val stop5 = span.coerceIn(0.15f, 1.0f)
+                            val stop4 = stop5 * 0.75f
+                            val stop3 = stop5 * 0.50f
+                            val stop2 = stop5 * 0.25f
                             val brush = Brush.verticalGradient(
                                 colorStops = arrayOf(
                                     0.0f to Color.Black.copy(alpha = 1.0f),
-                                    stop to Color.Black.copy(alpha = 1.0f),
+                                    stop2 to Color.Black.copy(alpha = 0.88f),
+                                    stop3 to Color.Black.copy(alpha = 0.60f),
+                                    stop4 to Color.Black.copy(alpha = 0.25f),
+                                    stop5 to Color.Black.copy(alpha = 0.0f),
                                     1.0f to Color.Black.copy(alpha = 0.0f)
                                 )
                             )
@@ -2734,6 +2849,269 @@ private fun StretchedFittedArtBackground(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EchoFittedArtBackground(
+    imgBitmap: ImageBitmap,
+    imageAlignment: Alignment,
+    containerWidthPx: Float,
+    containerHeightPx: Float,
+    echoCount: Int,
+    artAlpha: Float,
+    echoFadeSpread: Float = 0.45f,
+    echoBaseAlpha: Float = 0.70f
+) {
+    val androidBmp = remember(imgBitmap) { imgBitmap.asAndroidBitmap() }
+    if (androidBmp.isRecycled) return
+    val bmpWidth = androidBmp.width
+    val bmpHeight = androidBmp.height
+    if (bmpWidth <= 0 || bmpHeight <= 0) return
+
+    val bmpAspect = bmpWidth.toFloat() / bmpHeight.toFloat()
+    val containerAspect = containerWidthPx / containerHeightPx
+
+    val fittedWidthPx: Float
+    val fittedHeightPx: Float
+
+    if (containerAspect > bmpAspect) {
+        fittedHeightPx = containerHeightPx
+        fittedWidthPx = containerHeightPx * bmpAspect
+    } else {
+        fittedWidthPx = containerWidthPx
+        fittedHeightPx = containerWidthPx / bmpAspect
+    }
+
+    val density = LocalDensity.current
+    val N = echoCount.coerceAtLeast(1)
+    val spread = echoFadeSpread.coerceIn(0.10f, 1.0f)
+    val baseOpacity = echoBaseAlpha.coerceIn(0.10f, 1.0f)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        for (k in N downTo 1) {
+            val fraction = k.toFloat() / (N + 1.0f)
+            val echoWidthPx = fittedWidthPx + fraction * (containerWidthPx - fittedWidthPx)
+            val echoHeightPx = fittedHeightPx + fraction * (containerHeightPx - fittedHeightPx)
+
+            val echoWidthDp = with(density) { echoWidthPx.toDp() }
+            val echoHeightDp = with(density) { echoHeightPx.toDp() }
+
+            val echoAlpha = (artAlpha * (1.0f - fraction * 0.40f) * baseOpacity).coerceIn(0.05f, 1.0f)
+
+            Box(
+                modifier = Modifier
+                    .size(width = echoWidthDp, height = echoHeightDp)
+                    .align(imageAlignment)
+                    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                    .drawWithContent {
+                        drawContent()
+                        val hFade = size.width * spread * 0.5f
+                        val vFade = size.height * spread * 0.5f
+                        if (hFade > 0f) {
+                            val s1 = (hFade / size.width).coerceIn(0.01f, 0.45f)
+                            val s2 = s1 * 0.5f
+                            val s3 = 1.0f - s1
+                            val s4 = 1.0f - s2
+                            val hBrush = Brush.horizontalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Black.copy(alpha = 0.0f),
+                                    s2 to Color.Black.copy(alpha = 0.35f),
+                                    s1 to Color.Black.copy(alpha = 1.0f),
+                                    s3 to Color.Black.copy(alpha = 1.0f),
+                                    s4 to Color.Black.copy(alpha = 0.35f),
+                                    1.0f to Color.Black.copy(alpha = 0.0f)
+                                )
+                            )
+                            drawRect(brush = hBrush, blendMode = BlendMode.DstIn)
+                        }
+                        if (vFade > 0f) {
+                            val v1 = (vFade / size.height).coerceIn(0.01f, 0.45f)
+                            val v2 = v1 * 0.5f
+                            val v3 = 1.0f - v1
+                            val v4 = 1.0f - v2
+                            val vBrush = Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.0f to Color.Black.copy(alpha = 0.0f),
+                                    v2 to Color.Black.copy(alpha = 0.35f),
+                                    v1 to Color.Black.copy(alpha = 1.0f),
+                                    v3 to Color.Black.copy(alpha = 1.0f),
+                                    v4 to Color.Black.copy(alpha = 0.35f),
+                                    1.0f to Color.Black.copy(alpha = 0.0f)
+                                )
+                            )
+                            drawRect(brush = vBrush, blendMode = BlendMode.DstIn)
+                        }
+                    }
+            ) {
+                Image(
+                    bitmap = imgBitmap,
+                    contentDescription = "Echo Art Background $k",
+                    contentScale = ContentScale.Crop,
+                    alignment = imageAlignment,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(echoAlpha)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DockedEchoArtBackground(
+    song: Song?,
+    dockEdge: DockAdjacentEdge,
+    echoCount: Int,
+    albumArtFade: Float,
+    echoFadeSpread: Float = 0.45f,
+    echoBaseAlpha: Float = 0.70f,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var bitmap by remember(song?.id, song?.artworkUri) {
+        mutableStateOf<android.graphics.Bitmap?>(
+            song?.id?.let { AlbumArtCache.instance.get(it)?.asAndroidBitmap() }
+        )
+    }
+
+    LaunchedEffect(song?.id, song?.artworkUri) {
+        if (song != null) {
+            val cached = AlbumArtCache.instance.get(song.id)
+            if (cached != null) {
+                bitmap = cached.asAndroidBitmap()
+            } else {
+                val loadedBitmap = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                    loadSongArtwork(context, song)
+                }
+                if (loadedBitmap != null) {
+                    val imgBmp = loadedBitmap.asImageBitmap()
+                    AlbumArtCache.instance.put(song.id, imgBmp)
+                    bitmap = loadedBitmap
+                } else {
+                    bitmap = null
+                }
+            }
+        } else {
+            bitmap = null
+        }
+    }
+
+    val imgBitmap = remember(bitmap) {
+        bitmap?.takeIf { !it.isRecycled }?.asImageBitmap()
+    } ?: return
+
+    val N = echoCount.coerceAtLeast(1)
+    val baseAlpha = (albumArtFade * echoBaseAlpha).coerceIn(0.05f, 1.0f)
+    val spread = echoFadeSpread.coerceIn(0.10f, 1.0f)
+
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val widthPx = with(density) { this@BoxWithConstraints.maxWidth.toPx() }
+        val heightPx = with(density) { this@BoxWithConstraints.maxHeight.toPx() }
+
+        for (k in N downTo 1) {
+            val fraction = k.toFloat() / (N + 1.0f)
+            val echoAlpha = (baseAlpha * (1.0f - fraction * 0.45f) * 0.75f).coerceIn(0.05f, 1.0f)
+
+            val echoMod = when (dockEdge) {
+                DockAdjacentEdge.LEFT -> {
+                    Modifier
+                        .fillMaxHeight()
+                        .width(with(density) { (widthPx * fraction).toDp() })
+                        .align(Alignment.CenterStart)
+                }
+                DockAdjacentEdge.RIGHT -> {
+                    Modifier
+                        .fillMaxHeight()
+                        .width(with(density) { (widthPx * fraction).toDp() })
+                        .align(Alignment.CenterEnd)
+                }
+                DockAdjacentEdge.TOP -> {
+                    Modifier
+                        .fillMaxWidth()
+                        .height(with(density) { (heightPx * fraction).toDp() })
+                        .align(Alignment.TopCenter)
+                }
+                DockAdjacentEdge.BOTTOM -> {
+                    Modifier
+                        .fillMaxWidth()
+                        .height(with(density) { (heightPx * fraction).toDp() })
+                        .align(Alignment.BottomCenter)
+                }
+            }
+
+            Box(
+                modifier = echoMod
+                    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                    .drawWithContent {
+                        drawContent()
+                        val lengthPx = if (dockEdge == DockAdjacentEdge.LEFT || dockEdge == DockAdjacentEdge.RIGHT) size.width else size.height
+                        val fadeLength = (lengthPx * spread * 0.5f).coerceAtLeast(10f)
+
+                        val brush = when (dockEdge) {
+                            DockAdjacentEdge.LEFT -> {
+                                val s1 = ((size.width - fadeLength) / size.width).coerceIn(0.1f, 0.95f)
+                                val s2 = s1 + (1.0f - s1) * 0.5f
+                                Brush.horizontalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color.Black.copy(alpha = 1.0f),
+                                        s1 to Color.Black.copy(alpha = 1.0f),
+                                        s2 to Color.Black.copy(alpha = 0.40f),
+                                        1.0f to Color.Black.copy(alpha = 0.0f)
+                                    )
+                                )
+                            }
+                            DockAdjacentEdge.RIGHT -> {
+                                val s1 = (fadeLength / size.width).coerceIn(0.05f, 0.9f)
+                                val s2 = s1 * 0.5f
+                                Brush.horizontalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color.Black.copy(alpha = 0.0f),
+                                        s2 to Color.Black.copy(alpha = 0.40f),
+                                        s1 to Color.Black.copy(alpha = 1.0f),
+                                        1.0f to Color.Black.copy(alpha = 1.0f)
+                                    )
+                                )
+                            }
+                            DockAdjacentEdge.TOP -> {
+                                val s1 = ((size.height - fadeLength) / size.height).coerceIn(0.1f, 0.95f)
+                                val s2 = s1 + (1.0f - s1) * 0.5f
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color.Black.copy(alpha = 1.0f),
+                                        s1 to Color.Black.copy(alpha = 1.0f),
+                                        s2 to Color.Black.copy(alpha = 0.40f),
+                                        1.0f to Color.Black.copy(alpha = 0.0f)
+                                    )
+                                )
+                            }
+                            DockAdjacentEdge.BOTTOM -> {
+                                val s1 = (fadeLength / size.height).coerceIn(0.05f, 0.9f)
+                                val s2 = s1 * 0.5f
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color.Black.copy(alpha = 0.0f),
+                                        s2 to Color.Black.copy(alpha = 0.40f),
+                                        s1 to Color.Black.copy(alpha = 1.0f),
+                                        1.0f to Color.Black.copy(alpha = 1.0f)
+                                    )
+                                )
+                            }
+                        }
+                        drawRect(brush = brush, blendMode = BlendMode.DstIn)
+                    }
+            ) {
+                Image(
+                    bitmap = imgBitmap,
+                    contentDescription = "Docked Echo Art $k",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(echoAlpha)
+                )
             }
         }
     }
@@ -3933,7 +4311,7 @@ private fun StretchedEdgeBackground(
         }
     } ?: return
 
-    val targetFade = albumArtFade.coerceIn(0.1f, 1.0f)
+    val targetFade = albumArtFade.coerceIn(0.0f, 1.0f)
 
     Box(
         modifier = modifier

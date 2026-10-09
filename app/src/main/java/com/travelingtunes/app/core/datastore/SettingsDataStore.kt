@@ -100,6 +100,11 @@ class SettingsDataStore(private val context: Context) {
         val KEY_ALBUM_ART_FADE = floatPreferencesKey("albumArtFade")
         val KEY_ART_DISPLAY_LAYOUT = intPreferencesKey("artDisplayLayout")
         val KEY_STRETCH_ART = booleanPreferencesKey("stretchArt")
+        val KEY_ECHO_ART_ENABLED = booleanPreferencesKey("echoArtEnabled")
+        val KEY_ECHO_ART_COUNT = intPreferencesKey("echoArtCount")
+        val KEY_ECHO_FADE_SPREAD = floatPreferencesKey("echoFadeSpread")
+        val KEY_ECHO_BASE_ALPHA = floatPreferencesKey("echoBaseAlpha")
+        val KEY_STRETCH_BLEND_SPAN = floatPreferencesKey("stretchBlendSpan")
         val KEY_MATCH_ART_COLOR_PRIORITY = intPreferencesKey("matchArtColorPriority")
         val KEY_ADAPTIVE_DOCKED_ART = booleanPreferencesKey("adaptiveDockedArt")
         val KEY_SEPARATE_TOUCH_ZONES = booleanPreferencesKey("separateTouchZones")
@@ -387,6 +392,11 @@ class SettingsDataStore(private val context: Context) {
                 }
             },
             stretchArt = getBool(KEY_STRETCH_ART, "DISPLAY_stretchArt", false),
+            echoArtEnabled = getBool(KEY_ECHO_ART_ENABLED, "DISPLAY_echoArtEnabled", false),
+            echoArtCount = getInt(KEY_ECHO_ART_COUNT, "DISPLAY_echoArtCount", 1).coerceIn(1, 5),
+            echoFadeSpread = getFloat(KEY_ECHO_FADE_SPREAD, "DISPLAY_echoFadeSpread", 0.45f).coerceIn(0.10f, 1.0f),
+            echoBaseAlpha = getFloat(KEY_ECHO_BASE_ALPHA, "DISPLAY_echoBaseAlpha", 0.70f).coerceIn(0.10f, 1.0f),
+            stretchBlendSpan = getFloat(KEY_STRETCH_BLEND_SPAN, "DISPLAY_stretchBlendSpan", 0.50f).coerceIn(0.10f, 1.0f),
             matchArtColorPriority = matchArtColorPriority,
             adaptiveDockedArt = getBool(KEY_ADAPTIVE_DOCKED_ART, "DISPLAY_adaptiveDockedArt", false),
             separateTouchZones = getBool(KEY_SEPARATE_TOUCH_ZONES, "DISPLAY_separateTouchZones", false),
@@ -1488,6 +1498,11 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_ALBUM_ART_FADE] = update.albumArtFade
             prefs[KEY_ART_DISPLAY_LAYOUT] = update.artDisplayLayout.ordinal
             prefs[KEY_STRETCH_ART] = update.stretchArt
+            prefs[KEY_ECHO_ART_ENABLED] = update.echoArtEnabled
+            prefs[KEY_ECHO_ART_COUNT] = update.echoArtCount.coerceIn(1, 5)
+            prefs[KEY_ECHO_FADE_SPREAD] = update.echoFadeSpread.coerceIn(0.10f, 1.0f)
+            prefs[KEY_ECHO_BASE_ALPHA] = update.echoBaseAlpha.coerceIn(0.10f, 1.0f)
+            prefs[KEY_STRETCH_BLEND_SPAN] = update.stretchBlendSpan.coerceIn(0.10f, 1.0f)
             prefs[KEY_MATCH_ART_COLOR_PRIORITY] = update.matchArtColorPriority.ordinal
             prefs[KEY_ADAPTIVE_DOCKED_ART] = update.adaptiveDockedArt
             prefs[KEY_SEPARATE_TOUCH_ZONES] = update.separateTouchZones
@@ -1686,6 +1701,11 @@ class SettingsDataStore(private val context: Context) {
                     albumArtFade = dJson.optDouble("albumArtFade", currentDisplay.albumArtFade.toDouble()).toFloat(),
                     artDisplayLayout = runCatching { ArtLayoutOption.valueOf(dJson.getString("artDisplayLayout")) }.getOrDefault(currentDisplay.artDisplayLayout),
                     stretchArt = dJson.optBoolean("stretchArt", currentDisplay.stretchArt),
+                    echoArtEnabled = dJson.optBoolean("echoArtEnabled", currentDisplay.echoArtEnabled),
+                    echoArtCount = dJson.optInt("echoArtCount", currentDisplay.echoArtCount).coerceIn(1, 5),
+                    echoFadeSpread = dJson.optDouble("echoFadeSpread", currentDisplay.echoFadeSpread.toDouble()).toFloat().coerceIn(0.10f, 1.0f),
+                    echoBaseAlpha = dJson.optDouble("echoBaseAlpha", currentDisplay.echoBaseAlpha.toDouble()).toFloat().coerceIn(0.10f, 1.0f),
+                    stretchBlendSpan = dJson.optDouble("stretchBlendSpan", currentDisplay.stretchBlendSpan.toDouble()).toFloat().coerceIn(0.10f, 1.0f),
                     matchArtColorPriority = runCatching { ArtColorPriority.valueOf(dJson.getString("matchArtColorPriority")) }.getOrDefault(currentDisplay.matchArtColorPriority),
                     adaptiveDockedArt = dJson.optBoolean("adaptiveDockedArt", currentDisplay.adaptiveDockedArt),
                     separateTouchZones = dJson.optBoolean("separateTouchZones", currentDisplay.separateTouchZones),

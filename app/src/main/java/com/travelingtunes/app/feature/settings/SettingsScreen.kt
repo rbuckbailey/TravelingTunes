@@ -2650,6 +2650,181 @@ private fun ArtSettingsContent(
                     }
                 )
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Echo Art", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Place alpha-faded copies of artwork stacked behind the primary art into surrounding margins",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (displaySettings.echoArtEnabled) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text("Count: ", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        IconButton(
+                            onClick = {
+                                val newCount = (displaySettings.echoArtCount - 1).coerceAtLeast(1)
+                                onUpdateDisplaySettings(displaySettings.copy(echoArtCount = newCount))
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Text("-", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                        Text(
+                            text = "${displaySettings.echoArtCount}",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                        IconButton(
+                            onClick = {
+                                val newCount = (displaySettings.echoArtCount + 1).coerceAtMost(5)
+                                onUpdateDisplaySettings(displaySettings.copy(echoArtCount = newCount))
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Text("+", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    }
+                }
+                Switch(
+                    checked = displaySettings.echoArtEnabled,
+                    onCheckedChange = { checked ->
+                        onUpdateDisplaySettings(displaySettings.copy(echoArtEnabled = checked))
+                    }
+                )
+            }
+
+            var isAdvancedArtExpanded by remember { mutableStateOf(false) }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isAdvancedArtExpanded = !isAdvancedArtExpanded }
+                    .padding(vertical = 6.dp)
+            ) {
+                Text(
+                    text = if (isAdvancedArtExpanded) "▼ Advanced Art Settings" else "▶ Advanced Art Settings",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (isAdvancedArtExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, top = 4.dp, bottom = 8.dp)
+                ) {
+                    Text(
+                        text = "Echo Feather Spread: ${(displaySettings.echoFadeSpread * 100).toInt()}%",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Slider(
+                            value = displaySettings.echoFadeSpread,
+                            onValueChange = { value ->
+                                onUpdateDisplaySettings(displaySettings.copy(echoFadeSpread = value))
+                            },
+                            valueRange = 0.10f..1.00f,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        OutlinedTextField(
+                            value = "${(displaySettings.echoFadeSpread * 100).toInt()}",
+                            onValueChange = { str ->
+                                val num = str.toIntOrNull()
+                                if (num != null) {
+                                    val clamped = (num / 100f).coerceIn(0.10f, 1.00f)
+                                    onUpdateDisplaySettings(displaySettings.copy(echoFadeSpread = clamped))
+                                }
+                            },
+                            label = { Text("%", fontSize = 10.sp) },
+                            singleLine = true,
+                            modifier = Modifier.width(64.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Echo Base Opacity: ${(displaySettings.echoBaseAlpha * 100).toInt()}%",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Slider(
+                            value = displaySettings.echoBaseAlpha,
+                            onValueChange = { value ->
+                                onUpdateDisplaySettings(displaySettings.copy(echoBaseAlpha = value))
+                            },
+                            valueRange = 0.10f..1.00f,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        OutlinedTextField(
+                            value = "${(displaySettings.echoBaseAlpha * 100).toInt()}",
+                            onValueChange = { str ->
+                                val num = str.toIntOrNull()
+                                if (num != null) {
+                                    val clamped = (num / 100f).coerceIn(0.10f, 1.00f)
+                                    onUpdateDisplaySettings(displaySettings.copy(echoBaseAlpha = clamped))
+                                }
+                            },
+                            label = { Text("%", fontSize = 10.sp) },
+                            singleLine = true,
+                            modifier = Modifier.width(64.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Stretch Blend Distance: ${(displaySettings.stretchBlendSpan * 100).toInt()}%",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Slider(
+                            value = displaySettings.stretchBlendSpan,
+                            onValueChange = { value ->
+                                onUpdateDisplaySettings(displaySettings.copy(stretchBlendSpan = value))
+                            },
+                            valueRange = 0.10f..1.00f,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        OutlinedTextField(
+                            value = "${(displaySettings.stretchBlendSpan * 100).toInt()}",
+                            onValueChange = { str ->
+                                val num = str.toIntOrNull()
+                                if (num != null) {
+                                    val clamped = (num / 100f).coerceIn(0.10f, 1.00f)
+                                    onUpdateDisplaySettings(displaySettings.copy(stretchBlendSpan = clamped))
+                                }
+                            },
+                            label = { Text("%", fontSize = 10.sp) },
+                            singleLine = true,
+                            modifier = Modifier.width(64.dp)
+                        )
+                    }
+                }
+            }
         }
 
         val isDocked = displaySettings.artDisplayLayout == ArtLayoutOption.DOCKED

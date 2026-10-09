@@ -209,7 +209,17 @@ class MusicPlaybackService : MediaLibraryService() {
 
             val isPlaying = player?.isPlaying == true
 
+            val currentSong = try {
+                PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase).currentSong.value
+            } catch (_: Exception) { null }
+
             val artBitmap = loadArtworkBitmapForMediaItem(applicationContext, currentMediaItem)
+                ?: currentSong?.let { song ->
+                    val bytes = getArtworkBytesForSong(applicationContext, song)
+                    if (bytes != null && bytes.isNotEmpty()) {
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    } else null
+                }
 
             val openAppIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -1578,7 +1588,7 @@ class MusicPlaybackService : MediaLibraryService() {
 
                 val safeStartIndex = playStartIndex.coerceIn(0, (resolvedSongs.size - 1).coerceAtLeast(0))
                 val finalMediaItems = resolvedSongs.mapIndexed { idx, song ->
-                    songToMediaItem(song, applicationContext, includeArtworkData = (Math.abs(idx - safeStartIndex) <= 1))
+                    songToMediaItem(song, applicationContext, includeArtworkData = (idx == safeStartIndex))
                 }
 
                 if (resolvedSongs.isNotEmpty()) {
