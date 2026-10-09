@@ -319,6 +319,52 @@ class GestureAndSettingsTest {
     }
 
     @Test
+    fun testContrastVerificationAgainstFadedAndDesaturatedRenderedPage() {
+        val baseBgColor = androidx.compose.ui.graphics.Color(0xFF101010)
+        val artBgColor = androidx.compose.ui.graphics.Color(0xFFFF0000)
+
+        val displaySettings = com.travelingtunes.app.core.model.DisplaySettings(
+            showAlbumArt = true,
+            artDisplayLayout = com.travelingtunes.app.core.model.ArtLayoutOption.OVERLAY,
+            albumArtFade = 0.20f,
+            albumArtSaturation = 0.0f
+        )
+
+        val renderedBg = com.travelingtunes.app.core.theme.calculateRenderedPageBackground(
+            baseBgColor = baseBgColor,
+            artBgColor = artBgColor,
+            displaySettings = displaySettings
+        )
+
+        val themeSettings = ThemeSettings(currentThemeName = "Match Album Art")
+        val dynamicArtTheme = com.travelingtunes.app.core.model.ColorTheme(
+            name = "Dynamic Art",
+            backgroundColor = artBgColor,
+            textColor = androidx.compose.ui.graphics.Color(0xFF2A2A2A),
+            artistColor = androidx.compose.ui.graphics.Color(0xFF333333)
+        )
+
+        val resolvedTheme = com.travelingtunes.app.core.theme.resolveActiveTheme(
+            themeSettings = themeSettings,
+            dynamicAlbumArtTheme = dynamicArtTheme,
+            useAlbumArtColors = true,
+            displaySettings = displaySettings
+        )
+
+        val textContrast = com.travelingtunes.app.core.theme.calculateWcagContrast(
+            resolvedTheme.textColor.toArgb(),
+            renderedBg.toArgb()
+        )
+        val artistContrast = com.travelingtunes.app.core.theme.calculateWcagContrast(
+            resolvedTheme.artistColor.toArgb(),
+            renderedBg.toArgb()
+        )
+
+        assertTrue("Text contrast against desaturated/faded rendered page must be >= 4.5, was $textContrast", textContrast >= 4.5)
+        assertTrue("Artist title contrast against desaturated/faded rendered page must be >= 3.0, was $artistContrast", artistContrast >= 3.0)
+    }
+
+    @Test
     fun testAdjustSecondaryContrastForBackgroundDistinctHueAndContrast() {
         val darkBg = androidx.compose.ui.graphics.Color(0xFF000020)
         val primaryYellowText = androidx.compose.ui.graphics.Color(0xFFFFD700)
@@ -1171,6 +1217,30 @@ class GestureAndSettingsTest {
         assertTrue(json.contains("\"stretchArt\": true"))
         assertTrue(json.contains("\"adaptiveDockedArt\": true"))
         assertTrue(json.contains("\"matchArtColorPriority\": \"WHOLE\""))
+    }
+
+    @Test
+    fun testAlbumArtSaturationSettingsAndBackup() {
+        val displayDefault = com.travelingtunes.app.core.model.DisplaySettings()
+        assertEquals(1.0f, displayDefault.albumArtSaturation, 0.001f)
+
+        val displayDesaturated = com.travelingtunes.app.core.model.DisplaySettings(
+            albumArtFade = 0.5f,
+            albumArtSaturation = 0.0f
+        )
+        assertEquals(0.0f, displayDesaturated.albumArtSaturation, 0.001f)
+
+        val json = SettingsBackupHelper.exportToJson(
+            display = displayDesaturated,
+            theme = ThemeSettings(),
+            bindings = emptyMap(),
+            gpsVolume = false,
+            gpsSens = 1.0f,
+            autoRescan = false
+        )
+
+        assertTrue(json.contains("\"albumArtFade\": 0.5"))
+        assertTrue(json.contains("\"albumArtSaturation\": 0.0"))
     }
 
     @Test

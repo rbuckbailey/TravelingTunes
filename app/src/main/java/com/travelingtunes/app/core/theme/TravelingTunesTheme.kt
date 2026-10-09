@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 import com.travelingtunes.app.core.model.ColorTheme
+import com.travelingtunes.app.core.model.DisplaySettings
 import com.travelingtunes.app.core.model.ThemeSettings
 import java.util.Calendar
 
@@ -22,9 +23,10 @@ fun TravelingTunesTheme(
     themeSettings: ThemeSettings,
     dynamicAlbumArtTheme: ColorTheme? = null,
     useAlbumArtColors: Boolean = true,
+    displaySettings: DisplaySettings? = null,
     content: @Composable () -> Unit
 ) {
-    val activeTheme = resolveActiveTheme(themeSettings, dynamicAlbumArtTheme, useAlbumArtColors)
+    val activeTheme = resolveActiveTheme(themeSettings, dynamicAlbumArtTheme, useAlbumArtColors, displaySettings)
 
     val colorScheme = if (activeTheme.backgroundColor.luminance() < 0.5f) {
         darkColorScheme(
@@ -306,10 +308,70 @@ fun adjustSecondaryContrastForBackground(
     return adjustContrastForBackground(secondaryColor, backgroundColor, matchedSwatches, isMatchedTheme, minContrastRatio)
 }
 
+fun applySaturationToColor(colorInt: Int, saturation: Float): Int {
+    if (saturation >= 0.999f) return colorInt
+    val sat = saturation.coerceIn(0.0f, 1.0f)
+    val r = (colorInt shr 16) and 0xFF
+    val g = (colorInt shr 8) and 0xFF
+    val b = colorInt and 0xFF
+
+    val gray = (0.2126f * r + 0.7152f * g + 0.0722f * b)
+    val newR = (gray + sat * (r - gray)).toInt().coerceIn(0, 255)
+    val newG = (gray + sat * (g - gray)).toInt().coerceIn(0, 255)
+    val newB = (gray + sat * (b - gray)).toInt().coerceIn(0, 255)
+    return (colorInt and -0x1000000) or (newR shl 16) or (newG shl 8) or newB
+}
+
+fun blendOver(fgColorInt: Int, bgColorInt: Int, alpha: Float): Int {
+    val a = alpha.coerceIn(0.0f, 1.0f)
+    if (a <= 0.001f) return bgColorInt
+    if (a >= 0.999f) return fgColorInt
+
+    val fgR = (fgColorInt shr 16) and 0xFF
+    val fgG = (fgColorInt shr 8) and 0xFF
+    val fgB = fgColorInt and 0xFF
+
+    val bgR = (bgColorInt shr 16) and 0xFF
+    val bgG = (bgColorInt shr 8) and 0xFF
+    val bgB = bgColorInt and 0xFF
+
+    val r = (fgR * a + bgR * (1f - a)).toInt().coerceIn(0, 255)
+    val g = (fgG * a + bgG * (1f - a)).toInt().coerceIn(0, 255)
+    val b = (fgB * a + bgB * (1f - a)).toInt().coerceIn(0, 255)
+
+    return -0x1000000 or (r shl 16) or (g shl 8) or b
+}
+
+fun calculateRenderedPageBackground(
+    baseBgColor: Color,
+    artBgColor: Color,
+    displaySettings: DisplaySettings?
+): Color {
+    if (displaySettings == null || !displaySettings.showAlbumArt) {
+        return baseBgColor
+    }
+    val isDocked = displaySettings.artDisplayLayout == com.travelingtunes.app.core.model.ArtLayoutOption.DOCKED && !displaySettings.adaptiveDockedArt
+    if (isDocked) {
+        return baseBgColor
+    }
+
+    val fadeAlpha = displaySettings.albumArtFade.coerceIn(0.0f, 1.0f)
+    val saturation = displaySettings.albumArtSaturation.coerceIn(0.0f, 1.0f)
+
+    val baseInt = (baseBgColor.toArgb() and 0x00FFFFFF) or -0x1000000
+    val artInt = (artBgColor.toArgb() and 0x00FFFFFF) or -0x1000000
+
+    val desaturatedArtInt = applySaturationToColor(artInt, saturation)
+    val blendedInt = blendOver(desaturatedArtInt, baseInt, fadeAlpha)
+
+    return Color(blendedInt)
+}
+
 fun resolveActiveTheme(
     themeSettings: ThemeSettings,
     dynamicAlbumArtTheme: ColorTheme? = null,
-    useAlbumArtColors: Boolean = true
+    useAlbumArtColors: Boolean = true,
+    displaySettings: DisplaySettings? = null
 ): ColorTheme {
     val isMatchedTheme = useAlbumArtColors && dynamicAlbumArtTheme != null && (
         themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) ||
@@ -379,30 +441,47 @@ fun resolveActiveTheme(
         rawTheme
     }
 
+    val baseBgColor = if (isMatchedTheme) {
+        val staticTheme = ColorTheme.getByName(themeSettings.currentThemeName)
+        if (staticTheme == ColorTheme.MATCH_ALBUM_ART && !themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) && !themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true)) {
+            baseTheme.backgroundColor
+        } else {
+            staticTheme.backgroundColor
+        }
+    } else {
+        baseTheme.backgroundColor
+    }
+
+    val renderedBgColor = calculateRenderedPageBackground(
+        baseBgColor = baseBgColor,
+        artBgColor = baseTheme.backgroundColor,
+        displaySettings = displaySettings
+    )
+
     val highContrastText = adjustContrastForBackground(
         textColor = baseTheme.textColor,
-        backgroundColor = baseTheme.backgroundColor,
+        backgroundColor = renderedBgColor,
         matchedSwatches = baseTheme.matchedSwatches,
         isMatchedTheme = isMatchedTheme
     )
     val highContrastArtist = adjustSecondaryContrastForBackground(
         secondaryColor = baseTheme.artistColor,
         primaryColor = highContrastText,
-        backgroundColor = baseTheme.backgroundColor,
+        backgroundColor = renderedBgColor,
         matchedSwatches = baseTheme.matchedSwatches,
         isMatchedTheme = isMatchedTheme
     )
     val highContrastAlbum = adjustSecondaryContrastForBackground(
         secondaryColor = baseTheme.albumColor,
         primaryColor = highContrastText,
-        backgroundColor = baseTheme.backgroundColor,
+        backgroundColor = renderedBgColor,
         matchedSwatches = baseTheme.matchedSwatches,
         isMatchedTheme = isMatchedTheme
     )
     val highContrastSecondary = adjustSecondaryContrastForBackground(
         secondaryColor = baseTheme.secondaryTextColor,
         primaryColor = highContrastText,
-        backgroundColor = baseTheme.backgroundColor,
+        backgroundColor = renderedBgColor,
         matchedSwatches = baseTheme.matchedSwatches,
         isMatchedTheme = isMatchedTheme
     )

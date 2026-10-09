@@ -103,6 +103,7 @@ import com.travelingtunes.app.core.database.MusicDatabase
 import com.travelingtunes.app.core.media.AlbumArtCache
 import com.travelingtunes.app.core.media.AlbumArtDownloader
 import com.travelingtunes.app.core.media.ArtworkCandidate
+import com.travelingtunes.app.core.media.Id3ArtworkEmbedder
 import com.travelingtunes.app.core.media.Id3TagEmbedder
 import com.travelingtunes.app.core.media.MusicScanner
 import com.travelingtunes.app.core.media.PlaybackManager
@@ -815,6 +816,25 @@ fun DownloadedArtBrowserScreen(
                     showReplaceDialog = false
                     refreshList()
                 }
+            },
+            onEmbedArtTag = {
+                coroutineScope.launch {
+                    val targetUri = target.artworkUri
+                    val songs = musicDatabase.getSongsByAlbumAndArtist(target.album, target.artist)
+                    if (targetUri != null && songs.isNotEmpty()) {
+                        withContext(Dispatchers.IO) {
+                            Id3ArtworkEmbedder.embedArtworkIntoAlbum(context, songs, targetUri)
+                        }
+                        android.widget.Toast.makeText(context, "Embedded artwork into ID3 tags of ${songs.size} track(s)", android.widget.Toast.LENGTH_SHORT).show()
+                        refreshList()
+                    } else {
+                        musicScanner?.embedArtworkInBackground(
+                            targets = listOf(Pair(target.album, target.artist)),
+                            artworkUris = if (targetUri != null) mapOf(Pair(target.album, target.artist) to targetUri) else emptyMap(),
+                            playbackManager = playbackManager
+                        )
+                    }
+                }
             }
         )
     }
@@ -920,13 +940,30 @@ fun EditTagsAndArtworkDialog(
 
     var isSaving by remember { mutableStateOf(false) }
 
-    fun saveChanges() {
+    var origBitmap by remember(sampleTrack) {
+        mutableStateOf(albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist))
+    }
+    var currentSquareBitmap by remember(sampleTrack) {
+        mutableStateOf<android.graphics.Bitmap?>(null)
+    }
+    var isEmbeddedArt by remember(sampleTrack) { mutableStateOf(false) }
+
+    fun saveChanges(embedArtworkAlso: Boolean = false) {
         coroutineScope.launch {
             isSaving = true
             withContext(Dispatchers.IO) {
                 val newYear = yearStr.toIntOrNull()
                 val newTrackNum = trackNumberStr.toIntOrNull()
                 val newDiscNum = discNumberStr.toIntOrNull()
+
+                val artworkBytes = if (embedArtworkAlso) {
+                    val bmp = currentSquareBitmap ?: origBitmap
+                    if (bmp != null && !bmp.isRecycled) {
+                        val baos = java.io.ByteArrayOutputStream()
+                        bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, baos)
+                        baos.toByteArray()
+                    } else null
+                } else null
 
                 val updatedSongs = mutableListOf<Song>()
                 for (song in targetTracks) {
@@ -963,6 +1000,11 @@ fun EditTagsAndArtworkDialog(
                         discNumber = finalDiscNum
                     )
 
+                    // 3. Embed Artwork into audio files if requested
+                    if (artworkBytes != null && artworkBytes.isNotEmpty()) {
+                        Id3ArtworkEmbedder.embedArtworkIntoSong(context, song, artworkBytes)
+                    }
+
                     AlbumArtCache.instance.remove(song.id)
 
                     val updated = song.copy(
@@ -985,6 +1027,9 @@ fun EditTagsAndArtworkDialog(
             }
             playbackManager.refreshCurrentSongArtwork()
             isSaving = false
+            if (embedArtworkAlso) {
+                android.widget.Toast.makeText(context, "Embedded tags & artwork into ${targetTracks.size} audio file(s)", android.widget.Toast.LENGTH_SHORT).show()
+            }
             onSaveComplete()
         }
     }
@@ -1004,14 +1049,6 @@ fun EditTagsAndArtworkDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                // --- ALBUM ARTWORK & ALIGNMENT SECTION ---
-                var origBitmap by remember(sampleTrack) {
-                    mutableStateOf(albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist))
-                }
-                var currentSquareBitmap by remember(sampleTrack) {
-                    mutableStateOf<android.graphics.Bitmap?>(null)
-                }
-                var isEmbeddedArt by remember(sampleTrack) { mutableStateOf(false) }
 
                 LaunchedEffect(sampleTrack) {
                     val downloadedOrig = albumArtDownloader.getOriginalArtworkBitmap(sampleTrack.album, sampleTrack.artist)
@@ -1150,6 +1187,37 @@ fun EditTagsAndArtworkDialog(
                                     Text("Change Art", fontSize = 11.sp)
                                 }
 
+                                if (currentSquareBitmap != null) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                val bmp = currentSquareBitmap
+                                                if (bmp != null && !bmp.isRecycled) {
+                                                    val baos = java.io.ByteArrayOutputStream()
+                                                    bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, baos)
+                                                    val bytes = baos.toByteArray()
+                                                    withContext(Dispatchers.IO) {
+                                                        for (song in targetTracks) {
+                                                            Id3ArtworkEmbedder.embedArtworkIntoSong(context, song, bytes)
+                                                        }
+                                                    }
+                                                    android.widget.Toast.makeText(context, "Embedded artwork into ID3 tags of ${targetTracks.size} track(s)", android.widget.Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        },
+                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.height(30.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Save,
+                                            contentDescription = "Embed Art",
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Embed Art", fontSize = 11.sp)
+                                    }
+                                }
+
                                 if (isNonSquare && origBitmap != null) {
                                     // 3x3 Alignment Grid Button (VISIBLE WHEN NON-SQUARE / HIDDEN WHEN SQUARE)
                                     Button(
@@ -1249,6 +1317,33 @@ fun EditTagsAndArtworkDialog(
                                     isEmbeddedArt = false
                                 }
                                 showReplaceArtFromTagEditor = false
+                            }
+                        },
+                        onEmbedArtTag = {
+                            coroutineScope.launch {
+                                val songs = musicDatabase.getSongsByAlbumAndArtist(sampleTrack.album, sampleTrack.artist)
+                                if (songs.isNotEmpty()) {
+                                    val bmp = currentSquareBitmap ?: origBitmap
+                                    if (bmp != null && !bmp.isRecycled) {
+                                        val baos = java.io.ByteArrayOutputStream()
+                                        bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, baos)
+                                        val bytes = baos.toByteArray()
+                                        withContext(Dispatchers.IO) {
+                                            for (song in songs) {
+                                                Id3ArtworkEmbedder.embedArtworkIntoSong(context, song, bytes)
+                                            }
+                                        }
+                                        android.widget.Toast.makeText(context, "Embedded artwork into ID3 tags of ${songs.size} track(s)", android.widget.Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        val uri = sampleTrack.artworkUri
+                                        if (uri != null) {
+                                            withContext(Dispatchers.IO) {
+                                                Id3ArtworkEmbedder.embedArtworkIntoAlbum(context, songs, uri)
+                                            }
+                                            android.widget.Toast.makeText(context, "Embedded artwork into ID3 tags of ${songs.size} track(s)", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
                             }
                         }
                     )
@@ -1401,11 +1496,24 @@ fun EditTagsAndArtworkDialog(
             }
         },
         confirmButton = {
-            Button(
-                enabled = !isSaving,
-                onClick = { saveChanges() }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(if (isSaving) "Saving Tags..." else "Save Changes")
+                OutlinedButton(
+                    enabled = !isSaving,
+                    onClick = { saveChanges(embedArtworkAlso = true) }
+                ) {
+                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Embed Tags & Art", fontSize = 12.sp)
+                }
+                Button(
+                    enabled = !isSaving,
+                    onClick = { saveChanges(embedArtworkAlso = false) }
+                ) {
+                    Text(if (isSaving) "Saving..." else "Save Changes")
+                }
             }
         },
         dismissButton = {
@@ -1972,7 +2080,8 @@ private fun ReplaceArtworkDialog(
     onSelectFromFiles: () -> Unit,
     onCopyFromOtherAlbum: (AlbumArtBrowserInfo) -> Unit,
     onZoomCandidate: (ArtworkCandidate) -> Unit,
-    onCustomSearchResult: (ArtworkCandidate) -> Unit
+    onCustomSearchResult: (ArtworkCandidate) -> Unit,
+    onEmbedArtTag: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -2077,6 +2186,17 @@ private fun ReplaceArtworkDialog(
                             Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Web Browser", fontSize = 11.sp, maxLines = 1)
+                        }
+                    }
+
+                    if (onEmbedArtTag != null) {
+                        OutlinedButton(
+                            onClick = { onEmbedArtTag() },
+                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+                        ) {
+                            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Embed Artwork into ID3 Tags", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

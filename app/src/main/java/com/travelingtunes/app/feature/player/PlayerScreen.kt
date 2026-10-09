@@ -99,6 +99,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -1913,11 +1915,21 @@ fun rememberPageTheme(
         }
     }
 
-    return remember(themeSettings, extractedTheme, displaySettings.albumArtColors) {
+    return remember(
+        themeSettings,
+        extractedTheme,
+        displaySettings.albumArtColors,
+        displaySettings.albumArtFade,
+        displaySettings.albumArtSaturation,
+        displaySettings.showAlbumArt,
+        displaySettings.artDisplayLayout,
+        displaySettings.adaptiveDockedArt
+    ) {
         com.travelingtunes.app.core.theme.resolveActiveTheme(
             themeSettings = themeSettings,
             dynamicAlbumArtTheme = extractedTheme,
-            useAlbumArtColors = displaySettings.albumArtColors
+            useAlbumArtColors = displaySettings.albumArtColors,
+            displaySettings = displaySettings
         )
     }
 }
@@ -1968,7 +1980,8 @@ fun PlayerPageContent(
     TravelingTunesTheme(
         themeSettings = themeSettings,
         dynamicAlbumArtTheme = pageTheme,
-        useAlbumArtColors = displaySettings.albumArtColors
+        useAlbumArtColors = displaySettings.albumArtColors,
+        displaySettings = displaySettings
     ) {
         Box(
             modifier = Modifier
@@ -2110,6 +2123,7 @@ fun PlayerPageContent(
                                 song = pageSong,
                                 dockEdge = dockEdge,
                                 albumArtFade = displaySettings.albumArtFade,
+                                albumArtSaturation = displaySettings.albumArtSaturation,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2121,6 +2135,7 @@ fun PlayerPageContent(
                                 albumArtFade = displaySettings.albumArtFade,
                                 echoFadeSpread = displaySettings.echoFadeSpread,
                                 echoBaseAlpha = displaySettings.echoBaseAlpha,
+                                albumArtSaturation = displaySettings.albumArtSaturation,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2133,6 +2148,7 @@ fun PlayerPageContent(
                                 song = pageSong,
                                 dockEdge = dockEdge,
                                 albumArtFade = displaySettings.albumArtFade,
+                                albumArtSaturation = displaySettings.albumArtSaturation,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2144,6 +2160,7 @@ fun PlayerPageContent(
                                 albumArtFade = displaySettings.albumArtFade,
                                 echoFadeSpread = displaySettings.echoFadeSpread,
                                 echoBaseAlpha = displaySettings.echoBaseAlpha,
+                                albumArtSaturation = displaySettings.albumArtSaturation,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2166,6 +2183,7 @@ fun PlayerPageContent(
                                 song = pageSong,
                                 dockEdge = dockEdge,
                                 albumArtFade = displaySettings.albumArtFade,
+                                albumArtSaturation = displaySettings.albumArtSaturation,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2177,6 +2195,7 @@ fun PlayerPageContent(
                                 albumArtFade = displaySettings.albumArtFade,
                                 echoFadeSpread = displaySettings.echoFadeSpread,
                                 echoBaseAlpha = displaySettings.echoBaseAlpha,
+                                albumArtSaturation = displaySettings.albumArtSaturation,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2189,6 +2208,7 @@ fun PlayerPageContent(
                                 song = pageSong,
                                 dockEdge = dockEdge,
                                 albumArtFade = displaySettings.albumArtFade,
+                                albumArtSaturation = displaySettings.albumArtSaturation,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2200,6 +2220,7 @@ fun PlayerPageContent(
                                 albumArtFade = displaySettings.albumArtFade,
                                 echoFadeSpread = displaySettings.echoFadeSpread,
                                 echoBaseAlpha = displaySettings.echoBaseAlpha,
+                                albumArtSaturation = displaySettings.albumArtSaturation,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -2523,6 +2544,10 @@ fun PlayerAlbumArtBackground(
         }
 
         val artAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.0f, 1.0f)
+        val artSaturation = if (isDocked) 1.0f else displaySettings.albumArtSaturation.coerceIn(0.0f, 1.0f)
+        val artColorFilter = remember(artSaturation) {
+            if (artSaturation < 0.999f) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(artSaturation) }) else null
+        }
         val letterboxBgColor = MaterialTheme.colorScheme.background
 
         BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -2537,7 +2562,8 @@ fun PlayerAlbumArtBackground(
                     containerWidthPx = containerWidthPx,
                     containerHeightPx = containerHeightPx,
                     artAlpha = artAlpha,
-                    stretchBlendSpan = displaySettings.stretchBlendSpan
+                    stretchBlendSpan = displaySettings.stretchBlendSpan,
+                    artColorFilter = artColorFilter
                 )
             } else if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT) {
                 val bgAlpha = if (isDocked) 1.0f else displaySettings.albumArtFade.coerceIn(0.0f, 1.0f)
@@ -2553,7 +2579,8 @@ fun PlayerAlbumArtBackground(
                     echoCount = displaySettings.echoArtCount.coerceIn(1, 5),
                     artAlpha = artAlpha,
                     echoFadeSpread = displaySettings.echoFadeSpread,
-                    echoBaseAlpha = displaySettings.echoBaseAlpha
+                    echoBaseAlpha = displaySettings.echoBaseAlpha,
+                    artColorFilter = artColorFilter
                 )
             }
 
@@ -2588,7 +2615,7 @@ fun PlayerAlbumArtBackground(
                         contentDescription = "Album Art Background",
                         contentScale = ContentScale.Fit,
                         alignment = Alignment.Center,
-                        colorFilter = null,
+                        colorFilter = artColorFilter,
                         modifier = Modifier
                             .fillMaxSize()
                             .alpha(artAlpha)
@@ -2600,7 +2627,7 @@ fun PlayerAlbumArtBackground(
                     contentDescription = "Album Art Background",
                     contentScale = contentScale,
                     alignment = imageAlignment,
-                    colorFilter = null,
+                    colorFilter = artColorFilter,
                     modifier = Modifier
                         .fillMaxSize()
                         .alpha(artAlpha)
@@ -2631,7 +2658,8 @@ private fun StretchedFittedArtBackground(
     containerWidthPx: Float,
     containerHeightPx: Float,
     artAlpha: Float,
-    stretchBlendSpan: Float = 0.50f
+    stretchBlendSpan: Float = 0.50f,
+    artColorFilter: ColorFilter? = null
 ) {
     val androidBmp = remember(imgBitmap) { imgBitmap.asAndroidBitmap() }
     if (androidBmp.isRecycled) return
@@ -2720,6 +2748,7 @@ private fun StretchedFittedArtBackground(
                         bitmap = leftEdgeBmp,
                         contentDescription = null,
                         contentScale = ContentScale.FillBounds,
+                        colorFilter = artColorFilter,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -2755,6 +2784,7 @@ private fun StretchedFittedArtBackground(
                         bitmap = rightEdgeBmp,
                         contentDescription = null,
                         contentScale = ContentScale.FillBounds,
+                        colorFilter = artColorFilter,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -2811,6 +2841,7 @@ private fun StretchedFittedArtBackground(
                         bitmap = topEdgeBmp,
                         contentDescription = null,
                         contentScale = ContentScale.FillBounds,
+                        colorFilter = artColorFilter,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -2846,6 +2877,7 @@ private fun StretchedFittedArtBackground(
                         bitmap = bottomEdgeBmp,
                         contentDescription = null,
                         contentScale = ContentScale.FillBounds,
+                        colorFilter = artColorFilter,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -2863,7 +2895,8 @@ private fun EchoFittedArtBackground(
     echoCount: Int,
     artAlpha: Float,
     echoFadeSpread: Float = 0.45f,
-    echoBaseAlpha: Float = 0.70f
+    echoBaseAlpha: Float = 0.70f,
+    artColorFilter: ColorFilter? = null
 ) {
     val androidBmp = remember(imgBitmap) { imgBitmap.asAndroidBitmap() }
     if (androidBmp.isRecycled) return
@@ -2951,6 +2984,7 @@ private fun EchoFittedArtBackground(
                     contentDescription = "Echo Art Background $k",
                     contentScale = ContentScale.Crop,
                     alignment = imageAlignment,
+                    colorFilter = artColorFilter,
                     modifier = Modifier
                         .fillMaxSize()
                         .alpha(echoAlpha)
@@ -2968,6 +3002,7 @@ private fun DockedEchoArtBackground(
     albumArtFade: Float,
     echoFadeSpread: Float = 0.45f,
     echoBaseAlpha: Float = 0.70f,
+    albumArtSaturation: Float = 1.0f,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -3006,6 +3041,10 @@ private fun DockedEchoArtBackground(
     val N = echoCount.coerceAtLeast(1)
     val baseAlpha = (albumArtFade * echoBaseAlpha).coerceIn(0.05f, 1.0f)
     val spread = echoFadeSpread.coerceIn(0.10f, 1.0f)
+    val targetSat = albumArtSaturation.coerceIn(0.0f, 1.0f)
+    val echoColorFilter = remember(targetSat) {
+        if (targetSat < 0.999f) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(targetSat) }) else null
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -3108,6 +3147,7 @@ private fun DockedEchoArtBackground(
                     bitmap = imgBitmap,
                     contentDescription = "Docked Echo Art $k",
                     contentScale = ContentScale.Crop,
+                    colorFilter = echoColorFilter,
                     modifier = Modifier
                         .fillMaxSize()
                         .alpha(echoAlpha)
@@ -4250,6 +4290,7 @@ private fun StretchedEdgeBackground(
     song: Song?,
     dockEdge: DockAdjacentEdge,
     albumArtFade: Float,
+    albumArtSaturation: Float = 1.0f,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -4312,6 +4353,10 @@ private fun StretchedEdgeBackground(
     } ?: return
 
     val targetFade = albumArtFade.coerceIn(0.0f, 1.0f)
+    val targetSat = albumArtSaturation.coerceIn(0.0f, 1.0f)
+    val artColorFilter = remember(targetSat) {
+        if (targetSat < 0.999f) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(targetSat) }) else null
+    }
 
     Box(
         modifier = modifier
@@ -4355,6 +4400,7 @@ private fun StretchedEdgeBackground(
             bitmap = edgeBitmap,
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
+            colorFilter = artColorFilter,
             modifier = Modifier.fillMaxSize()
         )
     }

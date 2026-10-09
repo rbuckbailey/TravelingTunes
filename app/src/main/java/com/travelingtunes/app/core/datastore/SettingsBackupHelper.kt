@@ -46,6 +46,7 @@ object SettingsBackupHelper {
         sb.append("    \"artAlignmentPortrait\": \"${display.artAlignmentPortrait.name}\",\n")
         sb.append("    \"artAlignmentLandscape\": \"${display.artAlignmentLandscape.name}\",\n")
         sb.append("    \"albumArtFade\": ${display.albumArtFade},\n")
+        sb.append("    \"albumArtSaturation\": ${display.albumArtSaturation},\n")
         sb.append("    \"artDisplayLayout\": \"${display.artDisplayLayout.name}\",\n")
         sb.append("    \"stretchArt\": ${display.stretchArt},\n")
         sb.append("    \"echoArtEnabled\": ${display.echoArtEnabled},\n")

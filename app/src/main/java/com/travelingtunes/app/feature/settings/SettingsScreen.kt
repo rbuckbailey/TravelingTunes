@@ -2608,6 +2608,42 @@ private fun ArtSettingsContent(
                 },
                 valueRange = 0.1f..1.0f
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Album Art Saturation (Behind Titles): ${(displaySettings.albumArtSaturation * 100).toInt()}%", fontWeight = FontWeight.Bold)
+                    Text("Adjust color saturation or desaturate (grayscale) artwork rendered behind titles", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (displaySettings.albumArtSaturation < 0.999f) {
+                    TextButton(
+                        onClick = {
+                            onUpdateDisplaySettings(displaySettings.copy(albumArtSaturation = 1.0f))
+                        }
+                    ) {
+                        Text("Reset", fontSize = 12.sp)
+                    }
+                } else {
+                    TextButton(
+                        onClick = {
+                            onUpdateDisplaySettings(displaySettings.copy(albumArtSaturation = 0.0f))
+                        }
+                    ) {
+                        Text("Desaturate", fontSize = 12.sp)
+                    }
+                }
+            }
+            Slider(
+                value = displaySettings.albumArtSaturation,
+                onValueChange = { sat ->
+                    onUpdateDisplaySettings(displaySettings.copy(albumArtSaturation = sat))
+                },
+                valueRange = 0.0f..1.0f
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))

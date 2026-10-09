@@ -98,6 +98,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_ART_ALIGNMENT_PORTRAIT = stringPreferencesKey("artAlignmentPortrait")
         val KEY_ART_ALIGNMENT_LANDSCAPE = stringPreferencesKey("artAlignmentLandscape")
         val KEY_ALBUM_ART_FADE = floatPreferencesKey("albumArtFade")
+        val KEY_ALBUM_ART_SATURATION = floatPreferencesKey("albumArtSaturation")
         val KEY_ART_DISPLAY_LAYOUT = intPreferencesKey("artDisplayLayout")
         val KEY_STRETCH_ART = booleanPreferencesKey("stretchArt")
         val KEY_ECHO_ART_ENABLED = booleanPreferencesKey("echoArtEnabled")
@@ -378,6 +379,7 @@ class SettingsDataStore(private val context: Context) {
             artAlignmentPortrait = artAlignmentPortrait,
             artAlignmentLandscape = artAlignmentLandscape,
             albumArtFade = getFloat(KEY_ALBUM_ART_FADE, "albumArtFade", 1.0f).takeIf { it >= 0.05f } ?: 1.0f,
+            albumArtSaturation = getFloat(KEY_ALBUM_ART_SATURATION, "albumArtSaturation", 1.0f).coerceIn(0.0f, 1.0f),
             artDisplayLayout = run {
                 val artLayoutOverride = Profile.resolveEffectiveOverride("DISPLAY_artDisplayLayout", activeStack, profiles)
                     ?: Profile.resolveEffectiveOverride("artDisplayLayout", activeStack, profiles)
@@ -1496,6 +1498,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_ART_ALIGNMENT_PORTRAIT] = update.artAlignmentPortrait.name
             prefs[KEY_ART_ALIGNMENT_LANDSCAPE] = update.artAlignmentLandscape.name
             prefs[KEY_ALBUM_ART_FADE] = update.albumArtFade
+            prefs[KEY_ALBUM_ART_SATURATION] = update.albumArtSaturation.coerceIn(0.0f, 1.0f)
             prefs[KEY_ART_DISPLAY_LAYOUT] = update.artDisplayLayout.ordinal
             prefs[KEY_STRETCH_ART] = update.stretchArt
             prefs[KEY_ECHO_ART_ENABLED] = update.echoArtEnabled
@@ -1699,6 +1702,7 @@ class SettingsDataStore(private val context: Context) {
                     artAlignmentPortrait = runCatching { ArtAlignmentPortrait.valueOf(dJson.getString("artAlignmentPortrait")) }.getOrDefault(currentDisplay.artAlignmentPortrait),
                     artAlignmentLandscape = runCatching { ArtAlignmentLandscape.valueOf(dJson.getString("artAlignmentLandscape")) }.getOrDefault(currentDisplay.artAlignmentLandscape),
                     albumArtFade = dJson.optDouble("albumArtFade", currentDisplay.albumArtFade.toDouble()).toFloat(),
+                    albumArtSaturation = dJson.optDouble("albumArtSaturation", currentDisplay.albumArtSaturation.toDouble()).toFloat().coerceIn(0.0f, 1.0f),
                     artDisplayLayout = runCatching { ArtLayoutOption.valueOf(dJson.getString("artDisplayLayout")) }.getOrDefault(currentDisplay.artDisplayLayout),
                     stretchArt = dJson.optBoolean("stretchArt", currentDisplay.stretchArt),
                     echoArtEnabled = dJson.optBoolean("echoArtEnabled", currentDisplay.echoArtEnabled),

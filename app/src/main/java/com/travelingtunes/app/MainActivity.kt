@@ -425,7 +425,8 @@ class MainActivity : ComponentActivity() {
             TravelingTunesTheme(
                 themeSettings = themeSettings,
                 dynamicAlbumArtTheme = dynamicAlbumArtTheme,
-                useAlbumArtColors = isMatchAlbumArt
+                useAlbumArtColors = isMatchAlbumArt,
+                displaySettings = displaySettings
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

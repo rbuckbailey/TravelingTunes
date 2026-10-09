@@ -110,6 +110,7 @@ data class DisplaySettings(
     val artAlignmentPortrait: ArtAlignmentPortrait = ArtAlignmentPortrait.MIDDLE,
     val artAlignmentLandscape: ArtAlignmentLandscape = ArtAlignmentLandscape.CENTER,
     val albumArtFade: Float = 1.0f,
+    val albumArtSaturation: Float = 1.0f,
     val artDisplayLayout: ArtLayoutOption = ArtLayoutOption.OVERLAY,
     val stretchArt: Boolean = false,
     val echoArtEnabled: Boolean = false,
