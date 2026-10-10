@@ -561,4 +561,44 @@ class DownloadedArtAndEmbeddingTest {
         assertTrue("TPE1 (Artist) frame must be preserved from ID3v2.4", frameIds.contains("TPE1"))
         assertTrue("APIC (Artwork) frame must be added", frameIds.contains("APIC"))
     }
+
+    @Test
+    fun testAutoArtworkCacheFallbackWithInvalidContentUri() {
+        val mockContext = Mockito.mock(android.content.Context::class.java)
+        val mockResolver = Mockito.mock(android.content.ContentResolver::class.java)
+        Mockito.`when`(mockContext.contentResolver).thenReturn(mockResolver)
+        Mockito.`when`(mockContext.packageName).thenReturn("com.travelingtunes.app")
+
+        val invalidUri = Mockito.mock(Uri::class.java)
+        Mockito.`when`(invalidUri.scheme).thenReturn("content")
+        Mockito.`when`(invalidUri.authority).thenReturn("media")
+        Mockito.`when`(mockResolver.openInputStream(invalidUri)).thenThrow(java.io.FileNotFoundException("Album art not found"))
+
+        val tempCacheDir = File.createTempFile("cache_dir", "").apply { delete(); mkdirs(); deleteOnExit() }
+        val tempFilesDir = File.createTempFile("files_dir", "").apply { delete(); mkdirs(); deleteOnExit() }
+        Mockito.`when`(mockContext.cacheDir).thenReturn(tempCacheDir)
+        Mockito.`when`(mockContext.filesDir).thenReturn(tempFilesDir)
+
+        val dummyContentUri = Mockito.mock(Uri::class.java)
+        val song = com.travelingtunes.app.core.model.Song(
+            id = 9991L,
+            title = "Embedded Track",
+            artist = "Embedded Artist",
+            album = "Embedded Album",
+            albumId = 12L,
+            durationMs = 180000L,
+            contentUri = dummyContentUri,
+            artworkUri = invalidUri
+        )
+
+        val method = com.travelingtunes.app.core.media.AutoArtworkCache::class.java.getDeclaredMethod(
+            "loadRawArtworkBytes",
+            android.content.Context::class.java,
+            com.travelingtunes.app.core.model.Song::class.java
+        )
+        method.isAccessible = true
+
+        val result = method.invoke(com.travelingtunes.app.core.media.AutoArtworkCache, mockContext, song) as ByteArray?
+        assertEquals(null, result)
+    }
 }

@@ -386,6 +386,10 @@ class MusicPlaybackService : MediaLibraryService() {
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 startForegroundIfNeeded()
+                val uri = mediaItem?.mediaMetadata?.artworkUri
+                if (uri != null && uri.scheme == "content") {
+                    grantAutoUriPermissions(applicationContext, uri)
+                }
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -460,8 +464,10 @@ class MusicPlaybackService : MediaLibraryService() {
                 if (playlistChanged) {
                     lastNotifiedPlaylistIds = newPlaylistIds
                 }
-                sharedSession?.let { session ->
-                    notifyAutoChildrenChanged(session, notifyQueueOnlyOnChanged = true, playlistChanged = playlistChanged)
+                withContext(Dispatchers.Main) {
+                    sharedSession?.let { session ->
+                        notifyAutoChildrenChanged(session, notifyQueueOnlyOnChanged = true, playlistChanged = playlistChanged)
+                    }
                 }
             }.collect {}
         }
@@ -1874,13 +1880,8 @@ fun getEffectiveAutoSafeZoneRatio(
     return settings.autoSafeZoneRatio
 }
 
-private val grantedUrisSet = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
-
 fun grantAutoUriPermissions(context: Context, uri: Uri?) {
     if (uri == null || uri.scheme != "content") return
-    val uriStr = uri.toString()
-    if (grantedUrisSet.contains(uriStr)) return
-    grantedUrisSet.add(uriStr)
 
     val autoPackages = listOf(
         "com.google.android.projection.gearhead",
@@ -1906,7 +1907,7 @@ fun songToMediaItem(
     song: Song,
     context: Context? = null,
     showAlbumArt: Boolean = true,
-    includeArtworkData: Boolean = false,
+    includeArtworkData: Boolean = true,
     stretchArt: Boolean = false,
     isForAuto: Boolean = true,
     safeZoneRatio: Float = MusicPlaybackService.currentAutoDisplaySettings.autoSafeZoneRatio,
@@ -1957,14 +1958,20 @@ fun songToMediaItem(
                 song.artworkUri
             }
         }
-        else -> song.artworkUri
+        else -> {
+            if (song.artworkUri != null && song.artworkUri.scheme == "content" && song.artworkUri.authority != "${context?.packageName}.fileprovider") {
+                null
+            } else {
+                song.artworkUri
+            }
+        }
     }
 
     if (artUri != null && context != null) {
         grantAutoUriPermissions(context, artUri)
     }
 
-    val artBytes = if (includeArtworkData && artUri == null && showAlbumArt && context != null) {
+    val artBytes = if (includeArtworkData && showAlbumArt && context != null) {
         getArtworkBytesForSong(context, song, stretchArt)
     } else null
 
@@ -1984,9 +1991,10 @@ fun songToMediaItem(
         .apply {
             if (artUri != null) {
                 setArtworkUri(artUri)
-            } else if (artBytes != null && artBytes.isNotEmpty()) {
+            }
+            if (artBytes != null && artBytes.isNotEmpty()) {
                 setArtworkData(artBytes, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
-            } else if (showAlbumArt && context != null) {
+            } else if (artUri == null && showAlbumArt && context != null) {
                 val md = java.security.MessageDigest.getInstance("MD5")
                 val digest = md.digest("${song.artist}-${song.album}".toByteArray())
                 val hashKey = digest.joinToString("") { "%02x".format(it) }

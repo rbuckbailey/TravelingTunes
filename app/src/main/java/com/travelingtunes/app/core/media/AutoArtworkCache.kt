@@ -78,31 +78,83 @@ object AutoArtworkCache {
 
     private fun loadRawArtworkBytes(context: Context, song: Song): ByteArray? {
         try {
+            // 1. Check downloaded artwork file
             val downloadedFile = AlbumArtDownloader.getDownloadedArtworkFile(context, song.artist, song.album)
             if (downloadedFile != null && downloadedFile.exists() && downloadedFile.length() > 0L) {
                 return downloadedFile.readBytes()
             }
 
+            // 2. Check song.artworkUri with isolated exception handling
             val uri = song.artworkUri
             if (uri != null) {
-                val bytes = if (uri.scheme == "file" && uri.path != null) {
-                    val file = File(uri.path!!)
-                    if (file.exists() && file.length() > 0L) file.readBytes() else null
-                } else {
-                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                val bytes = try {
+                    if (uri.scheme == "file" && uri.path != null) {
+                        val file = File(uri.path!!)
+                        if (file.exists() && file.length() > 0L) file.readBytes() else null
+                    } else {
+                        context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    }
+                } catch (_: Exception) {
+                    null
                 }
                 if (bytes != null && bytes.isNotEmpty()) return bytes
             }
 
+            // 3. Check cached artwork files by artist-album hash
+            try {
+                val md = java.security.MessageDigest.getInstance("MD5")
+                val digest = md.digest("${song.artist}-${song.album}".toByteArray())
+                val hashKey = digest.joinToString("") { "%02x".format(it) }
+
+                val cacheArtFile = File(context.cacheDir, "album_art/art_$hashKey.jpg")
+                val embeddedArtFile = File(context.cacheDir, "embedded_art/art_embedded_$hashKey.jpg")
+                val downloadedArtFile = File(context.filesDir, "downloaded_art/art_downloaded_$hashKey.jpg")
+
+                val targetFile = when {
+                    downloadedArtFile.exists() && downloadedArtFile.length() > 0L -> downloadedArtFile
+                    embeddedArtFile.exists() && embeddedArtFile.length() > 0L -> embeddedArtFile
+                    cacheArtFile.exists() && cacheArtFile.length() > 0L -> cacheArtFile
+                    else -> null
+                }
+
+                if (targetFile != null) {
+                    val bytes = targetFile.readBytes()
+                    if (bytes.isNotEmpty()) return bytes
+                }
+            } catch (_: Exception) {}
+
+            // 4. Extract embedded picture using MediaMetadataRetriever
             val mmr = android.media.MediaMetadataRetriever()
-            return try {
-                mmr.setDataSource(context, song.contentUri)
-                mmr.embeddedPicture
-            } catch (_: Exception) {
-                null
+            try {
+                var rawBytes: ByteArray? = null
+                try {
+                    mmr.setDataSource(context, song.contentUri)
+                    rawBytes = mmr.embeddedPicture
+                } catch (_: Exception) {
+                    try {
+                        context.contentResolver.openFileDescriptor(song.contentUri, "r")?.use { pfd ->
+                            mmr.setDataSource(pfd.fileDescriptor)
+                            rawBytes = mmr.embeddedPicture
+                        }
+                    } catch (_: Exception) {}
+                }
+                if (rawBytes != null && rawBytes.isNotEmpty()) return rawBytes
             } finally {
                 try { mmr.release() } catch (_: Exception) {}
             }
+
+            // 5. Fallback: ContentResolver.loadThumbnail on Android 10+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                try {
+                    val bitmap = context.contentResolver.loadThumbnail(song.contentUri, android.util.Size(800, 800), null)
+                    val stream = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+                    val bytes = stream.toByteArray()
+                    if (bytes.isNotEmpty()) return bytes
+                } catch (_: Exception) {}
+            }
+
+            return null
         } catch (_: Exception) {
             return null
         }
