@@ -21,7 +21,9 @@ import com.travelingtunes.app.feature.settings.getTriggersForSubmenu
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import com.travelingtunes.app.core.model.DisplaySettings
 import org.junit.Test
 import org.mockito.Mockito
 
@@ -380,6 +382,57 @@ class GestureAndSettingsTest {
         )
 
         assertEquals(androidx.compose.ui.graphics.Color(distinctHueCyan), adjustedSecondary)
+    }
+
+    @Test
+    fun testBuildColorSchemeFromThemeHighContrastForMenusAndPopups() {
+        val darkTheme = com.travelingtunes.app.core.model.ColorTheme(
+            name = "Dark Album Art",
+            backgroundColor = androidx.compose.ui.graphics.Color(0xFF0A1128),
+            textColor = androidx.compose.ui.graphics.Color(0xFFF7B05B),
+            secondaryTextColor = androidx.compose.ui.graphics.Color(0xFF4ECDC4)
+        )
+        val lightTheme = com.travelingtunes.app.core.model.ColorTheme(
+            name = "Light Album Art",
+            backgroundColor = androidx.compose.ui.graphics.Color(0xFFFFF8F0),
+            textColor = androidx.compose.ui.graphics.Color(0xFF3D2612),
+            secondaryTextColor = androidx.compose.ui.graphics.Color(0xFF1A535C)
+        )
+
+        listOf(darkTheme, lightTheme).forEach { theme ->
+            val scheme = com.travelingtunes.app.core.theme.buildColorSchemeFromTheme(theme, isMatchedTheme = true)
+
+            // Verify surface container contrast for dropdown menus and dialog popups
+            val onSurfaceVsContainer = com.travelingtunes.app.core.theme.calculateWcagContrast(
+                scheme.onSurface.toArgb(),
+                scheme.surfaceContainer.toArgb()
+            )
+            val onSurfaceVariantVsContainer = com.travelingtunes.app.core.theme.calculateWcagContrast(
+                scheme.onSurfaceVariant.toArgb(),
+                scheme.surfaceContainer.toArgb()
+            )
+            assertTrue("Menu onSurface text contrast must be >= 4.5, was $onSurfaceVsContainer", onSurfaceVsContainer >= 4.5)
+            assertTrue("Menu onSurfaceVariant text contrast must be >= 3.5, was $onSurfaceVariantVsContainer", onSurfaceVariantVsContainer >= 3.5)
+
+            // Verify card and option container contrast for submenus and option selection
+            val onPrimaryContainerVsPrimaryContainer = com.travelingtunes.app.core.theme.calculateWcagContrast(
+                scheme.onPrimaryContainer.toArgb(),
+                scheme.primaryContainer.toArgb()
+            )
+            val onSurfaceVsSurfaceVariant = com.travelingtunes.app.core.theme.calculateWcagContrast(
+                scheme.onSurface.toArgb(),
+                scheme.surfaceVariant.toArgb()
+            )
+            assertTrue("Card onPrimaryContainer contrast must be >= 4.5, was $onPrimaryContainerVsPrimaryContainer", onPrimaryContainerVsPrimaryContainer >= 4.5)
+            assertTrue("Card onSurface vs surfaceVariant contrast must be >= 4.5, was $onSurfaceVsSurfaceVariant", onSurfaceVsSurfaceVariant >= 4.5)
+
+            // Verify outline contrast for popup and menu borders
+            val outlineVsBg = com.travelingtunes.app.core.theme.calculateWcagContrast(
+                scheme.outline.toArgb(),
+                scheme.background.toArgb()
+            )
+            assertTrue("Outline border contrast must be >= 3.0, was $outlineVsBg", outlineVsBg >= 3.0)
+        }
     }
 
     @Test
@@ -862,6 +915,11 @@ class GestureAndSettingsTest {
         org.junit.Assert.assertNotNull(showArt)
         assertEquals("Show Album Art", showArt?.title)
         assertEquals(true, showArt?.isBooleanToggle)
+
+        val echoArt = com.travelingtunes.app.core.model.ConfigOption.findByKey("DISPLAY_echoArtEnabled")
+        org.junit.Assert.assertNotNull("DISPLAY_echoArtEnabled option must be registered", echoArt)
+        assertEquals("Echo Art", echoArt?.title)
+        assertEquals(true, echoArt?.isBooleanToggle)
     }
 
     @Test
@@ -1667,6 +1725,40 @@ class GestureAndSettingsTest {
         assertTrue(targetProfile.overrides.containsKey("drivingModeEnabled"))
         assertEquals("true", targetProfile.overrides["autoSpeedVolumeEnabled"])
         assertEquals("true", targetProfile.overrides["drivingModeEnabled"])
+    }
+
+    @Test
+    fun testProfileSettingsIsolationBetweenDockedAndUndocked() {
+        var undockedProfile = Profile(
+            id = Profile.UNDOCKED_ID,
+            name = "Undocked Art",
+            overrides = emptyMap()
+        )
+        val dockedProfile = Profile(
+            id = Profile.DOCKED_ID,
+            name = "Docked Art",
+            overrides = emptyMap()
+        )
+
+        // Simulate setting "Echo Art" on Undocked Profile
+        val undockedDisplay = DisplaySettings(echoArtEnabled = true)
+        val undockedOverrides = undockedProfile.overrides.toMutableMap().apply {
+            put("DISPLAY_echoArtEnabled", undockedDisplay.echoArtEnabled.toString())
+            put("echoArtEnabled", undockedDisplay.echoArtEnabled.toString())
+        }
+        undockedProfile = undockedProfile.copy(overrides = undockedOverrides)
+
+        // Resolve effective override for Undocked Profile vs Docked Profile
+        val activeUndockedStack = listOf(undockedProfile)
+        val activeDockedStack = listOf(dockedProfile)
+        val allProfiles = listOf(Profile.DEFAULT, undockedProfile, dockedProfile)
+
+        val undockedEcho = Profile.resolveEffectiveOverride("echoArtEnabled", activeUndockedStack, allProfiles)?.toBooleanStrictOrNull()
+        val dockedEcho = Profile.resolveEffectiveOverride("echoArtEnabled", activeDockedStack, allProfiles)?.toBooleanStrictOrNull()
+
+        // Assert Undocked profile has Echo Art enabled while Docked profile remains untouched
+        assertEquals(true, undockedEcho)
+        assertNull(dockedEcho)
     }
 
     @Test

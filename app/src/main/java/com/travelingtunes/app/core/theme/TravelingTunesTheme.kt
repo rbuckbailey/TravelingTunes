@@ -1,5 +1,6 @@
 package com.travelingtunes.app.core.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -18,6 +19,156 @@ data class CalculatedThemeColors(
     val primaryColor: Color
 )
 
+fun blendColors(base: Color, overlay: Color, ratio: Float): Color {
+    val r = (base.red + (overlay.red - base.red) * ratio).coerceIn(0f, 1f)
+    val g = (base.green + (overlay.green - base.green) * ratio).coerceIn(0f, 1f)
+    val b = (base.blue + (overlay.blue - base.blue) * ratio).coerceIn(0f, 1f)
+    return Color(red = r, green = g, blue = b, alpha = 1f)
+}
+
+fun buildColorSchemeFromTheme(
+    activeTheme: ColorTheme,
+    isMatchedTheme: Boolean = false
+): ColorScheme {
+    val bg = activeTheme.backgroundColor
+    val isDark = bg.luminance() < 0.5f
+
+    // Derive surface containers directly from the album art palette background
+    val surfaceContainerLowest = blendColors(bg, activeTheme.textColor, if (isDark) 0.03f else 0.02f)
+    val surfaceContainerLow = blendColors(bg, activeTheme.textColor, if (isDark) 0.06f else 0.04f)
+    val surfaceContainer = blendColors(bg, activeTheme.textColor, if (isDark) 0.10f else 0.07f)
+    val surfaceContainerHigh = blendColors(bg, activeTheme.textColor, if (isDark) 0.14f else 0.10f)
+    val surfaceContainerHighest = blendColors(bg, activeTheme.textColor, if (isDark) 0.18f else 0.14f)
+    val surfaceVariant = blendColors(bg, activeTheme.textColor, if (isDark) 0.15f else 0.12f)
+
+    // Primary text / onSurface for menus, popups, and dialog containers
+    val onSurface = adjustContrastForBackground(
+        textColor = activeTheme.textColor,
+        backgroundColor = surfaceContainerHighest,
+        matchedSwatches = activeTheme.matchedSwatches,
+        isMatchedTheme = isMatchedTheme,
+        minContrastRatio = 4.5
+    )
+
+    // Secondary text / onSurfaceVariant for submenus, popups, descriptions, and option cards
+    val onSurfaceVariant = adjustSecondaryContrastForBackground(
+        secondaryColor = activeTheme.secondaryTextColor,
+        primaryColor = onSurface,
+        backgroundColor = surfaceContainerHighest,
+        matchedSwatches = activeTheme.matchedSwatches,
+        isMatchedTheme = isMatchedTheme,
+        minContrastRatio = 4.5
+    )
+
+    // Primary Container for selected menu items, cards, and primary buttons
+    val primaryContainer = blendColors(bg, activeTheme.textColor, if (isDark) 0.24f else 0.18f)
+    val onPrimaryContainer = adjustContrastForBackground(
+        textColor = activeTheme.textColor,
+        backgroundColor = primaryContainer,
+        matchedSwatches = activeTheme.matchedSwatches,
+        isMatchedTheme = isMatchedTheme,
+        minContrastRatio = 4.5
+    )
+
+    // Secondary Container for active controls, badges, and secondary highlights
+    val secondaryContainer = blendColors(bg, activeTheme.artistColor, if (isDark) 0.22f else 0.16f)
+    val onSecondaryContainer = adjustContrastForBackground(
+        textColor = activeTheme.artistColor,
+        backgroundColor = secondaryContainer,
+        matchedSwatches = activeTheme.matchedSwatches,
+        isMatchedTheme = isMatchedTheme,
+        minContrastRatio = 4.5
+    )
+
+    // Tertiary Container
+    val tertiaryContainer = blendColors(bg, activeTheme.albumColor, if (isDark) 0.22f else 0.16f)
+    val onTertiaryContainer = adjustContrastForBackground(
+        textColor = activeTheme.albumColor,
+        backgroundColor = tertiaryContainer,
+        matchedSwatches = activeTheme.matchedSwatches,
+        isMatchedTheme = isMatchedTheme,
+        minContrastRatio = 4.5
+    )
+
+    // Outlines / Borders for popups, dropdown menus, dialogs, cards
+    val outline = adjustContrastForBackground(
+        textColor = activeTheme.secondaryTextColor,
+        backgroundColor = bg,
+        matchedSwatches = activeTheme.matchedSwatches,
+        isMatchedTheme = isMatchedTheme,
+        minContrastRatio = 3.5
+    )
+    val outlineVariant = blendColors(bg, activeTheme.textColor, if (isDark) 0.22f else 0.16f)
+
+    return if (isDark) {
+        darkColorScheme(
+            primary = onSurface,
+            onPrimary = bg,
+            primaryContainer = primaryContainer,
+            onPrimaryContainer = onPrimaryContainer,
+            secondary = activeTheme.artistColor,
+            onSecondary = bg,
+            secondaryContainer = secondaryContainer,
+            onSecondaryContainer = onSecondaryContainer,
+            tertiary = activeTheme.albumColor,
+            onTertiary = bg,
+            tertiaryContainer = tertiaryContainer,
+            onTertiaryContainer = onTertiaryContainer,
+            background = bg,
+            onBackground = onSurface,
+            surface = bg,
+            onSurface = onSurface,
+            surfaceVariant = surfaceVariant,
+            onSurfaceVariant = onSurfaceVariant,
+            surfaceTint = activeTheme.textColor,
+            inverseSurface = onSurface,
+            inverseOnSurface = bg,
+            inversePrimary = activeTheme.artistColor,
+            outline = outline,
+            outlineVariant = outlineVariant,
+            scrim = Color.Black.copy(alpha = 0.6f),
+            surfaceContainer = surfaceContainer,
+            surfaceContainerLowest = surfaceContainerLowest,
+            surfaceContainerLow = surfaceContainerLow,
+            surfaceContainerHigh = surfaceContainerHigh,
+            surfaceContainerHighest = surfaceContainerHighest
+        )
+    } else {
+        lightColorScheme(
+            primary = onSurface,
+            onPrimary = bg,
+            primaryContainer = primaryContainer,
+            onPrimaryContainer = onPrimaryContainer,
+            secondary = activeTheme.artistColor,
+            onSecondary = bg,
+            secondaryContainer = secondaryContainer,
+            onSecondaryContainer = onSecondaryContainer,
+            tertiary = activeTheme.albumColor,
+            onTertiary = bg,
+            tertiaryContainer = tertiaryContainer,
+            onTertiaryContainer = onTertiaryContainer,
+            background = bg,
+            onBackground = onSurface,
+            surface = bg,
+            onSurface = onSurface,
+            surfaceVariant = surfaceVariant,
+            onSurfaceVariant = onSurfaceVariant,
+            surfaceTint = activeTheme.textColor,
+            inverseSurface = onSurface,
+            inverseOnSurface = bg,
+            inversePrimary = activeTheme.artistColor,
+            outline = outline,
+            outlineVariant = outlineVariant,
+            scrim = Color.Black.copy(alpha = 0.6f),
+            surfaceContainer = surfaceContainer,
+            surfaceContainerLowest = surfaceContainerLowest,
+            surfaceContainerLow = surfaceContainerLow,
+            surfaceContainerHigh = surfaceContainerHigh,
+            surfaceContainerHighest = surfaceContainerHighest
+        )
+    }
+}
+
 @Composable
 fun TravelingTunesTheme(
     themeSettings: ThemeSettings,
@@ -26,31 +177,12 @@ fun TravelingTunesTheme(
     displaySettings: DisplaySettings? = null,
     content: @Composable () -> Unit
 ) {
+    val isMatchedTheme = useAlbumArtColors && dynamicAlbumArtTheme != null && (
+        themeSettings.currentThemeName.equals("Match Album Art", ignoreCase = true) ||
+        themeSettings.currentThemeName.equals("Auto By Art", ignoreCase = true)
+    )
     val activeTheme = resolveActiveTheme(themeSettings, dynamicAlbumArtTheme, useAlbumArtColors, displaySettings)
-
-    val colorScheme = if (activeTheme.backgroundColor.luminance() < 0.5f) {
-        darkColorScheme(
-            background = activeTheme.backgroundColor,
-            surface = activeTheme.backgroundColor,
-            onBackground = activeTheme.textColor,
-            onSurface = activeTheme.textColor,
-            primary = activeTheme.textColor,
-            secondary = activeTheme.artistColor,
-            tertiary = activeTheme.albumColor,
-            onSurfaceVariant = activeTheme.secondaryTextColor
-        )
-    } else {
-        lightColorScheme(
-            background = activeTheme.backgroundColor,
-            surface = activeTheme.backgroundColor,
-            onBackground = activeTheme.textColor,
-            onSurface = activeTheme.textColor,
-            primary = activeTheme.textColor,
-            secondary = activeTheme.artistColor,
-            tertiary = activeTheme.albumColor,
-            onSurfaceVariant = activeTheme.secondaryTextColor
-        )
-    }
+    val colorScheme = buildColorSchemeFromTheme(activeTheme, isMatchedTheme)
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -215,7 +347,7 @@ fun adjustSecondaryContrastForBackground(
     backgroundColor: Color,
     matchedSwatches: List<Int> = emptyList(),
     isMatchedTheme: Boolean = false,
-    minContrastRatio: Double = 3.0
+    minContrastRatio: Double = 4.5
 ): Color {
     val bgInt = (backgroundColor.toArgb() and 0x00FFFFFF) or -0x1000000
     val primaryInt = (primaryColor.toArgb() and 0x00FFFFFF) or -0x1000000

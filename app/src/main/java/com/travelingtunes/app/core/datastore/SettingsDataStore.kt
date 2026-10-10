@@ -1164,11 +1164,22 @@ class SettingsDataStore(private val context: Context) {
                     if (profile.id == activeId) {
                         val updatedMap = profile.overrides.toMutableMap()
                         if (option.isBooleanToggle) {
-                            val currentVal = profile.overrides[option.key]?.toBooleanStrictOrNull()
-                                ?: profile.overrides[option.key.removePrefix("DISPLAY_").removePrefix("THEME_").removePrefix("LIBRARY_").removePrefix("AUTO_")]?.toBooleanStrictOrNull()
+                            val rawStackStr = prefs[KEY_ACTIVE_PROFILE_STACK] ?: activeId
+                            val stackIds = rawStackStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                            val allProfs = Profile.listFromJson(prefs[KEY_PROFILES_JSON])
+                            val activeStack = stackIds.mapNotNull { id -> allProfs.find { it.id == id } }.ifEmpty {
+                                listOf(profile)
+                            }
+                            val shortKey = option.key.removePrefix("DISPLAY_").removePrefix("THEME_").removePrefix("LIBRARY_").removePrefix("AUTO_")
+                            val ov = Profile.resolveEffectiveOverride(option.key, activeStack, allProfs)
+                                ?: Profile.resolveEffectiveOverride(shortKey, activeStack, allProfs)
+                            val currentVal = ov?.toBooleanStrictOrNull()
+                                ?: profile.overrides[option.key]?.toBooleanStrictOrNull()
+                                ?: profile.overrides[shortKey]?.toBooleanStrictOrNull()
                                 ?: false
-                            updatedMap[option.key] = (!currentVal).toString()
-                            updatedMap[option.key.removePrefix("DISPLAY_").removePrefix("THEME_").removePrefix("LIBRARY_").removePrefix("AUTO_")] = (!currentVal).toString()
+                            val nextVal = !currentVal
+                            updatedMap[option.key] = nextVal.toString()
+                            updatedMap[shortKey] = nextVal.toString()
                         } else if (option.targetValue != null) {
                             updatedMap[option.key] = option.targetValue
                             when {
@@ -1220,6 +1231,11 @@ class SettingsDataStore(private val context: Context) {
                 when (option.key) {
                     "DISPLAY_showAlbumArt" -> prefs[KEY_SHOW_ALBUM_ART] = !(prefs[KEY_SHOW_ALBUM_ART] ?: true)
                     "DISPLAY_albumArtColors" -> prefs[KEY_ALBUM_ART_COLORS] = !(prefs[KEY_ALBUM_ART_COLORS] ?: true)
+                    "DISPLAY_stretchArt" -> prefs[KEY_STRETCH_ART] = !(prefs[KEY_STRETCH_ART] ?: false)
+                    "DISPLAY_echoArtEnabled" -> prefs[KEY_ECHO_ART_ENABLED] = !(prefs[KEY_ECHO_ART_ENABLED] ?: false)
+                    "DISPLAY_blurArtEnabled" -> prefs[KEY_BLUR_ART_ENABLED] = !(prefs[KEY_BLUR_ART_ENABLED] ?: false)
+                    "DISPLAY_adaptiveDockedArt" -> prefs[KEY_ADAPTIVE_DOCKED_ART] = !(prefs[KEY_ADAPTIVE_DOCKED_ART] ?: false)
+                    "DISPLAY_separateTouchZones" -> prefs[KEY_SEPARATE_TOUCH_ZONES] = !(prefs[KEY_SEPARATE_TOUCH_ZONES] ?: false)
                     "DISPLAY_titleShrinkInPortrait" -> prefs[KEY_TITLE_SHRINK_PORTRAIT] = !(prefs[KEY_TITLE_SHRINK_PORTRAIT] ?: true)
                     "DISPLAY_titleShrinkLong" -> prefs[KEY_TITLE_SHRINK_LONG] = !(prefs[KEY_TITLE_SHRINK_LONG] ?: true)
                     "DISPLAY_titleScrollLong" -> prefs[KEY_TITLE_SCROLL_LONG] = !(prefs[KEY_TITLE_SCROLL_LONG] ?: false)
@@ -1243,6 +1259,7 @@ class SettingsDataStore(private val context: Context) {
                     "THEME_isGlass" -> prefs[KEY_THEME_GLASS] = !(prefs[KEY_THEME_GLASS] ?: false)
                     "LIBRARY_autoRescan" -> prefs[KEY_AUTO_RESCAN] = !(prefs[KEY_AUTO_RESCAN] ?: false)
                     "LIBRARY_gpsVolume" -> prefs[KEY_GPS_VOLUME] = !(prefs[KEY_GPS_VOLUME] ?: false)
+                    "LIBRARY_pickerAlphabetBarOnLeft" -> prefs[KEY_PICKER_ALPHABET_BAR_ON_LEFT] = !(prefs[KEY_PICKER_ALPHABET_BAR_ON_LEFT] ?: false)
                     "AUTO_drivingMode" -> {
                         val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
                         val rawStackStr = prefs[KEY_ACTIVE_PROFILE_STACK] ?: activeId
@@ -1477,14 +1494,108 @@ class SettingsDataStore(private val context: Context) {
                 val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
                     if (profile.id == activeId) {
                         val updatedMap = profile.overrides.toMutableMap()
+                        updatedMap["DISPLAY_showAlbumArt"] = update.showAlbumArt.toString()
+                        updatedMap["showAlbumArt"] = update.showAlbumArt.toString()
+                        updatedMap["DISPLAY_albumArtColors"] = update.albumArtColors.toString()
+                        updatedMap["albumArtColors"] = update.albumArtColors.toString()
+                        updatedMap["DISPLAY_echoArtEnabled"] = update.echoArtEnabled.toString()
+                        updatedMap["echoArtEnabled"] = update.echoArtEnabled.toString()
+                        updatedMap["DISPLAY_stretchArt"] = update.stretchArt.toString()
+                        updatedMap["stretchArt"] = update.stretchArt.toString()
+                        updatedMap["DISPLAY_blurArtEnabled"] = update.blurArtEnabled.toString()
+                        updatedMap["blurArtEnabled"] = update.blurArtEnabled.toString()
+                        updatedMap["DISPLAY_echoArtCount"] = update.echoArtCount.toString()
+                        updatedMap["echoArtCount"] = update.echoArtCount.toString()
+                        updatedMap["DISPLAY_echoFadeSpread"] = update.echoFadeSpread.toString()
+                        updatedMap["echoFadeSpread"] = update.echoFadeSpread.toString()
+                        updatedMap["DISPLAY_echoBaseAlpha"] = update.echoBaseAlpha.toString()
+                        updatedMap["echoBaseAlpha"] = update.echoBaseAlpha.toString()
+                        updatedMap["DISPLAY_stretchBlendSpan"] = update.stretchBlendSpan.toString()
+                        updatedMap["stretchBlendSpan"] = update.stretchBlendSpan.toString()
                         updatedMap["DISPLAY_artDisplayLayout"] = update.artDisplayLayout.name
                         updatedMap["artDisplayLayout"] = update.artDisplayLayout.name
+                        updatedMap["DISPLAY_adaptiveDockedArt"] = update.adaptiveDockedArt.toString()
+                        updatedMap["adaptiveDockedArt"] = update.adaptiveDockedArt.toString()
+                        updatedMap["DISPLAY_separateTouchZones"] = update.separateTouchZones.toString()
+                        updatedMap["separateTouchZones"] = update.separateTouchZones.toString()
+                        updatedMap["albumArtScale"] = update.albumArtScale.name
+                        updatedMap["artAlignmentPortrait"] = update.artAlignmentPortrait.name
+                        updatedMap["artAlignmentLandscape"] = update.artAlignmentLandscape.name
+                        updatedMap["albumArtFade"] = update.albumArtFade.toString()
+                        updatedMap["albumArtSaturation"] = update.albumArtSaturation.toString()
+                        updatedMap["matchArtColorPriority"] = update.matchArtColorPriority.name
+                        updatedMap["hudType"] = update.hudType.name
+                        updatedMap["scrubHudType"] = update.scrubHudType.name
+                        updatedMap["DISPLAY_hudLineThickness"] = update.hudLineThickness.toString()
+                        updatedMap["hudLineThickness"] = update.hudLineThickness.toString()
+                        updatedMap["DISPLAY_volumeAlwaysOn"] = update.volumeAlwaysOn.toString()
+                        updatedMap["volumeAlwaysOn"] = update.volumeAlwaysOn.toString()
+                        updatedMap["DISPLAY_showStatusBar"] = update.showStatusBar.toString()
+                        updatedMap["showStatusBar"] = update.showStatusBar.toString()
+                        updatedMap["DISPLAY_showActions"] = update.showActions.toString()
+                        updatedMap["showActions"] = update.showActions.toString()
+                        updatedMap["DISPLAY_keepScreenOn"] = update.keepScreenOn.toString()
+                        updatedMap["keepScreenOn"] = update.keepScreenOn.toString()
+                        updatedMap["DISPLAY_immersiveMode"] = update.immersiveMode.toString()
+                        updatedMap["immersiveMode"] = update.immersiveMode.toString()
+                        updatedMap["DISPLAY_artistFontSize"] = update.artistFontSize.toString()
+                        updatedMap["artistFontSize"] = update.artistFontSize.toString()
+                        updatedMap["DISPLAY_songFontSize"] = update.songFontSize.toString()
+                        updatedMap["songFontSize"] = update.songFontSize.toString()
+                        updatedMap["DISPLAY_albumFontSize"] = update.albumFontSize.toString()
+                        updatedMap["albumFontSize"] = update.albumFontSize.toString()
+                        updatedMap["DISPLAY_artistFontKey"] = update.artistFontKey
+                        updatedMap["artistFontKey"] = update.artistFontKey
+                        updatedMap["DISPLAY_songFontKey"] = update.songFontKey
+                        updatedMap["songFontKey"] = update.songFontKey
+                        updatedMap["DISPLAY_albumFontKey"] = update.albumFontKey
+                        updatedMap["albumFontKey"] = update.albumFontKey
+                        updatedMap["DISPLAY_artistBold"] = update.artistBold.toString()
+                        updatedMap["artistBold"] = update.artistBold.toString()
+                        updatedMap["DISPLAY_artistItalic"] = update.artistItalic.toString()
+                        updatedMap["artistItalic"] = update.artistItalic.toString()
+                        updatedMap["DISPLAY_artistUnderline"] = update.artistUnderline.toString()
+                        updatedMap["artistUnderline"] = update.artistUnderline.toString()
+                        updatedMap["DISPLAY_songBold"] = update.songBold.toString()
+                        updatedMap["songBold"] = update.songBold.toString()
+                        updatedMap["DISPLAY_songItalic"] = update.songItalic.toString()
+                        updatedMap["songItalic"] = update.songItalic.toString()
+                        updatedMap["DISPLAY_songUnderline"] = update.songUnderline.toString()
+                        updatedMap["songUnderline"] = update.songUnderline.toString()
+                        updatedMap["DISPLAY_albumBold"] = update.albumBold.toString()
+                        updatedMap["albumBold"] = update.albumBold.toString()
+                        updatedMap["DISPLAY_albumItalic"] = update.albumItalic.toString()
+                        updatedMap["albumItalic"] = update.albumItalic.toString()
+                        updatedMap["DISPLAY_albumUnderline"] = update.albumUnderline.toString()
+                        updatedMap["albumUnderline"] = update.albumUnderline.toString()
+                        updatedMap["ALIGN_ARTIST"] = update.artistAlignment.name
+                        updatedMap["artistAlignment"] = update.artistAlignment.name
+                        updatedMap["ALIGN_SONG"] = update.songAlignment.name
+                        updatedMap["songAlignment"] = update.songAlignment.name
+                        updatedMap["ALIGN_ALBUM"] = update.albumAlignment.name
+                        updatedMap["albumAlignment"] = update.albumAlignment.name
+                        updatedMap["DISPLAY_titleShrinkInPortrait"] = update.titleShrinkInPortrait.toString()
+                        updatedMap["titleShrinkInPortrait"] = update.titleShrinkInPortrait.toString()
+                        updatedMap["DISPLAY_titleShrinkLong"] = update.titleShrinkLong.toString()
+                        updatedMap["titleShrinkLong"] = update.titleShrinkLong.toString()
+                        updatedMap["DISPLAY_titleScrollLong"] = update.titleScrollLong.toString()
+                        updatedMap["titleScrollLong"] = update.titleScrollLong.toString()
+                        updatedMap["titleOrder"] = update.titleOrder.joinToString(",") { it.name }
+                        updatedMap["numEdgeRegions"] = update.numEdgeRegions.toString()
+                        updatedMap["numArtEdgeRegions"] = update.numArtEdgeRegions.toString()
+                        updatedMap["multiTouchWindowMs"] = update.multiTouchWindowMs.toString()
+                        updatedMap["touchSlopDp"] = update.touchSlopDp.toString()
+                        updatedMap["longPressThresholdMs"] = update.longPressThresholdMs.toString()
+                        updatedMap["doubleTapTimeoutMs"] = update.doubleTapTimeoutMs.toString()
+                        updatedMap["bottomButtonSpaceDp"] = update.bottomButtonSpaceDp.toString()
                         updatedMap["AUTO_speedVolume"] = update.autoSpeedVolumeEnabled.toString()
                         updatedMap["autoSpeedVolumeEnabled"] = update.autoSpeedVolumeEnabled.toString()
                         updatedMap["AUTO_ambientNoise"] = update.autoAmbientNoiseEnabled.toString()
                         updatedMap["autoAmbientNoiseEnabled"] = update.autoAmbientNoiseEnabled.toString()
                         updatedMap["AUTO_drivingMode"] = update.drivingModeEnabled.toString()
                         updatedMap["drivingModeEnabled"] = update.drivingModeEnabled.toString()
+                        updatedMap["LIBRARY_pickerAlphabetBarOnLeft"] = update.pickerAlphabetBarOnLeft.toString()
+                        updatedMap["pickerAlphabetBarOnLeft"] = update.pickerAlphabetBarOnLeft.toString()
                         profile.copy(overrides = updatedMap)
                     } else profile
                 }
@@ -1597,6 +1708,42 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun updateThemeSettings(update: ThemeSettings) {
         context.dataStore.edit { prefs ->
+            val activeId = prefs[KEY_ACTIVE_PROFILE_ID] ?: Profile.DEFAULT_ID
+            if (activeId != Profile.DEFAULT_ID) {
+                val profiles = Profile.listFromJson(prefs[KEY_PROFILES_JSON]).map { profile ->
+                    if (profile.id == activeId) {
+                        val updatedMap = profile.overrides.toMutableMap()
+                        updatedMap["THEME_currentThemeName"] = update.currentThemeName
+                        updatedMap["currentThemeName"] = update.currentThemeName
+                        updatedMap["THEME_dimAtNight"] = update.dimAtNight.toString()
+                        updatedMap["dimAtNight"] = update.dimAtNight.toString()
+                        updatedMap["THEME_invertAtNight"] = update.invertAtNight.toString()
+                        updatedMap["invertAtNight"] = update.invertAtNight.toString()
+                        updatedMap["THEME_isRounded"] = update.isRounded.toString()
+                        updatedMap["isRounded"] = update.isRounded.toString()
+                        updatedMap["THEME_isGlass"] = update.isGlass.toString()
+                        updatedMap["isGlass"] = update.isGlass.toString()
+                        updatedMap["customTextRed"] = update.customTextRed.toString()
+                        updatedMap["customTextGreen"] = update.customTextGreen.toString()
+                        updatedMap["customTextBlue"] = update.customTextBlue.toString()
+                        updatedMap["customSongTitleRed"] = update.customSongTitleRed.toString()
+                        updatedMap["customSongTitleGreen"] = update.customSongTitleGreen.toString()
+                        updatedMap["customSongTitleBlue"] = update.customSongTitleBlue.toString()
+                        updatedMap["customArtistTitleRed"] = update.customArtistTitleRed.toString()
+                        updatedMap["customArtistTitleGreen"] = update.customArtistTitleGreen.toString()
+                        updatedMap["customArtistTitleBlue"] = update.customArtistTitleBlue.toString()
+                        updatedMap["customAlbumTitleRed"] = update.customAlbumTitleRed.toString()
+                        updatedMap["customAlbumTitleGreen"] = update.customAlbumTitleGreen.toString()
+                        updatedMap["customAlbumTitleBlue"] = update.customAlbumTitleBlue.toString()
+                        updatedMap["customBGRed"] = update.customBGRed.toString()
+                        updatedMap["customBGGreen"] = update.customBGGreen.toString()
+                        updatedMap["customBGBlue"] = update.customBGBlue.toString()
+                        profile.copy(overrides = updatedMap)
+                    } else profile
+                }
+                prefs[KEY_PROFILES_JSON] = Profile.listToJson(profiles)
+            }
+
             val oldTheme = prefs[KEY_CURRENT_THEME] ?: ColorTheme.MATCH_ALBUM_ART.name
             if (!oldTheme.equals(update.currentThemeName, ignoreCase = true)) {
                 prefs[KEY_PRIOR_THEME] = oldTheme
