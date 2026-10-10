@@ -28,6 +28,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -2548,7 +2549,13 @@ fun PlayerAlbumArtBackground(
             val containerWidthPx = with(density) { this@BoxWithConstraints.maxWidth.toPx() }
             val containerHeightPx = with(density) { this@BoxWithConstraints.maxHeight.toPx() }
 
-            if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT && displaySettings.stretchArt && containerWidthPx > 0f && containerHeightPx > 0f) {
+            if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT && displaySettings.blurArtEnabled && containerWidthPx > 0f && containerHeightPx > 0f) {
+                BlurredFittedArtBackground(
+                    imgBitmap = imgBitmap,
+                    artAlpha = artAlpha,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (displaySettings.albumArtScale == ArtScaleOption.ASPECT_FIT && displaySettings.stretchArt && containerWidthPx > 0f && containerHeightPx > 0f) {
                 StretchedFittedArtBackground(
                     imgBitmap = imgBitmap,
                     imageAlignment = imageAlignment,
@@ -3148,6 +3155,31 @@ private fun DockedEchoArtBackground(
             }
         }
     }
+}
+
+@Composable
+private fun BlurredFittedArtBackground(
+    imgBitmap: ImageBitmap,
+    artAlpha: Float,
+    modifier: Modifier = Modifier
+) {
+    val androidBmp = imgBitmap.asAndroidBitmap()
+    if (androidBmp.isRecycled) return
+    val miniBmp = remember(androidBmp) {
+        try {
+            android.graphics.Bitmap.createScaledBitmap(androidBmp, 24, 24, true).asImageBitmap()
+        } catch (_: Exception) { null }
+    } ?: return
+
+    Image(
+        bitmap = miniBmp,
+        contentDescription = "Blurred Fitted Background",
+        contentScale = ContentScale.Crop,
+        alpha = (artAlpha * 0.75f).coerceIn(0f, 1f),
+        modifier = modifier
+            .fillMaxSize()
+            .blur(24.dp)
+    )
 }
 
 @Composable

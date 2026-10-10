@@ -960,6 +960,9 @@ class GestureAndSettingsTest {
         assertTrue(jsonStr.contains("\"autoCategoryOrder\": \"FOLDERS,SONGS\""))
         assertTrue(jsonStr.contains("\"autoShowAlbumArt\": false"))
         assertTrue(jsonStr.contains("\"autoVoiceSearch\": true"))
+        assertTrue(jsonStr.contains("\"autoSafeZoneRatio\": 0.8"))
+        assertTrue(jsonStr.contains("\"autoArtPaddingMode\": \"FILL\""))
+        assertTrue(jsonStr.contains("\"autoAdaptiveScaling\": true"))
     }
 
     @Test

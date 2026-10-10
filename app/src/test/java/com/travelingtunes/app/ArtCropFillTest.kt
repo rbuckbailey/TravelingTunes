@@ -29,10 +29,12 @@ class ArtCropFillTest {
 
     @Test
     fun testCropAndFillModeEnumNames() {
-        assertEquals(3, ArtCropFillMode.entries.size)
+        assertEquals(5, ArtCropFillMode.entries.size)
         assertEquals("Crop to Fit", ArtCropFillMode.CROP.displayName)
-        assertEquals("Fill / Letterbox", ArtCropFillMode.FILL.displayName)
+        assertEquals("Solid Fill", ArtCropFillMode.FILL.displayName)
         assertEquals("Stretch Edges", ArtCropFillMode.STRETCH.displayName)
+        assertEquals("Echo Art", ArtCropFillMode.ECHO.displayName)
+        assertEquals("Blurred Art", ArtCropFillMode.BLUR.displayName)
     }
 
     @Test

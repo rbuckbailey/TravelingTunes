@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import com.travelingtunes.app.core.media.AutoArtworkCache
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -2741,6 +2742,29 @@ private fun ArtSettingsContent(
                 )
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Blur Art", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Display a smooth blurred version of the artwork in surrounding margins",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = displaySettings.blurArtEnabled,
+                    onCheckedChange = { checked ->
+                        onUpdateDisplaySettings(displaySettings.copy(blurArtEnabled = checked))
+                    }
+                )
+            }
+
             var isAdvancedArtExpanded by remember { mutableStateOf(false) }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -3892,6 +3916,180 @@ private fun AndroidAutoSettingsContent(
                             onUpdateDisplaySettings(displaySettings.copy(autoVoiceSearch = checked))
                         }
                     )
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Collapsible Section: Advanced Art Tweaks
+                var showAdvancedArtTweaks by remember { mutableStateOf(false) }
+                val context = LocalContext.current
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showAdvancedArtTweaks = !showAdvancedArtTweaks }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Advanced Art Tweaks",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Safe zone ratio & letterbox background padding style for Android Auto",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { showAdvancedArtTweaks = !showAdvancedArtTweaks }) {
+                        Icon(
+                            imageVector = if (showAdvancedArtTweaks) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (showAdvancedArtTweaks) "Collapse" else "Expand"
+                        )
+                    }
+                }
+
+                if (showAdvancedArtTweaks) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp, start = 8.dp, end = 8.dp)
+                    ) {
+                        // Toggle: Adaptive Auto-Scaling
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Adaptive Auto-Scaling",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Presents 100% full square art for large views and safe-zone padding for small split-screen views",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = displaySettings.autoAdaptiveScaling,
+                                onCheckedChange = { checked ->
+                                    onUpdateDisplaySettings(displaySettings.copy(autoAdaptiveScaling = checked))
+                                }
+                            )
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp))
+
+                        val currentPercent = (displaySettings.autoSafeZoneRatio * 100).toInt()
+                        Text(
+                            text = "Safe Zone Scale for Small Views: $currentPercent%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Letterboxes artwork in small split-screen views so auto-cropping won't clip artwork edges.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Slider(
+                            value = displaySettings.autoSafeZoneRatio,
+                            onValueChange = { newValue ->
+                                onUpdateDisplaySettings(displaySettings.copy(autoSafeZoneRatio = newValue))
+                            },
+                            valueRange = 0.20f..1.00f,
+                            steps = 79
+                        )
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        ) {
+                            val presetValues = listOf(
+                                0.50f to "50% (Compact)",
+                                0.65f to "65% (Small Split)",
+                                0.80f to "80% (Balanced Default)",
+                                1.00f to "100% (Full Square)"
+                            )
+                            presetValues.forEach { (ratio, label) ->
+                                FilterChip(
+                                    selected = Math.abs(displaySettings.autoSafeZoneRatio - ratio) < 0.02f,
+                                    onClick = {
+                                        onUpdateDisplaySettings(displaySettings.copy(autoSafeZoneRatio = ratio))
+                                    },
+                                    label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        Text(
+                            text = "Background Padding Style",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Controls how letterbox area outside the safe zone is rendered.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        ) {
+                            FilterChip(
+                                selected = displaySettings.autoArtPaddingMode.equals("FILL", ignoreCase = true),
+                                onClick = {
+                                    onUpdateDisplaySettings(displaySettings.copy(autoArtPaddingMode = "FILL"))
+                                },
+                                label = { Text("Solid Fill", style = MaterialTheme.typography.labelSmall) }
+                            )
+                            FilterChip(
+                                selected = displaySettings.autoArtPaddingMode.equals("STRETCH", ignoreCase = true),
+                                onClick = {
+                                    onUpdateDisplaySettings(displaySettings.copy(autoArtPaddingMode = "STRETCH"))
+                                },
+                                label = { Text("Stretch Edges", style = MaterialTheme.typography.labelSmall) }
+                            )
+                            FilterChip(
+                                selected = displaySettings.autoArtPaddingMode.equals("ECHO", ignoreCase = true),
+                                onClick = {
+                                    onUpdateDisplaySettings(displaySettings.copy(autoArtPaddingMode = "ECHO"))
+                                },
+                                label = { Text("Echo Art", style = MaterialTheme.typography.labelSmall) }
+                            )
+                            FilterChip(
+                                selected = displaySettings.autoArtPaddingMode.equals("BLUR", ignoreCase = true),
+                                onClick = {
+                                    onUpdateDisplaySettings(displaySettings.copy(autoArtPaddingMode = "BLUR"))
+                                },
+                                label = { Text("Blurred Art", style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                AutoArtworkCache.clearCache(context)
+                                android.widget.Toast.makeText(context, "Android Auto artwork cache cleared", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Clear Android Auto Artwork Cache")
+                        }
+                    }
                 }
             }
         }

@@ -70,6 +70,17 @@ class MusicPlaybackService : MediaLibraryService() {
         @Volatile
         private var sharedSession: MediaLibrarySession? = null
 
+        @Volatile
+        var currentAutoDisplaySettings: DisplaySettings = DisplaySettings()
+
+        fun grantConnectedControllersUriPermission(context: Context, uri: Uri) {
+            sharedSession?.connectedControllers?.forEach { controller ->
+                try {
+                    context.grantUriPermission(controller.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } catch (_: Exception) {}
+            }
+        }
+
         fun isPlayerValid(player: ExoPlayer?): Boolean {
             if (player == null) return false
             return try {
@@ -409,9 +420,29 @@ class MusicPlaybackService : MediaLibraryService() {
             ) { repeatMode, shuffleMode, bindings, settings ->
                 cachedGestureBindings = bindings
                 autoDisplaySettings = settings
-                sharedSession?.let { session ->
-                    updateCustomLayout(session, bindings, settings, repeatMode, shuffleMode)
-                    notifyAutoChildrenChanged(session)
+                currentAutoDisplaySettings = settings
+                AutoArtworkCache.clearCache(applicationContext)
+
+                withContext(Dispatchers.Main) {
+                    sharedSession?.let { session ->
+                        val p = session.player
+                        val currentSong = playbackManager.currentSong.value
+                        if (p != null && currentSong != null && p.mediaItemCount > 0) {
+                            val currentIndex = p.currentMediaItemIndex
+                            val updatedItem = songToMediaItem(
+                                song = currentSong,
+                                context = applicationContext,
+                                includeArtworkData = true,
+                                safeZoneRatio = settings.autoSafeZoneRatio,
+                                paddingModeStr = settings.autoArtPaddingMode
+                            )
+                            try {
+                                p.replaceMediaItem(currentIndex, updatedItem)
+                            } catch (_: Exception) {}
+                        }
+                        updateCustomLayout(session, bindings, settings, repeatMode, shuffleMode)
+                        notifyAutoChildrenChanged(session)
+                    }
                 }
             }.collect {}
         }
@@ -1180,7 +1211,7 @@ class MusicPlaybackService : MediaLibraryService() {
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<MediaItem>> {
             val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
-            val isPlaying = playbackManager.isPlaying.value || playbackManager.player.isPlaying
+            val isPlaying = playbackManager.isPlaying.value
             val activeRootItem = if (isPlaying) showPlayScreenItem else rootItem
 
             val rootParams = LibraryParams.Builder()
@@ -1254,7 +1285,8 @@ class MusicPlaybackService : MediaLibraryService() {
                         val currentQueue = playbackManager.currentPlaylist.value
                         val rawSongs = if (currentQueue.isNotEmpty()) currentQueue else getAllSongsHelper()
                         val pagedSongs = paginateDomainList(rawSongs)
-                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext, showArt) })
+                        val ratio = getEffectiveAutoSafeZoneRatio(autoDisplaySettings, params?.extras, browser.connectionHints)
+                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext, showArt, isForAuto = true, safeZoneRatio = ratio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                     }
                     "category_picker" -> {
                         val pickerItems = listOf(shuffleAllItem, categorySongs, categoryAlbums, categoryArtists, categoryGenres, categoryFolders)
@@ -1263,7 +1295,8 @@ class MusicPlaybackService : MediaLibraryService() {
                     "category_songs" -> {
                         val songs = getAllSongsHelper()
                         val pagedSongs = paginateDomainList(songs)
-                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext, showArt) })
+                        val ratio = getEffectiveAutoSafeZoneRatio(autoDisplaySettings, params?.extras, browser.connectionHints)
+                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext, showArt, isForAuto = true, safeZoneRatio = ratio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                     }
                     "category_albums" -> {
                         val dbAlbums = musicDatabase.getAlbums()
@@ -1284,6 +1317,16 @@ class MusicPlaybackService : MediaLibraryService() {
                         }
                         val pagedAlbums = paginateDomainList(albums)
                         items.addAll(pagedAlbums.map { album ->
+                            val albumSongs = getAllSongsHelper().filter { it.album.equals(album.name, ignoreCase = true) }
+                            val firstSong = albumSongs.firstOrNull()
+                            val autoArtUri = if (showArt && firstSong != null && applicationContext != null) {
+                                AutoArtworkCache.getAutoArtwork(
+                                    applicationContext,
+                                    firstSong,
+                                    autoDisplaySettings.autoSafeZoneRatio,
+                                    autoDisplaySettings.autoArtPaddingMode
+                                ) ?: album.artworkUri
+                            } else album.artworkUri
                             MediaItem.Builder()
                                 .setMediaId("album_${album.name}")
                                 .setMediaMetadata(
@@ -1291,7 +1334,7 @@ class MusicPlaybackService : MediaLibraryService() {
                                         .setTitle(album.name)
                                         .setArtist(album.artist)
                                         .apply {
-                                            if (showArt) setArtworkUri(album.artworkUri)
+                                            if (showArt && autoArtUri != null) setArtworkUri(autoArtUri)
                                         }
                                         .setIsBrowsable(true)
                                         .setIsPlayable(false)
@@ -1411,7 +1454,7 @@ class MusicPlaybackService : MediaLibraryService() {
                             else -> emptyList()
                         }
                         val pagedSongs = paginateDomainList(songs)
-                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext) })
+                        items.addAll(pagedSongs.map { songToMediaItem(it, applicationContext, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                     }
                 }
 
@@ -1450,7 +1493,7 @@ class MusicPlaybackService : MediaLibraryService() {
                     val allSongs = getAllSongsHelper()
                     val song = allSongs.find { it.id == songId }
                     if (song != null) {
-                        future.set(LibraryResult.ofItem(songToMediaItem(song, applicationContext, includeArtworkData = true), null))
+                        future.set(LibraryResult.ofItem(songToMediaItem(song, applicationContext, includeArtworkData = true, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode), null))
                         return@launch
                     }
                 }
@@ -1542,7 +1585,7 @@ class MusicPlaybackService : MediaLibraryService() {
                         val currentSong = playbackManager.currentSong.value
                         if (playlist.isNotEmpty() && currentSong != null) {
                             val songIndex = playlist.indexOfFirst { it.id == currentSong.id }.coerceAtLeast(0)
-                            val currentPos = try { playbackManager.player.currentPosition.coerceAtLeast(0L) } catch (_: Exception) { 0L }
+                            val currentPos = try { withContext(Dispatchers.Main) { playbackManager.player.currentPosition.coerceAtLeast(0L) } } catch (_: Exception) { 0L }
                             returnPosMs = currentPos
                             resolvedSongs.addAll(playlist)
                             playStartIndex = songIndex
@@ -1680,30 +1723,30 @@ class MusicPlaybackService : MediaLibraryService() {
                         val playbackManager = PlaybackManager.getInstance(applicationContext, settingsDataStore, musicDatabase)
                         val playlist = playbackManager.currentPlaylist.value
                         if (playlist.isNotEmpty()) {
-                            resolvedItems.addAll(playlist.map { songToMediaItem(it, applicationContext) })
+                            resolvedItems.addAll(playlist.map { songToMediaItem(it, applicationContext, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                         }
                     } else if (item.mediaId == "shuffle_all") {
                         val allSongs = getAllSongsHelper()
                         val shuffled = allSongs.shuffled()
-                        resolvedItems.addAll(shuffled.map { songToMediaItem(it, applicationContext) })
+                        resolvedItems.addAll(shuffled.map { songToMediaItem(it, applicationContext, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                     } else if (song != null) {
-                        resolvedItems.add(songToMediaItem(song, applicationContext))
+                        resolvedItems.add(songToMediaItem(song, applicationContext, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode))
                     } else if (item.mediaId.startsWith("album_")) {
                         val albumName = item.mediaId.removePrefix("album_")
                         val albumSongs = allSongs.filter { it.album.equals(albumName, ignoreCase = true) }
-                        resolvedItems.addAll(albumSongs.map { songToMediaItem(it, applicationContext) })
+                        resolvedItems.addAll(albumSongs.map { songToMediaItem(it, applicationContext, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                     } else if (item.mediaId.startsWith("artist_")) {
                         val artistName = item.mediaId.removePrefix("artist_")
                         val artistSongs = allSongs.filter { it.artist.equals(artistName, ignoreCase = true) }
-                        resolvedItems.addAll(artistSongs.map { songToMediaItem(it, applicationContext) })
+                        resolvedItems.addAll(artistSongs.map { songToMediaItem(it, applicationContext, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                     } else if (item.mediaId.startsWith("genre_")) {
                         val genreName = item.mediaId.removePrefix("genre_")
                         val genreSongs = allSongs.filter { it.genre.equals(genreName, ignoreCase = true) }
-                        resolvedItems.addAll(genreSongs.map { songToMediaItem(it, applicationContext) })
+                        resolvedItems.addAll(genreSongs.map { songToMediaItem(it, applicationContext, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                     } else if (item.mediaId.startsWith("folder_")) {
                         val folderPath = item.mediaId.removePrefix("folder_")
                         val folderSongs = allSongs.filter { it.folderPath.equals(folderPath, ignoreCase = true) }
-                        resolvedItems.addAll(folderSongs.map { songToMediaItem(it, applicationContext) })
+                        resolvedItems.addAll(folderSongs.map { songToMediaItem(it, applicationContext, isForAuto = true, safeZoneRatio = autoDisplaySettings.autoSafeZoneRatio, paddingModeStr = autoDisplaySettings.autoArtPaddingMode) })
                     } else {
                         resolvedItems.add(item)
                     }
@@ -1805,6 +1848,32 @@ fun getArtworkBytesForSong(context: Context, song: Song, stretchArt: Boolean = f
     }
 }
 
+fun getEffectiveAutoSafeZoneRatio(
+    settings: DisplaySettings,
+    extras: Bundle? = null,
+    connectionHints: Bundle? = null
+): Float {
+    if (!settings.autoAdaptiveScaling) {
+        return settings.autoSafeZoneRatio
+    }
+
+    val sizeHintPx = when {
+        extras?.containsKey("android.media.extras.MEDIA_ART_SIZE_PIXELS") == true -> extras.getInt("android.media.extras.MEDIA_ART_SIZE_PIXELS")
+        extras?.containsKey("android.media.extras.MEDIA_ART_SIZE_HINT_PX") == true -> extras.getInt("android.media.extras.MEDIA_ART_SIZE_HINT_PX")
+        extras?.containsKey("EXTRA_MEDIA_ART_SIZE_HINT_PX") == true -> extras.getInt("EXTRA_MEDIA_ART_SIZE_HINT_PX")
+        connectionHints?.containsKey("android.media.extras.MEDIA_ART_SIZE_PIXELS") == true -> connectionHints.getInt("android.media.extras.MEDIA_ART_SIZE_PIXELS")
+        connectionHints?.containsKey("android.media.extras.MEDIA_ART_SIZE_HINT_PX") == true -> connectionHints.getInt("android.media.extras.MEDIA_ART_SIZE_HINT_PX")
+        connectionHints?.containsKey("EXTRA_MEDIA_ART_SIZE_HINT_PX") == true -> connectionHints.getInt("EXTRA_MEDIA_ART_SIZE_HINT_PX")
+        else -> -1
+    }
+
+    if (sizeHintPx > 0) {
+        return if (sizeHintPx <= 320) settings.autoSafeZoneRatio else 1.0f
+    }
+
+    return settings.autoSafeZoneRatio
+}
+
 private val grantedUrisSet = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
 fun grantAutoUriPermissions(context: Context, uri: Uri?) {
@@ -1816,7 +1885,9 @@ fun grantAutoUriPermissions(context: Context, uri: Uri?) {
     val autoPackages = listOf(
         "com.google.android.projection.gearhead",
         "com.google.android.car.messenger",
-        "com.google.android.autoservice"
+        "com.google.android.autoservice",
+        "com.android.systemui",
+        "com.google.android.googlequicksearchbox"
     )
     for (pkg in autoPackages) {
         try {
@@ -1826,6 +1897,8 @@ fun grantAutoUriPermissions(context: Context, uri: Uri?) {
             android.util.Log.w("AutoArtworkDiag", "Failed to grant URI permission to $pkg for $uri", e)
         }
     }
+
+    MusicPlaybackService.grantConnectedControllersUriPermission(context, uri)
 }
 
 @OptIn(UnstableApi::class)
@@ -1834,8 +1907,15 @@ fun songToMediaItem(
     context: Context? = null,
     showAlbumArt: Boolean = true,
     includeArtworkData: Boolean = false,
-    stretchArt: Boolean = false
+    stretchArt: Boolean = false,
+    isForAuto: Boolean = true,
+    safeZoneRatio: Float = MusicPlaybackService.currentAutoDisplaySettings.autoSafeZoneRatio,
+    paddingModeStr: String = MusicPlaybackService.currentAutoDisplaySettings.autoArtPaddingMode
 ): MediaItem {
+    val autoArtUri = if (showAlbumArt && context != null) {
+        AutoArtworkCache.getAutoArtwork(context, song, safeZoneRatio, paddingModeStr)
+    } else null
+
     val songUriStr = song.artworkUri?.toString() ?: ""
     val isDownloadedOrCustomRef = songUriStr.contains("downloaded_art") ||
             songUriStr.contains("art_downloaded") ||
@@ -1867,6 +1947,7 @@ fun songToMediaItem(
 
     val artUri = when {
         !showAlbumArt -> null
+        autoArtUri != null -> autoArtUri
         downloadedFile != null -> toContentUriIfNeeded(downloadedFile)
         song.artworkUri != null && song.artworkUri.scheme == "file" && song.artworkUri.path != null && context != null -> {
             try {
@@ -1883,14 +1964,9 @@ fun songToMediaItem(
         grantAutoUriPermissions(context, artUri)
     }
 
-    val artBytes = if (showAlbumArt && includeArtworkData && context != null) getArtworkBytesForSong(context, song, stretchArt) else null
-
-    if (includeArtworkData) {
-        android.util.Log.d(
-            "AutoArtworkDiag",
-            "songToMediaItem active song '${song.title}': artUri=$artUri, artBytesSize=${artBytes?.size ?: 0}"
-        )
-    }
+    val artBytes = if (includeArtworkData && artUri == null && showAlbumArt && context != null) {
+        getArtworkBytesForSong(context, song, stretchArt)
+    } else null
 
     val metadata = MediaMetadata.Builder()
         .setTitle(song.title)
@@ -1906,11 +1982,10 @@ fun songToMediaItem(
         .setIsPlayable(true)
         .setIsBrowsable(false)
         .apply {
-            if (artBytes != null && artBytes.isNotEmpty()) {
-                setArtworkData(artBytes, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
-            }
             if (artUri != null) {
                 setArtworkUri(artUri)
+            } else if (artBytes != null && artBytes.isNotEmpty()) {
+                setArtworkData(artBytes, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
             } else if (showAlbumArt && context != null) {
                 val md = java.security.MessageDigest.getInstance("MD5")
                 val digest = md.digest("${song.artist}-${song.album}".toByteArray())

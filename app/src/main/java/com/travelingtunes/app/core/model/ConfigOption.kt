@@ -72,6 +72,7 @@ data class ConfigOption(
             ConfigOption("SCRUB_HUD_TYPE_BAR_PROGRESS", "Art, HUD & Display", "Scrub HUD: Bar Fill", isBooleanToggle = false, targetValue = "BAR_PROGRESS"),
             ConfigOption("DISPLAY_stretchArt", "Art, HUD & Display", "Stretch Art", isBooleanToggle = true),
             ConfigOption("DISPLAY_echoArtEnabled", "Art, HUD & Display", "Echo Art", isBooleanToggle = true),
+            ConfigOption("DISPLAY_blurArtEnabled", "Art, HUD & Display", "Blur Art", isBooleanToggle = true),
             ConfigOption("DISPLAY_echoArtCount", "Art, HUD & Display", "Echo Art Count", isBooleanToggle = false),
             ConfigOption("DISPLAY_echoFadeSpread", "Art, HUD & Display", "Echo Fade Spread", isBooleanToggle = false),
             ConfigOption("DISPLAY_echoBaseAlpha", "Art, HUD & Display", "Echo Base Alpha", isBooleanToggle = false),

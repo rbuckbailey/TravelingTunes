@@ -25,8 +25,10 @@ enum class ArtAlignmentPosition(val displayName: String, val row: Int, val col: 
 
 enum class ArtCropFillMode(val displayName: String, val description: String) {
     CROP("Crop to Fit", "Crops image to a square using alignment anchor"),
-    FILL("Fill / Letterbox", "Pads space with background fill using alignment anchor"),
-    STRETCH("Stretch Edges", "Fills square by stretching art edges to the border")
+    FILL("Solid Fill", "Pads space with solid theme background color"),
+    STRETCH("Stretch Edges", "Fills margins by stretching art outer edge pixels"),
+    ECHO("Echo Art", "Pads space with cascading echoing layers of artwork"),
+    BLUR("Blurred Art", "Pads space with a blurred artwork background")
 }
 
 object ArtCropFillHelper {
@@ -173,75 +175,111 @@ object ArtCropFillHelper {
 
                 Bitmap.createScaledBitmap(stretchedBitmap, targetSize, targetSize, true)
             }
+            ArtCropFillMode.BLUR, ArtCropFillMode.ECHO -> {
+                val squareDim = Math.max(origW, origH)
+                val blurredBitmap = Bitmap.createBitmap(squareDim, squareDim, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(blurredBitmap)
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+
+                val mini = Bitmap.createScaledBitmap(original, 24, 24, true)
+                canvas.drawBitmap(mini, android.graphics.Rect(0, 0, 24, 24), android.graphics.Rect(0, 0, squareDim, squareDim), paint)
+
+                val dstX = when (alignment.col) {
+                    0 -> 0
+                    1 -> (squareDim - origW) / 2
+                    else -> squareDim - origW
+                }.toFloat()
+
+                val dstY = when (alignment.row) {
+                    0 -> 0
+                    1 -> (squareDim - origH) / 2
+                    else -> squareDim - origH
+                }.toFloat()
+
+                canvas.drawBitmap(original, dstX, dstY, paint)
+                Bitmap.createScaledBitmap(blurredBitmap, targetSize, targetSize, true)
+            }
         }
     }
 
     fun processAutoDashboardCanvas(
         original: Bitmap,
         mode: ArtCropFillMode = ArtCropFillMode.FILL,
-        canvasDim: Int = 800
+        canvasDim: Int = 800,
+        safeZoneRatio: Float = 0.60f
     ): Bitmap {
-        val origW = original.width
-        val origH = original.height
-
-        val canvasBitmap = Bitmap.createBitmap(canvasDim, canvasDim, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(canvasBitmap)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-
-        // Universal Safe Zone dimension: 32.5% of canvas dimension (260px for 800px canvas)
-        // Ensures full artwork fits inside safe bounds for ALL Android Auto panel configurations
-        // including ultra-narrow portrait side panels (1:3) and widescreen landscape panels (16:9)!
-        val safeZoneDim = Math.round(canvasDim * 0.325f)
-
-        val scale = safeZoneDim.toFloat() / Math.max(origW, origH)
-        val scaledW = Math.round(origW * scale).coerceAtLeast(1)
-        val scaledH = Math.round(origH * scale).coerceAtLeast(1)
-
-        val dstX = (canvasDim - scaledW) / 2
-        val dstY = (canvasDim - scaledH) / 2
-
-        val scaledOriginal = Bitmap.createScaledBitmap(original, scaledW, scaledH, true)
-
-        if (mode == ArtCropFillMode.STRETCH) {
-            canvas.drawBitmap(scaledOriginal, dstX.toFloat(), dstY.toFloat(), paint)
-
-            if (dstY > 0) {
-                val topSlice = Bitmap.createBitmap(scaledOriginal, 0, 0, scaledW, 1)
-                val srcRect = android.graphics.Rect(0, 0, scaledW, 1)
-                val dstRect = android.graphics.Rect(dstX, 0, dstX + scaledW, dstY)
-                canvas.drawBitmap(topSlice, srcRect, dstRect, paint)
-            }
-            if (dstY + scaledH < canvasDim) {
-                val bottomSlice = Bitmap.createBitmap(scaledOriginal, 0, scaledH - 1, scaledW, 1)
-                val srcRect = android.graphics.Rect(0, 0, scaledW, 1)
-                val dstRect = android.graphics.Rect(dstX, dstY + scaledH, dstX + scaledW, canvasDim)
-                canvas.drawBitmap(bottomSlice, srcRect, dstRect, paint)
-            }
-            if (dstX > 0) {
-                val leftSlice = Bitmap.createBitmap(scaledOriginal, 0, 0, 1, scaledH)
-                val srcRect = android.graphics.Rect(0, 0, 1, scaledH)
-                val dstRect = android.graphics.Rect(0, dstY, dstX, dstY + scaledH)
-                canvas.drawBitmap(leftSlice, srcRect, dstRect, paint)
-            }
-            if (dstX + scaledW < canvasDim) {
-                val rightSlice = Bitmap.createBitmap(scaledOriginal, scaledW - 1, 0, 1, scaledH)
-                val srcRect = android.graphics.Rect(0, 0, 1, scaledH)
-                val dstRect = android.graphics.Rect(dstX + scaledW, dstY, canvasDim, dstY + scaledH)
-                canvas.drawBitmap(rightSlice, srcRect, dstRect, paint)
-            }
-            val cornerColor = try { original.getPixel(0, 0) } catch (_: Exception) { Color.BLACK }
-            val cornerPaint = Paint().apply { color = cornerColor }
-
-            if (dstX > 0 && dstY > 0) canvas.drawRect(0f, 0f, dstX.toFloat(), dstY.toFloat(), cornerPaint)
-            if (dstX + scaledW < canvasDim && dstY > 0) canvas.drawRect((dstX + scaledW).toFloat(), 0f, canvasDim.toFloat(), dstY.toFloat(), cornerPaint)
-            if (dstX > 0 && dstY + scaledH < canvasDim) canvas.drawRect(0f, (dstY + scaledH).toFloat(), dstX.toFloat(), canvasDim.toFloat(), cornerPaint)
-            if (dstX + scaledW < canvasDim && dstY + scaledH < canvasDim) canvas.drawRect((dstX + scaledW).toFloat(), (dstY + scaledH).toFloat(), canvasDim.toFloat(), canvasDim.toFloat(), cornerPaint)
-        } else {
-            val cornerColor = try { original.getPixel(0, 0) } catch (_: Exception) { Color.BLACK }
-            canvas.drawColor(cornerColor)
-            canvas.drawBitmap(scaledOriginal, dstX.toFloat(), dstY.toFloat(), paint)
+        if (original.isRecycled || original.width <= 0 || original.height <= 0) {
+            val fallback = Bitmap.createBitmap(canvasDim, canvasDim, Bitmap.Config.ARGB_8888)
+            Canvas(fallback).drawColor(Color.BLACK)
+            return fallback
         }
+        return try {
+            val origW = original.width
+            val origH = original.height
 
-        return canvasBitmap
+            val canvasBitmap = Bitmap.createBitmap(canvasDim, canvasDim, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(canvasBitmap)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+
+            val effectiveRatio = safeZoneRatio.coerceIn(0.15f, 1.00f)
+            val safeZoneDim = Math.round(canvasDim * effectiveRatio)
+
+            val scale = safeZoneDim.toFloat() / Math.max(origW, origH)
+            val scaledW = Math.round(origW * scale).coerceAtLeast(1)
+            val scaledH = Math.round(origH * scale).coerceAtLeast(1)
+
+            val dstX = (canvasDim - scaledW) / 2
+            val dstY = (canvasDim - scaledH) / 2
+
+            val scaledOriginal = Bitmap.createScaledBitmap(original, scaledW, scaledH, true)
+
+            when (mode) {
+                ArtCropFillMode.BLUR -> {
+                    val mini = Bitmap.createScaledBitmap(original, 16, 16, true)
+                    canvas.drawBitmap(mini, android.graphics.Rect(0, 0, 16, 16), android.graphics.Rect(0, 0, canvasDim, canvasDim), paint)
+                    val tintPaint = Paint().apply { color = Color.argb(60, 0, 0, 0) }
+                    canvas.drawRect(0f, 0f, canvasDim.toFloat(), canvasDim.toFloat(), tintPaint)
+                    canvas.drawBitmap(scaledOriginal, dstX.toFloat(), dstY.toFloat(), paint)
+                }
+                ArtCropFillMode.STRETCH -> {
+                    val backgroundStretched = Bitmap.createScaledBitmap(original, canvasDim, canvasDim, true)
+                    canvas.drawBitmap(backgroundStretched, 0f, 0f, paint)
+                    canvas.drawBitmap(scaledOriginal, dstX.toFloat(), dstY.toFloat(), paint)
+                }
+                ArtCropFillMode.ECHO -> {
+                    val cornerColor = try {
+                        original.getPixel(original.width / 2, 0)
+                    } catch (_: Exception) { Color.BLACK }
+                    canvas.drawColor(cornerColor)
+
+                    val echoCount = 3
+                    for (k in echoCount downTo 1) {
+                        val fraction = k.toFloat() / (echoCount + 1.0f)
+                        val echoDim = Math.round(canvasDim * (effectiveRatio + (1.0f - effectiveRatio) * fraction))
+                        val echoX = (canvasDim - echoDim) / 2f
+                        val echoY = (canvasDim - echoDim) / 2f
+                        val echoScaled = Bitmap.createScaledBitmap(original, echoDim, echoDim, true)
+                        val echoPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
+                            alpha = ((1.0f - fraction) * 160).toInt().coerceIn(20, 220)
+                        }
+                        canvas.drawBitmap(echoScaled, echoX, echoY, echoPaint)
+                    }
+                    canvas.drawBitmap(scaledOriginal, dstX.toFloat(), dstY.toFloat(), paint)
+                }
+                else -> { // FILL / Solid Fill using sampled top-center edge color
+                    val cornerColor = try {
+                        original.getPixel(original.width / 2, 0)
+                    } catch (_: Exception) { Color.BLACK }
+                    canvas.drawColor(cornerColor)
+                    canvas.drawBitmap(scaledOriginal, dstX.toFloat(), dstY.toFloat(), paint)
+                }
+            }
+
+            canvasBitmap
+        } catch (_: Exception) {
+            val fallback = Bitmap.createBitmap(canvasDim, canvasDim, Bitmap.Config.ARGB_8888)
+            Canvas(fallback).drawColor(Color.BLACK)
+            fallback
+        }
     }
 }

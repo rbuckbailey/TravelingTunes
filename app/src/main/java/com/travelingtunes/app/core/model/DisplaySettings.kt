@@ -114,6 +114,7 @@ data class DisplaySettings(
     val artDisplayLayout: ArtLayoutOption = ArtLayoutOption.OVERLAY,
     val stretchArt: Boolean = false,
     val echoArtEnabled: Boolean = false,
+    val blurArtEnabled: Boolean = false,
     val echoArtCount: Int = 1,
     val echoFadeSpread: Float = 0.45f,
     val echoBaseAlpha: Float = 0.70f,
@@ -185,5 +186,8 @@ data class DisplaySettings(
         GestureAction.TOGGLE_SHUFFLE,
         GestureAction.TOGGLE_REPEAT,
         GestureAction.SHUFFLE_ALL_SONGS
-    )
+    ),
+    val autoSafeZoneRatio: Float = 0.80f,
+    val autoArtPaddingMode: String = "FILL",
+    val autoAdaptiveScaling: Boolean = true
 )

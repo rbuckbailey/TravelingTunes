@@ -102,6 +102,7 @@ class SettingsDataStore(private val context: Context) {
         val KEY_ART_DISPLAY_LAYOUT = intPreferencesKey("artDisplayLayout")
         val KEY_STRETCH_ART = booleanPreferencesKey("stretchArt")
         val KEY_ECHO_ART_ENABLED = booleanPreferencesKey("echoArtEnabled")
+        val KEY_BLUR_ART_ENABLED = booleanPreferencesKey("blurArtEnabled")
         val KEY_ECHO_ART_COUNT = intPreferencesKey("echoArtCount")
         val KEY_ECHO_FADE_SPREAD = floatPreferencesKey("echoFadeSpread")
         val KEY_ECHO_BASE_ALPHA = floatPreferencesKey("echoBaseAlpha")
@@ -141,6 +142,9 @@ class SettingsDataStore(private val context: Context) {
         // Android Auto Preferences
         val KEY_AUTO_CATEGORY_ORDER = stringPreferencesKey("autoCategoryOrder")
         val KEY_AUTO_SHOW_ALBUM_ART = booleanPreferencesKey("autoShowAlbumArt")
+        val KEY_AUTO_SAFE_ZONE_RATIO = floatPreferencesKey("autoSafeZoneRatio")
+        val KEY_AUTO_ART_PADDING_MODE = stringPreferencesKey("autoArtPaddingMode")
+        val KEY_AUTO_ADAPTIVE_SCALING = booleanPreferencesKey("autoAdaptiveScaling")
         val KEY_AUTO_ALBUM_STYLE_GRID = booleanPreferencesKey("autoAlbumStyleGrid")
         val KEY_AUTO_ARTIST_STYLE_GRID = booleanPreferencesKey("autoArtistStyleGrid")
         val KEY_AUTO_AUTOPLAY_ON_CONNECT = booleanPreferencesKey("autoAutoplayOnConnect")
@@ -395,6 +399,7 @@ class SettingsDataStore(private val context: Context) {
             },
             stretchArt = getBool(KEY_STRETCH_ART, "DISPLAY_stretchArt", false),
             echoArtEnabled = getBool(KEY_ECHO_ART_ENABLED, "DISPLAY_echoArtEnabled", false),
+            blurArtEnabled = getBool(KEY_BLUR_ART_ENABLED, "DISPLAY_blurArtEnabled", false),
             echoArtCount = getInt(KEY_ECHO_ART_COUNT, "DISPLAY_echoArtCount", 1).coerceIn(1, 5),
             echoFadeSpread = getFloat(KEY_ECHO_FADE_SPREAD, "DISPLAY_echoFadeSpread", 0.45f).coerceIn(0.10f, 1.0f),
             echoBaseAlpha = getFloat(KEY_ECHO_BASE_ALPHA, "DISPLAY_echoBaseAlpha", 0.70f).coerceIn(0.10f, 1.0f),
@@ -448,7 +453,10 @@ class SettingsDataStore(private val context: Context) {
             denoiseFilterMode = getString(KEY_DENOISE_FILTER_MODE, "DENOISE_FILTER_MODE", "OFF"),
             denoiseDampeningIntensity = getFloat(KEY_DENOISE_INTENSITY, "DENOISE_INTENSITY", 0.7f),
             miniPlayerActionButtonOrder = miniPlayerActionButtonOrder,
-            autoActionButtonOrder = autoActionButtonOrder
+            autoActionButtonOrder = autoActionButtonOrder,
+            autoSafeZoneRatio = getFloat(KEY_AUTO_SAFE_ZONE_RATIO, "AUTO_autoSafeZoneRatio", 0.80f),
+            autoArtPaddingMode = getString(KEY_AUTO_ART_PADDING_MODE, "AUTO_autoArtPaddingMode", "FILL"),
+            autoAdaptiveScaling = getBool(KEY_AUTO_ADAPTIVE_SCALING, "AUTO_autoAdaptiveScaling", true)
         )
     }
 
@@ -1502,6 +1510,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_ART_DISPLAY_LAYOUT] = update.artDisplayLayout.ordinal
             prefs[KEY_STRETCH_ART] = update.stretchArt
             prefs[KEY_ECHO_ART_ENABLED] = update.echoArtEnabled
+            prefs[KEY_BLUR_ART_ENABLED] = update.blurArtEnabled
             prefs[KEY_ECHO_ART_COUNT] = update.echoArtCount.coerceIn(1, 5)
             prefs[KEY_ECHO_FADE_SPREAD] = update.echoFadeSpread.coerceIn(0.10f, 1.0f)
             prefs[KEY_ECHO_BASE_ALPHA] = update.echoBaseAlpha.coerceIn(0.10f, 1.0f)
@@ -1554,6 +1563,9 @@ class SettingsDataStore(private val context: Context) {
             prefs[KEY_PICKER_ALPHABET_BAR_ON_LEFT] = update.pickerAlphabetBarOnLeft
             prefs[KEY_MINI_PLAYER_ACTION_BUTTON_ORDER] = update.miniPlayerActionButtonOrder.joinToString(",") { it.name }
             prefs[KEY_AUTO_ACTION_BUTTON_ORDER] = update.autoActionButtonOrder.joinToString(",") { it.name }
+            prefs[KEY_AUTO_SAFE_ZONE_RATIO] = update.autoSafeZoneRatio
+            prefs[KEY_AUTO_ART_PADDING_MODE] = update.autoArtPaddingMode
+            prefs[KEY_AUTO_ADAPTIVE_SCALING] = update.autoAdaptiveScaling
         }
     }
 
@@ -1756,6 +1768,8 @@ class SettingsDataStore(private val context: Context) {
                     autoSpeedUnit = dJson.optString("autoSpeedUnit", currentDisplay.autoSpeedUnit),
                     drivingModeEnabled = dJson.optBoolean("drivingModeEnabled", currentDisplay.drivingModeEnabled),
                     autoEnableDrivingMode = dJson.optBoolean("autoEnableDrivingMode", currentDisplay.autoEnableDrivingMode),
+                    autoSafeZoneRatio = dJson.optDouble("autoSafeZoneRatio", currentDisplay.autoSafeZoneRatio.toDouble()).toFloat(),
+                    autoArtPaddingMode = dJson.optString("autoArtPaddingMode", currentDisplay.autoArtPaddingMode),
                     pickerAlphabetBarOnLeft = dJson.optBoolean("pickerAlphabetBarOnLeft", currentDisplay.pickerAlphabetBarOnLeft),
                     miniPlayerActionButtonOrder = dJson.optString("miniPlayerActionButtonOrder", "")
                         .split(",")
